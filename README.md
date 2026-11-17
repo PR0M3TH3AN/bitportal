@@ -14,6 +14,10 @@ Test build: <https://bitportal.vercel.app/>
 
 - **The lobby** (`/`) shows worlds as doors, on shelves ranked by
   [BitFeed](https://feed.bitblocks.network/). Each world says why it is there.
+- **The walk-in lobby** (`/walk/`) is the same doors as a hall you stand in,
+  on a screen or in a VR headset. Point at a door and select it, or walk
+  through it. Press **Join the room** to see and talk to other visitors;
+  joining shows your IP address to them, so nothing connects before you ask.
 - **Opening a door** checks, at that moment, whether the world's site vouches
   for the key that announced it ("Verified").
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
@@ -78,6 +82,10 @@ npm run build
 
 `dist/` is a complete static site; any static host can serve it.
 
+Testing without a headset: `/walk/?xr=emulate` loads an in-page emulator that
+pretends to be a Meta Quest 3, and `?mic=tone` sends a test tone instead of
+asking for the microphone.
+
 ### Vendored dependencies
 
 BitPortal vendors what it depends on and records the exact source commit and
@@ -87,6 +95,7 @@ file hashes in `vendor/integrity.json` (BitBlocks convention D7):
 |---|---|---|
 | `@nswp/core` | the NSWP repo | `vendor/nswp/` |
 | BitFeed standalone | the BitFeed repo | `vendor/bitfeed/` |
+| `nswp-sdk/three` (avatars, voice, rooms) | the NSWP repo | `vendor/nswp/` |
 | Ubuntu Sans fonts | the bitblocks repo | `public/fonts/` |
 
 ```bash
@@ -105,8 +114,8 @@ npm run build && npm run deploy
 
 ## Not built yet
 
-Sign-in (BitLogin), publishing a world, trust labels (BitGate), paid entry
-(BitUnlock), a lobby you can walk around in VR, and rooms in the lobby. See the
+Sign-in (BitLogin), publishing a world, trust labels (BitGate) and paid entry
+(BitUnlock). Rooms are a first cut: guests only, no moderation. See the
 NSWP spec's roadmap (§20).
 
 ## License
