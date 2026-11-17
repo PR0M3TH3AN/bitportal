@@ -47,6 +47,15 @@ npm run starter-set
 
 The curator key lives outside the repo, at `~/.config/nswp/bitportal-curator.key`.
 
+The set and the curator's four listings are also **published to public Nostr
+relays**, so any NSWP client can read them. The lobby starts from the bundled
+copy and takes a newer one from relays if the same curator key has signed it.
+After re-signing, publish each new event with the NSWP repo's CLI:
+
+```bash
+node ../Nostr-Spatial-Web-Protocol--NSWP-/packages/cli/dist/nswp.mjs publish <event.json>
+```
+
 ## Develop
 
 Requires Node 22+.
