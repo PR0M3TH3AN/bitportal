@@ -9,6 +9,7 @@ import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
+import { readSignedIn } from "../shared/session.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
 import { cachedVerification, verifyWorld, type VerificationResult } from "../shared/verify.js";
@@ -41,6 +42,7 @@ let shelves: Shelf[] = [];
 let engine = "";
 let notice = "";
 let relayNote = "";
+let signedIn: { pubkey: string; name?: string } | null = null;
 const OPTOUT_KEY = "bitportal:optout";
 
 function optedOut(): Set<string> {
@@ -170,7 +172,7 @@ function draw(): void {
   const c = catalog.curator;
   const source = $("source");
   source.replaceChildren(
-    "You're browsing signed out. These doors come from ",
+    signedIn ? "You're signed in, but your follows don't shape this lobby yet. These doors come from " : "You're browsing signed out. These doors come from ",
     el("strong", {}, c.title),
     ", a list signed by ",
     el("span", { class: "key", title: c.pubkey }, shortKey(c.pubkey)),
@@ -348,6 +350,15 @@ async function refresh(): Promise<void> {
 async function start(): Promise<void> {
   $("open-settings").addEventListener("click", openSettings);
   draw(); // the bundled set, at once
+  // Who is signed in, read from BitLogin's small public record (no widget loaded here).
+  void readSignedIn().then((who) => {
+    signedIn = who;
+    if (!who) return;
+    const link = $("account-link");
+    link.textContent = who.name ?? shortKey(who.pubkey);
+    link.title = "Your identity";
+    draw();
+  });
   try {
     device = { ...device, vr: navigator.xr ? await navigator.xr.isSessionSupported("immersive-vr") : false };
   } catch {

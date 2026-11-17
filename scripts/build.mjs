@@ -22,6 +22,8 @@ await build({
     "feed-worker": join(root, "src/lobby/feed-worker.ts"),
     "go/airlock": join(root, "src/go/airlock.ts"),
     "walk/main": join(root, "src/walk/main.ts"),
+    "account/main": join(root, "src/account/main.ts"),
+    "publish/main": join(root, "src/publish/main.ts"),
   },
   bundle: true,
   splitting: true, // keeps the headset emulator out of the page until asked for
@@ -30,6 +32,8 @@ await build({
   target: "es2022",
   minify: true,
   outdir: out,
+  // BitLogin is served as its own static files and loaded by URL at run time.
+  external: ["/vendor/bitlogin/*"],
   legalComments: "linked",
   logLevel: "warning",
   alias: {
@@ -43,12 +47,17 @@ cpSync(join(root, "public"), out, { recursive: true });
 cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
+for (const page of ["account", "publish"]) {
+  mkdirSync(join(out, page), { recursive: true });
+  cpSync(join(root, `src/${page}/index.html`), join(out, page, "index.html"));
+}
 
 // Everything is same-origin except what the visitor asks for: relays (wss)
 // and, on opening a door or at the Airlock, a world's manifest (https).
 const csp = [
   "default-src 'self'",
-  "script-src 'self'",
+  // BitLogin hashes passwords with Argon2 compiled to WebAssembly in its worker.
+  "script-src 'self' 'wasm-unsafe-eval'",
   "worker-src 'self'",
   "style-src 'self'",
   "font-src 'self'",
