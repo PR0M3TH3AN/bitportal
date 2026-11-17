@@ -6,17 +6,17 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "4242fec88568e72b38fcf9372010aa3f300c9872",
+        "commit": "3f4df3e12987ce22d2b15588872976369a7e4f6a",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
-        "nswp-core.js": "ba4ab1f465bf338fab5e7be1e01f2fa2f0e2684a620da479a281f2a029d58d7f",
-        "nswp-sdk-three.js": "905534de575b13c231a1c9b690a3b77d1690f71ceadd6f46e73920572b37366a",
+        "nswp-core.js": "3e0adb5bc548a5bf40ed8ddadb6286db2c90ad3ab1a2e4d11f4ffc24e6ec088b",
+        "nswp-sdk-three.js": "665aec0805700e7982b1680d4d2b09204efc8eef8fa31c75dc985e803a507d31",
         "sdk-types/index.d.ts": "7be6974f53e131481b835729bec718eec98f4c1d86e5e62b7db38f78e94718d8",
         "sdk-types/room.d.ts": "a119d7ad783fe9558452ca493c01b5c1d6345f8d5ee54ac399e4da2c44a00af7",
-        "sdk-types/three.d.ts": "fbf38d11b606e32b2aaba418963a9d1d4930380a28ccec72cb375fb213dfded2",
+        "sdk-types/three.d.ts": "843a26cb247605d1dfe27c118679300f2cbf99f88491114528833c2befe0b9fa",
         "types/arrival.d.ts": "1ef72ada64228f710ef2bfce68d8f4121c4c3c87600e77a80898b20881cd38b3",
-        "types/constants.d.ts": "dfad9d054f35f872add758d22a3fd81894aedb144439bf37c296b0756566c9e4",
+        "types/constants.d.ts": "42c9ec713df7f0b01ac94a39bd729867bccb342e7c25764b97d0c780fb812240",
         "types/destination.d.ts": "fa497e8f8c612e069efa278e80bf6c24c7343f1c0acab8734a4da811d00184e5",
         "types/event.d.ts": "a55181cd67e871d16d5cc35f26a58140519702e7676b4d7046867a5303e82f33",
         "types/index.d.ts": "244946609e4a84ec4dceeb5b4dba8e12b2c4d8f6809780d9b44b62c7d1793670",
@@ -27,7 +27,7 @@
         "types/relay.d.ts": "972113352c0610464751b42c6d9acadec839cadc6fccf676c362c328e570bc05",
         "types/result.d.ts": "92059cf5681409bc7d379762678160b23a7bbea720ab04191b5ff897969b2eea",
         "types/room.d.ts": "e9435a3a9d7e99dac5017fbb57d20a2872bb0df4c9b5e87a2f48786c235b2467",
-        "types/world.d.ts": "63f9c140e4089fa757a8a7f1f921f867d4055af2bd2fc93326e825ac19695bdd"
+        "types/world.d.ts": "7326c19306f4a126cac943f12aaeea0e6e3e3e92fa151179dff0308e7b8e17a9"
       }
     },
     "bitfeed": {

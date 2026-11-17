@@ -133,6 +133,12 @@ h1, h2, h3, p { margin: 0; }
   background: color-mix(in srgb, var(--glow) 30%, var(--ground));
   clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
 }
+/* A real preview, when the world published one and BitPortal mirrors it. The
+   picture is a 360° panorama; the door shows the part straight ahead, with the
+   horizon where the generated doors put theirs. */
+.door-view.has-preview { background: var(--ground) var(--preview) 50% 30% / 440% auto no-repeat; }
+.door-view.has-preview.preview-flat { background-size: cover; background-position: 50% 50%; }
+.door-view.has-preview::after { content: none; }
 .door:hover .door-view, .door:focus-visible .door-view { border-color: var(--bitportal-accent); transform: translateY(-4px); }
 
 .door-plate { display: grid; gap: 3px; }
@@ -141,6 +147,7 @@ h1, h2, h3, p { margin: 0; }
 .host-prefix { color: var(--bitportal-muted); }
 .door-marks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .mark { font-size: 0.78rem; font-weight: 600; padding: 1px 8px; border: 1.5px solid currentColor; }
+.mark:not(.mark-verified, .mark-warn) { color: var(--bitportal-muted); }
 .mark-verified { color: var(--bitportal-ok); }
 .mark-verified::before { content: "✓ "; }
 .mark-warn { color: var(--bitportal-warn); }
@@ -159,6 +166,17 @@ h1, h2, h3, p { margin: 0; }
 .sheet h2 { font-size: 1.7rem; font-weight: 750; line-height: 1.1; letter-spacing: -0.015em; }
 .sheet h3 { margin-top: 26px; font-size: 1.05rem; font-weight: 700; }
 .sheet p { margin-top: 10px; }
+.detail-preview-wrap { margin-bottom: 20px; }
+.detail-preview {
+  display: none; aspect-ratio: 12 / 5; cursor: grab; touch-action: pan-y;
+  border: 2.5px solid var(--bitportal-ink);
+  background: var(--preview) calc(50% + var(--pan, 0px)) 50% / 300% auto repeat-x;
+}
+.detail-preview.has-preview { display: block; }
+.detail-preview.preview-flat { background-size: cover; background-repeat: no-repeat; background-position: 50% 50%; cursor: default; }
+.detail-preview:active { cursor: grabbing; }
+.sheet .preview-caption { margin-top: 6px; font-size: 0.85rem; color: var(--bitportal-muted); }
+.sheet .preview-held { margin: 0 0 10px; color: var(--bitportal-muted); }
 .detail-host { margin-top: 0; font-size: 0.95rem; overflow-wrap: anywhere; }
 .lede { font-size: 1.1rem; }
 .verify { padding: 10px 14px; border-left: 4px solid var(--bitportal-muted); background: var(--bitportal-paper); }

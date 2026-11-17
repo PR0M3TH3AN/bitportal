@@ -37,8 +37,13 @@ Test build: <https://bitportal.vercel.app/>
 ## Privacy rules it follows
 
 - Drawing the lobby contacts Nostr relays only. A world's own site is contacted
-  when you open its door, not before. Door art is generated from the world's
-  address, so no image is fetched from anyone.
+  when you open its door, not before.
+- A door shows a world's **preview** (its own 360° picture) only from a copy
+  BitPortal serves itself, checked against the hash in the world's signed
+  announcement. A preview BitPortal doesn't mirror is fetched when you open
+  that door. Without one, door art is generated from the world's address.
+- A preview is held back until you ask for any world with a content warning,
+  and for any world that nobody you've chosen has listed.
 - Destinations travel in the URL fragment, which servers never see.
 - A site that hasn't adopted NSWP gets a plain visit, with nothing added to
   its address.
@@ -58,6 +63,20 @@ npm run starter-set
 ```
 
 The curator key lives outside the repo, at `~/.config/nswp/bitportal-curator.key`.
+
+When a reference world's announcement changes (a new preview, say), take the
+new one without re-signing anything:
+
+```bash
+npm run starter-set -- --reference-only
+```
+
+Then mirror the previews the set names onto BitPortal's own site:
+
+```bash
+npm run previews         # copy each preview into public/previews/, checked against its hash
+npm run previews:check   # the mirrored files still match
+```
 
 The set and the curator's four listings are also **published to public Nostr
 relays**, so any NSWP client can read them. The lobby starts from the bundled

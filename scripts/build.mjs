@@ -85,6 +85,8 @@ writeFileSync(
           ],
         },
         { source: "/fonts/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+        // Mirrored previews are named by their hash, so a file never changes.
+        { source: "/previews/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
       ],
     },
     null,

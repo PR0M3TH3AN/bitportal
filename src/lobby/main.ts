@@ -2,13 +2,16 @@
  * The BitPortal lobby (NSWP spec Phase 1): a read-only wall of doors.
  *
  * Privacy rule (spec §5.7): drawing the lobby contacts relays only. A world's
- * own site is contacted when the visitor opens its door, never before.
+ * own site is contacted when the visitor opens its door, never before. The
+ * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
+import { plateMarks } from "../shared/plate.js";
+import { decidePreview, loadedPreview, loadPreview, type PreviewDecision } from "../shared/preview.js";
 import { readSignedIn } from "../shared/session.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
@@ -115,6 +118,96 @@ function rank(): Promise<void> {
 }
 
 // ------------------------------------------------------------- drawing
+// -------------------------------------------------------------- previews
+/** Worlds whose preview the visitor asked to see, and doors they have opened, this visit. */
+const askedPreview = new Set<string>();
+const openedDoors = new Set<string>();
+
+function previewFor(entry: Entry): PreviewDecision {
+  // Only the curator's own list counts as "chosen". A world that merely turned
+  // up on a relay shows a placeholder until the visitor asks (spec §5.8).
+  return decidePreview(entry.world, { chosen: entry.rank !== null, asked: askedPreview.has(entry.id), doorOpen: openedDoors.has(entry.id) });
+}
+
+function paintPreview(target: HTMLElement, url: string, type: string): void {
+  target.style.setProperty("--preview", `url("${url}")`);
+  target.classList.add("has-preview", `preview-${type}`);
+}
+
+/** Draw a world's preview into `target` if the rules allow it now. Returns whether one is on its way. */
+function showPreview(target: HTMLElement, entry: Entry): boolean {
+  const d = previewFor(entry);
+  if (d.show !== "now") return false;
+  const have = loadedPreview(d.preview.sha256);
+  if (have) paintPreview(target, have, d.preview.type);
+  else
+    void loadPreview(d).then((url) => {
+      if (url) paintPreview(target, url, d.preview.type);
+      else target.dispatchEvent(new Event("previewfailed"));
+    });
+  return true;
+}
+
+/** The preview at the top of a world's details: a picture you can drag to look around. */
+function detailPreview(entry: Entry, onChange: () => void): HTMLElement | null {
+  const d = previewFor(entry);
+  if (d.show === "none" || d.show === "on-open") return null;
+  const wrap = el("div", { class: "detail-preview-wrap" });
+  if (d.show === "ask") {
+    const why =
+      d.reason === "content-warning"
+        ? "This world carries a content warning, so its preview stays hidden until you ask."
+        : "Nobody you've chosen has reviewed this world, so its preview stays hidden until you ask.";
+    const show = el("button", { class: "button", type: "button" }, "Show preview");
+    show.addEventListener("click", () => {
+      askedPreview.add(entry.id);
+      const next = detailPreview(entry, onChange);
+      if (next) wrap.replaceWith(next);
+      else wrap.remove();
+      onChange();
+    });
+    wrap.append(el("p", { class: "preview-held" }, why), show);
+    return wrap;
+  }
+  const pano = d.preview.type === "pano";
+  const view = el("div", {
+    class: "detail-preview",
+    role: "img",
+    "aria-label": pano ? `A 360° picture of ${entry.world.title}. Use the arrow keys to look around.` : `A picture of ${entry.world.title}.`,
+  });
+  const caption = el("p", { class: "preview-caption" }, pano ? "A picture supplied by this world's publisher. Drag to look around." : "A picture supplied by this world's publisher.");
+  wrap.append(view, caption);
+  view.addEventListener("previewfailed", () => wrap.remove());
+  showPreview(view, entry);
+  if (pano) {
+    view.tabIndex = 0;
+    let pan = 0;
+    let last: number | null = null;
+    const set = (next: number) => {
+      pan = next;
+      view.style.setProperty("--pan", `${pan}px`);
+    };
+    view.addEventListener("pointerdown", (e) => {
+      last = e.clientX;
+      view.setPointerCapture(e.pointerId);
+    });
+    view.addEventListener("pointermove", (e) => {
+      if (last === null) return;
+      set(pan + e.clientX - last);
+      last = e.clientX;
+    });
+    const end = () => (last = null);
+    view.addEventListener("pointerup", end);
+    view.addEventListener("pointercancel", end);
+    view.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      set(pan + (e.key === "ArrowLeft" ? 60 : -60));
+    });
+  }
+  return wrap;
+}
+
 function hostParts(url: string): { prefix: string; domain: string } {
   const chk = checkDestination(url);
   if (!chk.ok) return { prefix: "", domain: "invalid address" };
@@ -133,13 +226,11 @@ function door(entry: Entry, why: string): HTMLElement {
   view.style.setProperty("--glow", art.glow);
   view.style.setProperty("--glow-x", `${art.glowX}%`);
   view.style.setProperty("--glow-y", `${art.glowY}%`);
+  showPreview(view, entry);
   const marks = el(
     "span",
     { class: "door-marks" },
-    verified && el("span", { class: "mark mark-verified" }, "Verified"),
-    !fit.ok && el("span", { class: "mark mark-warn" }, fit.reason),
-    entry.world.comfort.intensity === "high" && el("span", { class: "mark mark-warn" }, "Intense"),
-    entry.world.contentWarning !== undefined && el("span", { class: "mark mark-warn" }, "Content warning"),
+    ...plateMarks(entry.world, fit, verified).map((m) => el("span", { class: m.tone === "ok" ? "mark mark-verified" : m.tone === "warn" ? "mark mark-warn" : "mark" }, m.text)),
   );
   const button = el(
     "button",
@@ -246,7 +337,11 @@ function openDetail(entry: Entry, why: string): void {
   const close = el("button", { class: "button", type: "button" }, "Close");
   close.addEventListener("click", () => dialog.close());
 
+  // Opening a door is the visitor's interest in this world: from here its own
+  // site may be contacted, for verification and for a preview only it holds.
+  openedDoors.add(entry.id);
   const parts: (HTMLElement | null)[] = [
+    detailPreview(entry, draw),
     el("p", { class: "detail-host" }, el("span", { class: "host-prefix" }, host.prefix), host.domain),
     el("h2", {}, w.title),
     w.summary ? el("p", { class: "lede" }, w.summary) : null,

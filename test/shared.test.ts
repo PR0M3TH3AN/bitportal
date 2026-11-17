@@ -3,6 +3,8 @@ import bundle from "../src/starter/starter-set.json";
 import { buildCatalog, type StarterBundle } from "../src/shared/catalog.js";
 import { detectTier, deviceFit } from "../src/shared/device.js";
 import { doorArt } from "../src/shared/door.js";
+import { placeKind, plateMarks } from "../src/shared/plate.js";
+import { decidePreview, pickPreview, sniffImage } from "../src/shared/preview.js";
 import { finalizeEvent, getPublicKey, parseManifest, parseWorldEvent, verifyEvent, verifyOrigin, type NostrEvent } from "@nswp/core";
 import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../src/shared/publishing.js";
 import { rankShelves } from "../src/shared/rank.js";
@@ -234,5 +236,74 @@ describe("signers are checked, not trusted", () => {
 
   it("rejects something that isn't a valid signed event", async () => {
     await expect(checkedSigner(pubkey, { signEvent: async () => ({ nope: true }) }).signEvent(template)).rejects.toMatchObject({ code: "bad_signature" });
+  });
+});
+
+// ------------------------------------------------------------------ previews
+
+describe("previews (spec §5.8)", () => {
+  const sha = "a".repeat(64);
+  const pano = { url: "https://world.example.com/previews/a.webp", type: "pano" as const, sha256: sha };
+  const flat = { url: "https://cdn.example.net/b.webp", type: "flat" as const, sha256: "b".repeat(64) };
+  const world = { url: "https://world.example.com/", previews: [pano], modes: ["immersive-vr"], contentWarning: undefined as string | undefined };
+  const chosen = { chosen: true, asked: false, doorOpen: false, mirror: {} };
+
+  it("has nothing to show for a world without a preview", () => {
+    expect(decidePreview({ ...world, previews: [] }, chosen).show).toBe("none");
+  });
+  it("serves a mirrored preview from BitPortal's own site", () => {
+    const d = decidePreview(world, { ...chosen, mirror: { [sha]: { file: `${sha}.webp`, mime: "image/webp", bytes: 1 } } });
+    expect(d).toMatchObject({ show: "now", from: "mirror", url: `/previews/${sha}.webp` });
+  });
+  it("never fetches from the world's own site while the door is closed", () => {
+    expect(decidePreview(world, chosen).show).toBe("on-open");
+    expect(decidePreview(world, { ...chosen, doorOpen: true })).toMatchObject({ show: "now", from: "origin" });
+  });
+  it("is stricter than the spec: other storage also waits for the door to open", () => {
+    const stored = { ...world, previews: [{ ...pano, url: "https://cdn.example.net/a.webp" }] };
+    expect(decidePreview(stored, chosen).show).toBe("on-open");
+    expect(decidePreview(stored, { ...chosen, doorOpen: true })).toMatchObject({ show: "now", from: "storage" });
+  });
+  it("holds the preview of a world nobody chose until the visitor asks", () => {
+    const mirror = { [sha]: { file: `${sha}.webp`, mime: "image/webp", bytes: 1 } };
+    expect(decidePreview(world, { chosen: false, asked: false, doorOpen: true, mirror })).toMatchObject({ show: "ask", reason: "unreviewed" });
+    expect(decidePreview(world, { chosen: false, asked: true, doorOpen: true, mirror }).show).toBe("now");
+  });
+  it("holds the preview of a world with a content warning, even a chosen one", () => {
+    const warned = { ...world, contentWarning: "" };
+    expect(decidePreview(warned, chosen)).toMatchObject({ show: "ask", reason: "content-warning" });
+    expect(decidePreview(warned, { ...chosen, asked: true, doorOpen: true }).show).toBe("now");
+  });
+  it("prefers a 360° picture for places and a screenshot for web pages", () => {
+    expect(pickPreview({ previews: [flat, pano], modes: ["inline-3d"] })?.type).toBe("pano");
+    expect(pickPreview({ previews: [pano, flat], modes: ["2d"] })?.type).toBe("flat");
+    expect(pickPreview({ previews: [flat], modes: ["immersive-vr"] })?.type).toBe("flat");
+  });
+  it("tells image types from their first bytes", () => {
+    const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50]);
+    expect(sniffImage(webp)).toBe("image/webp");
+    expect(sniffImage(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
+    expect(sniffImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe("image/png");
+    expect(sniffImage(new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'>"))).toBeNull();
+  });
+});
+
+describe("door plate (spec §6.7)", () => {
+  const fit = { ok: true, reason: "Runs on this device" };
+  it("says what kind of place a world is", () => {
+    expect(placeKind({ modes: ["immersive-vr", "inline-3d"] })).toBe("VR, 3D");
+    expect(placeKind({ modes: ["2d"] })).toBe("Web page");
+    expect(placeKind({ modes: [] })).toBe("");
+  });
+  it("always marks high intensity, content warnings and a poor device fit", () => {
+    const marks = plateMarks({ modes: ["immersive-vr"], comfort: { intensity: "high" }, contentWarning: "" }, { ok: false, reason: "Needs a VR headset" }, true);
+    expect(marks.map((m) => m.text)).toEqual(["VR", "Verified", "Needs a VR headset", "Intense", "Content warning"]);
+    expect(marks.filter((m) => m.tone === "warn")).toHaveLength(3);
+  });
+  it("states a gentle world's intensity without alarm", () => {
+    expect(plateMarks({ modes: ["inline-3d"], comfort: { intensity: "low" }, contentWarning: undefined }, fit, false)).toEqual([
+      { text: "3D", tone: "plain" },
+      { text: "Gentle", tone: "plain" },
+    ]);
   });
 });
