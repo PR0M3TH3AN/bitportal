@@ -187,6 +187,13 @@ async function render(): Promise<void> {
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
   if (!req) {
+    // Opened with no destination: the visitor is coming home (NSWP spec §6.3).
+    // Nothing is being crossed into, so there is nothing to confirm. A fragment
+    // that is present but unreadable still gets the explanation below.
+    if (location.hash.length <= 1) {
+      location.replace(new URL("/", location.origin).href);
+      return;
+    }
     $("landing").hidden = false;
     $("checking").hidden = true;
     return;
