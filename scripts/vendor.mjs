@@ -97,6 +97,30 @@ const packages = {};
   packages["bitfeed"] = { path: "vendor/bitfeed", version: upstream.version, license: "MIT", source: src, sri, files: hashDir(out) };
 }
 
+// --- BitLogin: the sign-in widget, served as static same-origin files ---------
+// The widget finds its worker and chunks relative to its own URL, so the files
+// are deployed side by side under /vendor/bitlogin/ and never bundled. It runs
+// same-origin with BitPortal, so it is part of what BitPortal must trust: the
+// copy is checked against BitLogin's own integrity manifest before it is taken.
+{
+  const repo = join(siblings, "bitlogin");
+  const src = sourceInfo(repo);
+  const version = JSON.parse(readFileSync(join(repo, "packages/widget/package.json"), "utf8")).version;
+  const rel = join(repo, "release", `bitlogin-widget-v${version}`);
+  if (!existsSync(join(rel, "integrity.json"))) throw new Error(`run \`npm run release:artifacts\` in ${repo} first`);
+  const upstream = JSON.parse(readFileSync(join(rel, "integrity.json"), "utf8"));
+  if (upstream.commit !== src.commit) throw new Error("BitLogin's release folder was built from a different commit than its checkout; re-run its release:artifacts");
+  const out = join(root, "public", "vendor", "bitlogin");
+  rmSync(out, { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+  for (const [name, f] of Object.entries(upstream.files)) {
+    if (sha256(join(rel, name)) !== f.sha256) throw new Error(`BitLogin ${name} does not match its integrity manifest`);
+    cpSync(join(rel, name), join(out, name));
+  }
+  for (const name of ["LICENSE", "integrity.json"]) cpSync(join(rel, name), join(out, name));
+  packages["@bitlogin/widget"] = { path: "public/vendor/bitlogin", version, license: "MIT", source: src, files: hashDir(out) };
+}
+
 // --- Fonts: the BitBlocks family typefaces ----------------------------------
 {
   const repo = join(siblings, "bitblocks");

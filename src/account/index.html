@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Your identity · BitPortal</title>
+<meta name="description" content="Sign in to BitPortal with BitLogin or any Nostr signer.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body>
+<header class="top">
+  <div class="frame top-row">
+    <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
+    <a class="button" href="/">Back to the lobby</a>
+  </div>
+</header>
+<main class="frame page">
+  <h1>Your identity</h1>
+  <p id="who" class="lede" role="status">Checking whether you're signed in.</p>
+  <div id="next" class="next-steps" hidden>
+    <a class="button primary" href="/publish/">Announce a world</a>
+    <p class="small">Signing in doesn't change your lobby yet. Shelves built from the people you follow come in a later version.</p>
+  </div>
+  <!-- BitLogin's element must stay in this one place for its whole life: moving or removing it ends the session's worker. -->
+  <section class="card widget-card" aria-label="Sign in">
+    <bitlogin-auth id="bitlogin"></bitlogin-auth>
+  </section>
+  <section class="notes">
+    <h2>What to know</h2>
+    <ul>
+      <li>Sign-in is handled by BitLogin, which is alpha software. Use an identity you can afford to lose until it has had an outside audit.</li>
+      <li>Your key stays in this browser. BitPortal has no account server and stores nothing about you.</li>
+      <li>You sign in here, on this page, and nowhere else. No world and no portal will ever ask for your password; if one does, leave.</li>
+      <li>On a headset, set up your account on a phone or computer first. Signing in inside a headset isn't smooth yet.</li>
+    </ul>
+  </section>
+</main>
+<script type="module" src="/account/main.js"></script>
+<script type="module" src="/vendor/bitlogin/bitlogin.js"></script>
+</body>
+</html>

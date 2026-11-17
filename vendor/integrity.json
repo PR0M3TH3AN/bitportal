@@ -6,7 +6,7 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "5af2e64159e486f632ed1052de38cc747abbbedc",
+        "commit": "bc86e5fb7f3b6869095816ff748659cb4c149e39",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
@@ -42,6 +42,27 @@
       "files": {
         "LICENSE": "bc40ab40278d23777e57ea2872fbaf64663e1c7d6faf4f5ca31e8f4686351b15",
         "bitfeed.js": "99d2a834ed0e2abb5f6c6888049a56f4925a61d2624aef96fe3ca2f98d7fe6d3"
+      }
+    },
+    "@bitlogin/widget": {
+      "path": "public/vendor/bitlogin",
+      "version": "0.1.0",
+      "license": "MIT",
+      "source": {
+        "commit": "3bf0aee6dc142c9e9ba9881c3d8aee3abe73e656",
+        "remote": "https://github.com/PR0M3TH3AN/bitlogin.git"
+      },
+      "files": {
+        "LICENSE": "23e1f76916d6a20d0e370fc6ac6288b3e68f4a2c426db6b7389260f2c5ab9396",
+        "bitlogin-headless.js": "9eb407f766509d81e5f5765f3692ca360eb9021d58d2f64212a5fe43723faad0",
+        "bitlogin-session.js": "fc7484a7e6897a3d2cbaefaaebb6a667ce7d3eefdfb868673b41b1be8e2eacd5",
+        "bitlogin-shared-CEfP5Eg9.js": "6e19179b46deab241ffa9baded2ab0245122cf88e5b4191fcd4ca905b81a67be",
+        "bitlogin-shared-Co4_WTb5.js": "ffecf43e4856105d485402c7d46ca6950b621965a85c5962daf0177f0e538237",
+        "bitlogin-shared-DeDxZ3Jc.js": "290c293f288a16f5c753d19b0eecee795ea07b5fe31219812f260aae407de29b",
+        "bitlogin-shared-S-E8m1vT.js": "263b94f083fa198995d68bf3bf491df5aaeaa2074ea78e8a503a7cbfd2e342e7",
+        "bitlogin.js": "33b1affeeef151d0aeadc9b88f91d972df5e63b2fd8ea02558be2867281b839a",
+        "cryptoWorker.js": "648f36b958996db4f56f0c5dd97e4823f317498216d61a61b281fec1e48cdb2f",
+        "integrity.json": "001fbaf44745f1b70e4bb3497ea150a0cd890d595465ce6cefa6988fd84367d6"
       }
     },
     "bitblocks-fonts": {

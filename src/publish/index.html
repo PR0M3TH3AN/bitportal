@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Announce a world · BitPortal</title>
+<meta name="description" content="Announce your WebXR world so any NSWP client can find it, and get it verified for your site.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body>
+<header class="top">
+  <div class="frame top-row">
+    <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
+    <a class="button" href="/">Back to the lobby</a>
+  </div>
+</header>
+<main class="frame page">
+  <h1>Announce a world</h1>
+  <p class="lede">Tell every NSWP client where your world is. Nobody has to approve it, and you can change or retire it whenever you like.</p>
+
+  <section class="step">
+    <h2>Who is announcing</h2>
+    <p id="who" role="status">Checking whether you're signed in.</p>
+    <details id="identity" class="identity-box">
+      <summary>Sign in, or use a different identity</summary>
+      <!-- BitLogin's element stays in this one place for its whole life. -->
+      <bitlogin-auth id="bitlogin"></bitlogin-auth>
+    </details>
+  </section>
+
+  <form id="form" novalidate>
+    <section class="step">
+      <h2>Where it is</h2>
+      <label for="f-url">Your world's address</label>
+      <div class="row">
+        <input id="f-url" name="url" type="url" inputmode="url" placeholder="https://yourworld.example/" autocomplete="off" spellcheck="false" required>
+        <button id="check" class="button" type="button">Check this site</button>
+      </div>
+      <p class="small">Checking contacts your site once, to read its manifest if it has one.</p>
+      <div id="check-result" class="result" role="status"></div>
+    </section>
+
+    <section class="step">
+      <h2>What it is</h2>
+      <label for="f-title">Name</label>
+      <input id="f-title" name="title" type="text" maxlength="120" required>
+      <label for="f-id">ID <span class="small">(stays the same when you update the announcement)</span></label>
+      <input id="f-id" name="id" type="text" maxlength="64" spellcheck="false" required>
+      <label for="f-summary">One-line description</label>
+      <input id="f-summary" name="summary" type="text" maxlength="200">
+      <label for="f-topics">Topics <span class="small">(a few words, separated by commas)</span></label>
+      <input id="f-topics" name="topics" type="text" maxlength="120" spellcheck="false">
+      <fieldset>
+        <legend>How it can be viewed</legend>
+        <label class="check"><input type="checkbox" name="modes" value="immersive-vr" checked> In a VR headset</label>
+        <label class="check"><input type="checkbox" name="modes" value="inline-3d" checked> In 3D in an ordinary browser</label>
+        <label class="check"><input type="checkbox" name="modes" value="immersive-ar"> In AR</label>
+      </fieldset>
+    </section>
+
+    <section class="step">
+      <h2>What visitors should expect</h2>
+      <p class="small">These help people choose. Leave any you're unsure of as "Not stated".</p>
+      <div class="grid">
+        <div><label for="f-intensity">Intensity</label>
+          <select id="f-intensity" name="intensity"><option value="">Not stated</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+        <div><label for="f-locomotion">Movement</label>
+          <select id="f-locomotion" name="locomotion"><option value="">Not stated</option><option value="stationary">You stay in place</option><option value="teleport">Teleport</option><option value="smooth">Smooth movement</option><option value="vehicle">You are moved (a ride)</option></select></div>
+        <div><label for="f-seated">Seated play</label>
+          <select id="f-seated" name="seated"><option value="">Not stated</option><option value="supported">Works seated</option><option value="required">Seated only</option><option value="unsupported">Needs standing</option></select></div>
+        <div><label for="f-perf">Weakest device it runs on</label>
+          <select id="f-perf" name="perf"><option value="">Not stated</option><option value="mobile">Phones</option><option value="standalone">Standalone headsets</option><option value="desktop">PC-driven headsets</option></select></div>
+        <div><label for="f-status">Status</label>
+          <select id="f-status" name="status"><option value="live">Live</option><option value="beta">Beta</option><option value="maintenance">Down for maintenance</option><option value="retired">Retired</option></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="f-rooms" name="rooms"> Visitors can share a room here (it uses NSWP rooms)</label>
+    </section>
+
+    <section class="step">
+      <h2>Get verified for your site</h2>
+      <p id="manifest-intro">Sign in and enter your address to see the file your site needs to host.</p>
+      <div id="manifest-box" hidden>
+        <p>Save this as <span id="manifest-path" class="key"></span> on your site, and serve it with the header <span class="key">Access-Control-Allow-Origin: *</span>. Without it your world is still listed, but never shown as verified.</p>
+        <pre id="manifest-json" class="code" tabindex="0"></pre>
+        <button id="copy-manifest" class="button" type="button">Copy the file's contents</button>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2>Publish</h2>
+      <p id="relay-note" class="small"></p>
+      <ul id="form-issues" class="issues bad" hidden></ul>
+      <button id="publish" class="button primary" type="submit" disabled>Sign and publish</button>
+      <div id="publish-result" class="result" role="status"></div>
+    </section>
+  </form>
+</main>
+<script type="module" src="/publish/main.js"></script>
+<script type="module" src="/vendor/bitlogin/bitlogin.js"></script>
+</body>
+</html>

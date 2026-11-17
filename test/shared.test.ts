@@ -3,7 +3,10 @@ import bundle from "../src/starter/starter-set.json";
 import { buildCatalog, type StarterBundle } from "../src/shared/catalog.js";
 import { detectTier, deviceFit } from "../src/shared/device.js";
 import { doorArt } from "../src/shared/door.js";
+import { finalizeEvent, getPublicKey, parseManifest, parseWorldEvent, verifyEvent, verifyOrigin, type NostrEvent } from "@nswp/core";
+import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../src/shared/publishing.js";
 import { rankShelves } from "../src/shared/rank.js";
+import { checkedSigner } from "../src/shared/session.js";
 import { cleanRelays } from "../src/shared/settings.js";
 import { plainShelf, shelfDefs, whySentence, type Candidate } from "../src/shared/shelves.js";
 
@@ -138,5 +141,98 @@ describe("ranking with the vendored BitFeed", () => {
     const a = await rankShelves(cands, now, "2026-11-17");
     const b = await rankShelves(cands, now, "2026-11-17");
     expect(a).toEqual(b);
+  });
+});
+
+describe("publishing a world", () => {
+  const key = new Uint8Array(32).fill(7);
+  const pubkey = getPublicKey(key);
+  const form: WorldForm = {
+    url: "https://museum.example/world",
+    id: "example-museum",
+    title: "Example Museum",
+    summary: "Three wings of rotating exhibitions.",
+    modes: ["immersive-vr", "inline-3d"],
+    locomotion: "teleport",
+    intensity: "low",
+    seated: "supported",
+    perf: "standalone",
+    topics: "Art, #museum art",
+    status: "beta",
+    rooms: true,
+  };
+
+  it("makes readable IDs from names", () => {
+    expect(slugify("  The Café: Night Garden!  ")).toBe("the-cafe-night-garden");
+    expect(slugify("東京")).toBe("");
+  });
+
+  it("validates the form in plain language", () => {
+    expect(validateForm(form)).toEqual([]);
+    const bad = validateForm({ ...form, url: "http://museum.example/", title: " ", id: "Bad ID", modes: [] });
+    expect(bad.map((i) => i.field).sort()).toEqual(["id", "modes", "title", "url"]);
+  });
+
+  it("builds an announcement that parses, signs and round-trips to the form", async () => {
+    const signer = checkedSigner(pubkey, { signEvent: async (t) => finalizeEvent(t, key) });
+    const signed = await signer.signEvent(formToEvent(form, 1_800_000_000));
+    expect(verifyEvent(signed)).toBe(true);
+    const parsed = parseWorldEvent(signed, { requireSigned: true });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.value.topics).toEqual(["art", "museum"]);
+    expect(parsed.value.capabilities).toEqual(["webxr", "rooms"]);
+    expect(worldToForm(parsed.value)).toEqual({ ...form, topics: "art, museum" });
+  });
+
+  it("writes a manifest that makes the announcement verify", async () => {
+    const signed = finalizeEvent(formToEvent(form, 1_800_000_000), key);
+    const world = parseWorldEvent(signed);
+    const manifest = parseManifest(manifestFor(pubkey, form, null, ["wss://relay.example"]));
+    expect(manifest.ok && world.ok).toBe(true);
+    if (!manifest.ok || !world.ok) return;
+    expect(manifest.warnings).toEqual([]);
+    expect(manifestLocation(form.url)).toBe("https://museum.example/.well-known/nswp.json");
+    expect(verifyOrigin(world.value, manifest.value, manifestLocation(form.url)).verified).toBe(true);
+  });
+
+  it("keeps what an existing manifest already lists", () => {
+    const other = "a".repeat(64);
+    const existing = parseManifest({ schema: "nswp/manifest/0.3", listing: "deny", publishers: { [other]: { worlds: ["old"] } }, worlds: { old: { entry: { url: "https://museum.example/old" }, entry_points: ["door"] } }, relays: ["wss://kept.example"] });
+    if (!existing.ok) throw new Error("fixture");
+    const m = manifestFor(pubkey, form, existing.value, ["wss://relay.example"]) as { listing: string; publishers: Record<string, { worlds: string[] }>; worlds: Record<string, { entry_points?: string[] }>; relays: string[] };
+    expect(m.listing).toBe("deny");
+    expect(m.publishers[other]).toEqual({ worlds: ["old"] });
+    expect(m.publishers[pubkey]).toEqual({ worlds: ["example-museum"] });
+    expect(m.worlds.old?.entry_points).toEqual(["door"]);
+    expect(m.relays).toEqual(["wss://kept.example"]);
+  });
+
+  it("publishes to a person's own write relays, falling back to BitPortal's", () => {
+    const list = (created_at: number, tags: string[][]): NostrEvent => ({ kind: 10002, pubkey, created_at, tags, content: "", id: "0".repeat(64), sig: "0".repeat(128) });
+    const lists = [list(10, [["r", "wss://old.example"]]), list(20, [["r", "wss://both.example/"], ["r", "wss://read.example", "read"], ["r", "wss://write.example", "write"], ["r", "http://bad.example"]])];
+    expect(writeRelays(lists, pubkey, ["wss://fallback.example"])).toEqual({ relays: ["wss://both.example", "wss://write.example"], fromOwnList: true });
+    expect(writeRelays([], pubkey, ["wss://fallback.example"])).toEqual({ relays: ["wss://fallback.example"], fromOwnList: false });
+    expect(writeRelays([list(5, [["r", "wss://someone-else.example"]])].map((e) => ({ ...e, pubkey: "b".repeat(64) })), pubkey, ["wss://fallback.example"]).fromOwnList).toBe(false);
+  });
+});
+
+describe("signers are checked, not trusted", () => {
+  const key = new Uint8Array(32).fill(7);
+  const pubkey = getPublicKey(key);
+  const template = { kind: 1, created_at: 1_800_000_000, tags: [["t", "x"]], content: "hello" };
+
+  it("rejects a signature from another identity", async () => {
+    const other = new Uint8Array(32).fill(9);
+    await expect(checkedSigner(pubkey, { signEvent: async (t) => finalizeEvent(t, other) }).signEvent(template)).rejects.toMatchObject({ code: "wrong_identity" });
+  });
+
+  it("rejects an event the signer altered", async () => {
+    await expect(checkedSigner(pubkey, { signEvent: async (t) => finalizeEvent({ ...t, content: "changed" }, key) }).signEvent(template)).rejects.toMatchObject({ code: "event_altered" });
+  });
+
+  it("rejects something that isn't a valid signed event", async () => {
+    await expect(checkedSigner(pubkey, { signEvent: async () => ({ nope: true }) }).signEvent(template)).rejects.toMatchObject({ code: "bad_signature" });
   });
 });

@@ -5,8 +5,9 @@ really leads before you go through.
 
 BitPortal is the reference app for the
 [Nostr Spatial Web Protocol](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-)
-(NSWP) and part of the [BitBlocks](https://bitblocks.network/) family. This is
-**Phase 1** of that spec: a read-only lobby. There is no sign-in yet.
+(NSWP) and part of the [BitBlocks](https://bitblocks.network/) family. It covers
+**Phase 1** of that spec (the lobby) and the start of **Phase 2** (sign-in and
+announcing a world).
 
 Test build: <https://bitportal.vercel.app/>
 
@@ -23,6 +24,13 @@ Test build: <https://bitportal.vercel.app/>
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
   the verification result, comfort notes, and a button to continue. Worlds
   send visitors back here when they take a portal.
+- **Your identity** (`/account/`) is where you sign in, with
+  [BitLogin](https://login.bitblocks.network/) or any Nostr signer it supports.
+  It is the only place BitPortal ever asks you to sign in.
+- **Announce a world** (`/publish/`) checks your site, builds the announcement,
+  writes the manifest file your site needs to host to be shown as verified,
+  and publishes to your own relays. Nothing is published until you press the
+  button.
 - **Plain mode** (`/?plain=1`, or Settings) is the same lobby with no BitFeed:
   one list in date order. It exists so the protocol never depends on BitBlocks.
 
@@ -84,7 +92,8 @@ npm run build
 
 Testing without a headset: `/walk/?xr=emulate` loads an in-page emulator that
 pretends to be a Meta Quest 3, and `?mic=tone` sends a test tone instead of
-asking for the microphone.
+asking for the microphone. `/publish/?signer=test` signs with a throwaway key
+and never publishes, to try the form without an account.
 
 ### Vendored dependencies
 
@@ -96,6 +105,7 @@ file hashes in `vendor/integrity.json` (BitBlocks convention D7):
 | `@nswp/core` | the NSWP repo | `vendor/nswp/` |
 | BitFeed standalone | the BitFeed repo | `vendor/bitfeed/` |
 | `nswp-sdk/three` (avatars, voice, rooms) | the NSWP repo | `vendor/nswp/` |
+| BitLogin widget | the bitlogin repo's `release/` folder | `public/vendor/bitlogin/` |
 | Ubuntu Sans fonts | the bitblocks repo | `public/fonts/` |
 
 ```bash
@@ -106,6 +116,13 @@ npm run vendor:check   # vendored files still match integrity.json
 npm run vendor         # re-vendor from clean sibling checkouts
 ```
 
+BitLogin is different from the others in one way: it is served as its own
+static files under `/vendor/bitlogin/`, never bundled, because the widget finds
+its worker relative to its own address. It runs same-origin with BitPortal, so
+it is part of what BitPortal has to trust. The vendor script refuses a copy
+that doesn't match BitLogin's own `integrity.json`. Before vendoring, run
+`npm run release:artifacts` in the bitlogin checkout.
+
 ### Deploy
 
 ```bash
@@ -114,8 +131,9 @@ npm run build && npm run deploy
 
 ## Not built yet
 
-Sign-in (BitLogin), publishing a world, trust labels (BitGate) and paid entry
-(BitUnlock). Rooms are a first cut: guests only, no moderation. See the
+Entering a world under your identity, shelves from the people you follow,
+trust labels (BitGate) and paid entry (BitUnlock). Rooms are a first cut:
+guests only, no moderation. See the
 NSWP spec's roadmap (§20).
 
 ## License

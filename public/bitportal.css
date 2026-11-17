@@ -231,3 +231,43 @@ body.walk { overflow: hidden; background: #0a0b0d; color: #f2f3f6; }
 .walk-door { font-size: 1rem; min-height: 1.5em; }
 .walk-help { color: #aab0bd; }
 @media (hover: none) { .walk-help { display: none; } }
+
+/* ---------- pages with forms (identity, announce a world) ---------- */
+.page { max-width: 760px; padding-block: clamp(28px, 6vw, 64px); }
+.page > h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); font-weight: 750; line-height: 1.05; letter-spacing: -0.02em; }
+.page .lede { margin-top: 12px; max-width: 60ch; }
+.step { margin-top: clamp(32px, 6vw, 52px); }
+.step h2, .notes h2 { font-size: 1.3rem; font-weight: 700; }
+.step p, .notes ul { margin-top: 8px; }
+.next-steps { margin-top: 20px; display: grid; gap: 10px; justify-items: start; }
+/* BitLogin draws its own card, so this wrapper adds no frame of its own. */
+.widget-card { margin-top: 28px; padding: 0; border: 0; background: none; }
+.notes { margin-top: 44px; }
+.notes ul { padding-left: 1.2em; color: var(--bitportal-muted); max-width: 64ch; }
+.notes li + li { margin-top: 6px; }
+.identity-box { margin-top: 12px; border: 1.5px solid var(--bitportal-line); padding: 10px 16px; }
+.identity-box summary { cursor: pointer; font-weight: 650; min-height: 32px; }
+.identity-box[open] summary { margin-bottom: 14px; }
+input[type="text"], input[type="url"], select {
+  display: block; width: 100%; min-height: 48px; margin-top: 6px; padding: 8px 12px;
+  font: inherit; color: var(--bitportal-ink); background: var(--bitportal-surface);
+  border: 1.5px solid var(--bitportal-ink); border-radius: 0;
+}
+input[type="url"], #f-id { font-family: "Ubuntu Sans Mono V", ui-monospace, monospace; font-size: 0.95rem; }
+.step label { margin-top: 18px; font-weight: 600; }
+.step label .small { font-weight: 400; }
+.step .check { font-weight: 400; margin-top: 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row input { flex: 1 1 260px; margin-top: 6px; }
+.row .button { margin-top: 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 18px; }
+.step fieldset { margin: 20px 0 0; padding: 6px 16px 14px; border: 1.5px solid var(--bitportal-line); }
+.step fieldset legend { font-weight: 600; padding-inline: 6px; }
+.result { display: grid; gap: 8px; margin-top: 14px; }
+.result .verify { margin: 0; }
+.code {
+  margin: 12px 0; padding: 14px; overflow: auto; max-height: 340px;
+  font: 0.82rem/1.5 "Ubuntu Sans Mono V", ui-monospace, monospace;
+  background: var(--bitportal-paper); border: 1.5px solid var(--bitportal-line); white-space: pre;
+}
+.page .issues.bad { margin-bottom: 14px; }
