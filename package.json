@@ -1,0 +1,23 @@
+{
+  "name": "bitportal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BitPortal: a lobby of doors to independently hosted VR worlds, built on the BitBlocks stack and the Nostr Spatial Web Protocol.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "vendor": "node scripts/vendor.mjs",
+    "vendor:check": "node scripts/vendor.mjs --check",
+    "starter-set": "node scripts/make-starter-set.mjs",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "devDependencies": {
+    "@types/webxr": "^0.5.24",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

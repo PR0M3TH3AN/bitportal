@@ -1,0 +1,114 @@
+/**
+ * The lobby's shelves. Each BitFeed shelf is a recipe: a plain description of
+ * how to rank the same set of worlds (NSWP spec §14). The plain mode needs no
+ * BitFeed at all (spec §1.3).
+ */
+import type { Recipe } from "bitfeed";
+
+export interface Candidate {
+  id: string;
+  createdAt: number;
+  /** Position in the curator's list, 0 first. */
+  rank: number;
+  total: number;
+  fits: boolean;
+  intensity: string | null;
+}
+
+export interface ShelfItem {
+  id: string;
+  /** "Here because …", or "" when there is nothing to explain. */
+  why: string;
+}
+
+export interface Shelf {
+  id: string;
+  title: string;
+  blurb: string;
+  items: ShelfItem[];
+}
+
+export interface ShelfDef {
+  id: string;
+  title: string;
+  blurb: string;
+  limit?: number;
+  recipe: Recipe;
+}
+
+const DAY = 86400;
+
+export function shelfDefs(daySeed: string): ShelfDef[] {
+  return [
+    {
+      id: "start",
+      title: "Good places to start",
+      blurb: "The starter set's order, nudged towards what suits this device.",
+      recipe: {
+        spec: "bitfeed/1",
+        name: "Good places to start",
+        seed: daySeed,
+        sources: [{ provider: "bitfeed.input", lane: "all" }],
+        scorers: [
+          { provider: "bitportal.curatorOrder", weight: 0.65 },
+          { provider: "bitportal.deviceFit", weight: 0.25 },
+          { provider: "bitfeed.random", weight: 0.1 },
+        ],
+      },
+    },
+    {
+      id: "gentle",
+      title: "Easy on the stomach",
+      blurb: "Worlds that suit this device and don't move you around.",
+      recipe: {
+        spec: "bitfeed/1",
+        name: "Easy on the stomach",
+        sources: [{ provider: "bitfeed.input", lane: "all" }],
+        filters: [{ provider: "bitportal.fitsDevice" }, { provider: "bitportal.notIntense" }],
+        scorers: [
+          { provider: "bitportal.gentle", weight: 0.7 },
+          { provider: "bitfeed.recency", weight: 0.3, params: { field: "createdAt", halfLife: 30 * DAY } },
+        ],
+      },
+    },
+    {
+      id: "new",
+      title: "Newest",
+      blurb: "Most recently announced or updated.",
+      limit: 4,
+      recipe: {
+        spec: "bitfeed/1",
+        name: "Newest",
+        sources: [{ provider: "bitfeed.input", lane: "all" }],
+        scorers: [{ provider: "bitfeed.recency", weight: 1, params: { field: "createdAt", halfLife: 30 * DAY } }],
+      },
+    },
+  ];
+}
+
+/** The no-BitBlocks lobby: one list, newest first, no ranking and no explanations. */
+export function plainShelf(candidates: Candidate[]): Shelf {
+  return {
+    id: "plain",
+    title: "All worlds, newest first",
+    blurb: "Ranking is off. This is the starter set in date order.",
+    items: [...candidates].sort((a, b) => b.createdAt - a.createdAt || a.id.localeCompare(b.id)).map((c) => ({ id: c.id, why: "" })),
+  };
+}
+
+const REASON_TEXT: Record<string, string> = {
+  recency: "it is new",
+  exploration: "a little variety",
+};
+
+/** Turn the strongest reasons behind a ranking into one sentence. */
+export function whySentence(rows: { label: string; contribution: number }[]): string {
+  const top = rows
+    .filter((r) => r.contribution > 0.02)
+    .sort((a, b) => b.contribution - a.contribution)
+    .slice(0, 2)
+    .map((r) => REASON_TEXT[r.label] ?? r.label)
+    .filter(Boolean);
+  if (top.length === 0) return "";
+  return `Here because ${top.join(" and ")}.`;
+}

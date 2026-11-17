@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>BitPortal</title>
+<meta name="description" content="A lobby of doors to independently hosted VR worlds. Each door shows where it really leads before you go through.">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body>
+<header class="top">
+  <div class="frame top-row">
+    <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
+    <button id="open-settings" class="button" type="button">Settings</button>
+  </div>
+</header>
+<main class="frame">
+  <h1 class="intro">Doors to VR worlds that nobody owns but their makers.</h1>
+  <p id="source" class="source"></p>
+  <div id="shelves"></div>
+</main>
+<footer class="frame foot">
+  <p id="foot-note" class="small"></p>
+  <p class="small">Test build. BitPortal is part of the <a href="https://bitblocks.network/">BitBlocks</a> family and follows the <a href="https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-">Nostr Spatial Web Protocol</a>.</p>
+</footer>
+<dialog id="detail" class="sheet" aria-label="World details"></dialog>
+<dialog id="settings" class="sheet" aria-label="Settings"></dialog>
+<script type="module" src="/lobby.js"></script>
+</body>
+</html>

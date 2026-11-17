@@ -1,0 +1,537 @@
+{
+  "curator": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
+  "set": {
+    "kind": 30004,
+    "created_at": 1794944368,
+    "tags": [
+      [
+        "d",
+        "bitportal-starter-test"
+      ],
+      [
+        "title",
+        "BitPortal starter set (test)"
+      ],
+      [
+        "description",
+        "A small hand-picked list for testing the BitPortal lobby: the two NSWP reference worlds and four existing WebXR sites."
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:nswp-reference-world-a"
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:nswp-reference-world-b"
+      ],
+      [
+        "a",
+        "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:aframe-hello-world"
+      ],
+      [
+        "a",
+        "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:immersive-web-vr-session"
+      ],
+      [
+        "a",
+        "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:threejs-roller-coaster"
+      ],
+      [
+        "a",
+        "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:moon-rider"
+      ]
+    ],
+    "content": "",
+    "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
+    "id": "14d04ba702970fe7e1c8782b9c67a4e4952bcf679f1b09836421b12ba5895582",
+    "sig": "9d4a8d44aef914356b81c5dfa3dac8f5ef75b53b57c5fd6d38f0bc8c012e71ba559f5f49ad17280b13b84cce4e18e8bd47be855960b801b656d5cb37992bb219"
+  },
+  "worlds": [
+    {
+      "kind": 37300,
+      "created_at": 1794941699,
+      "tags": [
+        [
+          "d",
+          "nswp-reference-world-a"
+        ],
+        [
+          "title",
+          "NSWP Reference World A: The Gallery"
+        ],
+        [
+          "summary",
+          "A calm blue gallery with a portal to World B."
+        ],
+        [
+          "r",
+          "https://nswp-world-a.vercel.app/"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "stationary"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "nswp"
+        ],
+        [
+          "t",
+          "reference"
+        ],
+        [
+          "t",
+          "gallery"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: NSWP Reference World A: The Gallery"
+        ]
+      ],
+      "content": "A test world for the Nostr Spatial Web Protocol. It exists to try portal crossings through an Airlock. Source: github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "0ff117d89b518379182de9c89129494e93ba6cbe298d15a6627343237ba3dd7b",
+      "sig": "9163c2852c1784e313f3d5141299489bb4e2a1f963334eb63fcc14d4341e89868b33240b893c5dac05414dca96a10df729a81aec0b9a9105f2b4e933139909ea"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794941699,
+      "tags": [
+        [
+          "d",
+          "nswp-reference-world-b"
+        ],
+        [
+          "title",
+          "NSWP Reference World B: The Grove"
+        ],
+        [
+          "summary",
+          "A warm grove of glowing trees with a portal back to World A."
+        ],
+        [
+          "r",
+          "https://nswp-world-b.vercel.app/"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "stationary"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "nswp"
+        ],
+        [
+          "t",
+          "reference"
+        ],
+        [
+          "t",
+          "nature"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: NSWP Reference World B: The Grove"
+        ]
+      ],
+      "content": "A test world for the Nostr Spatial Web Protocol. It exists to try portal crossings through an Airlock. Source: github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "5d937e0335e9bea841eedb45c26069960da880576dc64aa27da07691e459e239",
+      "sig": "39e029b064916b4dd048fcded4bb3195c292cff80b0fed17099d9ca238ee956c29c404e9074a6602ce3a8418d438d009b707d75325ba0f41ef31f9f4962f7f3b"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794944368,
+      "tags": [
+        [
+          "d",
+          "aframe-hello-world"
+        ],
+        [
+          "title",
+          "A-Frame: Hello, World!"
+        ],
+        [
+          "summary",
+          "The classic A-Frame starter scene: a box, a sphere and a cylinder on a plane."
+        ],
+        [
+          "r",
+          "https://aframe.io/aframe/examples/boilerplate/hello-world/"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "stationary"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "t",
+          "demo"
+        ],
+        [
+          "t",
+          "aframe"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "alt",
+          "Spatial world listing: A-Frame: Hello, World!"
+        ]
+      ],
+      "content": "The classic A-Frame starter scene: a box, a sphere and a cylinder on a plane. Listed by the BitPortal starter set; this site has not announced itself.",
+      "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
+      "id": "777f48f2c083c1f5021f5a5a10aeafcbcd9814e2640fea61720bb32fc1489a5f",
+      "sig": "30861903612aa5aa2368bf43c40f0f53bc752b58caae7dd617c90e714651449eb98ffd18911ecd28a848e0de2454a6f1ae92c4a987cac068fb7b27a8479f947f"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794944368,
+      "tags": [
+        [
+          "d",
+          "immersive-web-vr-session"
+        ],
+        [
+          "title",
+          "Immersive Web sample: VR session"
+        ],
+        [
+          "summary",
+          "A minimal sample from the Immersive Web working group that starts a basic VR session."
+        ],
+        [
+          "r",
+          "https://immersive-web.github.io/webxr-samples/immersive-vr-session.html"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "stationary"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "t",
+          "demo"
+        ],
+        [
+          "t",
+          "webxr"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "alt",
+          "Spatial world listing: Immersive Web sample: VR session"
+        ]
+      ],
+      "content": "A minimal sample from the Immersive Web working group that starts a basic VR session. Listed by the BitPortal starter set; this site has not announced itself.",
+      "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
+      "id": "e8c870f637c73128071952c20161df73e6a94c26c81a6f4759f6232b31b209f8",
+      "sig": "6808943a8ff47dee2844da82856372fecb0519a0c453be76630a41d3b0dce7189e9918b8d30a1e56482b5d282f6e9b38394e2cd2b70128a41134f0e77ae9e017"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794944368,
+      "tags": [
+        [
+          "d",
+          "threejs-roller-coaster"
+        ],
+        [
+          "title",
+          "three.js: roller coaster"
+        ],
+        [
+          "summary",
+          "A roller-coaster ride from the three.js examples. You are moved along the track."
+        ],
+        [
+          "r",
+          "https://threejs.org/examples/webxr_vr_rollercoaster.html"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "vehicle"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "high"
+        ],
+        [
+          "t",
+          "demo"
+        ],
+        [
+          "t",
+          "threejs"
+        ],
+        [
+          "t",
+          "ride"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "alt",
+          "Spatial world listing: three.js: roller coaster"
+        ]
+      ],
+      "content": "A roller-coaster ride from the three.js examples. You are moved along the track. Listed by the BitPortal starter set; this site has not announced itself.",
+      "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
+      "id": "a2438a35e06d5a0f45b34177f1ec4d811bc19f8ae74fd534d76b37ed834f4df1",
+      "sig": "bcc3c6ff0d0dc65dbd7f3a61ea37d37f9238db192dd0bd5b8f43c2424d484cbc7c25bc284a41e488ad4af98db48281046b81dad9232c29cddd4462f4da3fd051"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794944368,
+      "tags": [
+        [
+          "d",
+          "moon-rider"
+        ],
+        [
+          "title",
+          "Moon Rider"
+        ],
+        [
+          "summary",
+          "A music and rhythm game that runs in the browser."
+        ],
+        [
+          "r",
+          "https://moonrider.xyz/"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "t",
+          "game"
+        ],
+        [
+          "t",
+          "music"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "alt",
+          "Spatial world listing: Moon Rider"
+        ]
+      ],
+      "content": "A music and rhythm game that runs in the browser. Listed by the BitPortal starter set; this site has not announced itself.",
+      "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
+      "id": "21f4fb9de94dee48be20bb8fd9b2c589325760f017e33239fa1c1cf102c28796",
+      "sig": "16a8203757131b0fb42f919799e70875b07b3236509d6414a70f6d0b5e285b1ef2e8a91acd0d7199e362f12260cfd0f0c50ef3291e268ec377da7a854c1e0099"
+    }
+  ]
+}

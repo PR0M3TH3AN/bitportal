@@ -1,0 +1,54 @@
+{
+  "note": "The curator's own descriptions of existing WebXR sites that have not announced themselves. They appear as 'listed by', never as verified. Only claims that are evident from the site are made.",
+  "set": {
+    "d": "bitportal-starter-test",
+    "title": "BitPortal starter set (test)",
+    "description": "A small hand-picked list for testing the BitPortal lobby: the two NSWP reference worlds and four existing WebXR sites."
+  },
+  "referenceWorlds": ["world-a", "world-b"],
+  "listings": [
+    {
+      "d": "aframe-hello-world",
+      "title": "A-Frame: Hello, World!",
+      "url": "https://aframe.io/aframe/examples/boilerplate/hello-world/",
+      "summary": "The classic A-Frame starter scene: a box, a sphere and a cylinder on a plane.",
+      "modes": ["immersive-vr", "inline-3d"],
+      "capabilities": ["webxr"],
+      "comfort": { "locomotion": "stationary", "intensity": "low" },
+      "topics": ["demo", "aframe"],
+      "languages": ["en"]
+    },
+    {
+      "d": "immersive-web-vr-session",
+      "title": "Immersive Web sample: VR session",
+      "url": "https://immersive-web.github.io/webxr-samples/immersive-vr-session.html",
+      "summary": "A minimal sample from the Immersive Web working group that starts a basic VR session.",
+      "modes": ["immersive-vr", "inline-3d"],
+      "capabilities": ["webxr"],
+      "comfort": { "locomotion": "stationary", "intensity": "low" },
+      "topics": ["demo", "webxr"],
+      "languages": ["en"]
+    },
+    {
+      "d": "threejs-roller-coaster",
+      "title": "three.js: roller coaster",
+      "url": "https://threejs.org/examples/webxr_vr_rollercoaster.html",
+      "summary": "A roller-coaster ride from the three.js examples. You are moved along the track.",
+      "modes": ["immersive-vr"],
+      "capabilities": ["webxr"],
+      "comfort": { "locomotion": "vehicle", "intensity": "high" },
+      "topics": ["demo", "threejs", "ride"],
+      "languages": ["en"]
+    },
+    {
+      "d": "moon-rider",
+      "title": "Moon Rider",
+      "url": "https://moonrider.xyz/",
+      "summary": "A music and rhythm game that runs in the browser.",
+      "modes": ["immersive-vr", "inline-3d"],
+      "capabilities": ["webxr"],
+      "topics": ["game", "music"],
+      "languages": ["en"]
+    }
+  ]
+}

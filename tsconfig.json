@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["webxr"],
+    "strict": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@nswp/core": ["./vendor/nswp/types/index.d.ts"],
+      "bitfeed": ["./src/types/bitfeed.d.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}
