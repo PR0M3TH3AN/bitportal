@@ -73,6 +73,7 @@ h1, h2, h3, p { margin: 0; }
 .top { border-bottom: 1px solid var(--bitportal-line); background: var(--bitportal-paper); }
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
 .wordmark { display: inline-flex; align-items: center; gap: 11px; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; text-decoration: none; }
+.top-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .glyph { width: 15px; height: 22px; border: 2.5px solid var(--bitportal-ink); border-bottom-width: 5px; border-radius: 8px 8px 0 0; background: var(--bitportal-accent); }
 
 .button {
@@ -210,3 +211,23 @@ fieldset.identity input { width: 20px; height: 20px; accent-color: var(--bitport
 .remember label { margin: 0; }
 .fast { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 8px 8px 8px 16px; border: 1.5px solid var(--bitportal-ok); color: var(--bitportal-ok); font-weight: 650; }
 [hidden] { display: none !important; }
+
+/* ---------- the walk-in lobby ---------- */
+body.walk { overflow: hidden; background: #0a0b0d; color: #f2f3f6; }
+.walk #stage { position: fixed; inset: 0; }
+.walk #stage canvas { display: block; touch-action: none; }
+.walk.leaving #stage { opacity: 0.35; transition: opacity 0.3s; }
+.walk-top { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px var(--edge); pointer-events: none; }
+.walk-top > * { pointer-events: auto; }
+.walk .wordmark { color: #f2f3f6; text-shadow: 0 1px 4px #000; }
+.walk .glyph { border-color: #f2f3f6; }
+.walk .button { color: #f2f3f6; border-color: #f2f3f6; background: #101217; }
+.walk .button:hover { background: #f2f3f6; color: #0a0b0d; }
+.walk .button.primary { background: #3fc584; border-color: #3fc584; color: #04170d; }
+.walk .button.primary:hover { background: #f2f3f6; border-color: #f2f3f6; }
+.walk-hud { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px var(--edge); pointer-events: none; }
+.walk-hud > * { pointer-events: auto; }
+.walk-status { flex-basis: 100%; margin: 0; font-size: 0.9rem; text-shadow: 0 1px 4px #000; pointer-events: none; }
+.walk-door { font-size: 1rem; min-height: 1.5em; }
+.walk-help { color: #aab0bd; }
+@media (hover: none) { .walk-help { display: none; } }

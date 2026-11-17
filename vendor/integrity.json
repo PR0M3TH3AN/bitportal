@@ -6,11 +6,15 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "27fce48ff2a01955268f3c98651b4d22aefa642b",
+        "commit": "5af2e64159e486f632ed1052de38cc747abbbedc",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
         "nswp-core.js": "ba4ab1f465bf338fab5e7be1e01f2fa2f0e2684a620da479a281f2a029d58d7f",
+        "nswp-sdk-three.js": "905534de575b13c231a1c9b690a3b77d1690f71ceadd6f46e73920572b37366a",
+        "sdk-types/index.d.ts": "7be6974f53e131481b835729bec718eec98f4c1d86e5e62b7db38f78e94718d8",
+        "sdk-types/room.d.ts": "a119d7ad783fe9558452ca493c01b5c1d6345f8d5ee54ac399e4da2c44a00af7",
+        "sdk-types/three.d.ts": "fbf38d11b606e32b2aaba418963a9d1d4930380a28ccec72cb375fb213dfded2",
         "types/arrival.d.ts": "1ef72ada64228f710ef2bfce68d8f4121c4c3c87600e77a80898b20881cd38b3",
         "types/constants.d.ts": "dfad9d054f35f872add758d22a3fd81894aedb144439bf37c296b0756566c9e4",
         "types/destination.d.ts": "fa497e8f8c612e069efa278e80bf6c24c7343f1c0acab8734a4da811d00184e5",

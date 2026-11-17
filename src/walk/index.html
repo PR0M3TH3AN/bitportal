@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Walk the lobby · BitPortal</title>
+<meta name="description" content="The BitPortal lobby as a hall you can stand in: doors to independently hosted VR worlds.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body class="walk">
+<div id="stage"></div>
+<header class="walk-top">
+  <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
+  <a class="button" href="/">See the list</a>
+</header>
+<div class="walk-hud">
+  <button id="vr-button" class="button primary" type="button" disabled>Checking for VR…</button>
+  <button id="room-button" class="button" type="button">Join the room</button>
+  <button id="mic-button" class="button" type="button" hidden>Turn microphone on</button>
+  <button id="invite-button" class="button" type="button" hidden>Make a private room</button>
+  <p id="door-line" class="walk-status walk-door" aria-live="polite"></p>
+  <p id="room-status" class="walk-status" role="status">Joining lets you see and hear other visitors here. It shows your IP address to them.</p>
+  <p class="walk-status walk-help">Drag to look around. Walk with W, A, S, D. Click a door, or walk through it, to see where it leads.</p>
+</div>
+<script type="module" src="/walk/main.js"></script>
+</body>
+</html>

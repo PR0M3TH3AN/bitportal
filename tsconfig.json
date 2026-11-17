@@ -11,6 +11,7 @@
     "skipLibCheck": true,
     "paths": {
       "@nswp/core": ["./vendor/nswp/types/index.d.ts"],
+      "nswp-sdk/three": ["./vendor/nswp/sdk-types/three.d.ts"],
       "bitfeed": ["./src/types/bitfeed.d.ts"]
     }
   },
