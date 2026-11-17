@@ -1,7 +1,7 @@
 {
   "name": "@bitlogin/widget",
   "version": "0.1.0",
-  "commit": "3bf0aee6dc142c9e9ba9881c3d8aee3abe73e656",
+  "commit": "2e24babcc94a1ab86ede964b9c7cc1ab3806684b",
   "files": {
     "bitlogin-headless.js": {
       "bytes": 96,
