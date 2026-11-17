@@ -21,6 +21,22 @@ export declare const COMFORT: {
 export declare const INPUTS: readonly ["controllers", "hands", "gaze", "keyboard-mouse", "touch", "gamepad"];
 export declare const PERF_TIERS: readonly ["mobile", "standalone", "desktop"];
 export declare const STATUSES: readonly ["live", "beta", "maintenance", "retired"];
+/** Kinds of preview a world can publish (spec §5.8). */
+export declare const PREVIEW_TYPES: readonly ["pano", "flat"];
+export type PreviewType = (typeof PREVIEW_TYPES)[number];
+/** Ceilings a client enforces whatever a world claims (spec §5.8). */
+export declare const PREVIEW_LIMITS: {
+    readonly pano: {
+        readonly width: 4096;
+        readonly height: 2048;
+        readonly bytes: number;
+    };
+    readonly flat: {
+        readonly width: 1920;
+        readonly height: 1080;
+        readonly bytes: number;
+    };
+};
 export declare const LIMITS: {
     readonly manifestBytes: number;
     readonly arrivalChars: number;

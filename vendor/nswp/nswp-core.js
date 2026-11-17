@@ -28,6 +28,11 @@ var COMFORT = {
 var INPUTS = ["controllers", "hands", "gaze", "keyboard-mouse", "touch", "gamepad"];
 var PERF_TIERS = ["mobile", "standalone", "desktop"];
 var STATUSES = ["live", "beta", "maintenance", "retired"];
+var PREVIEW_TYPES = ["pano", "flat"];
+var PREVIEW_LIMITS = {
+  pano: { width: 4096, height: 2048, bytes: 2 * 1024 * 1024 },
+  flat: { width: 1920, height: 1080, bytes: 500 * 1024 }
+};
 var LIMITS = {
   manifestBytes: 64 * 1024,
   arrivalChars: 16 * 1024,
@@ -4205,6 +4210,9 @@ function buildWorldEvent(w) {
   if (w.summary) tags.push(["summary", w.summary]);
   tags.push(["r", w.url]);
   if (w.image) tags.push(w.image.dimensions ? ["image", w.image.url, w.image.dimensions] : ["image", w.image.url]);
+  for (const p of w.previews ?? []) {
+    tags.push(p.width && p.height ? ["preview", p.url, p.type, p.sha256, `${p.width}x${p.height}`] : ["preview", p.url, p.type, p.sha256]);
+  }
   for (const m of w.modes ?? []) tags.push(["mode", m]);
   for (const c of w.capabilities ?? []) tags.push(["capability", c]);
   for (const key of ["locomotion", "intensity", "seated"]) {
@@ -4283,6 +4291,48 @@ function parseWorldEvent(input, opts = {}) {
     if (isHttpsUrl(imageTags[0][1])) image = imageTags[0][2] ? { url: imageTags[0][1], dimensions: imageTags[0][2] } : { url: imageTags[0][1] };
     else c.warn("url_not_https", "tags.image", "The preview image must be an https URL; ignored.");
   }
+  const previews = [];
+  for (const t of getTags({ tags }, "preview")) {
+    const [, pUrl, pType, pHash, pDims] = t;
+    const drop = (code, message) => c.warn(code, "tags.preview", `${message} The preview is ignored.`);
+    if (!pUrl || !isHttpsUrl(pUrl)) {
+      drop("url_not_https", "A preview needs an https address.");
+      continue;
+    }
+    if (!pType || !PREVIEW_TYPES.includes(pType)) {
+      drop("unknown_value", `Unknown preview type "${pType ?? ""}".`);
+      continue;
+    }
+    if (!isHex64(pHash)) {
+      drop("preview_hash_missing", "A preview needs the SHA-256 of its file.");
+      continue;
+    }
+    const type = pType;
+    if (previews.some((p) => p.type === type)) {
+      drop("duplicate_tag", `Only the first ${type} preview is used.`);
+      continue;
+    }
+    const preview = { url: pUrl, type, sha256: pHash };
+    const dims = pDims ? /^(\d{1,5})x(\d{1,5})$/.exec(pDims) : null;
+    if (pDims && !dims) {
+      drop("preview_dimensions_invalid", "Preview dimensions must look like 4096x2048.");
+      continue;
+    }
+    if (dims) {
+      preview.width = Number(dims[1]);
+      preview.height = Number(dims[2]);
+      const max = PREVIEW_LIMITS[type];
+      if (preview.width > max.width || preview.height > max.height || preview.width === 0 || preview.height === 0) {
+        drop("preview_too_large", `A ${type} preview may be at most ${max.width}x${max.height}.`);
+        continue;
+      }
+      if (type === "pano" && preview.width !== preview.height * 2) {
+        drop("preview_not_panorama", "A pano preview must be twice as wide as it is tall.");
+        continue;
+      }
+    }
+    previews.push(preview);
+  }
   const modes = enumValues(c, tags, "mode", MODES);
   const capabilities = enumValues(c, tags, "capability", CAPABILITIES);
   const inputs = enumValues(c, tags, "input", INPUTS);
@@ -4343,6 +4393,7 @@ function parseWorldEvent(input, opts = {}) {
     title: title ?? "",
     url: url ? normalizeUrl(url) ?? url : "",
     description: typeof e.content === "string" ? e.content : "",
+    previews,
     modes,
     capabilities,
     comfort,
@@ -4364,6 +4415,19 @@ function parseWorldEvent(input, opts = {}) {
   if (manifest) world.manifest = manifest;
   if (access) world.access = access;
   return c.result(world);
+}
+function checkPreviewBytes(preview, bytes) {
+  const max = PREVIEW_LIMITS[preview.type].bytes;
+  if (bytes.length > max) return { ok: false, code: "preview_too_large", message: `The preview file is larger than ${max} bytes.` };
+  if (bytesToHex(sha256(bytes)) !== preview.sha256) return { ok: false, code: "preview_hash_mismatch", message: "The preview file doesn't match the hash in the announcement." };
+  return { ok: true };
+}
+function previewOnWorldOrigin(world, preview) {
+  try {
+    return new URL(preview.url).origin === new URL(world.url).origin;
+  } catch {
+    return true;
+  }
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/manifest.ts
@@ -5446,6 +5510,8 @@ export {
   NswpError,
   PERF_TIERS,
   POSE_BYTES,
+  PREVIEW_LIMITS,
+  PREVIEW_TYPES,
   ROOM_LIMITS,
   ROOM_PASS_KIND,
   ROOM_SIGNAL_KIND,
@@ -5463,6 +5529,7 @@ export {
   buildSignal,
   buildWorldEvent,
   checkDestination,
+  checkPreviewBytes,
   coordinate,
   decodeArrival,
   decodeNaddr,
@@ -5494,6 +5561,7 @@ export {
   parseManifest,
   parsePortal,
   parseWorldEvent,
+  previewOnWorldOrigin,
   publishEvent,
   queryRelays,
   randomNonce,

@@ -2716,8 +2716,147 @@ function attachRoomControls(presence, c) {
   refresh();
   return { refresh };
 }
+async function capturePanorama(renderer, scene, position, opts = {}) {
+  const width = Math.min(4096, Math.max(256, Math.round(opts.width ?? 2048)));
+  const height = width / 2;
+  const hidden = (opts.hide ?? []).filter((o) => o.visible);
+  const xrWasEnabled = renderer.xr.enabled;
+  const previousTarget = renderer.getRenderTarget();
+  const autoClearWas = renderer.autoClear;
+  const fog = scene.fog;
+  const faceTarget = new THREE.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE.HalfFloatType });
+  const flatTarget = new THREE.WebGLRenderTarget(width, height);
+  flatTarget.texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.ShaderMaterial({
+    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE.Vector3() }, up: { value: new THREE.Vector3() }, right: { value: new THREE.Vector3() } },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+    fragmentShader: `uniform sampler2D face; uniform vec3 forward; uniform vec3 up; uniform vec3 right; varying vec2 vUv;
+      void main(){
+        float lon = (vUv.x - 0.5) * 6.283185307179586;
+        float lat = (vUv.y - 0.5) * 3.141592653589793;
+        vec3 dir = vec3(sin(lon) * cos(lat), sin(lat), -cos(lon) * cos(lat));
+        float along = dot(dir, forward);
+        // Only the directions this view is the best one for (with a hair of overlap).
+        if (along < max(abs(dir.x), max(abs(dir.y), abs(dir.z))) - 0.0005) discard;
+        vec2 p = vec2(dot(dir, right), dot(dir, up)) / along;
+        gl_FragColor = texture2D(face, clamp(p * 0.5 + 0.5, 0.0, 1.0));
+        #include <colorspace_fragment>
+      }`,
+    depthTest: false,
+    depthWrite: false
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+  const quadScene = new THREE.Scene();
+  quadScene.add(quad);
+  const quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const faceCamera = new THREE.PerspectiveCamera(90, 1, 0.05, 200);
+  faceCamera.position.copy(position);
+  const views = [
+    [new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0)],
+    [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)],
+    [new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0)],
+    [new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0)],
+    [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)],
+    [new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, -1)]
+  ];
+  try {
+    for (const o of hidden) o.visible = false;
+    scene.fog = null;
+    renderer.xr.enabled = false;
+    renderer.setRenderTarget(flatTarget);
+    renderer.clear();
+    for (const [forward, up] of views) {
+      faceCamera.up.copy(up);
+      faceCamera.lookAt(position.clone().add(forward));
+      faceCamera.updateMatrixWorld(true);
+      renderer.autoClear = true;
+      renderer.setRenderTarget(faceTarget);
+      renderer.render(scene, faceCamera);
+      material.uniforms.forward.value.copy(forward);
+      material.uniforms.up.value.copy(up);
+      material.uniforms.right.value.crossVectors(forward, up);
+      renderer.autoClear = false;
+      renderer.setRenderTarget(flatTarget);
+      renderer.render(quadScene, quadCamera);
+    }
+    const pixels = new Uint8Array(width * height * 4);
+    renderer.readRenderTargetPixels(flatTarget, 0, 0, width, height, pixels);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const g = canvas.getContext("2d");
+    const image = g.createImageData(width, height);
+    for (let y = 0; y < height; y++) image.data.set(pixels.subarray((height - 1 - y) * width * 4, (height - y) * width * 4), y * width * 4);
+    g.putImageData(image, 0, 0);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", opts.quality ?? 0.82));
+    if (!blob) throw new Error("nswp-sdk: this browser couldn't encode the preview");
+    return blob;
+  } finally {
+    for (const o of hidden) o.visible = true;
+    scene.fog = fog;
+    renderer.xr.enabled = xrWasEnabled;
+    renderer.autoClear = autoClearWas;
+    renderer.setRenderTarget(previousTarget);
+    faceTarget.dispose();
+    flatTarget.dispose();
+    material.dispose();
+    quad.geometry.dispose();
+  }
+}
+function panoramaTexture(image) {
+  const texture = new THREE.Texture(image);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+function createPortalWindow(geometry, pano, opts = {}) {
+  const reach = opts.reach ?? 1.5;
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      pano: { value: pano },
+      mask: { value: opts.mask ?? null },
+      useMask: { value: opts.mask ? 1 : 0 },
+      toLocal: { value: new THREE.Matrix3() },
+      center: { value: new THREE.Vector3() },
+      reach: { value: Number.isFinite(reach) ? reach : 0 }
+    },
+    vertexShader: `varying vec3 vWorld; varying vec2 vUv;
+      void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform sampler2D pano; uniform sampler2D mask; uniform float useMask; uniform mat3 toLocal; uniform vec3 center; uniform float reach;
+      varying vec3 vWorld; varying vec2 vUv;
+      void main(){
+        if (useMask > 0.5 && texture2D(mask, vUv).a < 0.5) discard;
+        vec3 eye = cameraPosition;
+        if (reach > 0.0) {
+          vec3 away = cameraPosition - center;
+          eye = center + away * (reach / (length(away) + reach));
+        }
+        vec3 dir = normalize(toLocal * (vWorld - eye));
+        float lon = atan(dir.x, -dir.z);
+        float lat = asin(clamp(dir.y, -1.0, 1.0));
+        gl_FragColor = vec4(texture2D(pano, vec2(lon / 6.283185307179586 + 0.5, lat / 3.141592653589793 + 0.5)).rgb, 1.0);
+        #include <colorspace_fragment>
+      }`,
+    side: THREE.DoubleSide
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  const rotation = new THREE.Matrix4();
+  mesh.onBeforeRender = () => {
+    rotation.extractRotation(mesh.matrixWorld);
+    material.uniforms.toLocal.value.setFromMatrix4(rotation).invert();
+    material.uniforms.center.value.setFromMatrixPosition(mesh.matrixWorld);
+  };
+  return mesh;
+}
 export {
   attachRoomControls,
+  capturePanorama,
+  createPortalWindow,
   createPresence,
+  panoramaTexture,
   textSprite
 };

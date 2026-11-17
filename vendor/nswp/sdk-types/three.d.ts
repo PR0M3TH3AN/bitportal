@@ -76,3 +76,42 @@ export interface RoomControls {
 export declare function attachRoomControls(presence: Presence, c: RoomControls): {
     refresh(): void;
 };
+export interface CaptureOptions {
+    /** Width of the panorama in pixels; the height is half of it. Default 2048, at most 4096. */
+    width?: number;
+    /** Objects to leave out, such as text that is specific to one visitor. */
+    hide?: THREE.Object3D[];
+    /** WebP quality from 0 to 1. Default 0.82. */
+    quality?: number;
+}
+/**
+ * Capture a world's preview (spec §5.8): a 360° still, twice as wide as tall,
+ * taken from `position` (use the default entry point, at eye height). The
+ * centre of the image is the view along -Z from there.
+ *
+ * Returns a WebP file. Publish it by hash; the announcement's `preview` tag
+ * carries the address, the type `pano`, the SHA-256 and the dimensions.
+ */
+export declare function capturePanorama(renderer: THREE.WebGLRenderer, scene: THREE.Scene, position: THREE.Vector3, opts?: CaptureOptions): Promise<Blob>;
+/** Prepare a loaded panorama image for use in a portal window. */
+export declare function panoramaTexture(image: TexImageSource): THREE.Texture;
+export interface PortalWindowOptions {
+    /** An alpha texture that cuts the window's shape (an arch, say) out of the geometry. */
+    mask?: THREE.Texture;
+    /**
+     * How far back, at most, the view is taken from, in metres (default 1.5).
+     * A true window seen from across a room shows only a sliver of what is
+     * behind it, which for a preview is usually nothing recognisable. So the
+     * view is worked out as if the viewer stood no further away than this:
+     * from a distance they see a wide view, and close up it behaves like a real
+     * window. `Infinity` gives a true window at every distance.
+     */
+    reach?: number;
+}
+/**
+ * A window into a panorama: the mesh shows the part of the destination that
+ * lies behind it from where the viewer stands, so the view shifts as they
+ * move, like looking through a doorway. The mesh's local -Z is "into" the
+ * destination and lines up with the centre of the panorama.
+ */
+export declare function createPortalWindow(geometry: THREE.BufferGeometry, pano: THREE.Texture, opts?: PortalWindowOptions): THREE.Mesh;

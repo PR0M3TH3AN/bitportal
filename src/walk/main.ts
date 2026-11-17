@@ -4,8 +4,9 @@
  * - Point at a door (mouse, controller ray, or a pinch) and select it, or walk
  *   through it. Either way you go to the Airlock, which is always a flat page:
  *   a 3D scene can't be trusted to show an address (NSWP spec §6.2).
- * - Like the list, drawing the hall contacts relays only. Door art is drawn
- *   from each world's address, never fetched (spec §5.7).
+ * - Like the list, drawing the hall contacts relays only. A door looks into
+ *   its world's preview when BitPortal mirrors one (spec §5.8); otherwise its
+ *   art is drawn from the world's address. Nothing is fetched from a world.
  * - Other visitors appear only after you press "Join the room".
  *
  * Input uses only the WebXR `select` event, so it works with controllers,
@@ -13,11 +14,13 @@
  */
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
-import { attachRoomControls, createPresence, textSprite } from "nswp-sdk/three";
+import { attachRoomControls, createPortalWindow, createPresence, panoramaTexture, textSprite } from "nswp-sdk/three";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
+import { plateMarks } from "../shared/plate.js";
+import { decidePreview, loadPreview } from "../shared/preview.js";
 import { loadSettings } from "../shared/settings.js";
 import type { Candidate } from "../shared/shelves.js";
 import { cachedVerification } from "../shared/verify.js";
@@ -124,6 +127,31 @@ function viewTexture(id: string): THREE.CanvasTexture {
   });
 }
 
+/** The arch as a cut-out, for a preview window to be seen through. */
+function archMaskTexture(): THREE.CanvasTexture {
+  return canvasTexture(500, 700, (g) => {
+    archPath(g, 500, 700, 6);
+    g.fillStyle = "#ffffff";
+    g.fill();
+  });
+}
+
+/** An ordinary picture (a web page's screenshot) fitted into the arch. */
+function flatViewTexture(image: HTMLImageElement): THREE.CanvasTexture {
+  const W = 500;
+  const H = 700;
+  return canvasTexture(W, H, (g) => {
+    archPath(g, W, H, 6);
+    g.clip();
+    g.fillStyle = "#0a0b0d";
+    g.fillRect(0, 0, W, H);
+    const scale = Math.max(W / image.naturalWidth, H / image.naturalHeight);
+    const w = image.naturalWidth * scale;
+    const h = image.naturalHeight * scale;
+    g.drawImage(image, (W - w) / 2, (H - h) / 2, w, h);
+  });
+}
+
 function frameTexture(): THREE.CanvasTexture {
   const W = 500;
   const H = 700;
@@ -160,11 +188,11 @@ function plateTexture(entry: Entry, device: Device): THREE.CanvasTexture {
   const H = 420;
   const host = hostParts(entry.world.url);
   const fit = deviceFit(entry.world, device);
-  const marks: { text: string; color: string }[] = [];
-  if (cachedVerification(entry.id, entry.world.createdAt)?.state === "verified") marks.push({ text: "✓ Verified", color: "#6fdc9b" });
-  if (!fit.ok) marks.push({ text: fit.reason, color: "#ffcf70" });
-  if (entry.world.comfort.intensity === "high") marks.push({ text: "Intense", color: "#ffcf70" });
-  if (entry.world.contentWarning !== undefined) marks.push({ text: "Content warning", color: "#ffcf70" });
+  const verified = cachedVerification(entry.id, entry.world.createdAt)?.state === "verified";
+  const marks = plateMarks(entry.world, fit, verified).map((m) => ({
+    text: m.tone === "ok" ? `✓ ${m.text}` : m.text,
+    color: m.tone === "ok" ? "#6fdc9b" : m.tone === "warn" ? "#ffcf70" : "#8b91a0",
+  }));
   return canvasTexture(W, H, (g) => {
     g.textBaseline = "top";
     g.fillStyle = INK;
@@ -301,6 +329,7 @@ async function start(): Promise<void> {
   // ------------------------------------------------------------- doors
   let catalog: Catalog = buildCatalog(bundleJson as unknown as StarterBundle);
   const frameMap = frameTexture();
+  const archMask = archMaskTexture();
   const doorGeo = new THREE.PlaneGeometry(DOOR_W, DOOR_H);
   const plateGeo = new THREE.PlaneGeometry(1.9, 1.9 * (420 / 1024));
   const sillGeo = new THREE.BoxGeometry(DOOR_W + 0.1, 0.06, 0.24);
@@ -308,6 +337,33 @@ async function start(): Promise<void> {
   scene.add(doorRoot);
   let doors: Door[] = [];
   let radius = 6;
+
+  // A door looks into its world when there is a preview BitPortal may show
+  // without asking (spec §5.8). The generated view stays underneath as the
+  // fallback, so a door never goes blank while a picture loads or if it fails.
+  const attachPreview = async (door: Door) => {
+    const decision = decidePreview(door.entry.world, { chosen: true, asked: false, doorOpen: false });
+    if (decision.show !== "now") return;
+    const url = await loadPreview(decision);
+    if (!url || !doors.includes(door)) return;
+    const image = new Image();
+    image.src = url;
+    try {
+      await image.decode();
+    } catch {
+      return;
+    }
+    if (decision.preview.type === "pano") {
+      const through = createPortalWindow(doorGeo, panoramaTexture(image), { mask: archMask });
+      through.position.z = 0.004;
+      door.view.add(through);
+    } else {
+      const material = door.view.material as THREE.MeshBasicMaterial;
+      material.map = flatViewTexture(image);
+      material.needsUpdate = true;
+    }
+    state.previews = ((state.previews as number | undefined) ?? 0) + 1;
+  };
 
   const buildDoors = async () => {
     const ordered = await orderEntries(catalog.entries, device, settings.ranking);
@@ -340,6 +396,8 @@ async function start(): Promise<void> {
       doors.push({ entry, why, group, view, frame, info, hover: 0 });
     });
     state.doorCount = doors.length;
+    state.previews = 0;
+    for (const door of doors) void attachPreview(door);
   };
 
   const title = textSprite(`BitPortal\nDoors picked by ${catalog.curator.title}`, INK, 4.2);
