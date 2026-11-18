@@ -121,7 +121,7 @@ export function savedUrls(list: SavedPlace[]): string[] {
 }
 
 /** Saved places as doors, in wall order. Where the catalogue has a newer announcement, that one is drawn. */
-export function savedEntries(list: SavedPlace[], catalog: Pick<Catalog, "entries" | "unlisted">): Entry[] {
+export function savedEntries(list: SavedPlace[], catalog: Pick<Catalog, "entries" | "unlisted"> & Partial<Pick<Catalog, "permits">>): Entry[] {
   const out: Entry[] = [];
   for (const s of bySlot(list)) {
     const known = catalog.entries.find((e) => e.id === s.id) ?? catalog.unlisted.find((e) => e.id === s.id);
@@ -131,6 +131,9 @@ export function savedEntries(list: SavedPlace[], catalog: Pick<Catalog, "entries
     }
     const parsed = parseWorldEvent(s.event);
     if (!parsed.ok) continue;
+    // A door saved before this copy's operator had a policy is kept, and not shown here: the policy is about what
+    // this site shows, and it is the same for a saved door as for any other.
+    if (catalog.permits && !catalog.permits(s.id, parsed.value)) continue;
     out.push({ id: s.id, world: parsed.value, event: s.event, rank: known?.rank ?? null, curatorListing: known?.curatorListing ?? false, listedBy: known?.listedBy ?? null });
   }
   return out;

@@ -2,7 +2,8 @@
  * The lobby's catalogue: the lists a visitor sees, the worlds those lists
  * name, and the worlds nobody has listed (NSWP-08; spec §5.4, §14).
  */
-import { CURATION_SET_KIND, coordinate, getTagValue, parseCoordinate, parseWorldEvent, verifyEvent, WORLD_KIND, type NostrEvent, type World } from "@nswp/core";
+import { audienceOf, CURATION_SET_KIND, coordinate, getTagValue, parseCoordinate, parseWorldEvent, verifyEvent, WORLD_KIND, type NostrEvent, type World } from "@nswp/core";
+import { INSTANCE, type InstancePolicy } from "./instance.js";
 import { readList, type FollowedList } from "./lists.js";
 
 export interface StarterBundle {
@@ -34,6 +35,8 @@ export interface ListView {
   updatedAt: number;
   /** BitPortal's own list, which ships with the page. */
   starter: boolean;
+  /** A list signed by whoever runs this copy of BitPortal: part of its allow list. */
+  operator: boolean;
   /** The worlds on it that are known and open, in the curator's order. */
   ids: string[];
   /** Worlds it names that no announcement has been found for. */
@@ -51,6 +54,16 @@ export interface Catalog {
   unlisted: Entry[];
   /** How many more unlisted worlds the limits left out. */
   unlistedHeld: number;
+  /** The policy of whoever runs this copy, as it was applied. */
+  policy: InstancePolicy;
+  /** The worlds its operators have listed, by coordinate. */
+  allowed: ReadonlySet<string>;
+  /** What the policy kept off the page, so the page can say so. */
+  withheld: { adult: number; notListed: number; lists: number };
+  /** Whether this copy will show a world, and go to it: the one question every page asks. */
+  permits(id: string, world: Pick<World, "audience" | "contentWarning">): boolean;
+  /** The newest allow list each operator has signed. */
+  operatorLists: NostrEvent[];
 }
 
 export interface CatalogOptions {
@@ -60,6 +73,16 @@ export interface CatalogOptions {
   showStarter?: boolean;
   /** Addresses the visitor already has a door to, besides the ones on their lists. */
   taken?: string[];
+  /** The operator's policy. This site's own, unless a test says otherwise. */
+  policy?: InstancePolicy;
+  /** Allow lists already known from an earlier visit, so the page is right before any relay answers. */
+  operatorLists?: unknown[];
+  /**
+   * The person looking is one of this copy's operators. They are shown the
+   * worlds waiting to be listed, which nobody else here is, so that they can
+   * decide. Adult worlds are among them, marked, and can't be listed.
+   */
+  operatorView?: boolean;
 }
 
 /** What one key can take up among unlisted worlds, and how many are shown in all (NSWP-08). */
@@ -99,21 +122,49 @@ export function buildCatalog(bundle: StarterBundle, relayEvents: unknown[] = [],
     updatedAt: set.created_at,
   };
 
+  const policy = opts.policy ?? INSTANCE;
+  const withheld = { adult: 0, notListed: 0, lists: 0 };
+  const adultIds = new Set<string>(); // each counted once, however many lists name it
+
+  // The operators' own allow lists: the newest each has signed under the agreed name.
+  const operatorLists: NostrEvent[] = [];
+  for (const key of policy.operators) {
+    let newestList: NostrEvent | null = null;
+    for (const e of [...(opts.operatorLists ?? []), ...relayEvents]) {
+      if (isValidSet(e, key) && getTagValue(e, "d") === policy.allowList && (!newestList || e.created_at > newestList.created_at)) newestList = e;
+    }
+    if (newestList) operatorLists.push(newestList);
+  }
+
   // The lists on show, as (who, what they name).
   const shown: { view: Omit<ListView, "ids" | "missing">; names: string[] }[] = [];
-  if (opts.showStarter !== false) {
-    const names: string[] = [];
-    for (const t of set.tags) {
-      if (t[0] === "a" && t[1] && parseCoordinate(t[1])?.kind === WORLD_KIND && !names.includes(t[1])) names.push(t[1]);
-    }
-    shown.push({ view: { id: starterId, ...curator, starter: true }, names });
+  const starterNames: string[] = [];
+  for (const t of set.tags) {
+    if (t[0] === "a" && t[1] && parseCoordinate(t[1])?.kind === WORLD_KIND && !starterNames.includes(t[1])) starterNames.push(t[1]);
+  }
+  if (opts.showStarter !== false) shown.push({ view: { id: starterId, ...curator, starter: true, operator: true }, names: starterNames });
+  // What this copy's operators have listed: the list it ships with, and their own. This is the allow list, whether or
+  // not the visitor is showing the list it ships with.
+  const allowed = new Set(starterNames);
+  for (const e of operatorLists) {
+    const list = readList(e);
+    if (!list) continue;
+    for (const id of list.worlds) allowed.add(id);
+    if (list.coordinate !== starterId) shown.push({ view: { id: list.coordinate, title: list.title, description: list.description, pubkey: list.pubkey, updatedAt: list.createdAt, starter: false, operator: true }, names: list.worlds });
   }
   const followed = opts.followed ?? [];
   for (const f of followed) {
     const list = readList(f.event);
     if (!list || list.coordinate === starterId || shown.some((s) => s.view.id === list.coordinate)) continue;
-    shown.push({ view: { id: list.coordinate, title: list.title, description: list.description, pubkey: list.pubkey, updatedAt: list.createdAt, starter: false }, names: list.worlds });
+    // Where only the operators' lists are shown, nobody else's is: not even one the visitor chose to follow.
+    if (policy.allowListOnly) {
+      withheld.lists++;
+      continue;
+    }
+    shown.push({ view: { id: list.coordinate, title: list.title, description: list.description, pubkey: list.pubkey, updatedAt: list.createdAt, starter: false, operator: false }, names: list.worlds });
   }
+  const adult = (world: Pick<World, "audience" | "contentWarning">) => !policy.allowAdult && audienceOf(world) === "adult";
+  const permits = (id: string, world: Pick<World, "audience" | "contentWarning">) => !adult(world) && (!policy.allowListOnly || allowed.has(id));
 
   // Newest valid event per coordinate.
   const newest = new Map<string, { event: NostrEvent; world: World }>();
@@ -138,6 +189,11 @@ export function buildCatalog(bundle: StarterBundle, relayEvents: unknown[] = [],
         continue;
       }
       if (hit.world.status === "retired") continue;
+      // A world that is for adults is left out, whoever listed it.
+      if (adult(hit.world)) {
+        adultIds.add(id);
+        continue;
+      }
       if (!byId.has(id)) {
         const own = hit.event.pubkey === view.pubkey;
         const entry: Entry = { id, world: hit.world, event: hit.event, rank: entries.length, curatorListing: own, listedBy: own ? view.title : null };
@@ -158,6 +214,12 @@ export function buildCatalog(bundle: StarterBundle, relayEvents: unknown[] = [],
   const loose = [...newest.entries()].filter(([id, hit]) => !byId.has(id) && hit.world.status !== "retired").sort((a, b) => b[1].world.createdAt - a[1].world.createdAt || a[0].localeCompare(b[0]));
   for (const [id, hit] of loose) {
     if (taken.has(hit.world.url)) continue;
+    // Worlds no operator has listed are shown to an operator, who is the one to decide, and to nobody else here.
+    if (!opts.operatorView && (policy.allowListOnly || adult(hit.world))) {
+      if (adult(hit.world)) adultIds.add(id);
+      else withheld.notListed++;
+      continue;
+    }
     const n = perKey.get(hit.event.pubkey) ?? 0;
     if (n >= UNLISTED_LIMITS.perKey || unlisted.length >= UNLISTED_LIMITS.total) {
       unlistedHeld++;
@@ -167,5 +229,6 @@ export function buildCatalog(bundle: StarterBundle, relayEvents: unknown[] = [],
     unlisted.push({ id, world: hit.world, event: hit.event, rank: null, curatorListing: false, listedBy: null });
   }
 
-  return { curator, lists, entries, unlisted, unlistedHeld };
+  withheld.adult = adultIds.size;
+  return { curator, lists, entries, unlisted, unlistedHeld, policy, allowed, withheld, permits, operatorLists };
 }
