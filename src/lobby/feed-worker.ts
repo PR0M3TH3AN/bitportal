@@ -9,6 +9,8 @@ export interface FeedRequest {
   candidates: Candidate[];
   now: number;
   daySeed: string;
+  /** The hashtags the visitor likes: each of the first few gets a shelf of its own. */
+  liked?: string[];
 }
 export interface FeedResponse {
   ok: boolean;
@@ -18,10 +20,10 @@ export interface FeedResponse {
 }
 
 self.onmessage = async (e: MessageEvent<FeedRequest>) => {
-  const { candidates, now, daySeed } = e.data;
+  const { candidates, now, daySeed, liked } = e.data;
   let res: FeedResponse;
   try {
-    res = { ok: true, shelves: await rankShelves(candidates, now, daySeed), engine: ENGINE_VERSION };
+    res = { ok: true, shelves: await rankShelves(candidates, now, daySeed, liked ?? []), engine: ENGINE_VERSION };
   } catch (err) {
     res = { ok: false, shelves: [], engine: ENGINE_VERSION, error: err instanceof Error ? err.message : String(err) };
   }

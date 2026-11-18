@@ -20,6 +20,7 @@ import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, rem
 import { quietSigner, readSignedIn } from "../shared/session.js";
 import { changedAllowList, isOperator, loadOperatorLists, publishAllowList, storeOperatorLists } from "../shared/operator.js";
 import { INSTANCE } from "../shared/instance.js";
+import { loadTastes, setTaste, storeTastes, tasteFor, tasteOf, type Tastes } from "../shared/tastes.js";
 import { checkHome, homeOf, loadHome, storeHome, type HomeChoice } from "../shared/home.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
@@ -53,6 +54,8 @@ let saved: SavedPlace[] = loadSaved();
 let followed: FollowedList[] = loadFollowed();
 /** What relays have sent this visit. */
 let relayEvents: unknown[] = [];
+/** The hashtags the visitor likes and doesn't. Kept in this browser. */
+let tastes: Tastes = loadTastes();
 /** The key signed in here, when it is one of this copy's operators: they see the worlds waiting to be listed, and can list them. */
 let operatorKey: string | null = null;
 const makeCatalog = (): Catalog => buildCatalog(bundle, relayEvents, { followed, showStarter: settings.showStarter, taken: savedUrls(saved), operatorLists: loadOperatorLists(), operatorView: !!operatorKey });
@@ -98,6 +101,9 @@ function candidates(): Candidate[] {
     total: list.length,
     fits: deviceFit(e.world, device).ok,
     intensity: e.world.comfort.intensity ?? null,
+    topics: e.world.topics,
+    taste: tasteFor(tastes, e.world.topics).score,
+    tasteWhy: tasteFor(tastes, e.world.topics).why,
   }));
 }
 
@@ -136,7 +142,7 @@ function rank(): Promise<void> {
       clearTimeout(timer);
       fallback("Ranking couldn't load, so this is the plain list.");
     };
-    const req: FeedRequest = { candidates: input, now: Math.floor(Date.now() / 1000), daySeed: new Date().toISOString().slice(0, 10) };
+    const req: FeedRequest = { candidates: input, now: Math.floor(Date.now() / 1000), daySeed: new Date().toISOString().slice(0, 10), liked: tastes.like };
     worker.postMessage(req);
   });
 }
@@ -391,17 +397,37 @@ function drawTopics(): void {
   if (find.topic && !topics.includes(find.topic)) topics.unshift(find.topic);
   const box = $("find-topics");
   const had = (document.activeElement as HTMLElement | null)?.dataset?.topic;
+  // A hashtag the visitor likes is offered even when few worlds carry it: they asked for it.
+  for (const t of tastes.like) if (!topics.includes(t) && pool.some((e) => e.world.topics.includes(t))) topics.push(t);
   box.replaceChildren(
     ...topics.map((t) => {
-      const b = el("button", { class: "topic", type: "button", "aria-pressed": String(find.topic === t), "data-topic": t }, t);
+      const b = el("button", { class: `topic${tasteOf(tastes, t) === "like" ? " topic-liked" : tasteOf(tastes, t) === "dislike" ? " topic-disliked" : ""}`, type: "button", "aria-pressed": String(find.topic === t), "data-topic": t }, `#${t}`);
       b.addEventListener("click", () => {
         find.topic = find.topic === t ? "" : t;
         draw();
       });
       return b;
     }),
+    ...(find.topic ? [tasteButtons(find.topic)] : []),
   );
   if (had) box.querySelector<HTMLElement>(`[data-topic="${CSS.escape(had)}"]`)?.focus();
+}
+
+/** Set what the visitor thinks of a hashtag, keep it, and order the shelves again. */
+function changeTaste(tag: string, to: "like" | "dislike" | "none"): void {
+  tastes = setTaste(tastes, tag, to);
+  storeTastes(tastes);
+  void rank().then(draw);
+}
+
+/** For the hashtag being looked at: more of it, or less. Pressing the one that is on turns it off again. */
+function tasteButtons(tag: string): HTMLElement {
+  const now = tasteOf(tastes, tag);
+  const more = el("button", { class: "topic-taste", type: "button", id: "taste-more", "aria-pressed": String(now === "like") }, `More #${tag}`);
+  const less = el("button", { class: "topic-taste", type: "button", id: "taste-less", "aria-pressed": String(now === "dislike") }, `Less #${tag}`);
+  more.addEventListener("click", () => changeTaste(tag, now === "like" ? "none" : "like"));
+  less.addEventListener("click", () => changeTaste(tag, now === "dislike" ? "none" : "dislike"));
+  return el("span", { class: "topic-tastes" }, more, less);
 }
 
 function drawShelves(): void {
@@ -575,6 +601,18 @@ function openDetail(entry: Entry, why: string): void {
   if (w.capabilities.includes("rooms")) chips.append(chip("Shared rooms"));
   if (w.status !== "live") chips.append(chip(`Status: ${w.status}`));
   if (w.contentWarning !== undefined) chips.append(chip(`Content warning${w.contentWarning ? `: ${w.contentWarning}` : ""}`, "chip-warn"));
+  // Its hashtags: pressing one shows every world here that carries it.
+  const tags = el("p", { class: "tags", id: "detail-tags" });
+  for (const t of w.topics.slice(0, 8)) {
+    const b = el("button", { class: "tag", type: "button", "data-tag": t }, `#${t}`);
+    b.addEventListener("click", () => {
+      dialog.close();
+      find.topic = t;
+      draw();
+      $("find").scrollIntoView({ block: "start" });
+    });
+    tags.append(b);
+  }
   // Who it is for, in its maker's own word, or that they didn't say.
   const audience = audienceOf(w);
   chips.append(chip(AUDIENCE_WORDS[audience], audience === "adult" ? "chip-warn" : ""));
@@ -621,6 +659,7 @@ function openDetail(entry: Entry, why: string): void {
     el("h2", {}, w.title),
     w.summary ? el("p", { class: "lede" }, w.summary) : null,
     chips,
+    w.topics.length ? tags : null,
     status,
     provenance,
     why ? el("p", { class: "why" }, why) : null,
@@ -676,6 +715,21 @@ function openSettings(): void {
     dialog.close();
     openLists();
   });
+  // The hashtags they like and don't, each with a way to drop it.
+  const hashtagRows = el("p", { class: "tags", id: "set-hashtags" });
+  const drawHashtags = () => {
+    const row = (t: string, kind: "like" | "dislike") => {
+      const b = el("button", { class: `tag ${kind === "like" ? "topic-liked" : "topic-disliked"}`, type: "button", title: "Forget this one" }, `${kind === "like" ? "More" : "Less"} #${t} ✕`);
+      b.addEventListener("click", () => {
+        changeTaste(t, "none");
+        drawHashtags();
+      });
+      return b;
+    };
+    const all = [...tastes.like.map((t) => row(t, "like")), ...tastes.dislike.map((t) => row(t, "dislike"))];
+    hashtagRows.replaceChildren(...(all.length ? all : ["None yet."]));
+  };
+  drawHashtags();
   // Where they start: BitPortal's room, or a world of their own that is shown to be theirs.
   const homeNow = el("p", { class: "small", id: "set-home-now" });
   const homeAddress = el("input", { type: "url", id: "set-home", placeholder: "https://my-world.example" });
@@ -737,6 +791,9 @@ function openSettings(): void {
     roomBox,
     el("p", { class: "small" }, "This is the same home.json a world made from the NSWP world template uses. The room takes its colours, plants, lamps, benches, tables, plinths and notes. It doesn't draw pictures or portals: your doors are the wall in front of you. Kept on this device."),
     roomNote,
+    el("h3", {}, "Your hashtags"),
+    hashtagRows,
+    el("p", { class: "small" }, "Worlds say what they are about with hashtags. Pick one under the search box, or on a world's page, and choose More or Less. Worlds with a hashtag you like come first and get a shelf of their own; ones you don't sink. It orders what this copy already shows, and is kept on this device."),
     el("h3", {}, "Where you start"),
     homeNow,
     el("label", { for: "set-home" }, "A world of your own to start in"),

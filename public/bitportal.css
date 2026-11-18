@@ -458,3 +458,12 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 /* ---------- the operator's own controls, on a world's sheet ---------- */
 .operator { margin-top: 18px; padding: 12px 14px; border-left: 2px solid var(--bitportal-accent); background: var(--bitportal-paper); }
 .operator .actions { margin-top: 10px; justify-content: flex-start; }
+
+/* ---------- hashtags ---------- */
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tag, .topic-taste { font: 500 0.86rem var(--mono); padding: 3px 10px; border: 1px solid var(--bitportal-line); background: none; color: var(--bitportal-ink); cursor: pointer; }
+.tag:hover, .topic-taste:hover { border-color: var(--bitportal-accent); color: var(--bitportal-accent); }
+.topic-liked { border-color: var(--bitportal-accent); color: var(--bitportal-accent); }
+.topic-disliked { opacity: 0.6; text-decoration: line-through; }
+.topic-tastes { display: inline-flex; gap: 8px; margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--bitportal-line); }
+.topic-taste[aria-pressed="true"] { background: var(--bitportal-accent); color: var(--bitportal-accent-ink); border-color: var(--bitportal-accent); }
