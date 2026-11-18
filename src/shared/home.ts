@@ -124,11 +124,11 @@ export async function checkHome(input: string, owner: string | null, deps: HomeC
   } catch {
     /* no relay answered: it stays unannounced as far as this check knows */
   }
-  add("announced", !!mine, mine ? `You announced it, as "${mine.title}".` : "No announcement of this address signed by your key was found on your relays. Announce it with your key first (npm run sign, then npm run announce, in a world from the template).");
+  add("announced", !!mine, mine ? `You announced it, as "${mine.title}".` : "No announcement of this address signed by your key was found on your relays. Announce it on BitPortal's Announce a world page, signed in, giving the ID the world itself uses. The key a world's own folder signs with is a different key, and doesn't count as yours.");
 
   const v = mine ? verifyOrigin(mine, m.manifest, m.url) : null;
   const admits = !!m.manifest.publishers[owner] && (!v || v.verified);
-  add("admits", admits, admits ? (mine ? "Its site admits your key. Together with your announcement, that makes it yours." : "Its site names your key. By itself that shows nothing: anyone can write a key there.") : !m.manifest.publishers[owner] ? "Its site doesn't name your key as one that may announce it. Anyone could announce an address; the site has to agree." : `Your announcement and its site disagree: ${v!.checks.filter((c) => !c.ok).map((c) => c.message).join(" ")}`);
+  add("admits", admits, admits ? (mine ? "Its site admits your key. Together with your announcement, that makes it yours." : "Its site names your key. By itself that shows nothing: anyone can write a key there.") : !m.manifest.publishers[owner] ? "Its site doesn't name your key as one that may announce it. Anyone could announce an address; the site has to agree. In a world from the template, put your npub as \"owner\" in world.json and put it online again." : `Your announcement and its site disagree: ${v!.checks.filter((c) => !c.ok).map((c) => c.message).join(" ")}`);
 
   // What it says about itself, read from the site: the entry for the world you announced, or the one at this address.
   const d = mine?.d ?? Object.keys(m.manifest.worlds).find((k) => normalizeUrl(m.manifest!.worlds[k]!.entry.url) === normalizeUrl(url)) ?? "";
