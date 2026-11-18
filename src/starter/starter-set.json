@@ -2,7 +2,7 @@
   "curator": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
   "set": {
     "kind": 30004,
-    "created_at": 1794974615,
+    "created_at": 1795030843,
     "tags": [
       [
         "d",
@@ -67,8 +67,8 @@
     ],
     "content": "",
     "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-    "id": "ee2b91b22992b04eee331204fef8a8ef9bbd5323b66bad2192d3beaa658fe07d",
-    "sig": "dd52d34fe8d01b9da6bfad772e74cc2bd1634998a7de8ae5cfaee5378dff6cd75d9ef1b8bb917208d37a39077fca2193d6d07ba67271d572400c41c2316584c5"
+    "id": "b157f455097689ff569251af7bf4ff882b01f67cbf5e82ad18ef9eaa481da25e",
+    "sig": "735cb5171a011acd5da3c89df8e6e000ab4df49745de23fd3dd24ef133485ba87dd1ff8de254168e2207e44ee6f2a830f6d18944be848c2a5f1078cf93dbe9bc"
   },
   "worlds": [
     {
@@ -948,7 +948,7 @@
     },
     {
       "kind": 37300,
-      "created_at": 1794974481,
+      "created_at": 1795030815,
       "tags": [
         [
           "d",
@@ -1054,6 +1054,10 @@
           "ISO-639-1"
         ],
         [
+          "audience",
+          "general"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -1064,12 +1068,12 @@
       ],
       "content": "The NSWP world template, deployed unchanged: a hall, some furniture, and two doors. It is where a world of your own begins.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "6086af9f1a90119ce7fdfcadbc91caf2a3cec0d2826c36a65b2f086f70184cb6",
-      "sig": "bb6861da7e08eda7d50e51f61f55558dd998e304b408a0fa3d1c5c6f95f77e38bcd88035eeec563575ba54a607717f12122ed08b9b17d99321fa01671b0e1b9e"
+      "id": "192da36c7e0ab902cfa124d3eac5d4d96b6534a7698feb1e23ffc415e878ddec",
+      "sig": "e0163270625ac0cc704d5cd47412a1c983c5ee7c52110ce991e4ba5c1430b3d110d26bdddb587aa12975449d7da8ddbdccd065cc2fba351d7f5456a1df8b4c0e"
     },
     {
       "kind": 37300,
-      "created_at": 1794974615,
+      "created_at": 1795030843,
       "tags": [
         [
           "d",
@@ -1127,18 +1131,22 @@
           "ISO-639-1"
         ],
         [
+          "audience",
+          "general"
+        ],
+        [
           "alt",
           "Spatial world listing: A-Frame: Hello, World!"
         ]
       ],
       "content": "The classic A-Frame starter scene: a box, a sphere and a cylinder on a plane. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "0c6cf9c7b6da710dd286b00ab83f7006cdd4ea17fdc99f513f4a3a200fadd915",
-      "sig": "954fb8c7dc038cf17307d90342f4432ea14c0aac34914d392fd647feac75efcdb7032fa590dd9eb3e30b4a400cbe68e5a6fe362bb1963c5cf87178c6e66c4c15"
+      "id": "ea73d3c706d008d917ca0482e4c21bd75848540216d3b64f12554c3476555c7c",
+      "sig": "5dc4ba474576e3609e2b666e302bb12a3f3dc1de8273158a500b4b05d8ef2d86a2c6aecff2158fb6a81d14b95ad2eba116a9c6907ad663498b5c46e59b9180b3"
     },
     {
       "kind": 37300,
-      "created_at": 1794974615,
+      "created_at": 1795030843,
       "tags": [
         [
           "d",
@@ -1196,18 +1204,22 @@
           "ISO-639-1"
         ],
         [
+          "audience",
+          "general"
+        ],
+        [
           "alt",
           "Spatial world listing: Immersive Web sample: VR session"
         ]
       ],
       "content": "A minimal sample from the Immersive Web working group that starts a basic VR session. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "74d293ea19a53d95aa26df66a7eb05b75ac028c53575ead313af565d0b6d136a",
-      "sig": "2232929fcd87618f24b329ede7ccf9d989e626f0a3d2d11c38cc95dc10445e274a278660b1215b0922f171c164e8879f36e1ef5a0212c3b65af2ebf031db7a3f"
+      "id": "c3fbc5b3bf43c888f0b65076f8e242bea10c471e2cf366e5e65c33153f11219b",
+      "sig": "b283d5b9ee709166bc7042e30158789931a6e62a7e9a3ee73d41eb04a4c43b090863963d3c63ec12f5569a6c03400fc9b361703ed46e60707bc29611f62cbab0"
     },
     {
       "kind": 37300,
-      "created_at": 1794974615,
+      "created_at": 1795030843,
       "tags": [
         [
           "d",
@@ -1265,18 +1277,22 @@
           "ISO-639-1"
         ],
         [
+          "audience",
+          "general"
+        ],
+        [
           "alt",
           "Spatial world listing: three.js: roller coaster"
         ]
       ],
       "content": "A roller-coaster ride from the three.js examples. You are moved along the track. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "de6d9f571bd17da5449580da89f294a6666cd77d6968808813a2593d1b1c5944",
-      "sig": "ae065a43f172c48775e142d0d5028108c1af3176cbddf487c69349bf63a0ae613eefdcc7252a5dff486ca663f21a3893549020c96c4092af5aa4b651599c89c6"
+      "id": "90b7a1b885fa0774641c9db4cad3ec13d43f2ee50daeee4517be5341c7a23f0a",
+      "sig": "692de1c0aa12112236b0ea3dbd00205b0209e2edb68010eee83e16dc873dd81f5fa88aaef386550437f7881d2ef8f4134f348ea002d8a9f756175003dba78017"
     },
     {
       "kind": 37300,
-      "created_at": 1794974615,
+      "created_at": 1795030843,
       "tags": [
         [
           "d",
@@ -1324,14 +1340,18 @@
           "ISO-639-1"
         ],
         [
+          "audience",
+          "general"
+        ],
+        [
           "alt",
           "Spatial world listing: Moon Rider"
         ]
       ],
       "content": "A music and rhythm game that runs in the browser. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "0f3aecd456c898928ed8b545a030eb95707e55e195aab52173d5abbb424b6d41",
-      "sig": "a6aaaf7c6dab8417d859c0e9f7d8c2bd580c070522d6513441994a1a01d017889de739837ce8a1357bb8172e2aaa8de304687e36dce7cbfdc886c3275f871134"
+      "id": "3c2d1e9d584f0ed2559a030efe07dc31f964af170d824e315f31ad71edb90fa9",
+      "sig": "99254d024e541d68e40db463b4ccf1e2ebf404fb73ab2dc092411768677ed0a3ee12d80c21159e74ef4a691c60e7fc4814603474970967698f39c7c723a50932"
     }
   ]
 }
