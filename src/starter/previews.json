@@ -1,14 +1,14 @@
 {
-  "b3094208e5e731061c55bf2d710931ee875a5f54771e3baa49db4956cf43546a": {
-    "file": "b3094208e5e731061c55bf2d710931ee875a5f54771e3baa49db4956cf43546a.webp",
+  "0cc108d7c57be4c2c969e5b88ab5c93946fe91aebda0c7d80c28c4ce26e11bb7": {
+    "file": "0cc108d7c57be4c2c969e5b88ab5c93946fe91aebda0c7d80c28c4ce26e11bb7.webp",
     "mime": "image/webp",
-    "bytes": 63948,
+    "bytes": 86076,
     "world": "NSWP Reference World A: The Gallery"
   },
-  "e816b32f706aa579ef8b4ad4cd497ebb34f069916867d8b4c2e05cc272ed9932": {
-    "file": "e816b32f706aa579ef8b4ad4cd497ebb34f069916867d8b4c2e05cc272ed9932.webp",
+  "900bd8e297f8fff2cb7e0bff301bf955258646eaa45bba12ed5989acdd58e682": {
+    "file": "900bd8e297f8fff2cb7e0bff301bf955258646eaa45bba12ed5989acdd58e682.webp",
     "mime": "image/webp",
-    "bytes": 92938,
+    "bytes": 118676,
     "world": "NSWP Reference World B: The Grove"
   }
 }
