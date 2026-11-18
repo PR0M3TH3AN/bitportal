@@ -27,6 +27,7 @@ import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalog.js";
 import { placeKind } from "../shared/plate.js";
 import { readLeft } from "../shared/saved.js";
+import { goesPlain, inlineLook, loadLook, setGoesPlain } from "../shared/look.js";
 import { loadSettings } from "../shared/settings.js";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -256,13 +257,24 @@ async function render(): Promise<void> {
   );
   if (a.warnings.length) card.append(issueList(a.warnings, "warn"));
 
-  const identity = el(
-    "fieldset",
-    { class: "identity" },
-    el("legend", {}, "Enter as"),
-    el("label", {}, el("input", { type: "radio", name: "identity", value: "anonymous", checked: "" }), " Anonymous"),
-    el("label", { class: "muted" }, el("input", { type: "radio", name: "identity", value: "main", disabled: "" }), " Your Nostr identity (sign-in arrives in a later version)"),
-  );
+  // How to go: wearing your look, or plain (spec §4.2). Only a world that
+  // reads the arrival context is told anything, and only on this trip.
+  const mine = a.nswpAware ? loadLook() : null;
+  const identity = mine
+    ? el(
+        "fieldset",
+        { class: "identity" },
+        el("legend", {}, "Go as"),
+        el("label", {}, el("input", { type: "radio", name: "go-as", value: "look", id: "go-look", ...(goesPlain() ? {} : { checked: "" }) }), " Yourself, wearing your look"),
+        el("label", {}, el("input", { type: "radio", name: "go-as", value: "plain", id: "go-plain", ...(goesPlain() ? { checked: "" } : {}) }), " Plain: nothing of yours goes with you"),
+        el("p", { class: "small go-as-note" }, "Your look lets people here recognise you from other worlds. Plain, you are a different figure every visit. ", el("a", { href: "/look/" }, "Change your look")),
+      )
+    : el(
+        "p",
+        { class: "small go-as-note" },
+        a.nswpAware ? "You'll arrive plain: a different figure every visit. " : "This site hasn't adopted the protocol, so nothing about you goes with you. ",
+        a.nswpAware ? el("a", { href: "/look/" }, "Make a look") : "",
+      );
   card.append(identity);
 
   const remember = el(
@@ -309,7 +321,11 @@ async function render(): Promise<void> {
     }
     // A site that hasn't adopted NSWP gets a plain visit: nothing is added to
     // its address that it didn't ask for.
-    location.assign(a.nswpAware ? buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF }) : target);
+    // The look goes only if there is one and the visitor chose to wear it. The choice is remembered for next time.
+    const plainBox = document.getElementById("go-plain") as HTMLInputElement | null;
+    if (mine && plainBox) setGoesPlain(plainBox.checked);
+    const look = mine && !(plainBox ? plainBox.checked : goesPlain()) ? inlineLook(mine) : undefined;
+    location.assign(a.nswpAware ? buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}) }) : target);
   };
   go.addEventListener("click", leave);
   card.append(el("div", { class: "actions" }, backButton(), go));

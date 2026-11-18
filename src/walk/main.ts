@@ -18,7 +18,8 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addRoomControls, addViewControls, createConsole, createPortalWindow, createPresence, panoramaTexture, textSprite, type XrConsole } from "nswp-sdk/three";
+import { addRoomControls, addViewControls, createConsole, createFigure, createPortalWindow, createPresence, panoramaTexture, textSprite, type Figure, type XrConsole } from "nswp-sdk/three";
+import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
@@ -301,6 +302,9 @@ async function start(): Promise<void> {
   const hud = mountHud(controls);
   hooks.controls = controls;
   const jumpList = createJumpList({ relays: () => settings.relays, from: "walk" });
+  // The editor is a page, which can't be seen in a headset.
+  controls.addSection({ id: "you", label: "You", icon: "room", note: "How other people see you when you share a room. It is kept on this device." });
+  controls.add({ id: "figure", section: "you", icon: "room", label: "Change how you look", short: "You", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/look/") });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
@@ -722,7 +726,21 @@ async function start(): Promise<void> {
 
   // ------------------------------------------------------- presence
   let refreshRoom = () => {};
-  const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, onChange: () => refreshRoom() });
+  // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
+  const myLook = loadLook();
+  const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), onChange: () => refreshRoom() });
+  // And they can see it too: their own figure stands to one side, as others will see it.
+  let mirror: Figure | null = null;
+  if (myLook) {
+    mirror = createFigure(lookOf(myLook));
+    // Ahead and to the left of where a visitor first stands, turned to face them.
+    mirror.group.position.set(1.9, 1.6, 4.6);
+    mirror.group.rotation.y = Math.atan2(1.9, 4.6);
+    const sign = textSprite("How others see you\nMenu: Change how you look", INK, 1.3);
+    sign.position.set(1.9, 2.32, 4.6);
+    scene.add(mirror.group, sign);
+    state.mirror = mirror.look;
+  }
   ({ refresh: refreshRoom } = addRoomControls(controls, presence, { onState: (s) => (state.room = s) }));
 
   // -------------------------------------------------------- walking
@@ -917,6 +935,7 @@ async function start(): Promise<void> {
     xrConsole.aim(pointed?.onConsole ?? null);
     xrConsole.update(dt, camera, renderer.xr.isPresenting);
     furniture.update(t, dt);
+    mirror?.tick(t);
     renderer.render(scene, camera);
   });
   state.ready = true;
