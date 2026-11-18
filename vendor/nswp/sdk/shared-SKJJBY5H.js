@@ -1,10 +1,10 @@
 import {
   ICONS,
   rgb
-} from "./shared-KPLONJID.js";
+} from "./shared-OXCAHDPV.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
-import * as THREE9 from "three";
+import * as THREE10 from "three";
 import { decodeLook as decodeLook2, encodeNpub, spawnOffset } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
@@ -481,13 +481,13 @@ function buildBody(b, look, main, accent, omit, proven = false) {
     }
   }
   if (omit.has("mark")) return;
-  const plate = (x, y, z, cell, facing) => {
+  const plate = (x, y, z, cell, facing2) => {
     const pitch = cell * 1.14;
     const wide = pitch * 5 + cell * 0.7;
-    b.box([wide, wide, 0.02], [x, y, z - facing * 8e-3], { color: DARK, bevel: 6e-3 });
+    b.box([wide, wide, 0.02], [x, y, z - facing2 * 8e-3], { color: DARK, bevel: 6e-3 });
     if (proven) {
-      const [half, band, zz] = [wide / 2 + cell * 0.55, cell * 0.38, z + facing * 25e-4];
-      const bar = (x0, y0, x1, y1) => b.quad([x + x0, y + y0, zz], [x + x1, y + y0, zz], [x + x1, y + y1, zz], [x + x0, y + y1, zz], { glow: 1 }, [0, 0, facing]);
+      const [half, band, zz] = [wide / 2 + cell * 0.55, cell * 0.38, z + facing2 * 25e-4];
+      const bar = (x0, y0, x1, y1) => b.quad([x + x0, y + y0, zz], [x + x1, y + y0, zz], [x + x1, y + y1, zz], [x + x0, y + y1, zz], { glow: 1 }, [0, 0, facing2]);
       bar(-half, half - band, half, half);
       bar(-half, -half, half, -half + band);
       bar(-half, -half + band, -half + band, half - band);
@@ -496,8 +496,8 @@ function buildBody(b, look, main, accent, omit, proven = false) {
     markGrid(look.mark).forEach(
       (row, r) => row.forEach((on, c) => {
         if (!on) return;
-        const [cx, cy, cz] = [x + (c - 2) * pitch, y + (2 - r) * pitch, z + facing * 25e-4];
-        b.quad([cx - cell / 2, cy - cell / 2, cz], [cx + cell / 2, cy - cell / 2, cz], [cx + cell / 2, cy + cell / 2, cz], [cx - cell / 2, cy + cell / 2, cz], { glow: 1 }, [0, 0, facing]);
+        const [cx, cy, cz] = [x + (c - 2) * pitch, y + (2 - r) * pitch, z + facing2 * 25e-4];
+        b.quad([cx - cell / 2, cy - cell / 2, cz], [cx + cell / 2, cy - cell / 2, cz], [cx + cell / 2, cy + cell / 2, cz], [cx - cell / 2, cy + cell / 2, cz], { glow: 1 }, [0, 0, facing2]);
       })
     );
   };
@@ -3397,7 +3397,7 @@ function createConsole(controls, opts) {
     return info;
   });
   const head = new THREE5.Vector3();
-  const facing = new THREE5.Vector3();
+  const facing2 = new THREE5.Vector3();
   const want = new THREE5.Vector3();
   const hand = new THREE5.Vector3();
   const toHand = new THREE5.Vector3();
@@ -3466,7 +3466,7 @@ function createConsole(controls, opts) {
       }
       clock += dt;
       camera.getWorldPosition(head);
-      camera.getWorldDirection(facing);
+      camera.getWorldDirection(facing2);
       const t = controls.theme;
       const presence = controls.presence;
       const tracked = t.wrist === "off" || presence === "hidden" ? void 0 : grips.find((x) => x.hand === t.wrist && x.grip.visible);
@@ -3474,7 +3474,7 @@ function createConsole(controls, opts) {
         tracked.grip.getWorldPosition(hand);
         toHand.copy(hand).sub(head);
         const far = toHand.length();
-        const inView = toHand.normalize().dot(facing);
+        const inView = toHand.normalize().dot(facing2);
         if (far < 0.48 && inView > 0.88) {
           wristFor += dt;
           wristAway = 0;
@@ -3485,7 +3485,7 @@ function createConsole(controls, opts) {
         if (!open && wristFor > 0.35) setOpen(true, "wrist");
         if (open && mount === "wrist" && wristAway > 0.4) setOpen(false, "wrist");
       } else if (open && mount === "wrist") setOpen(false, "wrist");
-      const flat = Math.hypot(facing.x, facing.z) || 1;
+      const flat = Math.hypot(facing2.x, facing2.z) || 1;
       if (open && mount === "wrist" && tracked) {
         want.set(hand.x, hand.y + 0.16, hand.z);
         if (!placed) group.position.copy(want);
@@ -3495,7 +3495,7 @@ function createConsole(controls, opts) {
         group.lookAt(head);
       } else {
         const reach = open ? 1.05 : 0.75;
-        want.set(head.x + facing.x / flat * reach, Math.max(0.4, head.y - (open ? 0.18 : 0.52)), head.z + facing.z / flat * reach);
+        want.set(head.x + facing2.x / flat * reach, Math.max(0.4, head.y - (open ? 0.18 : 0.52)), head.z + facing2.z / flat * reach);
         if (!placed) {
           group.position.copy(want);
           placed = true;
@@ -3849,7 +3849,7 @@ function createXrInput(opts) {
         if (off > ball.radius + 0.04 + along * 0.02) continue;
         if (off / along < closest) [best, closest] = [thing, off / along];
       }
-      pulled = !!best;
+      pulled = !!best && best.pull;
     }
     if (!best) return false;
     const object = best.object;
@@ -3993,7 +3993,7 @@ function createXrInput(opts) {
     setComfort,
     update,
     grabbable(object, o = {}) {
-      things.set(object, { object, reach: o.reach ?? 0.1, far: o.far ?? true, release: o.release ?? "stay", ...o.onGrab ? { onGrab: o.onGrab } : {}, ...o.onRelease ? { onRelease: o.onRelease } : {} });
+      things.set(object, { object, reach: o.reach ?? 0.1, far: o.far ?? true, pull: o.pull ?? true, release: o.release ?? "stay", ...o.onGrab ? { onGrab: o.onGrab } : {}, ...o.onRelease ? { onRelease: o.onRelease } : {} });
       return () => {
         for (const [slot, h] of held) if (h.thing.object === object) release(slot);
         things.delete(object);
@@ -4028,8 +4028,653 @@ function createXrInput(opts) {
   };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/chamber.ts
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
 import * as THREE7 from "three";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panel-store.ts
+var PANEL_LIMITS = {
+  count: 24,
+  titleChars: 80,
+  noteChars: 4e3,
+  srcChars: 2048,
+  minWidth: 0.3,
+  maxWidth: 3,
+  /** A panel is never kept further from the middle of a world than this, in metres. */
+  reach: 500,
+  /** The largest file of the visitor's own that is kept, in bytes. */
+  fileBytes: 64 * 1024 * 1024
+};
+var ID = /^[a-z0-9-]{4,40}$/;
+var finite = (n) => typeof n === "number" && Number.isFinite(n);
+var clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+function tidy(text, max, lines = false) {
+  if (typeof text !== "string") return "";
+  const cleaned = text.replace(lines ? /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g : /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ");
+  return [...lines ? cleaned : cleaned.replace(/\s+/g, " ").trim()].slice(0, max).join("");
+}
+function cleanPlace(input) {
+  if (!input || typeof input !== "object") return null;
+  const p = input;
+  const at = p.position;
+  if (!Array.isArray(at) || at.length !== 3 || !at.every(finite) || at.some((n) => Math.abs(n) > PANEL_LIMITS.reach)) return null;
+  if (!finite(p.width)) return null;
+  return {
+    position: [at[0], at[1], at[2]],
+    yaw: finite(p.yaw) ? (p.yaw % 360 + 360) % 360 : 0,
+    pitch: finite(p.pitch) ? clamp(p.pitch, -60, 60) : 0,
+    width: clamp(p.width, PANEL_LIMITS.minWidth, PANEL_LIMITS.maxWidth)
+  };
+}
+function cleanSource(input) {
+  if (!input || typeof input !== "object") return null;
+  const s = input;
+  const title = tidy(s.title, PANEL_LIMITS.titleChars);
+  if (s.kind === "note") {
+    const text = tidy(s.text, PANEL_LIMITS.noteChars, true);
+    return text.trim() || title ? { kind: "note", title, text } : null;
+  }
+  if (s.kind === "picture" || s.kind === "video") {
+    if (typeof s.src !== "string" || s.src.length === 0 || s.src.length > PANEL_LIMITS.srcChars) return null;
+    if (!/^(kept:[a-z0-9-]{4,40}|https:\/\/|\/|\.\/|blob:)/.test(s.src)) return null;
+    return { kind: s.kind, title, src: s.src };
+  }
+  return null;
+}
+function cleanRecords(input) {
+  if (!Array.isArray(input)) return [];
+  const out = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((r) => r.id === item.id)) continue;
+    const source = cleanSource(item.source);
+    const place = cleanPlace(item.place);
+    if (!source || !place || "src" in source && source.src.startsWith("blob:")) continue;
+    out.push({ id: item.id, source, place });
+    if (out.length === PANEL_LIMITS.count) break;
+  }
+  return out;
+}
+function facing(at, head) {
+  const [dx, dy, dz] = [head[0] - at[0], head[1] - at[1], head[2] - at[2]];
+  const flat = Math.hypot(dx, dz);
+  if (flat < 1e-6) return { yaw: 0, pitch: 0 };
+  const deg = 180 / Math.PI;
+  return { yaw: (Math.atan2(dx, dz) * deg % 360 + 360) % 360, pitch: clamp(-Math.atan2(dy, flat) * deg, -35, 35) };
+}
+function inFront(head, yawDegrees, already = 0, distance = 1.3) {
+  const step = Math.ceil(already % 7 / 2) * 48 * (already % 2 ? -1 : 1);
+  const a = (yawDegrees + step) * Math.PI / 180;
+  return [head[0] - Math.sin(a) * distance, clamp(head[1] - 0.05, 0.6, 3), head[2] - Math.cos(a) * distance];
+}
+function newId(random = Math.random) {
+  return `p-${Array.from({ length: 10 }, () => Math.floor(random() * 36).toString(36)).join("")}`;
+}
+function wrapText(text, width, measure, maxLines = 40) {
+  const out = [];
+  for (const paragraph of text.split("\n")) {
+    let line = "";
+    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+      const next = line ? `${line} ${word}` : word;
+      if (measure(next) <= width || !line) line = next;
+      else {
+        out.push(line);
+        line = word;
+      }
+      while (measure(line) > width && line.length > 1) {
+        let cut = line.length - 1;
+        while (cut > 1 && measure(line.slice(0, cut)) > width) cut--;
+        out.push(line.slice(0, cut));
+        line = line.slice(cut);
+      }
+    }
+    out.push(line);
+    if (out.length > maxLines) break;
+  }
+  if (out.length > maxLines) {
+    out.length = maxLines;
+    out[maxLines - 1] = `${out[maxLines - 1].replace(/.$/u, "")}\u2026`;
+  }
+  return out;
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
+var BAR = 0.085;
+var GAP = 0.012;
+var BUTTON = 0.062;
+var DEG = Math.PI / 180;
+var DB = "nswp-panels";
+function files() {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(DB, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("files");
+    open.onsuccess = () => resolve(open.result);
+    open.onerror = () => reject(open.error);
+  });
+}
+async function fileStore(mode, run) {
+  try {
+    const db = await files();
+    return await new Promise((resolve, reject) => {
+      const request = run(db.transaction("files", mode).objectStore("files"));
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return void 0;
+  }
+}
+function canvasTexture(width, height, draw) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  draw(canvas.getContext("2d"), width, height);
+  const texture = new THREE7.CanvasTexture(canvas);
+  texture.colorSpace = THREE7.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return texture;
+}
+function noteTexture(source, ink) {
+  const W2 = 1024;
+  const pad = 56;
+  const measure = document.createElement("canvas").getContext("2d");
+  measure.font = "40px system-ui, sans-serif";
+  const lines = wrapText(source.text, W2 - pad * 2, (s) => measure.measureText(s).width);
+  const H3 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
+  const texture = canvasTexture(W2, H3, (g) => {
+    g.fillStyle = "#0a1018";
+    g.fillRect(0, 0, W2, H3);
+    g.fillStyle = ink;
+    g.textBaseline = "top";
+    g.font = "40px system-ui, sans-serif";
+    lines.forEach((line, i) => g.fillText(line, pad, pad + i * 56));
+  });
+  return { texture, aspect: W2 / H3 };
+}
+function glyphTexture(glyph, ink) {
+  return canvasTexture(128, 128, (g) => {
+    g.fillStyle = "#101a26";
+    g.beginPath();
+    g.roundRect(4, 4, 120, 120, 26);
+    g.fill();
+    g.strokeStyle = ink;
+    g.fillStyle = ink;
+    g.lineWidth = 11;
+    g.lineCap = "round";
+    g.beginPath();
+    if (glyph === "close") {
+      g.moveTo(42, 42);
+      g.lineTo(86, 86);
+      g.moveTo(86, 42);
+      g.lineTo(42, 86);
+      g.stroke();
+    } else if (glyph === "smaller" || glyph === "larger") {
+      g.moveTo(38, 64);
+      g.lineTo(90, 64);
+      if (glyph === "larger") {
+        g.moveTo(64, 38);
+        g.lineTo(64, 90);
+      }
+      g.stroke();
+    } else if (glyph === "play") {
+      g.moveTo(48, 36);
+      g.lineTo(92, 64);
+      g.lineTo(48, 92);
+      g.closePath();
+      g.fill();
+    } else {
+      g.fillRect(42, 38, 16, 52);
+      g.fillRect(70, 38, 16, 52);
+    }
+  });
+}
+function barTexture(title, ink) {
+  return canvasTexture(1024, Math.round(1024 * BAR), (g, w, h) => {
+    g.fillStyle = "#101a26";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = ink;
+    g.textBaseline = "middle";
+    g.font = "bold 42px system-ui, sans-serif";
+    g.fillText(title, 96, h / 2 + 2, w - 96 - 290);
+  });
+}
+function createPanels(o) {
+  const accent = new THREE7.Color(o.accent ?? 16758364);
+  const ink = o.textColor ?? "#eef5fb";
+  const root = new THREE7.Group();
+  root.name = "panels";
+  o.scene.add(root);
+  const live = /* @__PURE__ */ new Map();
+  const metal = createAlloy(accent, { gloss: 0.5 });
+  const glyphs = /* @__PURE__ */ new Map();
+  const glyph = (g) => glyphs.get(g) ?? (glyphs.set(g, glyphTexture(g, ink)), glyphs.get(g));
+  const frameShape = (() => {
+    const b = new MeshBuilder().at();
+    b.tone = new THREE7.Color(1186340);
+    b.light = accent.clone();
+    b.box([1, 1, 0.022], [0, 0, 0], { bevel: 8e-3 });
+    return b.geometry();
+  })();
+  const head = new THREE7.Vector3();
+  const at = new THREE7.Vector3();
+  const headV3 = () => {
+    o.camera.getWorldPosition(head);
+    return [head.x, head.y, head.z];
+  };
+  const save = () => {
+    o.onChange?.();
+    if (!o.keep) return;
+    try {
+      localStorage.setItem(o.keep, JSON.stringify([...live.values()].flatMap((p) => p.record ? [{ ...p.record, place: p.place() }] : [])));
+    } catch {
+    }
+  };
+  const layout = (p) => {
+    const h = 1 / p.aspect;
+    p.body.scale.set(1, h, 1);
+    const top = h / 2 + GAP + BAR / 2;
+    if (!p.held) {
+      p.bar.position.set(0, top, 0);
+      p.bar.quaternion.identity();
+      p.bar.scale.set(1, 1, 1);
+    }
+    const frame = p.group.getObjectByName("frame");
+    if (frame) {
+      frame.scale.set(1.03, h + BAR + GAP + 0.03, 1);
+      frame.position.set(0, (BAR + GAP) / 2, -0.014);
+    }
+    let x = 0.5 - BUTTON / 2 - 0.012;
+    for (const name of ["close", "larger", "smaller"]) {
+      p.buttons.get(name)?.position.set(x, top, 4e-3);
+      x -= BUTTON + 0.014;
+    }
+    p.buttons.get("play")?.position.set(-0.5 + BUTTON / 2 + 0.012, top, 4e-3);
+    p.group.scale.setScalar(p.width);
+  };
+  const setPlace = (p, place) => {
+    if (place.position) p.group.position.set(...place.position);
+    if (place.yaw !== void 0 || place.pitch !== void 0) {
+      const now = p.place();
+      p.group.rotation.set((place.pitch ?? now.pitch) * DEG, (place.yaw ?? now.yaw) * DEG, 0, "YXZ");
+    }
+    if (place.width !== void 0) {
+      p.width = Math.min(PANEL_LIMITS.maxWidth, Math.max(PANEL_LIMITS.minWidth, place.width));
+      layout(p);
+    }
+  };
+  const turnToFace = (p) => {
+    const f = facing(p.group.position.toArray(), headV3());
+    p.group.rotation.set(f.pitch * DEG, f.yaw * DEG, 0, "YXZ");
+  };
+  const close = (p) => {
+    if (!live.delete(p.id)) return;
+    p.release?.();
+    p.video?.pause();
+    if (p.video) p.video.src = "";
+    if (p.blobUrl) URL.revokeObjectURL(p.blobUrl);
+    const src = p.record && "src" in p.record.source ? p.record.source.src : "";
+    if (src.startsWith("kept:")) void fileStore("readwrite", (s) => s.delete(src.slice(5)));
+    root.remove(p.group);
+    p.bar.removeFromParent();
+    for (const mesh of [p.body, p.bar]) {
+      mesh.geometry.dispose();
+      const m = mesh.material;
+      if (p.source.kind !== "custom" || mesh !== p.body) m.map?.dispose();
+      m.dispose();
+    }
+    for (const b of p.buttons.values()) b.material.dispose();
+    save();
+  };
+  const flat = (texture, w = 1, h = 1) => new THREE7.Mesh(new THREE7.PlaneGeometry(w, h), new THREE7.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
+  const open = (content, opts = {}) => {
+    const source = content.kind === "custom" ? content : cleanSource(content);
+    if (!source) throw new Error("nswp-sdk: a panel needs something to show (a note with words, or a picture or video with an address).");
+    if (live.size >= PANEL_LIMITS.count && !(opts.id && live.has(opts.id))) throw new Error(`nswp-sdk: ${PANEL_LIMITS.count} panels are open. Put one away first.`);
+    const id = opts.id ?? newId();
+    live.get(id)?.close();
+    const group = new THREE7.Group();
+    group.name = `panel:${id}`;
+    const body = flat(null);
+    body.name = `${id}:body`;
+    const bar = flat(barTexture(source.title || (source.kind === "note" ? "Note" : source.kind === "picture" ? "Picture" : source.kind === "video" ? "Video" : ""), ink), 1, BAR);
+    bar.name = `${id}:bar`;
+    const frame = new THREE7.Mesh(frameShape, metal);
+    frame.name = "frame";
+    frame.raycast = () => {
+    };
+    const buttons = /* @__PURE__ */ new Map();
+    const button = (name, g) => {
+      const mesh = flat(glyph(g), BUTTON, BUTTON);
+      mesh.name = `${id}:${name}`;
+      buttons.set(name, mesh);
+      group.add(mesh);
+    };
+    button("close", "close");
+    button("larger", "larger");
+    button("smaller", "smaller");
+    if (source.kind === "video") button("play", "play");
+    group.add(frame, body, bar);
+    root.add(group);
+    const p = {
+      id,
+      group,
+      source,
+      record: null,
+      body,
+      bar,
+      buttons,
+      video: null,
+      aspect: 16 / 9,
+      width: source.kind === "note" ? 0.8 : 1.1,
+      ready: false,
+      held: false,
+      place() {
+        const e = new THREE7.Euler().setFromQuaternion(group.quaternion, "YXZ");
+        const round = (n) => Math.round(n * 1e3) / 1e3;
+        return { position: group.position.toArray().map(round), yaw: round((e.y / DEG % 360 + 360) % 360), pitch: round(e.x / DEG), width: round(p.width) };
+      },
+      moveTo(place) {
+        setPlace(p, place);
+        save();
+      },
+      close: () => close(p)
+    };
+    live.set(id, p);
+    const show = (texture, aspect) => {
+      const material = body.material;
+      material.map = texture;
+      material.color.set(16777215);
+      material.needsUpdate = true;
+      p.aspect = Math.min(4, Math.max(0.25, aspect));
+      p.ready = true;
+      layout(p);
+    };
+    if (source.kind === "note") {
+      const drawn = noteTexture(source, ink);
+      show(drawn.texture, drawn.aspect);
+    } else if (source.kind === "custom") show(source.texture, source.aspect);
+    else {
+      void (async () => {
+        let src = source.src;
+        if (src.startsWith("kept:")) {
+          const blob = await fileStore("readonly", (s) => s.get(src.slice(5)));
+          if (!blob || !live.has(id)) return;
+          src = p.blobUrl = URL.createObjectURL(blob);
+        }
+        if (source.kind === "picture") {
+          const image = new Image();
+          image.onload = () => {
+            if (!live.has(id)) return;
+            const texture = new THREE7.Texture(image);
+            texture.colorSpace = THREE7.SRGBColorSpace;
+            texture.needsUpdate = true;
+            show(texture, image.naturalWidth / Math.max(1, image.naturalHeight));
+          };
+          image.src = src;
+        } else {
+          const video = document.createElement("video");
+          video.playsInline = true;
+          video.loop = true;
+          video.preload = "metadata";
+          p.video = video;
+          video.addEventListener("loadedmetadata", () => {
+            if (!live.has(id) || !video.videoWidth) return;
+            const texture = new THREE7.VideoTexture(video);
+            texture.colorSpace = THREE7.SRGBColorSpace;
+            show(texture, video.videoWidth / video.videoHeight);
+          });
+          const mark = () => {
+            const m = buttons.get("play")?.material;
+            if (m) m.map = glyph(video.paused ? "play" : "pause");
+            o.onChange?.();
+          };
+          video.addEventListener("play", mark);
+          video.addEventListener("pause", mark);
+          video.src = src;
+        }
+      })();
+    }
+    layout(p);
+    const given = opts.place ? { ...opts.place } : {};
+    if (!given.position) given.position = inFront(headV3(), o.camera.getWorldDirection(at).x === 0 && at.z === 0 ? 0 : Math.atan2(-at.x, -at.z) / DEG, live.size - 1);
+    setPlace(p, given);
+    if (given.yaw === void 0) turnToFace(p);
+    if (o.input) {
+      p.release = o.input.grabbable(bar, {
+        reach: 0.12,
+        pull: false,
+        onGrab: () => {
+          p.held = true;
+        },
+        onRelease: () => {
+          p.held = false;
+          group.add(bar);
+          layout(p);
+          turnToFace(p);
+          save();
+        }
+      });
+    }
+    if (opts.keep !== false && source.kind !== "custom" && !("src" in source && source.src.startsWith("blob:"))) p.record = { id, source, place: p.place() };
+    save();
+    return p;
+  };
+  const restored = (async () => {
+    if (!o.keep) return;
+    let kept = [];
+    try {
+      kept = cleanRecords(JSON.parse(localStorage.getItem(o.keep) ?? "[]"));
+    } catch {
+    }
+    for (const r of kept) {
+      const place = cleanPlace(r.place);
+      if (place) open(r.source, { id: r.id, place });
+    }
+  })();
+  const targets = () => [...live.values()].flatMap((p) => [p.body, ...p.held ? [] : [p.bar], ...p.buttons.values()]);
+  let aimed = null;
+  let drag = null;
+  const find = (hit) => {
+    const cut = hit.lastIndexOf(":");
+    const p = live.get(hit.slice(0, cut));
+    return p ? [p, hit.slice(cut + 1)] : null;
+  };
+  const tint = (hit, on) => {
+    const found = hit ? find(hit) : null;
+    const mesh = found?.[0].buttons.get(found[1]);
+    if (mesh) mesh.material.color.copy(on ? accent : new THREE7.Color(16777215));
+  };
+  const api = {
+    open,
+    async openFile(file) {
+      const kind = file.type.startsWith("image/") ? "picture" : file.type.startsWith("video/") ? "video" : null;
+      if (!kind || file.size > PANEL_LIMITS.fileBytes) return null;
+      const name = newId();
+      const stored = await fileStore("readwrite", (s) => s.put(file, name)) !== void 0;
+      const title = (file.name ?? "").replace(/\.[a-z0-9]+$/i, "");
+      return stored ? open({ kind, title, src: `kept:${name}` }) : open({ kind, title, src: URL.createObjectURL(file) }, { keep: false });
+    },
+    list: () => [...live.values()],
+    get visible() {
+      return root.visible;
+    },
+    set visible(v) {
+      root.visible = v;
+      if (!v) for (const p of live.values()) p.video?.pause();
+      o.onChange?.();
+    },
+    pick(raycaster) {
+      if (!root.visible) return null;
+      const hit = raycaster.intersectObjects(targets(), false)[0];
+      return hit ? hit.object.name : null;
+    },
+    aim(hit) {
+      if (hit === aimed) return;
+      tint(aimed, false);
+      aimed = hit;
+      tint(aimed, true);
+    },
+    press(hit) {
+      const found = find(hit);
+      if (!found) return;
+      const [p, part] = found;
+      if (part === "close") return p.close();
+      if (part === "larger" || part === "smaller") return p.moveTo({ width: p.width * (part === "larger" ? 1.25 : 0.8) });
+      if ((part === "play" || part === "body") && p.video) void (p.video.paused ? p.video.play().catch(() => {
+      }) : Promise.resolve(p.video.pause()));
+    },
+    pointer(phase, raycaster) {
+      if (phase === "down") {
+        const hit = root.visible ? raycaster.intersectObjects(targets(), false)[0] : void 0;
+        const found = hit ? find(hit.object.name) : null;
+        if (!found || found[1] !== "bar") return false;
+        drag = { p: found[0], far: hit.distance, moved: false };
+        return true;
+      }
+      if (!drag) return false;
+      if (phase === "move") {
+        const p = drag.p;
+        const down = (1 / p.aspect / 2 + GAP + BAR / 2) * p.width;
+        raycaster.ray.at(drag.far, at);
+        p.group.position.set(at.x, at.y - down, at.z);
+        turnToFace(p);
+        drag.moved = true;
+        return true;
+      }
+      const moved = drag.moved;
+      drag = null;
+      if (moved) save();
+      return moved;
+    },
+    update(t) {
+      metal.tick(t);
+      for (const p of live.values()) {
+        if (!p.held) continue;
+        p.bar.getWorldPosition(at);
+        const down = (1 / p.aspect / 2 + GAP + BAR / 2) * p.width;
+        p.group.position.set(at.x, at.y - down, at.z);
+        turnToFace(p);
+      }
+    },
+    restored,
+    info: () => [...live.values()].map((p) => ({
+      id: p.id,
+      kind: p.source.kind,
+      title: p.source.title,
+      place: p.place(),
+      playing: p.video ? !p.video.paused : null,
+      held: p.held,
+      ready: p.ready
+    })),
+    dispose() {
+      for (const p of live.values()) {
+        p.release?.();
+        p.video?.pause();
+        if (p.blobUrl) URL.revokeObjectURL(p.blobUrl);
+      }
+      live.clear();
+      o.scene.remove(root);
+      frameShape.dispose();
+      metal.dispose();
+      for (const g of glyphs.values()) g.dispose();
+    }
+  };
+  return api;
+}
+function askForNote(done) {
+  const dialog = document.createElement("dialog");
+  dialog.setAttribute("aria-label", "Write a note");
+  Object.assign(dialog.style, { width: "min(92vw, 520px)", padding: "20px", border: "1px solid #2a3a4a", borderRadius: "14px", background: "#0a1018", color: "#eef5fb", font: "16px/1.5 system-ui, sans-serif" });
+  const field = (el, label) => {
+    const wrap2 = document.createElement("label");
+    wrap2.textContent = label;
+    Object.assign(wrap2.style, { display: "grid", gap: "6px", marginBottom: "14px" });
+    Object.assign(el.style, { font: "inherit", padding: "10px", color: "inherit", background: "#101a26", border: "1px solid #2a3a4a", borderRadius: "8px" });
+    wrap2.append(el);
+    return wrap2;
+  };
+  const title = document.createElement("input");
+  title.maxLength = PANEL_LIMITS.titleChars;
+  const text = document.createElement("textarea");
+  text.rows = 7;
+  text.maxLength = PANEL_LIMITS.noteChars;
+  const row = document.createElement("div");
+  Object.assign(row.style, { display: "flex", gap: "10px", justifyContent: "flex-end" });
+  const button = (label, primary, act) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    Object.assign(b.style, { font: "inherit", fontWeight: primary ? "700" : "500", padding: "10px 18px", borderRadius: "8px", border: "1px solid #2a3a4a", background: primary ? "#eef5fb" : "none", color: primary ? "#04070b" : "inherit", cursor: "pointer" });
+    b.addEventListener("click", act);
+    return b;
+  };
+  const finish = (note) => {
+    dialog.close();
+    dialog.remove();
+    done(note);
+  };
+  row.append(
+    button("Cancel", false, () => finish(null)),
+    button("Hang it", true, () => finish(text.value.trim() || title.value.trim() ? { title: title.value, text: text.value } : null))
+  );
+  dialog.addEventListener("cancel", () => finish(null));
+  dialog.append(field(title, "A heading, if you want one"), field(text, "The note"), row);
+  document.body.append(dialog);
+  dialog.showModal();
+  text.focus();
+}
+function addPanelControls(controls, panels, o) {
+  const note = () => o.presenting() ? "Take a panel by its bar to move it. Write notes and hang pictures on a flat screen: a headset has no keyboard or files to offer." : `Notes, pictures and video in frames you can hang anywhere. Drag one by its bar.${o.kept ? " They are kept in this browser and are here next visit." : ""} A panel can't show another website.`;
+  controls.addSection({ id: "panels", label: "Panels", icon: "panel", note });
+  const full = (act) => {
+    try {
+      act();
+    } catch (err) {
+      controls.say(err instanceof Error && /Put one away/.test(err.message) ? `${PANEL_LIMITS.count} panels are open. Put one away first.` : "That couldn't be hung.");
+    }
+  };
+  const picker = document.createElement("input");
+  picker.type = "file";
+  picker.accept = "image/*,video/*";
+  picker.hidden = true;
+  document.body.append(picker);
+  picker.addEventListener("change", () => {
+    const file = picker.files?.[0];
+    picker.value = "";
+    if (!file) return;
+    void panels.openFile(file).then(
+      (p) => controls.say(p ? "Hung in front of you." : file.size > PANEL_LIMITS.fileBytes ? "That file is too large to hang: 64 MB at most." : "Only pictures and videos can be hung."),
+      () => controls.say(`${PANEL_LIMITS.count} panels are open. Put one away first.`)
+    );
+  });
+  controls.add(
+    {
+      id: "panel-note",
+      section: "panels",
+      icon: "note",
+      label: "Write a note",
+      short: "Note",
+      hidden: o.presenting,
+      act: () => askForNote((n) => {
+        if (n) full(() => void panels.open({ kind: "note", ...n }));
+      })
+    },
+    { id: "panel-file", section: "panels", icon: "panel", label: "Hang a picture or video", short: "Hang", hidden: o.presenting, act: () => picker.click() },
+    {
+      id: "panel-hide",
+      section: "panels",
+      icon: "exit",
+      hidden: () => panels.list().length === 0,
+      on: () => !panels.visible,
+      label: () => panels.visible ? "Hide your panels" : "Show your panels",
+      short: "Hide",
+      act: () => {
+        panels.visible = !panels.visible;
+      }
+    }
+  );
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/chamber.ts
+import * as THREE8 from "three";
 var R = 1.8;
 var H2 = 2.8;
 var BAYS = 10;
@@ -4052,16 +4697,16 @@ function signTexture(lines, color) {
     const y = rows.length === 1 ? 192 : rows.length === 2 ? 138 + i * 118 : 92 + i * 100;
     g.fillText(line, 512, y, 944);
   });
-  const texture = new THREE7.CanvasTexture(canvas);
-  texture.colorSpace = THREE7.SRGBColorSpace;
+  const texture = new THREE8.CanvasTexture(canvas);
+  texture.colorSpace = THREE8.SRGBColorSpace;
   return texture;
 }
 function createChamber(accent, opts = {}) {
-  const light = new THREE7.Color(accent);
+  const light = new THREE8.Color(accent);
   const metal = createAlloy(light, { gloss: 0.5, speed: 0.9 });
   const builder = () => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE7.Color(1317668);
+    b.tone = new THREE8.Color(1317668);
     b.light = light.clone();
     return b;
   };
@@ -4073,7 +4718,7 @@ function createChamber(accent, opts = {}) {
   const wallShape = builder();
   for (let i = 1; i < BAYS; i++) {
     const a = i * 2 * Math.PI / BAYS;
-    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE7.MathUtils.radToDeg(a));
+    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE8.MathUtils.radToDeg(a));
     wallShape.box([bay, H2, 0.12], [0, H2 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
     for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H2 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
   }
@@ -4093,11 +4738,11 @@ function createChamber(accent, opts = {}) {
     leaf.position.set(side * DOOR_W / 2, 0, -reach);
     return leaf;
   });
-  const sign = new THREE7.Mesh(new THREE7.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE7.MeshBasicMaterial({ transparent: true }));
+  const sign = new THREE8.Mesh(new THREE8.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE8.MeshBasicMaterial({ transparent: true }));
   sign.position.set(0, DOOR_H + (H2 - DOOR_H) / 2, -reach + 0.085);
-  const rising = new THREE7.Group();
+  const rising = new THREE8.Group();
   rising.add(walls, ...leaves, sign);
-  const group = new THREE7.Group();
+  const group = new THREE8.Group();
   group.add(floor, rising, lid);
   let door = 0;
   let presence = 1;
@@ -4160,15 +4805,15 @@ function createCrossing(o) {
   let hold;
   let shut = null;
   const moves = () => o.motion?.() ?? true;
-  const at = new THREE7.Vector3();
-  const facing = new THREE7.Vector3();
+  const at = new THREE8.Vector3();
+  const facing2 = new THREE8.Vector3();
   const place = () => {
     chamber?.dispose();
     const made = createChamber(o.accent, o.textColor ? { textColor: o.textColor } : {});
     o.camera.getWorldPosition(at);
-    o.camera.getWorldDirection(facing);
+    o.camera.getWorldDirection(facing2);
     made.group.position.set(at.x, 0, at.z);
-    made.group.rotation.y = Math.atan2(-facing.x, -facing.z);
+    made.group.rotation.y = Math.atan2(-facing2.x, -facing2.z);
     o.scene.add(made.group);
     chamber = made;
     return made;
@@ -4247,16 +4892,16 @@ function createCrossing(o) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/camera.ts
-import * as THREE8 from "three";
+import * as THREE9 from "three";
 async function takePicture(renderer, scene, camera, opts = {}) {
   const width = Math.round(opts.width ?? 1920);
   const height = Math.round(opts.height ?? 1080);
   const hidden = (opts.hide ?? []).filter((o) => o.visible);
   const xrWasEnabled = renderer.xr.enabled;
   const previousTarget = renderer.getRenderTarget();
-  const target = new THREE8.WebGLRenderTarget(width, height, { samples: 4 });
-  target.texture.colorSpace = THREE8.SRGBColorSpace;
-  const eye = new THREE8.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
+  const target = new THREE9.WebGLRenderTarget(width, height, { samples: 4 });
+  target.texture.colorSpace = THREE9.SRGBColorSpace;
+  const eye = new THREE9.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
   camera.updateWorldMatrix(true, false);
   camera.matrixWorld.decompose(eye.position, eye.quaternion, eye.scale);
   eye.updateMatrixWorld(true);
@@ -4287,17 +4932,17 @@ async function takePicture(renderer, scene, camera, opts = {}) {
 }
 async function takeSelfie(renderer, scene, head, look, opts = {}) {
   head.updateWorldMatrix(true, false);
-  const at = new THREE8.Vector3();
-  const facing = new THREE8.Quaternion();
-  head.matrixWorld.decompose(at, facing, new THREE8.Vector3());
-  const ahead = new THREE8.Vector3(0, 0, -1).applyQuaternion(facing).setY(0);
+  const at = new THREE9.Vector3();
+  const facing2 = new THREE9.Quaternion();
+  head.matrixWorld.decompose(at, facing2, new THREE9.Vector3());
+  const ahead = new THREE9.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
   if (ahead.lengthSq() < 1e-6) ahead.set(0, 0, -1);
   ahead.normalize();
   const figure = createFigure(look);
   figure.group.position.copy(at);
   figure.group.rotation.y = Math.atan2(-ahead.x, -ahead.z);
   scene.add(figure.group);
-  const eye = new THREE8.PerspectiveCamera(58, 1, 0.05, head.far);
+  const eye = new THREE9.PerspectiveCamera(58, 1, 0.05, head.far);
   eye.position.copy(at).addScaledVector(ahead, opts.reach ?? 1.7);
   eye.position.y = at.y + 0.08;
   eye.lookAt(at.x, at.y - 0.22, at.z);
@@ -4460,16 +5105,16 @@ function textSprite(text, color, width) {
     g.font = i === 0 ? "bold 56px system-ui, sans-serif" : "44px system-ui, sans-serif";
     g.fillText(line, 40, 32 + i * 72, canvas.width - 80);
   });
-  const tex = new THREE9.CanvasTexture(canvas);
-  tex.colorSpace = THREE9.SRGBColorSpace;
-  const sprite = new THREE9.Sprite(new THREE9.SpriteMaterial({ map: tex, depthWrite: false }));
+  const tex = new THREE10.CanvasTexture(canvas);
+  tex.colorSpace = THREE10.SRGBColorSpace;
+  const sprite = new THREE10.Sprite(new THREE10.SpriteMaterial({ map: tex, depthWrite: false }));
   sprite.scale.set(width, width * canvas.height / canvas.width, 1);
   return sprite;
 }
 function createPresence(d) {
   const labelColor = d.labelColor ?? "#ffffff";
   const changed = () => d.onChange?.();
-  const listener = new THREE9.AudioListener();
+  const listener = new THREE10.AudioListener();
   d.camera.add(listener);
   const avatars = /* @__PURE__ */ new Map();
   const pendingStreams = /* @__PURE__ */ new Map();
@@ -4491,9 +5136,9 @@ function createPresence(d) {
       fade.addColorStop(1, "rgba(255,255,255,0)");
       g.fillStyle = fade;
       g.fillRect(0, 0, 64, 64);
-      dot = new THREE9.CanvasTexture(canvas);
+      dot = new THREE10.CanvasTexture(canvas);
     }
-    return new THREE9.Sprite(new THREE9.SpriteMaterial({ map: dot, color, transparent: true, depthWrite: false }));
+    return new THREE10.Sprite(new THREE10.SpriteMaterial({ map: dot, color, transparent: true, depthWrite: false }));
   };
   const showRecording = (a, on) => {
     if (on && !a.light) {
@@ -4538,7 +5183,7 @@ function createPresence(d) {
     });
   };
   const makeAvatar = (member) => {
-    const root = new THREE9.Group();
+    const root = new THREE10.Group();
     root.visible = false;
     const label = textSprite(member.name, labelColor, 0.5);
     label.position.set(0, 0.42, 0);
@@ -4554,7 +5199,7 @@ function createPresence(d) {
     el.srcObject = stream;
     void el.play().catch(() => {
     });
-    const pa = new THREE9.PositionalAudio(listener);
+    const pa = new THREE10.PositionalAudio(listener);
     pa.setMediaStreamSource(stream);
     pa.setRefDistance(1.5);
     pa.setRolloffFactor(1.2);
@@ -4575,8 +5220,8 @@ function createPresence(d) {
     d.scene.remove(a.root);
     a.figure.dispose();
   };
-  const v = new THREE9.Vector3();
-  const q = new THREE9.Quaternion();
+  const v = new THREE10.Vector3();
+  const q = new THREE10.Quaternion();
   const worldTransform = (o) => {
     o.getWorldPosition(v);
     o.getWorldQuaternion(q);
@@ -4676,9 +5321,9 @@ function createPresence(d) {
     sendTimer = setInterval(() => s.sendPose(ownPose()), SEND_EVERY_MS);
     changed();
   };
-  const tp = new THREE9.Vector3();
-  const tq = new THREE9.Quaternion();
-  const euler = new THREE9.Euler();
+  const tp = new THREE10.Vector3();
+  const tq = new THREE10.Quaternion();
+  const euler = new THREE10.Euler();
   const apply = (o, t, k) => {
     o.position.lerp(tp.set(...t.position), k);
     o.quaternion.slerp(tq.set(...t.quaternion), k);
@@ -4740,7 +5385,7 @@ function createPresence(d) {
       d.camera.getWorldPosition(v);
       for (const a of avatars.values()) {
         if (!a.target) continue;
-        const near = THREE9.MathUtils.clamp((a.head.position.distanceTo(v) - FADE_END) / (FADE_START - FADE_END), 0, 1);
+        const near = THREE10.MathUtils.clamp((a.head.position.distanceTo(v) - FADE_END) / (FADE_START - FADE_END), 0, 1);
         for (const m of a.materials) m.material.opacity = m.opacity * near;
         a.materials[0].material.tick?.(performance.now() / 1e3);
         if (a.beam?.visible && performance.now() > (a.beamUntil ?? 0)) a.beam.visible = false;
@@ -4805,11 +5450,11 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   const previousTarget = renderer.getRenderTarget();
   const autoClearWas = renderer.autoClear;
   const fog = scene.fog;
-  const faceTarget = new THREE9.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE9.HalfFloatType });
-  const flatTarget = new THREE9.WebGLRenderTarget(width, height);
-  flatTarget.texture.colorSpace = THREE9.SRGBColorSpace;
-  const material = new THREE9.ShaderMaterial({
-    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE9.Vector3() }, up: { value: new THREE9.Vector3() }, right: { value: new THREE9.Vector3() } },
+  const faceTarget = new THREE10.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE10.HalfFloatType });
+  const flatTarget = new THREE10.WebGLRenderTarget(width, height);
+  flatTarget.texture.colorSpace = THREE10.SRGBColorSpace;
+  const material = new THREE10.ShaderMaterial({
+    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE10.Vector3() }, up: { value: new THREE10.Vector3() }, right: { value: new THREE10.Vector3() } },
     vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
     fragmentShader: `uniform sampler2D face; uniform vec3 forward; uniform vec3 up; uniform vec3 right; varying vec2 vUv;
       void main(){
@@ -4826,19 +5471,19 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
     depthTest: false,
     depthWrite: false
   });
-  const quad = new THREE9.Mesh(new THREE9.PlaneGeometry(2, 2), material);
-  const quadScene = new THREE9.Scene();
+  const quad = new THREE10.Mesh(new THREE10.PlaneGeometry(2, 2), material);
+  const quadScene = new THREE10.Scene();
   quadScene.add(quad);
-  const quadCamera = new THREE9.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const faceCamera = new THREE9.PerspectiveCamera(90, 1, 0.05, 700);
+  const quadCamera = new THREE10.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const faceCamera = new THREE10.PerspectiveCamera(90, 1, 0.05, 700);
   faceCamera.position.copy(position);
   const views = [
-    [new THREE9.Vector3(0, 0, -1), new THREE9.Vector3(0, 1, 0)],
-    [new THREE9.Vector3(1, 0, 0), new THREE9.Vector3(0, 1, 0)],
-    [new THREE9.Vector3(0, 0, 1), new THREE9.Vector3(0, 1, 0)],
-    [new THREE9.Vector3(-1, 0, 0), new THREE9.Vector3(0, 1, 0)],
-    [new THREE9.Vector3(0, 1, 0), new THREE9.Vector3(0, 0, 1)],
-    [new THREE9.Vector3(0, -1, 0), new THREE9.Vector3(0, 0, -1)]
+    [new THREE10.Vector3(0, 0, -1), new THREE10.Vector3(0, 1, 0)],
+    [new THREE10.Vector3(1, 0, 0), new THREE10.Vector3(0, 1, 0)],
+    [new THREE10.Vector3(0, 0, 1), new THREE10.Vector3(0, 1, 0)],
+    [new THREE10.Vector3(-1, 0, 0), new THREE10.Vector3(0, 1, 0)],
+    [new THREE10.Vector3(0, 1, 0), new THREE10.Vector3(0, 0, 1)],
+    [new THREE10.Vector3(0, -1, 0), new THREE10.Vector3(0, 0, -1)]
   ];
   try {
     for (const o of hidden) o.visible = false;
@@ -4885,24 +5530,24 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   }
 }
 function panoramaTexture(image) {
-  const texture = new THREE9.Texture(image);
-  texture.colorSpace = THREE9.SRGBColorSpace;
-  texture.wrapS = THREE9.RepeatWrapping;
+  const texture = new THREE10.Texture(image);
+  texture.colorSpace = THREE10.SRGBColorSpace;
+  texture.wrapS = THREE10.RepeatWrapping;
   texture.generateMipmaps = false;
-  texture.minFilter = THREE9.LinearFilter;
-  texture.magFilter = THREE9.LinearFilter;
+  texture.minFilter = THREE10.LinearFilter;
+  texture.magFilter = THREE10.LinearFilter;
   texture.needsUpdate = true;
   return texture;
 }
 function createPortalWindow(geometry, pano, opts = {}) {
   const reach = opts.reach ?? 1.5;
-  const material = new THREE9.ShaderMaterial({
+  const material = new THREE10.ShaderMaterial({
     uniforms: {
       pano: { value: pano },
       mask: { value: opts.mask ?? null },
       useMask: { value: opts.mask ? 1 : 0 },
-      toLocal: { value: new THREE9.Matrix3() },
-      center: { value: new THREE9.Vector3() },
+      toLocal: { value: new THREE10.Matrix3() },
+      center: { value: new THREE10.Vector3() },
       reach: { value: Number.isFinite(reach) ? reach : 0 }
     },
     vertexShader: `varying vec3 vWorld; varying vec2 vUv;
@@ -4922,10 +5567,10 @@ function createPortalWindow(geometry, pano, opts = {}) {
         gl_FragColor = vec4(texture2D(pano, vec2(lon / 6.283185307179586 + 0.5, lat / 3.141592653589793 + 0.5)).rgb, 1.0);
         #include <colorspace_fragment>
       }`,
-    side: THREE9.DoubleSide
+    side: THREE10.DoubleSide
   });
-  const mesh = new THREE9.Mesh(geometry, material);
-  const rotation = new THREE9.Matrix4();
+  const mesh = new THREE10.Mesh(geometry, material);
+  const rotation = new THREE10.Matrix4();
   mesh.onBeforeRender = () => {
     rotation.extractRotation(mesh.matrixWorld);
     material.uniforms.toLocal.value.setFromMatrix4(rotation).invert();
@@ -5173,6 +5818,9 @@ export {
   readPad,
   DEFAULT_COMFORT,
   createXrInput,
+  PANEL_LIMITS,
+  createPanels,
+  addPanelControls,
   createChamber,
   createCrossing,
   takePicture,

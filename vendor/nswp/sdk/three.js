@@ -1,6 +1,8 @@
 import {
   DEFAULT_COMFORT,
+  PANEL_LIMITS,
   addCameraControls,
+  addPanelControls,
   addRoomControls,
   addViewControls,
   canRecord,
@@ -9,6 +11,7 @@ import {
   createConsole,
   createCrossing,
   createFigure,
+  createPanels,
   createPortalWindow,
   createPresence,
   createXrInput,
@@ -20,11 +23,13 @@ import {
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-RRBZZ5SS.js";
-import "./shared-KPLONJID.js";
+} from "./shared-SKJJBY5H.js";
+import "./shared-OXCAHDPV.js";
 export {
   DEFAULT_COMFORT,
+  PANEL_LIMITS,
   addCameraControls,
+  addPanelControls,
   addRoomControls,
   addViewControls,
   canRecord,
@@ -33,6 +38,7 @@ export {
   createConsole,
   createCrossing,
   createFigure,
+  createPanels,
   createPortalWindow,
   createPresence,
   createXrInput,
