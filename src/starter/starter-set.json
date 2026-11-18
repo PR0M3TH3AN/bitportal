@@ -2,7 +2,7 @@
   "curator": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
   "set": {
     "kind": 30004,
-    "created_at": 1794944368,
+    "created_at": 1794974615,
     "tags": [
       [
         "d",
@@ -10,11 +10,15 @@
       ],
       [
         "title",
-        "BitPortal starter set (test)"
+        "BitPortal's starter set"
       ],
       [
         "description",
-        "A small hand-picked list for testing the BitPortal lobby: the two NSWP reference worlds and four existing WebXR sites."
+        "The first doors in BitPortal's room: eight worlds made for it, each for a reason, and four existing WebXR sites."
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:tour"
       ],
       [
         "a",
@@ -23,6 +27,26 @@
       [
         "a",
         "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:nswp-reference-world-b"
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:arcade"
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:observatory"
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:workshop"
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:library"
+      ],
+      [
+        "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:starter"
       ],
       [
         "a",
@@ -43,35 +67,35 @@
     ],
     "content": "",
     "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-    "id": "14d04ba702970fe7e1c8782b9c67a4e4952bcf679f1b09836421b12ba5895582",
-    "sig": "9d4a8d44aef914356b81c5dfa3dac8f5ef75b53b57c5fd6d38f0bc8c012e71ba559f5f49ad17280b13b84cce4e18e8bd47be855960b801b656d5cb37992bb219"
+    "id": "ee2b91b22992b04eee331204fef8a8ef9bbd5323b66bad2192d3beaa658fe07d",
+    "sig": "dd52d34fe8d01b9da6bfad772e74cc2bd1634998a7de8ae5cfaee5378dff6cd75d9ef1b8bb917208d37a39077fca2193d6d07ba67271d572400c41c2316584c5"
   },
   "worlds": [
     {
       "kind": 37300,
-      "created_at": 1794972598,
+      "created_at": 1794974497,
       "tags": [
         [
           "d",
-          "nswp-reference-world-a"
+          "tour"
         ],
         [
           "title",
-          "NSWP Reference World A: The Gallery"
+          "The Tour"
         ],
         [
           "summary",
-          "A calm blue gallery with a portal to World B."
+          "Five stops that teach looking, moving, doors and the way home."
         ],
         [
           "r",
-          "https://nswp-world-a.vercel.app/"
+          "https://tour.bitblocks.network/"
         ],
         [
           "preview",
-          "https://nswp-world-a.vercel.app/previews/0cc108d7c57be4c2c969e5b88ab5c93946fe91aebda0c7d80c28c4ce26e11bb7.webp",
+          "https://tour.bitblocks.network/previews/022d009727fa780364a4d880c921969be2d41c9e4f7808d47ccb31b6686e4736.webp",
           "pano",
-          "0cc108d7c57be4c2c969e5b88ab5c93946fe91aebda0c7d80c28c4ce26e11bb7",
+          "022d009727fa780364a4d880c921969be2d41c9e4f7808d47ccb31b6686e4736",
           "2048x1024"
         ],
         [
@@ -91,9 +115,13 @@
           "spatial-portals"
         ],
         [
+          "capability",
+          "rooms"
+        ],
+        [
           "comfort",
           "locomotion",
-          "stationary"
+          "teleport"
         ],
         [
           "comfort",
@@ -131,11 +159,132 @@
         ],
         [
           "t",
-          "nswp"
+          "tutorial"
         ],
         [
           "t",
-          "reference"
+          "start-here"
+        ],
+        [
+          "t",
+          "help"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Tour"
+        ]
+      ],
+      "content": "A short path with five stops for someone's first minute on the spatial web: looking round, moving, doors, the page between places, and getting home.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "71a8b70000a56dd7ef4d151f6a4fa90cb0ea44cf30412742f021c488b7f3b6c9",
+      "sig": "d040d7371b80f3b51aca86d2857ba158fcc5ba91acafe44f186ff89dab4fe157344f5a69f28fd2c1c28757e4bff9945e3be796b0fa900f2e0e39595469b0e933"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794974495,
+      "tags": [
+        [
+          "d",
+          "nswp-reference-world-a"
+        ],
+        [
+          "title",
+          "The Gallery"
+        ],
+        [
+          "summary",
+          "Sculptures made in code, turning slowly on their plinths."
+        ],
+        [
+          "r",
+          "https://gallery.bitblocks.network/"
+        ],
+        [
+          "preview",
+          "https://gallery.bitblocks.network/previews/3f6cfd9b33bc230696e03b6b03113e11d7cccdf183070566fb38fd3fd578f31e.webp",
+          "pano",
+          "3f6cfd9b33bc230696e03b6b03113e11d7cccdf183070566fb38fd3fd578f31e",
+          "2048x1024"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "art"
+        ],
+        [
+          "t",
+          "sculpture"
         ],
         [
           "t",
@@ -156,17 +305,17 @@
         ],
         [
           "alt",
-          "Spatial world listing: NSWP Reference World A: The Gallery"
+          "Spatial world listing: The Gallery"
         ]
       ],
-      "content": "A test world for the Nostr Spatial Web Protocol. It exists to try portal crossings through an Airlock. Source: github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-",
+      "content": "Six sculptures, each a few lines of code turned into a shape, on plinths down a long hall. Doors lead to the Grove and the Workshop.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "7516301a4f62ce6c77ef420766e1cc2e518dacbce54d42bfa1a5228f7711c7ae",
-      "sig": "6c747760350d919d45c9ec5ac9f118ee5dc1a10f8515706a9aaa9f980647be41dca40d84a8aab6786d60da6a9af8c2a0bdec9981ca5446cc5ba5c466fca626b4"
+      "id": "288e10a4b0d3b999cddb909816e29f9b6d86f98b54850c8eed41b705c1650203",
+      "sig": "498aa69480e2e7a4960d33ba6e98a191046bf7ae9a21b2cbb215906a302f5b3de6602d75808df8bf2008b44646ce33d6115be55af85058e32385aa5b257b4fa9"
     },
     {
       "kind": 37300,
-      "created_at": 1794972599,
+      "created_at": 1794974496,
       "tags": [
         [
           "d",
@@ -174,21 +323,21 @@
         ],
         [
           "title",
-          "NSWP Reference World B: The Grove"
+          "The Grove"
         ],
         [
           "summary",
-          "A warm grove of glowing trees with a portal back to World A."
+          "Somewhere to sit and talk, under lantern trees."
         ],
         [
           "r",
-          "https://nswp-world-b.vercel.app/"
+          "https://grove.bitblocks.network/"
         ],
         [
           "preview",
-          "https://nswp-world-b.vercel.app/previews/900bd8e297f8fff2cb7e0bff301bf955258646eaa45bba12ed5989acdd58e682.webp",
+          "https://grove.bitblocks.network/previews/9342a7bca85354f743f269b9f99199094949568c1a2a6c3ad75ee4ca074c1971.webp",
           "pano",
-          "900bd8e297f8fff2cb7e0bff301bf955258646eaa45bba12ed5989acdd58e682",
+          "9342a7bca85354f743f269b9f99199094949568c1a2a6c3ad75ee4ca074c1971",
           "2048x1024"
         ],
         [
@@ -208,9 +357,13 @@
           "spatial-portals"
         ],
         [
+          "capability",
+          "rooms"
+        ],
+        [
           "comfort",
           "locomotion",
-          "stationary"
+          "teleport"
         ],
         [
           "comfort",
@@ -248,15 +401,15 @@
         ],
         [
           "t",
-          "nswp"
+          "social"
         ],
         [
           "t",
-          "reference"
+          "meeting"
         ],
         [
           "t",
-          "nature"
+          "quiet"
         ],
         [
           "L",
@@ -273,17 +426,622 @@
         ],
         [
           "alt",
-          "Spatial world listing: NSWP Reference World B: The Grove"
+          "Spatial world listing: The Grove"
         ]
       ],
-      "content": "A test world for the Nostr Spatial Web Protocol. It exists to try portal crossings through an Airlock. Source: github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-",
+      "content": "A ring of seats round a hearth in a clearing of lantern trees. Press Join to see and hear whoever else is there.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "a06691ea543eccd9a421231bd23b1244cb1db0a53f9aaf9fce0d62f04c69c6a2",
-      "sig": "e4a26013a6cbbb7b80565b807801a82a4bc25253c2133deda97a70f27f70b91b40a0cf1d2995f16976fcdded8da3732993a7483a1618a8628a7a9fc0310161fd"
+      "id": "6e99f3c42fdfb415dd4489c01a6845a0d03fd3bd7435260354259ecd3fc28a2e",
+      "sig": "530d4528b9d93c573e2e97701e902ea0360eb072554ec1d677d980313352fd17674bb9bc3a9fb9af315f29069621d1b45110a37f518c3a65ff49d7fea92daa44"
     },
     {
       "kind": 37300,
-      "created_at": 1794944368,
+      "created_at": 1794974497,
+      "tags": [
+        [
+          "d",
+          "arcade"
+        ],
+        [
+          "title",
+          "The Arcade"
+        ],
+        [
+          "summary",
+          "Twelve drifting lanterns and a clock. Catch them all."
+        ],
+        [
+          "r",
+          "https://arcade.bitblocks.network/"
+        ],
+        [
+          "preview",
+          "https://arcade.bitblocks.network/previews/5947f0ee5b38c5c2f109949e49e62fca076ce760726f66d78f208685bf8d2f8f.webp",
+          "pano",
+          "5947f0ee5b38c5c2f109949e49e62fca076ce760726f66d78f208685bf8d2f8f",
+          "2048x1024"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "medium"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "game"
+        ],
+        [
+          "t",
+          "arcade"
+        ],
+        [
+          "t",
+          "play"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Arcade"
+        ]
+      ],
+      "content": "A small game: walk into twelve lanterns drifting over a field while a clock runs. The best time stays on your own device.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "379f652cf439aebd9907d95d2f2c0665592e0b62620a9c3f224acec00e50d1c0",
+      "sig": "6817066964d74a821e2603829155ed4eead04f6a2a4d7e2de1905778d24fbfeeee5310cf4408300d63f0cf725be8278459ff16b381976d696d741652515420d5"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794974498,
+      "tags": [
+        [
+          "d",
+          "observatory"
+        ],
+        [
+          "title",
+          "The Observatory"
+        ],
+        [
+          "summary",
+          "A terrace under the ringed world, for looking at the sky."
+        ],
+        [
+          "r",
+          "https://observatory.bitblocks.network/"
+        ],
+        [
+          "preview",
+          "https://observatory.bitblocks.network/previews/204ede78478eff8e6f623cbbdaf37fbf1eed194c7a15ab63e3504eac38693915.webp",
+          "pano",
+          "204ede78478eff8e6f623cbbdaf37fbf1eed194c7a15ab63e3504eac38693915",
+          "2048x1024"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "sky"
+        ],
+        [
+          "t",
+          "quiet"
+        ],
+        [
+          "t",
+          "observatory"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Observatory"
+        ]
+      ],
+      "content": "A round terrace with an orrery turning at its middle, under a sky with a ringed world and constellations drawn like a network.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "39d5803393cd97db25616d7b6982fa5a99e763098a7497e8e148c5ce9ed93b91",
+      "sig": "41f8bf9a20c1a26e33058ab36d46ea53037f2ce5155c99888ee4b99d15c9d37fb0dd68eac3b42cdf519676207dab1cace64797c2eca1aa8dcb52545c84ba1179"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794974499,
+      "tags": [
+        [
+          "d",
+          "workshop"
+        ],
+        [
+          "title",
+          "The Workshop"
+        ],
+        [
+          "summary",
+          "Every part these worlds are built from, set out with its name."
+        ],
+        [
+          "r",
+          "https://workshop.bitblocks.network/"
+        ],
+        [
+          "preview",
+          "https://workshop.bitblocks.network/previews/c1f839aa8f309a7521257adcbbd5bf6ff8b9d241e000ef4f8d84522154299288.webp",
+          "pano",
+          "c1f839aa8f309a7521257adcbbd5bf6ff8b9d241e000ef4f8d84522154299288",
+          "2048x1024"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "building"
+        ],
+        [
+          "t",
+          "tools"
+        ],
+        [
+          "t",
+          "how-to"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Workshop"
+        ]
+      ],
+      "content": "For people who want to build a world: the ready-made parts and the four ways of making a shape, each labelled with the name it has in code.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "e282a917f7446dc684e0058113f7c634ae17453ce03e03156f35d9bca8fadb18",
+      "sig": "53bbaf406c213ee6017243f978cad85b50dd80542eaca3facfaf68d2766e7bae1d0befa16a385dd8039a67b5721df4d25d793a88934c1963fabdf4ec7bec3be2"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794974499,
+      "tags": [
+        [
+          "d",
+          "library"
+        ],
+        [
+          "title",
+          "The Library"
+        ],
+        [
+          "summary",
+          "Eight short notes on why the open spatial web is built this way."
+        ],
+        [
+          "r",
+          "https://library.bitblocks.network/"
+        ],
+        [
+          "preview",
+          "https://library.bitblocks.network/previews/5b2a5efad94e836203f53a5b2359e9b4e87baba3299c1e3c432f216625a1e02e.webp",
+          "pano",
+          "5b2a5efad94e836203f53a5b2359e9b4e87baba3299c1e3c432f216625a1e02e",
+          "2048x1024"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "reading"
+        ],
+        [
+          "t",
+          "ideas"
+        ],
+        [
+          "t",
+          "how-it-works"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Library"
+        ]
+      ],
+      "content": "A reading room. Eight notes on its walls explain worlds, doors, the page between them, signing, verifying, and what stays private.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "f0bf3843996bfa1282851a9d703927647c2db6a597793c470ac667bc4e5f2d4f",
+      "sig": "3c1afeea65caccfee9d1d11b5de28805a84f8705efc6582677cf2501e438929eabcce8740a03018a49ec35bdbd36c083e1f187cd42ee94c09b073a032159516e"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794974481,
+      "tags": [
+        [
+          "d",
+          "starter"
+        ],
+        [
+          "title",
+          "The Starter Home"
+        ],
+        [
+          "summary",
+          "What a world looks like the day you start one from the template."
+        ],
+        [
+          "r",
+          "https://starter.bitblocks.network/"
+        ],
+        [
+          "preview",
+          "https://starter.bitblocks.network/previews/521417007877f0cdbc00cfd6ff6681d3faecb9c930e32b86379f367b512eac56.webp",
+          "pano",
+          "521417007877f0cdbc00cfd6ff6681d3faecb9c930e32b86379f367b512eac56",
+          "2048x1024"
+        ],
+        [
+          "mode",
+          "immersive-vr"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "webxr"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "controllers"
+        ],
+        [
+          "input",
+          "hands"
+        ],
+        [
+          "input",
+          "gaze"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "mobile"
+        ],
+        [
+          "t",
+          "template"
+        ],
+        [
+          "t",
+          "starter"
+        ],
+        [
+          "t",
+          "building"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Starter Home"
+        ]
+      ],
+      "content": "The NSWP world template, deployed unchanged: a hall, some furniture, and two doors. It is where a world of your own begins.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "6086af9f1a90119ce7fdfcadbc91caf2a3cec0d2826c36a65b2f086f70184cb6",
+      "sig": "bb6861da7e08eda7d50e51f61f55558dd998e304b408a0fa3d1c5c6f95f77e38bcd88035eeec563575ba54a607717f12122ed08b9b17d99321fa01671b0e1b9e"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1794974615,
       "tags": [
         [
           "d",
@@ -347,12 +1105,12 @@
       ],
       "content": "The classic A-Frame starter scene: a box, a sphere and a cylinder on a plane. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "777f48f2c083c1f5021f5a5a10aeafcbcd9814e2640fea61720bb32fc1489a5f",
-      "sig": "30861903612aa5aa2368bf43c40f0f53bc752b58caae7dd617c90e714651449eb98ffd18911ecd28a848e0de2454a6f1ae92c4a987cac068fb7b27a8479f947f"
+      "id": "0c6cf9c7b6da710dd286b00ab83f7006cdd4ea17fdc99f513f4a3a200fadd915",
+      "sig": "954fb8c7dc038cf17307d90342f4432ea14c0aac34914d392fd647feac75efcdb7032fa590dd9eb3e30b4a400cbe68e5a6fe362bb1963c5cf87178c6e66c4c15"
     },
     {
       "kind": 37300,
-      "created_at": 1794944368,
+      "created_at": 1794974615,
       "tags": [
         [
           "d",
@@ -416,12 +1174,12 @@
       ],
       "content": "A minimal sample from the Immersive Web working group that starts a basic VR session. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "e8c870f637c73128071952c20161df73e6a94c26c81a6f4759f6232b31b209f8",
-      "sig": "6808943a8ff47dee2844da82856372fecb0519a0c453be76630a41d3b0dce7189e9918b8d30a1e56482b5d282f6e9b38394e2cd2b70128a41134f0e77ae9e017"
+      "id": "74d293ea19a53d95aa26df66a7eb05b75ac028c53575ead313af565d0b6d136a",
+      "sig": "2232929fcd87618f24b329ede7ccf9d989e626f0a3d2d11c38cc95dc10445e274a278660b1215b0922f171c164e8879f36e1ef5a0212c3b65af2ebf031db7a3f"
     },
     {
       "kind": 37300,
-      "created_at": 1794944368,
+      "created_at": 1794974615,
       "tags": [
         [
           "d",
@@ -485,12 +1243,12 @@
       ],
       "content": "A roller-coaster ride from the three.js examples. You are moved along the track. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "a2438a35e06d5a0f45b34177f1ec4d811bc19f8ae74fd534d76b37ed834f4df1",
-      "sig": "bcc3c6ff0d0dc65dbd7f3a61ea37d37f9238db192dd0bd5b8f43c2424d484cbc7c25bc284a41e488ad4af98db48281046b81dad9232c29cddd4462f4da3fd051"
+      "id": "de6d9f571bd17da5449580da89f294a6666cd77d6968808813a2593d1b1c5944",
+      "sig": "ae065a43f172c48775e142d0d5028108c1af3176cbddf487c69349bf63a0ae613eefdcc7252a5dff486ca663f21a3893549020c96c4092af5aa4b651599c89c6"
     },
     {
       "kind": 37300,
-      "created_at": 1794944368,
+      "created_at": 1794974615,
       "tags": [
         [
           "d",
@@ -544,8 +1302,8 @@
       ],
       "content": "A music and rhythm game that runs in the browser. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "21f4fb9de94dee48be20bb8fd9b2c589325760f017e33239fa1c1cf102c28796",
-      "sig": "16a8203757131b0fb42f919799e70875b07b3236509d6414a70f6d0b5e285b1ef2e8a91acd0d7199e362f12260cfd0f0c50ef3291e268ec377da7a854c1e0099"
+      "id": "0f3aecd456c898928ed8b545a030eb95707e55e195aab52173d5abbb424b6d41",
+      "sig": "a6aaaf7c6dab8417d859c0e9f7d8c2bd580c070522d6513441994a1a01d017889de739837ce8a1357bb8172e2aaa8de304687e36dce7cbfdc886c3275f871134"
     }
   ]
 }

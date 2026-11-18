@@ -9,7 +9,7 @@ BitPortal is the reference app for the
 **Phase 1** of that spec (the lobby) and the start of **Phase 2** (sign-in and
 announcing a world).
 
-Test build: <https://bitportal.vercel.app/>
+Live, and experimental: <https://portal.bitblocks.network/>
 
 ## What it does
 

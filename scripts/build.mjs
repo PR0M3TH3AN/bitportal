@@ -76,6 +76,8 @@ writeFileSync(
     {
       cleanUrls: true,
       trailingSlash: true,
+      // BitPortal's first address sends visitors on to the one it lives at now.
+      redirects: [{ source: "/(.*)", has: [{ type: "host", value: "bitportal.vercel.app" }], destination: "https://portal.bitblocks.network/$1", permanent: false }],
       headers: [
         {
           source: "/(.*)",

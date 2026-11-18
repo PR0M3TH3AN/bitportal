@@ -1,14 +1,50 @@
 {
-  "0cc108d7c57be4c2c969e5b88ab5c93946fe91aebda0c7d80c28c4ce26e11bb7": {
-    "file": "0cc108d7c57be4c2c969e5b88ab5c93946fe91aebda0c7d80c28c4ce26e11bb7.webp",
+  "022d009727fa780364a4d880c921969be2d41c9e4f7808d47ccb31b6686e4736": {
+    "file": "022d009727fa780364a4d880c921969be2d41c9e4f7808d47ccb31b6686e4736.webp",
     "mime": "image/webp",
-    "bytes": 86076,
-    "world": "NSWP Reference World A: The Gallery"
+    "bytes": 117242,
+    "world": "The Tour"
   },
-  "900bd8e297f8fff2cb7e0bff301bf955258646eaa45bba12ed5989acdd58e682": {
-    "file": "900bd8e297f8fff2cb7e0bff301bf955258646eaa45bba12ed5989acdd58e682.webp",
+  "3f6cfd9b33bc230696e03b6b03113e11d7cccdf183070566fb38fd3fd578f31e": {
+    "file": "3f6cfd9b33bc230696e03b6b03113e11d7cccdf183070566fb38fd3fd578f31e.webp",
     "mime": "image/webp",
-    "bytes": 118676,
-    "world": "NSWP Reference World B: The Grove"
+    "bytes": 86570,
+    "world": "The Gallery"
+  },
+  "9342a7bca85354f743f269b9f99199094949568c1a2a6c3ad75ee4ca074c1971": {
+    "file": "9342a7bca85354f743f269b9f99199094949568c1a2a6c3ad75ee4ca074c1971.webp",
+    "mime": "image/webp",
+    "bytes": 117960,
+    "world": "The Grove"
+  },
+  "5947f0ee5b38c5c2f109949e49e62fca076ce760726f66d78f208685bf8d2f8f": {
+    "file": "5947f0ee5b38c5c2f109949e49e62fca076ce760726f66d78f208685bf8d2f8f.webp",
+    "mime": "image/webp",
+    "bytes": 97592,
+    "world": "The Arcade"
+  },
+  "204ede78478eff8e6f623cbbdaf37fbf1eed194c7a15ab63e3504eac38693915": {
+    "file": "204ede78478eff8e6f623cbbdaf37fbf1eed194c7a15ab63e3504eac38693915.webp",
+    "mime": "image/webp",
+    "bytes": 109268,
+    "world": "The Observatory"
+  },
+  "c1f839aa8f309a7521257adcbbd5bf6ff8b9d241e000ef4f8d84522154299288": {
+    "file": "c1f839aa8f309a7521257adcbbd5bf6ff8b9d241e000ef4f8d84522154299288.webp",
+    "mime": "image/webp",
+    "bytes": 106972,
+    "world": "The Workshop"
+  },
+  "5b2a5efad94e836203f53a5b2359e9b4e87baba3299c1e3c432f216625a1e02e": {
+    "file": "5b2a5efad94e836203f53a5b2359e9b4e87baba3299c1e3c432f216625a1e02e.webp",
+    "mime": "image/webp",
+    "bytes": 92224,
+    "world": "The Library"
+  },
+  "521417007877f0cdbc00cfd6ff6681d3faecb9c930e32b86379f367b512eac56": {
+    "file": "521417007877f0cdbc00cfd6ff6681d3faecb9c930e32b86379f367b512eac56.webp",
+    "mime": "image/webp",
+    "bytes": 97234,
+    "world": "The Starter Home"
   }
 }
