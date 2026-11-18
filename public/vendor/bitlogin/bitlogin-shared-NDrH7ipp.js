@@ -106,6 +106,15 @@ class c {
   repairReplicas() {
     return this.call("repairReplicas", {});
   }
+  previewPhraseRebuild(e) {
+    return this.call("previewPhraseRebuild", e);
+  }
+  rebuildFromPhrase(e) {
+    return this.call("rebuildFromPhrase", e);
+  }
+  checkReplicaHealth() {
+    return this.call("checkReplicaHealth", {});
+  }
   getSessionStatus() {
     return this.call("getSessionStatus", {});
   }

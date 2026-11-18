@@ -92,20 +92,20 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "2e24babcc94a1ab86ede964b9c7cc1ab3806684b",
+        "commit": "249cc9ef62e7f60aea9a5fcec215d23de8fbaf04",
         "remote": "https://github.com/PR0M3TH3AN/bitlogin.git"
       },
       "files": {
         "LICENSE": "23e1f76916d6a20d0e370fc6ac6288b3e68f4a2c426db6b7389260f2c5ab9396",
-        "bitlogin-headless.js": "9eb407f766509d81e5f5765f3692ca360eb9021d58d2f64212a5fe43723faad0",
+        "bitlogin-headless.js": "e1e128d76fe064b3c974feb3c6c740b7d2b64dd81bdea6790621fee659f5bb0b",
         "bitlogin-session.js": "fc7484a7e6897a3d2cbaefaaebb6a667ce7d3eefdfb868673b41b1be8e2eacd5",
-        "bitlogin-shared-CEfP5Eg9.js": "6e19179b46deab241ffa9baded2ab0245122cf88e5b4191fcd4ca905b81a67be",
-        "bitlogin-shared-Co4_WTb5.js": "ffecf43e4856105d485402c7d46ca6950b621965a85c5962daf0177f0e538237",
-        "bitlogin-shared-DeDxZ3Jc.js": "290c293f288a16f5c753d19b0eecee795ea07b5fe31219812f260aae407de29b",
-        "bitlogin-shared-S-E8m1vT.js": "263b94f083fa198995d68bf3bf491df5aaeaa2074ea78e8a503a7cbfd2e342e7",
-        "bitlogin.js": "33b1affeeef151d0aeadc9b88f91d972df5e63b2fd8ea02558be2867281b839a",
-        "cryptoWorker.js": "648f36b958996db4f56f0c5dd97e4823f317498216d61a61b281fec1e48cdb2f",
-        "integrity.json": "b7c0d0e431cf8b063f4295f5c755452ae942cfea00b5bc7c19a03878156f14e5"
+        "bitlogin-shared--RKqtVS5.js": "2a5d6ad9e3452cc3ee546f30f93d54b9de9461e4e56d4814f8c2717fa6b7fa02",
+        "bitlogin-shared-B-lZFF_w.js": "34d249fb478becec06f238f5ae4fe49d8543c3615735dbf366ace77d6730a6f1",
+        "bitlogin-shared-BfVp4BYH.js": "bcbe914ce9e7593820a99d9d4d7c63f977014b5f4e425cd0931f9336865b4470",
+        "bitlogin-shared-NDrH7ipp.js": "5152be316041d365744b1348401d85ae3ba6983fc9b4bf9d116532515533ff96",
+        "bitlogin.js": "169c913508074b3496709e93d6fea553984f10576bb583d6a81ce22539d427eb",
+        "cryptoWorker.js": "712242f4f71d18c7f9c53d457340f83604d3f4e8588ae7cb34797a159c1bfd64",
+        "integrity.json": "99e138a3fd5c0bfbb29821515a39a2fed24ea6ca372075ce057ccaa10fef9c38"
       }
     },
     "bitblocks-fonts": {
