@@ -25,12 +25,14 @@ Test build: <https://bitportal.vercel.app/>
   a world, you face the door you left through. The room's furniture is a home
   layout, the same format as a world template's `home.json`, and can be
   replaced in Settings. Click, tap or point at the floor and select to step
-  closer to a door. In a headset the page's buttons are out of reach, so a
-  small **Menu** button floats low in front of you: it opens Turn around (the
-  other wall is behind you), the room and microphone controls, the list, and
-  Leave VR. Press **Join the room** to see and talk to other
-  visitors; joining shows your IP address to them, so nothing connects before
-  you ask.
+  closer to a door. The room's controls come from the NSWP controls kit, the
+  same as every world's: on a flat screen a HUD with a row of keys along the
+  bottom (1 to 6 press them) and a Menu; in a headset a console that comes up
+  above your left wrist, or from the small **Menu** button low in front of
+  you. It has Turn around (the other wall is behind you), the room and
+  microphone, the list, and a Look section for its colours. Joining the room
+  shows your IP address to the others in it, so nothing connects before you
+  ask.
 - **Opening a door** checks, at that moment, whether the world's site vouches
   for the key that announced it ("Verified").
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
@@ -138,7 +140,7 @@ file hashes in `vendor/integrity.json` (BitBlocks convention D7):
 |---|---|---|
 | `@nswp/core` | the NSWP repo | `vendor/nswp/` |
 | BitFeed standalone | the BitFeed repo | `vendor/bitfeed/` |
-| `nswp-sdk/three` (avatars, voice, rooms) and `nswp-sdk/home` (the room's furniture) | the NSWP repo | `vendor/nswp/` |
+| `nswp-sdk/three` (avatars, voice, rooms, the headset console), `nswp-sdk/home` (the room's furniture) and `nswp-sdk/ui` (the HUD) | the NSWP repo | `vendor/nswp/` |
 | BitLogin widget | the bitlogin repo's `release/` folder | `public/vendor/bitlogin/` |
 | Ubuntu Sans fonts | the bitblocks repo | `public/fonts/` |
 
