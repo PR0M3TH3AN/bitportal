@@ -6,7 +6,7 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "17954e50162661fa333f804bd53d4038e4dffe15",
+        "commit": "a41277b54816f1e711db6773e725e37a540608a6",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
@@ -49,13 +49,13 @@
         "sdk-types/ui/icons.d.ts": "42e4017fbed90a46f2b7d4189a8c0e1c9cf01819730ecaa9e799e7c556327409",
         "sdk-types/ui/model.d.ts": "07374169d041b7b64ec6a4a48758087bf876c282bc4fd29a5274ec2af69cc23d",
         "sdk-types/ui/theme.d.ts": "7b205c25d8af0e912d72b979fc8d047c11ebec304c0a79def6c0f7daa4e2be11",
-        "sdk/home.js": "743ec4525f5bab920153f1b2f1643cb4c75225ecf442ee56f14c6d77d5d81b53",
+        "sdk/home.js": "539f4f433e3c07ac50138fdb0fab08be20858bca8e15db817be69032362d844c",
+        "sdk/shared-QDT2L4OK.js": "100b23635f12b0af7dbdcc62fc177c2f61f6ca3a0c425a80c7cd176d64385a99",
         "sdk/shared-QLSLERQ3.js": "eb4a8e71a94c3b9ea153fda5aceddf26646c6a12c0c036f6a031b9a46410d2dd",
-        "sdk/shared-T3VY6PRU.js": "1ab6f861879bcd6652a0dcdf5b713a25ec42d8b75d6f236c68cefc0be6a658ef",
         "sdk/shared-U2U7QRDK.js": "155156098aecb801a47cc461d71866c27639f8c26cfa763f24d4fa14497fd07e",
         "sdk/shared-YU6PPIY6.js": "c2342f732640e59a058f43d13c4c3d190a1a72e7cda3d2a4a09fba8e02ffb7cc",
         "sdk/terminal.js": "daf8157db46d0ac3408eac3fb00cc5cbb73d5878474397a19ae7d77945904c6d",
-        "sdk/three.js": "66f0603cc6880ae987988a04382c441df65b7b9411abd5a6c4132fae19ca7955",
+        "sdk/three.js": "0c48ef30868463118ccc852d8447cf0c0426bc59fefc847510b8fb084f6af48a",
         "sdk/ui.js": "f3f0e80a9e9b9e9541761562d5b26566e91f5d09ee93b0a39354c0b8c754a1c8",
         "types/arrival.d.ts": "2950088155732cf258d511c26cbe9c3bdd818dccee1606af021176883d721f43",
         "types/avatar.d.ts": "a6d58509965d24b1d65adfc3692045a099b1bbb9faec78fcc055aba60efb92cc",
