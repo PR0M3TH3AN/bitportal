@@ -239,6 +239,20 @@ Not built: a list of what a host refuses (a strict copy has no use for one),
 a kids-only setting, and BitGate, which will let each visitor tighten what
 they see and never loosen what the host decided.
 
+## Staying joined as you travel
+
+Someone who is in a room, in BitPortal's own room or in a world, stays joined
+when they go through a door: the world at the other end joins its open room
+without asking again and tells them so
+([NSWP-02](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/02-doors.md)).
+The Airlock shows it, with a box to untick.
+
+A microphone goes along only after the visitor ticks "Keep my microphone on
+between worlds" on the Airlock, once. It is remembered in the browser. It is
+off by default because the link that says "microphone on" is something anyone
+could write and send: without the tick, a link in a message could put a live
+microphone into a room of strangers. A private room doesn't travel.
+
 ## Hashtags
 
 A world's topics are its hashtags. Press one on a world's page, or in "Find a
