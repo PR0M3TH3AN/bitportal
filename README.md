@@ -24,7 +24,11 @@ Test build: <https://bitportal.vercel.app/>
   behind. Point at a door and select it, or walk through it. Coming back from
   a world, you face the door you left through. The room's furniture is a home
   layout, the same format as a world template's `home.json`, and can be
-  replaced in Settings. Press **Join the room** to see and talk to other
+  replaced in Settings. Click, tap or point at the floor and select to step
+  closer to a door. In a headset the page's buttons are out of reach, so a
+  small **Menu** button floats low in front of you: it opens Turn around (the
+  other wall is behind you), the room and microphone controls, the list, and
+  Leave VR. Press **Join the room** to see and talk to other
   visitors; joining shows your IP address to them, so nothing connects before
   you ask.
 - **Opening a door** checks, at that moment, whether the world's site vouches

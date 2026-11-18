@@ -3,14 +3,20 @@ import {
   capturePanorama,
   createPortalWindow,
   createPresence,
+  createWorldMenu,
+  menuItemFor,
   panoramaTexture,
-  textSprite
-} from "./shared-E5TXWHCN.js";
+  textSprite,
+  turnVisitor
+} from "./shared-CCNFFHP3.js";
 export {
   attachRoomControls,
   capturePanorama,
   createPortalWindow,
   createPresence,
+  createWorldMenu,
+  menuItemFor,
   panoramaTexture,
-  textSprite
+  textSprite,
+  turnVisitor
 };

@@ -1,7 +1,7 @@
 import {
   createPortalWindow,
   textSprite
-} from "./shared-E5TXWHCN.js";
+} from "./shared-CCNFFHP3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
 import * as THREE from "three";
