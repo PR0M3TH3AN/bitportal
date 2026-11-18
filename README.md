@@ -239,6 +239,16 @@ Not built: a list of what a host refuses (a strict copy has no use for one),
 a kids-only setting, and BitGate, which will let each visitor tighten what
 they see and never loosen what the host decided.
 
+## Sound
+
+The room has sound: steps, presses, doors, people coming and going, and a
+quiet music made in the browser. The Sound part of the menu holds the
+visitor's own volumes (effects, music, voices, all off) and their own music:
+songs added from their device, kept in this browser, and heard by nobody
+else. Each world has its own sounds and its own copy of that menu; a
+visitor's songs don't follow them from site to site, because a browser keeps
+each site's files apart.
+
 ## Sharing a screen in the room
 
 Someone at a desk or laptop, joined in the room, can press "Share your

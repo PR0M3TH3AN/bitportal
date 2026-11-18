@@ -19,7 +19,7 @@ import * as THREE from "three";
 import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { ARRIVED_JOINED } from "../shared/travel.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -73,6 +73,8 @@ interface Clickable {
 }
 
 interface TestHooks {
+  /** What the room sounds like: cues, its music, and the visitor's own. */
+  sounds?: unknown;
   state: Record<string, unknown>;
   doors(): { id: string; title: string; domain: string; wall: Wall; position: number[] }[];
   /** Save a suggested door, or remove one of the visitor's own, as selecting its button would. */
@@ -324,6 +326,11 @@ async function start(): Promise<void> {
   const controls = createControls({ title: "Your room", address: location.host, theme: { accent: room.layout.room.accent } });
   const hud = mountHud(controls);
   hooks.controls = controls;
+  // Sound in the room: the kit's cues, a quiet music of the room's own, and the visitor's own songs. The volumes
+  // are the visitor's, kept in this browser. A world's sounds stop at its own door: here they are BitPortal's.
+  const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal", keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" } });
+  addSoundControls(controls, sounds);
+  hooks.sounds = sounds;
   const jumpList = createJumpList({ relays: () => settings.relays, from: "walk" });
   // The editor is a page, which can't be seen in a headset.
   controls.addSection({ id: "you", label: "You", icon: "room", note: "How other people see you when you share a room. It is kept on this device." });
@@ -633,6 +640,7 @@ async function start(): Promise<void> {
     const w = door.entry.world;
     // The walls come up, with where this door leads over them. The Airlock is next, and it is what checks.
     const to = hostParts(w.url);
+    sounds.play("cross");
     await crossing.leave({ title: w.title, address: `${to.prefix}${to.domain}` });
     document.body.classList.add("leaving");
     const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: door.entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
@@ -697,6 +705,7 @@ async function start(): Promise<void> {
       rig.position.z += dz;
     },
     speed: 2.2,
+    onBlocked: () => sounds.bump(),
   });
   const stepToFloor = () => {
     const to = floorSpot();
@@ -914,7 +923,10 @@ async function start(): Promise<void> {
     rig.position.add(stepVec);
     const limit = RADIUS + 1.5;
     const dist = Math.hypot(rig.position.x, rig.position.z);
-    if (dist > limit) rig.position.multiplyScalar(limit / dist);
+    if (dist > limit) {
+      rig.position.multiplyScalar(limit / dist);
+      sounds.bump();
+    }
   };
 
   // Walking through a doorway counts as choosing it.
@@ -1009,6 +1021,8 @@ async function start(): Promise<void> {
     if (d) void visit(d);
   };
   hooks.roomInfo = () => presence.info();
+  // How loud other people are is the visitor's to set, with the rest of their volumes.
+  sounds.onChange((levels) => presence.setVolume(levels.off ? 0 : levels.voices));
   // The visitor's camera: a picture, a selfie, a short clip, saved to their own device.
   hooks.camera = addCameraControls(controls, {
     renderer,
@@ -1077,7 +1091,11 @@ async function start(): Promise<void> {
   const started = performance.now();
   let lastT = 0;
   let wasBusy = false;
+  const movedFrom = rig.position.clone();
   renderer.setAnimationLoop(() => {
+    // Steps are made from how far the visitor was moved, not from how their head sways.
+    if (state.ready) sounds.moved(Math.hypot(rig.position.x - movedFrom.x, rig.position.z - movedFrom.z));
+    movedFrom.copy(rig.position);
     const t = (performance.now() - started) / 1000;
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
