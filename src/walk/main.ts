@@ -329,7 +329,12 @@ async function start(): Promise<void> {
   hooks.controls = controls;
   // Sound in the room: the kit's cues, a quiet music of the room's own, and the visitor's own songs. The volumes
   // are the visitor's, kept in this browser. A world's sounds stop at its own door: here they are BitPortal's.
-  const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal", keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" } });
+  const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal",
+    kit: "/sounds/kit/",
+    // The room's own music: four pieces, in turn, starting with the one the owner picked first.
+    theme: { music: ["/sounds/room-b.ogg", "/sounds/room-a.ogg", "/sounds/room-c.ogg", "/sounds/room-d.ogg"] },
+    keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" },
+  });
   addSoundControls(controls, sounds);
   hooks.sounds = sounds;
   const jumpList = createJumpList({ relays: () => settings.relays, from: "walk" });

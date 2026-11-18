@@ -48,6 +48,8 @@ await build({
 });
 
 cpSync(join(root, "public"), out, { recursive: true });
+// The kit's own sounds, served from this site like everything else: nothing is fetched from anywhere else.
+cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: true, filter: (f) => !/\.md$/.test(f) });
 cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
