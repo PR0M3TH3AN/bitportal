@@ -2,6 +2,13 @@ import {
   ICONS,
   rgb
 } from "./shared-OXCAHDPV.js";
+import {
+  LiveKeys,
+  TextEntry,
+  keyAt,
+  placeKeys,
+  placeLiveKeys
+} from "./shared-NTGJ43ZC.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE12 from "three";
@@ -1571,14 +1578,14 @@ function getMinHashLength(fieldOrder) {
   const length = getFieldBytesLength(fieldOrder);
   return length + Math.ceil(length / 2);
 }
-function mapHashToField(key2, fieldOrder, isLE = false) {
-  abytes2(key2);
-  const len = key2.length;
+function mapHashToField(key, fieldOrder, isLE = false) {
+  abytes2(key);
+  const len = key.length;
   const fieldLen = getFieldBytesLength(fieldOrder);
   const minLen = Math.max(getMinHashLength(fieldOrder), 16);
   if (len < minLen || len > 1024)
     throw new Error("expected " + minLen + "-1024 bytes of input, got " + len);
-  const num2 = isLE ? bytesToNumberLE(key2) : bytesToNumberBE(key2);
+  const num2 = isLE ? bytesToNumberLE(key) : bytesToNumberBE(key);
   const reduced = mod(num2, fieldOrder - _1n2) + _1n2;
   return isLE ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
 }
@@ -2691,7 +2698,7 @@ var RoomSession = class {
   constructor(opts = {}) {
     const world = opts.world ?? `${location.origin}${location.pathname}`;
     this.origin = new URL(world).origin;
-    let key2 = schnorr.utils.randomSecretKey();
+    let key = schnorr.utils.randomSecretKey();
     let proven = null;
     if (opts.identity) {
       try {
@@ -2699,7 +2706,7 @@ var RoomSession = class {
         const checked = verifyRoomPass(opts.identity.pass, { origin: this.origin, session: getPublicKey(named) });
         const text = JSON.stringify(opts.identity.pass);
         if (checked.ok && text.length <= PASS_LIMITS.chars) {
-          key2 = named;
+          key = named;
           proven = checked.value;
           this.pass = text;
           this.passUntil = checked.value.expiresAt;
@@ -2707,7 +2714,7 @@ var RoomSession = class {
       } catch {
       }
     }
-    this.key = key2;
+    this.key = key;
     const pubkey = getPublicKey(this.key);
     const mine = opts.look ? decodeLook(opts.look) : null;
     this.look = mine?.ok ? opts.look : null;
@@ -4034,101 +4041,6 @@ import * as THREE9 from "three";
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keyboard.ts
 import * as THREE7 from "three";
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keys.ts
-var chars = (row) => [...row].map((c) => ({ id: c, label: c, kind: "char", w: 1 }));
-var key = (id, label, kind, w) => ({ id, label, kind, w });
-function keyRows(layer, o = {}) {
-  const bottom = [key("layer", layer === "letters" ? "123" : "ABC", "layer", 1.5), ...chars(","), key("space", "space", "space", 4.5), ...chars("."), key("enter", o.multiline ? "new line" : "done", "enter", 2)];
-  const actions = [key("cancel", "Cancel", "cancel", 3), ...o.system ? [key("system", "Headset's keyboard", "system", 4)] : [], key("done", "Done", "done", 3)];
-  if (layer === "letters") return [chars("qwertyuiop"), chars("asdfghjkl"), [key("shift", "shift", "shift", 1.5), ...chars("zxcvbnm"), key("back", "delete", "back", 1.5)], bottom, actions];
-  return [chars("1234567890"), chars("-/:;()!?@"), [...chars(`'"_&#+=*`), key("back", "delete", "back", 2)], bottom, actions];
-}
-function placeKeys(layer, o = {}) {
-  const rows = keyRows(layer, o);
-  const gap = 0.012;
-  const height = 1 / rows.length;
-  return rows.flatMap((row, r) => {
-    const total = row.reduce((sum, k) => sum + k.w, 0);
-    const spread = r === rows.length - 1;
-    const unit = spread ? 1 / total : 1 / 10;
-    let x = spread ? 0 : (1 - total * unit) / 2;
-    return row.map((k) => {
-      const placed = { ...k, x: x + gap / 2, y: r * height + gap / 2, width: k.w * unit - gap, height: height - gap };
-      x += k.w * unit;
-      return placed;
-    });
-  });
-}
-function keyAt(keys, x, y) {
-  return keys.find((k) => x >= k.x && x <= k.x + k.width && y >= k.y && y <= k.y + k.height) ?? null;
-}
-var TextEntry = class {
-  value;
-  shift;
-  layer = "letters";
-  multiline;
-  maxLength;
-  constructor(o = {}) {
-    this.multiline = o.multiline ?? false;
-    this.maxLength = o.maxLength ?? 2e3;
-    this.value = [...o.value ?? ""].slice(0, this.maxLength).join("");
-    this.shift = this.startsSentence() ? "once" : "off";
-  }
-  /** Whether the next letter begins a sentence, and so is a capital unless the visitor says otherwise. */
-  startsSentence() {
-    return /(^|[.!?]\s|\n)$/.test(this.value);
-  }
-  /** Add text as it is: from a real keyboard, or pasted. */
-  type(text) {
-    const clean2 = this.multiline ? text.replace(/\r/g, "") : text.replace(/[\r\n]+/g, " ");
-    this.value = [...this.value + clean2].slice(0, this.maxLength).join("");
-    if (this.shift !== "lock") this.shift = this.startsSentence() ? "once" : "off";
-  }
-  erase() {
-    this.value = [...this.value].slice(0, -1).join("");
-    if (this.shift !== "lock") this.shift = this.startsSentence() ? "once" : "off";
-  }
-  /** What a key shows now: a letter as a capital while shift is on. */
-  label(k) {
-    return k.kind === "char" && this.shift !== "off" ? k.label.toUpperCase() : k.label;
-  }
-  /** Press a key by its id. Returns what happened: still typing, finished, given up, or asked for the headset's own keyboard. */
-  press(id, keys = keyRows(this.layer, { multiline: this.multiline, system: true }).flat()) {
-    const k = keys.find((x) => x.id === id);
-    if (!k) return "typing";
-    switch (k.kind) {
-      case "char": {
-        const was = this.shift;
-        this.type(was === "off" ? k.id : k.id.toUpperCase());
-        if (was === "once") this.shift = this.startsSentence() ? "once" : "off";
-        return "typing";
-      }
-      case "space":
-        this.type(" ");
-        return "typing";
-      case "back":
-        this.erase();
-        return "typing";
-      case "shift":
-        this.shift = this.shift === "off" ? "once" : this.shift === "once" ? "lock" : "off";
-        return "typing";
-      case "layer":
-        this.layer = this.layer === "letters" ? "symbols" : "letters";
-        return "typing";
-      case "enter":
-        if (!this.multiline) return "done";
-        this.type("\n");
-        return "typing";
-      case "done":
-        return "done";
-      case "cancel":
-        return "cancel";
-      case "system":
-        return "system";
-    }
-  }
-};
-
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panel-store.ts
 var PANEL_LIMITS = {
   count: 24,
@@ -4255,6 +4167,7 @@ function libraryPage(items, page, perPage) {
 var W2 = 1024;
 var SHOW = 300;
 var KEYS = 520;
+var LIVE_STRIP = 92;
 var WIDTH = 0.8;
 function createKeyboard(o) {
   const accent = `#${new THREE7.Color(o.accent ?? 16758364).getHexString()}`;
@@ -4280,34 +4193,40 @@ function createKeyboard(o) {
   let done = null;
   let stale = true;
   let field = null;
+  let live = null;
   const systemOffered = () => !!o.session?.()?.isSystemKeyboardSupported;
   const lay = () => {
-    keys = placeKeys(entry.layer, { multiline: entry.multiline, system: systemOffered() });
+    keys = live ? placeLiveKeys(live.keys.layer) : placeKeys(entry.layer, { multiline: entry.multiline, system: systemOffered() });
     stale = true;
   };
   const paint = () => {
     stale = false;
     g.clearRect(0, 0, W2, canvas.height);
+    const top = live ? SHOW - LIVE_STRIP : 0;
     g.fillStyle = "rgba(10, 16, 24, 0.94)";
     g.beginPath();
-    g.roundRect(0, 0, W2, SHOW - 16, 26);
+    g.roundRect(0, top, W2, SHOW - 16 - top, 26);
     g.fill();
     g.textBaseline = "top";
     g.fillStyle = accent;
     g.font = "bold 30px system-ui, sans-serif";
-    g.fillText(title, 36, 24, W2 - 72);
-    g.fillStyle = ink;
-    g.font = "40px system-ui, sans-serif";
-    const lines = wrapText(`${entry.value}\u258F`, W2 - 72, (s) => g.measureText(s).width, 400);
-    lines.slice(-4).forEach((line, i) => g.fillText(line, 36, 76 + i * 50));
+    if (live) g.fillText(live.keys.ctrl ? `${title}. Ctrl is on for the next key.` : title, 36, top + 22, W2 - 72);
+    else {
+      g.fillText(title, 36, 24, W2 - 72);
+      g.fillStyle = ink;
+      g.font = "40px system-ui, sans-serif";
+      const lines = wrapText(`${entry.value}\u258F`, W2 - 72, (s) => g.measureText(s).width, 400);
+      lines.slice(-4).forEach((line, i) => g.fillText(line, 36, 76 + i * 50));
+    }
     for (const k of keys) {
       const [x, y, w, h] = [k.x * W2, SHOW + k.y * KEYS, k.width * W2, k.height * KEYS];
-      const on = aimed === k.id || k.kind === "shift" && entry.shift !== "off";
+      const shift = live ? live.keys.shift : entry.shift;
+      const on = aimed === k.id || k.kind === "shift" && shift !== "off" || k.kind === "ctrl" && !!live?.keys.ctrl;
       g.fillStyle = on ? accent : k.kind === "char" || k.kind === "space" ? "#162231" : k.kind === "done" ? "#24384c" : "#0e1722";
       g.beginPath();
       g.roundRect(x, y, w, h, 16);
       g.fill();
-      if (k.kind === "shift" && entry.shift === "lock") {
+      if (k.kind === "shift" && shift === "lock") {
         g.fillStyle = "#04070b";
         g.fillRect(x + w / 2 - 22, y + h - 16, 44, 5);
       }
@@ -4315,7 +4234,7 @@ function createKeyboard(o) {
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.font = k.kind === "char" ? "44px system-ui, sans-serif" : "bold 28px system-ui, sans-serif";
-      g.fillText(entry.label(k), x + w / 2, y + h / 2 + 2, w - 12);
+      g.fillText(live ? live.keys.label(k) : entry.label(k), x + w / 2, y + h / 2 + 2, w - 12);
       g.textAlign = "left";
     }
     texture.needsUpdate = true;
@@ -4375,36 +4294,64 @@ function createKeyboard(o) {
   const at = new THREE7.Vector3();
   const facing2 = new THREE7.Vector3();
   const local = new THREE7.Vector3();
+  const putUp = () => {
+    o.camera.getWorldPosition(at);
+    o.camera.getWorldDirection(facing2);
+    facing2.y = 0;
+    if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
+    facing2.normalize();
+    group.position.set(at.x + facing2.x * 0.68, Math.max(0.5, at.y - 0.4), at.z + facing2.z * 0.68);
+    group.rotation.set(-32 * (Math.PI / 180), Math.atan2(-facing2.x, -facing2.z), 0, "YXZ");
+    group.visible = true;
+  };
+  const closeLive = () => {
+    if (!live) return;
+    const was = live;
+    live = null;
+    aimed = null;
+    if (!done) group.visible = false;
+    was.o.onClose?.();
+  };
   const api = {
     group,
     get open() {
-      return !!done;
+      return !!done || !!live;
     },
+    get isLive() {
+      return !!live;
+    },
+    live(l) {
+      if (done) finish(null);
+      closeLive();
+      live = { keys: new LiveKeys(), o: l };
+      title = l.title;
+      lay();
+      putUp();
+    },
+    closeLive,
     ask(a) {
       if (done) finish(null);
+      closeLive();
       entry = new TextEntry({ ...a.value !== void 0 ? { value: a.value } : {}, ...a.multiline !== void 0 ? { multiline: a.multiline } : {}, ...a.maxLength !== void 0 ? { maxLength: a.maxLength } : {} });
       title = a.title;
       lay();
-      o.camera.getWorldPosition(at);
-      o.camera.getWorldDirection(facing2);
-      facing2.y = 0;
-      if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
-      facing2.normalize();
-      group.position.set(at.x + facing2.x * 0.68, Math.max(0.5, at.y - 0.4), at.z + facing2.z * 0.68);
-      group.rotation.set(-32 * (Math.PI / 180), Math.atan2(-facing2.x, -facing2.z), 0, "YXZ");
-      group.visible = true;
+      putUp();
       addEventListener("keydown", onKey, true);
       addEventListener("paste", onPaste, true);
       return new Promise((resolve) => {
         done = resolve;
       });
     },
-    cancel: () => finish(null),
+    cancel() {
+      finish(null);
+      closeLive();
+    },
     pick(raycaster) {
-      if (!done) return null;
+      if (!done && !live) return null;
       const hit = raycaster.intersectObject(board, false)[0];
       if (!hit?.uv) return null;
       const y = (1 - hit.uv.y) * canvas.height;
+      if (live && y < SHOW - LIVE_STRIP) return null;
       const k = y >= SHOW ? keyAt(keys, hit.uv.x, (y - SHOW) / KEYS) : null;
       return `kb:${k?.id ?? ""}`;
     },
@@ -4415,7 +4362,15 @@ function createKeyboard(o) {
       stale = true;
     },
     press(hit) {
-      if (!done || !hit.startsWith("kb:") || hit.length === 3) return;
+      if (!hit.startsWith("kb:") || hit.length === 3) return;
+      if (live) {
+        const what2 = live.keys.press(hit.slice(3), keys);
+        if (what2 && "close" in what2) return closeLive();
+        lay();
+        if (what2) live.o.onKey(what2.send);
+        return;
+      }
+      if (!done) return;
       const what = entry.press(hit.slice(3), keys);
       if (what === "done") return finish(entry.value);
       if (what === "cancel") return finish(null);
@@ -4424,19 +4379,20 @@ function createKeyboard(o) {
     },
     pointOf(hit) {
       const k = hit.startsWith("kb:") ? keys.find((x) => x.id === hit.slice(3)) : null;
-      if (!k || !done) return null;
+      if (!k || !done && !live) return null;
       const height = WIDTH * canvas.height / W2;
       const v = (SHOW + (k.y + k.height / 2) * KEYS) / canvas.height;
       local.set((k.x + k.width / 2 - 0.5) * WIDTH, (0.5 - v) * height, 0);
       group.updateMatrixWorld(true);
       return board.localToWorld(local.clone());
     },
-    info: () => ({ open: !!done, title, value: entry.value, layer: entry.layer, shift: entry.shift, keys: keys.map((k) => k.id) }),
+    info: () => ({ open: !!done || !!live, live: !!live, title, value: live ? "" : entry.value, layer: live ? live.keys.layer : entry.layer, shift: live ? live.keys.shift : entry.shift, ctrl: !!live?.keys.ctrl, keys: keys.map((k) => k.id) }),
     update() {
-      if (done && stale) paint();
+      if ((done || live) && stale) paint();
     },
     dispose() {
       finish(null);
+      closeLive();
       o.scene.remove(group);
       board.geometry.dispose();
       board.material.dispose();
@@ -4922,6 +4878,7 @@ function createPanels(o) {
     }
     for (const b of p.buttons.values()) b.material.dispose();
     save();
+    if (p.source.kind === "custom") p.source.onClose?.();
   };
   const flat = (texture, w = 1, h = 1) => new THREE9.Mesh(new THREE9.PlaneGeometry(w, h), new THREE9.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
   const open = (content, opts = {}) => {
@@ -5072,6 +5029,7 @@ function createPanels(o) {
   })();
   const targets = () => [...live.values()].flatMap((p) => [p.body, ...p.held ? [] : [p.bar], ...p.buttons.values()]);
   let aimed = null;
+  let pointed = null;
   let drag = null;
   const find = (hit) => {
     const cut = hit.lastIndexOf(":");
@@ -5109,6 +5067,7 @@ function createPanels(o) {
       if (above) return above;
       if (!root.visible) return null;
       const hit = raycaster.intersectObjects(targets(), false)[0];
+      pointed = hit?.uv ? { name: hit.object.name, x: hit.uv.x, y: 1 - hit.uv.y } : null;
       return hit ? hit.object.name : null;
     },
     aim(hit) {
@@ -5127,6 +5086,7 @@ function createPanels(o) {
       const [p, part] = found;
       if (part === "close") return p.close();
       if (part === "larger" || part === "smaller") return p.moveTo({ width: p.width * (part === "larger" ? 1.25 : 0.8) });
+      if (part === "body" && p.source.kind === "custom") return p.source.onPress?.(pointed?.name === hit ? pointed.x : 0.5, pointed?.name === hit ? pointed.y : 0.5);
       if ((part === "play" || part === "body") && p.video) void (p.video.paused ? p.video.play().catch(() => {
       }) : Promise.resolve(p.video.pause()));
     },
@@ -5885,7 +5845,7 @@ function createPresence(d) {
     sendTimer = void 0;
     session?.leave();
     session = null;
-    for (const key2 of [...avatars.keys()]) removeAvatar(key2);
+    for (const key of [...avatars.keys()]) removeAvatar(key);
     pendingStreams.clear();
     changed();
   };

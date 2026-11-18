@@ -8,6 +8,7 @@ import {
   rgb,
   saveVisitorTheme
 } from "./shared-OXCAHDPV.js";
+import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
 var PRESENCES = ["full", "quiet", "hidden"];

@@ -73,10 +73,11 @@ const packages = {};
   if (!existsSync(esbuild)) throw new Error(`run npm install in ${repo} first`);
   execFileSync(esbuild, [join(repo, "packages/core/src/index.ts"), "--bundle", "--format=esm", "--target=es2022", `--outfile=${join(out, "nswp-core.js")}`, "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
   execFileSync(tsc, ["-p", join(repo, "packages/core"), "--emitDeclarationOnly", "--declaration", "--outDir", join(out, "types")], { stdio: "inherit" });
-  // The SDK's Three.js parts: presence (avatars, voice, room controls) and the
-  // home renderer. Built together so they share one copy of what both use.
+  // The SDK's Three.js parts: presence (avatars, voice, room controls), the
+  // home renderer, and the terminal panel (with its emulator, which only the
+  // room loads, and only when a terminal is opened). Built together so they share one copy of what both use.
   // Core and three stay external so BitPortal's own build supplies one of each.
-  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
+  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), join(repo, "packages/sdk/src/terminal.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
   execFileSync(tsc, ["-p", join(repo, "packages/sdk"), "--noEmit", "false", "--emitDeclarationOnly", "--declaration", "--rootDir", join(repo, "packages/sdk/src"), "--outDir", join(out, "sdk-types")], { stdio: "inherit" });
   // Its licence, and the notices for the libraries built into these files, travel with them.
   for (const name of ["LICENSE", "THIRD-PARTY-NOTICES.md"]) cpSync(join(repo, name), join(out, name));

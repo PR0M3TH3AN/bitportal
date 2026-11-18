@@ -3,7 +3,7 @@
  * pressing one does to the words so far. No three.js and no page here, so it
  * is tested like arithmetic. `keyboard.ts` draws it in a headset.
  */
-export type KeyKind = "char" | "shift" | "back" | "layer" | "space" | "enter" | "cancel" | "done" | "system";
+export type KeyKind = "char" | "shift" | "back" | "layer" | "space" | "enter" | "cancel" | "done" | "system" | "esc" | "tab" | "ctrl" | "up" | "down" | "left" | "right" | "close";
 export interface Key {
     /** What a press of it is called: the character itself for a letter, a word for the rest. */
     id: string;
@@ -26,11 +26,11 @@ export declare function keyRows(layer: Layer, o?: {
     system?: boolean;
     multiline?: boolean;
 }): Key[][];
-/** Where every key of a layer sits on a board ten letter-widths across. */
+/** Where every key of a layer sits on a board ten letter-widths across. `rows` lays out other rows the same way. */
 export declare function placeKeys(layer: Layer, o?: {
     system?: boolean;
     multiline?: boolean;
-}): PlacedKey[];
+}, rows?: Key[][]): PlacedKey[];
 /** The key under a point on the board (each from 0 to 1, y downwards), or null between keys. */
 export declare function keyAt(keys: PlacedKey[], x: number, y: number): PlacedKey | null;
 export type Shift = "off" | "once" | "lock";

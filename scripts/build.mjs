@@ -43,6 +43,7 @@ await build({
     "nswp-sdk/three": join(root, "vendor/nswp/sdk/three.js"),
     "nswp-sdk/home": join(root, "vendor/nswp/sdk/home.js"),
     "nswp-sdk/ui": join(root, "vendor/nswp/sdk/ui.js"),
+    "nswp-sdk/terminal": join(root, "vendor/nswp/sdk/terminal.js"),
   },
 });
 

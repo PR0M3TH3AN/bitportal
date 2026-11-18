@@ -4,8 +4,10 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-OFWH52QF.js";
+} from "./shared-WQZZA5DV.js";
 import "./shared-OXCAHDPV.js";
+import "./shared-NTGJ43ZC.js";
+import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
 import * as THREE3 from "three";
