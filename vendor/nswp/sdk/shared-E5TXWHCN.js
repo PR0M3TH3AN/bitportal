@@ -2852,11 +2852,12 @@ function createPortalWindow(geometry, pano, opts = {}) {
   };
   return mesh;
 }
+
 export {
+  textSprite,
+  createPresence,
   attachRoomControls,
   capturePanorama,
-  createPortalWindow,
-  createPresence,
   panoramaTexture,
-  textSprite
+  createPortalWindow
 };

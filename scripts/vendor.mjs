@@ -73,9 +73,10 @@ const packages = {};
   if (!existsSync(esbuild)) throw new Error(`run npm install in ${repo} first`);
   execFileSync(esbuild, [join(repo, "packages/core/src/index.ts"), "--bundle", "--format=esm", "--target=es2022", `--outfile=${join(out, "nswp-core.js")}`, "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
   execFileSync(tsc, ["-p", join(repo, "packages/core"), "--emitDeclarationOnly", "--declaration", "--outDir", join(out, "types")], { stdio: "inherit" });
-  // The SDK's Three.js presence (avatars, voice, room controls). Core and three
-  // stay external so BitPortal's own build supplies one copy of each.
-  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), "--bundle", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outfile=${join(out, "nswp-sdk-three.js")}`, "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
+  // The SDK's Three.js parts: presence (avatars, voice, room controls) and the
+  // home renderer. Built together so they share one copy of what both use.
+  // Core and three stay external so BitPortal's own build supplies one of each.
+  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
   execFileSync(tsc, ["-p", join(repo, "packages/sdk"), "--noEmit", "false", "--emitDeclarationOnly", "--declaration", "--rootDir", join(repo, "packages/sdk/src"), "--outDir", join(out, "sdk-types")], { stdio: "inherit" });
   const version = JSON.parse(readFileSync(join(repo, "packages/core/package.json"), "utf8")).version;
   packages["@nswp/core"] = { path: "vendor/nswp", version, license: "MIT", source: src, files: hashDir(out) };

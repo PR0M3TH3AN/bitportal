@@ -8,7 +8,8 @@ export default defineConfig({
     alias: {
       "@nswp/core": at("./vendor/nswp/nswp-core.js"),
       bitfeed: at("./vendor/bitfeed/bitfeed.js"),
-      "nswp-sdk/three": at("./vendor/nswp/nswp-sdk-three.js"),
+      "nswp-sdk/three": at("./vendor/nswp/sdk/three.js"),
+      "nswp-sdk/home": at("./vendor/nswp/sdk/home.js"),
     },
   },
 });

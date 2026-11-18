@@ -26,6 +26,7 @@ import {
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalog.js";
 import { placeKind } from "../shared/plate.js";
+import { readLeft } from "../shared/saved.js";
 import { loadSettings } from "../shared/settings.js";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -191,7 +192,8 @@ async function render(): Promise<void> {
     // Nothing is being crossed into, so there is nothing to confirm. A fragment
     // that is present but unreadable still gets the explanation below.
     if (location.hash.length <= 1) {
-      location.replace(new URL("/", location.origin).href);
+      // Back to the start they left from: the room if they walked out of it, the list otherwise.
+      location.replace(new URL(readLeft()?.from === "walk" ? "/walk/" : "/", location.origin).href);
       return;
     }
     $("landing").hidden = false;

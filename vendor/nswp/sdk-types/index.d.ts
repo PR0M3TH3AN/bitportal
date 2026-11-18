@@ -38,6 +38,12 @@ export declare const portal: {
     /** Which Airlock `go()` would use right now, or null for the built-in screen. */
     airlockFor(opts?: GoOptions): string | null;
     go(dest: PortalDestination, opts?: GoOptions): Promise<void>;
+    /**
+     * Take the visitor back to their own client's start place (spec §6.3): the
+     * Airlock they came through, opened with no destination. Returns false, and
+     * does nothing, when there is no Airlock to go back to.
+     */
+    home(opts?: GoOptions): Promise<boolean>;
 };
 declare global {
     interface Window {

@@ -1,5 +1,8 @@
 /**
- * The walk-in lobby: the same doors as the list, as a hall you stand in.
+ * The walk-in room: where a visitor starts when they'd rather stand somewhere
+ * than read a list (NSWP spec §14.1). One room with two walls of doors. Ahead
+ * is the visitor's own wall, the places they saved, which changes only when
+ * they change it. Behind is the suggested wall, which may change every visit.
  *
  * - Point at a door (mouse, controller ray, or a pinch) and select it, or walk
  *   through it. Either way you go to the Airlock, which is always a flat page:
@@ -14,22 +17,29 @@
  */
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
+import { createHome } from "nswp-sdk/home";
 import { attachRoomControls, createPortalWindow, createPresence, panoramaTexture, textSprite } from "nswp-sdk/three";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
+import { attachJumpList } from "../shared/jump.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
+import { loadRoom } from "../shared/room.js";
+import { addSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, restoreSaved, savedEntries, storeSaved, WALL_DOORS, wallSlot, type SavedPlace } from "../shared/saved.js";
 import { loadSettings } from "../shared/settings.js";
 import type { Candidate } from "../shared/shelves.js";
 import { cachedVerification } from "../shared/verify.js";
 import { VERSION } from "../shared/version.js";
 import type { FeedRequest, FeedResponse } from "../lobby/feed-worker.js";
 
+type Wall = "yours" | "suggested";
+
 interface Door {
   entry: Entry;
   why: string;
+  wall: Wall;
   group: THREE.Group;
   view: THREE.Mesh;
   frame: THREE.Mesh;
@@ -37,9 +47,22 @@ interface Door {
   hover: number;
 }
 
+/** Anything in the room that can be pointed at and selected. */
+interface Clickable {
+  mesh: THREE.Mesh;
+  /** What selecting it does, in words, for the line under the room. */
+  say: string;
+  act(): void;
+  door?: Door;
+}
+
 interface TestHooks {
   state: Record<string, unknown>;
-  doors(): { id: string; title: string; domain: string; position: number[] }[];
+  doors(): { id: string; title: string; domain: string; wall: Wall; position: number[] }[];
+  /** Save a suggested door, or remove one of the visitor's own, as selecting its button would. */
+  toggle(id: string): void;
+  /** Put the last removed door back. */
+  putBack(): void;
   /** Point the mouse ray at a door, as if hovering it. */
   aim(id: string | null): void;
   visit(id: string): void;
@@ -59,6 +82,11 @@ const INK = "#f2f3f6";
 const ACCENT = 0x3fc584;
 const DOOR_W = 1.5;
 const DOOR_H = 2.1;
+/** Metres from the middle of the room to either wall of doors. */
+const RADIUS = 8;
+/** The angle between neighbouring doors: twelve fit on a wall. */
+const SLOT = THREE.MathUtils.degToRad(13);
+const PLATE_W = 1.7;
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 function hostParts(url: string): { prefix: string; domain: string } {
@@ -224,6 +252,24 @@ function plateTexture(entry: Entry, device: Device): THREE.CanvasTexture {
   });
 }
 
+/** A small button on the wall: a word on a dark pill. */
+function pillTexture(text: string): THREE.CanvasTexture {
+  return canvasTexture(512, 192, (g) => {
+    g.fillStyle = "rgba(16,18,23,0.94)";
+    g.strokeStyle = INK;
+    g.lineWidth = 6;
+    g.beginPath();
+    g.roundRect(6, 6, 500, 180, 90);
+    g.fill();
+    g.stroke();
+    g.fillStyle = INK;
+    g.font = '600 84px "Ubuntu Sans V", system-ui, sans-serif';
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(text, 256, 100, 440);
+  });
+}
+
 function infoLines(entry: Entry, why: string, vr: boolean): string {
   const host = hostParts(entry.world.url);
   const g = document.createElement("canvas").getContext("2d")!;
@@ -277,7 +323,7 @@ async function start(): Promise<void> {
   const params = new URLSearchParams(location.search);
   const emulate = params.get("xr") === "emulate";
   const state: Record<string, unknown> = { ready: false, xr: "idle", emulate, leaving: null, hovered: null };
-  const hooks: TestHooks = { state, doors: () => [], aim: () => {}, visit: () => {}, roomInfo: () => [], teleport: () => {} };
+  const hooks: TestHooks = { state, doors: () => [], aim: () => {}, visit: () => {}, toggle: () => {}, putBack: () => {}, roomInfo: () => [], teleport: () => {} };
   window.__bitportalTest = hooks;
   if (emulate) {
     // Test aid for people without a headset: pretend to be a Meta Quest 3.
@@ -319,29 +365,65 @@ async function start(): Promise<void> {
   key.position.set(2, 8, 4);
   scene.add(key);
 
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 72), new THREE.MeshStandardMaterial({ color: 0x101217, roughness: 1 }));
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
-  const rings = new THREE.PolarGridHelper(14, 16, 7, 96, 0x2a2e37, 0x1b1e25);
-  rings.position.y = 0.005;
-  scene.add(rings);
+  // The floor and the furniture come from the visitor's room layout (spec
+  // §4.5). Only built-in furniture is drawn, which costs nothing to load, so it
+  // goes up with the floor. Anything a layout has to fetch must wait for the doors.
+  const room = loadRoom();
+  const furniture = createHome(room.layout, { lights: false, textColor: INK });
+  scene.add(furniture.group);
+  state.furniture = room.layout.items.length;
+  scene.background = new THREE.Color(room.layout.room.color).multiplyScalar(0.6);
+  scene.fog = new THREE.Fog(scene.background as THREE.Color, 12, 34);
 
   // ------------------------------------------------------------- doors
   let catalog: Catalog = buildCatalog(bundleJson as unknown as StarterBundle);
+  let saved: SavedPlace[] = loadSaved();
+  /** The last door removed this visit, so one slip of the hand can be undone. */
+  let lastRemoved: { place: SavedPlace; title: string } | null = null;
+  /** Where each suggested door stands, for this visit: saving one leaves a gap, and the rest stay put. */
+  const suggestedAt = new Map<string, number>();
+  // ?wall=2 shows two doors a wall: a test aid for what happens when a wall is full.
+  const perWall = Math.max(1, Math.min(WALL_DOORS, Number(params.get("wall")) || WALL_DOORS));
   const frameMap = frameTexture();
   const archMask = archMaskTexture();
+  const pillMaps = { save: pillTexture("Save"), remove: pillTexture("Remove"), back: pillTexture("Put it back"), list: pillTexture("See the list") };
+  const shared = new Set<THREE.Texture>([frameMap, archMask, ...Object.values(pillMaps)]);
   const doorGeo = new THREE.PlaneGeometry(DOOR_W, DOOR_H);
-  const plateGeo = new THREE.PlaneGeometry(1.9, 1.9 * (420 / 1024));
+  const plateH = PLATE_W * (420 / 1024);
+  const plateGeo = new THREE.PlaneGeometry(PLATE_W, plateH);
+  // As large as the row above a door allows: it has to be hit from across the room with a hand-held ray.
+  const pillGeo = new THREE.PlaneGeometry(0.72, 0.27);
+  const widePillGeo = new THREE.PlaneGeometry(0.9, 0.34);
   const sillGeo = new THREE.BoxGeometry(DOOR_W + 0.1, 0.06, 0.24);
-  const doorRoot = new THREE.Group();
-  scene.add(doorRoot);
+  // Your wall is ahead of where a visitor first stands; the suggested wall is behind.
+  const walls: Record<Wall, THREE.Group> = { yours: new THREE.Group(), suggested: new THREE.Group() };
+  walls.suggested.rotation.y = Math.PI;
+  scene.add(walls.yours, walls.suggested);
   let doors: Door[] = [];
-  let radius = 6;
+  let clickables: Clickable[] = [];
+
+  /** Stand something at a place along a wall, facing the middle of the room. */
+  const place = (object: THREE.Object3D, slot: number) => {
+    const theta = wallSlot(slot) * SLOT;
+    object.position.set(Math.sin(theta) * RADIUS, 0, -Math.cos(theta) * RADIUS);
+    object.rotation.y = -theta;
+  };
+  const emptyWall = (wall: THREE.Group) => {
+    wall.traverse((o) => {
+      const m = (o as THREE.Mesh).material as (THREE.Material & { map?: THREE.Texture | null }) | undefined;
+      if (!m || Array.isArray(m)) return;
+      if (m.map && !shared.has(m.map)) m.map.dispose();
+      m.dispose();
+    });
+    wall.clear();
+  };
+  const pill = (map: THREE.Texture, geo = pillGeo) => new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map, transparent: true }));
 
   // A door looks into its world when there is a preview BitPortal may show
   // without asking (spec §5.8). The generated view stays underneath as the
   // fallback, so a door never goes blank while a picture loads or if it fails.
   const attachPreview = async (door: Door) => {
+    // Both walls hold places someone chose: the curator, or the visitor.
     const decision = decidePreview(door.entry.world, { chosen: true, asked: false, doorOpen: false });
     if (decision.show !== "now") return;
     const url = await loadPreview(decision);
@@ -353,6 +435,7 @@ async function start(): Promise<void> {
     } catch {
       return;
     }
+    if (!doors.includes(door)) return;
     if (decision.preview.type === "pano") {
       const through = createPortalWindow(doorGeo, panoramaTexture(image), { mask: archMask });
       through.position.z = 0.004;
@@ -365,44 +448,184 @@ async function start(): Promise<void> {
     state.previews = ((state.previews as number | undefined) ?? 0) + 1;
   };
 
-  const buildDoors = async () => {
-    const ordered = await orderEntries(catalog.entries, device, settings.ranking);
-    doorRoot.clear();
-    doors = [];
-    const n = ordered.length;
-    const step = THREE.MathUtils.degToRad(19);
-    radius = Math.max(6, (n * 2.0) / (Math.PI * 1.1)); // widen the hall before doors crowd
-    const spread = Math.min(step, (Math.PI * 1.1) / Math.max(n, 1));
-    ordered.forEach(({ entry, why }, i) => {
-      const theta = (i - (n - 1) / 2) * spread;
-      const group = new THREE.Group();
-      group.position.set(Math.sin(theta) * radius, 0, -Math.cos(theta) * radius);
-      group.rotation.y = -theta;
-      const view = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: viewTexture(entry.id), transparent: true, alphaTest: 0.5 }));
-      view.position.y = DOOR_H / 2;
-      const frame = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: frameMap, transparent: true, color: 0xffffff }));
-      frame.position.set(0, DOOR_H / 2, 0.01);
-      const sill = new THREE.Mesh(sillGeo, new THREE.MeshBasicMaterial({ color: 0xf2f3f6 }));
-      sill.position.set(0, 0.03, 0.05);
-      const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device), transparent: true }));
-      plate.position.set(0, DOOR_H + 0.52, 0);
-      // Large and well in front of the door: readable from the middle of the hall.
-      const info = textSprite(infoLines(entry, why, vr), INK, 2.6);
-      info.position.set(0, 1.25, 2.2);
-      info.visible = false;
-      info.renderOrder = 2;
-      group.add(view, frame, sill, plate, info);
-      doorRoot.add(group);
-      doors.push({ entry, why, group, view, frame, info, hover: 0 });
+  const makeDoor = (entry: Entry, why: string, wall: Wall, slot: number): Door => {
+    const group = new THREE.Group();
+    place(group, slot);
+    const view = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: viewTexture(entry.id), transparent: true, alphaTest: 0.5 }));
+    view.position.y = DOOR_H / 2;
+    const frame = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: frameMap, transparent: true, color: 0xffffff }));
+    frame.position.set(0, DOOR_H / 2, 0.01);
+    const sill = new THREE.Mesh(sillGeo, new THREE.MeshBasicMaterial({ color: 0xf2f3f6 }));
+    sill.position.set(0, 0.03, 0.05);
+    const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device), transparent: true }));
+    plate.position.set(0, DOOR_H + 0.32 + plateH / 2, 0);
+    // The door's one button, in the row between the arch and the plate.
+    const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save);
+    button.position.set(DOOR_W / 2 - 0.36, DOOR_H + 0.16, 0.03);
+    // Large and well in front of the door: readable from the middle of the room.
+    const info = textSprite(infoLines(entry, why, vr), INK, 2.6);
+    info.position.set(0, 1.25, 2.2);
+    info.visible = false;
+    info.renderOrder = 2;
+    group.add(view, frame, sill, plate, button, info);
+    walls[wall].add(group);
+    const door: Door = { entry, why, wall, group, view, frame, info, hover: 0 };
+    clickables.push({ mesh: view, door, say: "", act: () => void visit(door) });
+    clickables.push({
+      mesh: button,
+      door,
+      say: wall === "yours" ? `Remove ${entry.world.title} from your doors.` : `Save ${entry.world.title}. It moves to your own wall and stays there.`,
+      act: () => void toggle(door),
     });
+    return door;
+  };
+
+  /** A place on the visitor's wall with no door yet. It says what will go there. */
+  const makeEmpty = (slot: number, text: string, button?: { map: THREE.Texture; say: string; act: () => void }) => {
+    const group = new THREE.Group();
+    place(group, slot);
+    const frame = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: frameMap, transparent: true, color: 0x5b6270 }));
+    frame.position.y = DOOR_H / 2;
+    const label = textSprite(text, "#aab0bd", 1.3);
+    label.position.set(0, 1.25, 0.05);
+    group.add(frame, label);
+    if (button) {
+      const b = pill(button.map, widePillGeo);
+      b.position.set(0, 0.62, 0.05);
+      group.add(b);
+      clickables.push({ mesh: b, say: button.say, act: button.act });
+    }
+    walls.yours.add(group);
+  };
+
+  /** A sign past the last door of a full wall, leading to everything as a list. */
+  const makeMore = (wall: Wall, slot: number, hidden: number) => {
+    const group = new THREE.Group();
+    place(group, slot);
+    const label = textSprite(`${hidden} more\non the list`, INK, 1.2);
+    label.position.set(0, 1.5, 0.05);
+    const b = pill(pillMaps.list, widePillGeo);
+    b.position.set(0, 0.9, 0.05);
+    group.add(label, b);
+    walls[wall].add(group);
+    clickables.push({ mesh: b, say: "Leave the room for the full list of doors.", act: () => location.assign("/") });
+  };
+
+  const header = (wall: Wall, text: string) => {
+    const sign = textSprite(text, INK, 4.2);
+    sign.position.set(0, 4.9, -RADIUS - 0.4);
+    walls[wall].add(sign);
+  };
+
+  const buildDoors = async () => {
+    const mine = savedEntries(saved, catalog);
+    const mineIds = new Set(mine.map((e) => e.id));
+    // A suggestion never repeats a door the visitor already has (spec §14.1).
+    const ordered = await orderEntries(catalog.entries.filter((e) => !mineIds.has(e.id)), device, settings.ranking);
+    emptyWall(walls.yours);
+    emptyWall(walls.suggested);
+    doors = [];
+    clickables = [];
+
+    // Your wall: every saved place has a place of its own (see saved.ts).
+    const slotOf = new Map(saved.map((x) => [x.id, x.slot]));
+    const used = new Set<number>();
+    let beyond = 0;
+    for (const entry of mine) {
+      const slot = slotOf.get(entry.id) ?? perWall;
+      if (slot >= perWall) beyond++;
+      else {
+        used.add(slot);
+        doors.push(makeDoor(entry, "", "yours", slot));
+      }
+    }
+    if (lastRemoved && lastRemoved.place.slot < perWall && !used.has(lastRemoved.place.slot)) {
+      const removed = lastRemoved;
+      used.add(removed.place.slot);
+      makeEmpty(removed.place.slot, `Removed\n${removed.title}`, { map: pillMaps.back, say: `Put ${removed.title} back on your wall.`, act: () => void putBack() });
+    }
+    // Never a bare wall: a new visitor sees where their doors will go.
+    for (let slot = 0; slot < Math.min(3, perWall); slot++) if (!used.has(slot)) makeEmpty(slot, "A place you save\nwill appear here");
+    if (beyond > 0) makeMore("yours", perWall, beyond);
+    header("yours", mine.length ? "Your doors\nKept on this device" : "Your doors\nSave a door and it stays on this wall");
+
+    // The suggested wall: best in the middle. Doors already standing keep their places.
+    const wanted = new Set(ordered.map((o) => o.entry.id));
+    for (const id of [...suggestedAt.keys()]) if (!wanted.has(id)) suggestedAt.delete(id);
+    const taken = new Set(suggestedAt.values());
+    let hidden = 0;
+    for (const { entry, why } of ordered) {
+      let slot = suggestedAt.get(entry.id);
+      if (slot === undefined) {
+        slot = 0;
+        while (taken.has(slot)) slot++;
+        if (slot >= perWall) {
+          hidden++;
+          continue;
+        }
+        taken.add(slot);
+        suggestedAt.set(entry.id, slot);
+      }
+      doors.push(makeDoor(entry, why, "suggested", slot));
+    }
+    if (hidden > 0) makeMore("suggested", perWall, hidden);
+    header("suggested", ordered.length ? `Suggested\nPicked by ${catalog.curator.title}` : "Suggested\nYou've saved every door on this list");
+
     state.doorCount = doors.length;
+    state.yours = mine.length;
+    state.suggested = ordered.length;
     state.previews = 0;
     for (const door of doors) void attachPreview(door);
   };
 
-  const title = textSprite(`BitPortal\nDoors picked by ${catalog.curator.title}`, INK, 4.2);
-  title.position.set(0, 4.6, -radius - 0.6);
-  scene.add(title);
+  // A few words in front of the visitor, for a moment: the only feedback that
+  // also reaches someone in a headset, where the page around the room is gone.
+  let toast: THREE.Sprite | null = null;
+  let toastUntil = 0;
+  const say = (text: string) => {
+    if (toast) {
+      camera.remove(toast);
+      toast.material.map?.dispose();
+      toast.material.dispose();
+    }
+    toast = textSprite(text, INK, 1.1);
+    toast.position.set(0, -0.32, -1.6);
+    toast.renderOrder = 10;
+    toast.material.depthTest = false;
+    camera.add(toast);
+    toastUntil = performance.now() + 3600;
+    state.said = text;
+    $("room-note").textContent = text.replace(/\n/g, " ");
+  };
+
+  const keep = (next: SavedPlace[]): boolean => {
+    saved = next;
+    return storeSaved(saved);
+  };
+  const toggle = async (door: Door) => {
+    const title = door.entry.world.title;
+    if (door.wall === "yours") {
+      const removed = saved.find((x) => x.id === door.entry.id);
+      if (!removed) return;
+      lastRemoved = { place: removed, title };
+      keep(removeSaved(saved, door.entry.id));
+      say(`Removed ${title}`);
+    } else {
+      const next = addSaved(saved, door.entry, Math.floor(Date.now() / 1000));
+      if (next === saved) return say("Your doors are full.\nRemove one to save another.");
+      if (lastRemoved?.place.id === door.entry.id) lastRemoved = null;
+      say(keep(next) ? `Saved ${title}\nIt's on your own wall, opposite this one` : `Saved ${title} for this visit\nThis browser isn't keeping saved places`);
+    }
+    await buildDoors();
+  };
+  const putBack = async () => {
+    if (!lastRemoved) return;
+    const { place: removed, title } = lastRemoved;
+    lastRemoved = null;
+    keep(restoreSaved(saved, removed));
+    say(`${title} is back`);
+    await buildDoors();
+  };
 
   // ------------------------------------------------------- leaving
   let leaving = false;
@@ -410,6 +633,7 @@ async function start(): Promise<void> {
     if (leaving) return;
     leaving = true;
     state.leaving = door.entry.id;
+    rememberLeft({ id: door.entry.id, from: "walk" });
     document.body.classList.add("leaving");
     const w = door.entry.world;
     const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: door.entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
@@ -424,16 +648,17 @@ async function start(): Promise<void> {
   // ------------------------------------------------------ pointing
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2(2, 2); // off-screen until the mouse moves
-  const doorUnder = (): Door | null => {
-    const hit = raycaster.intersectObjects(doors.map((d) => d.view), false)[0];
-    return hit ? (doors.find((d) => d.view === hit.object) ?? null) : null;
+  /** What the current ray points at: a door, or one of the room's buttons. */
+  const under = (): Clickable | null => {
+    const hit = raycaster.intersectObjects(clickables.map((c) => c.mesh), false)[0];
+    return hit ? (clickables.find((c) => c.mesh === hit.object) ?? null) : null;
   };
   const tmp = new THREE.Matrix4();
-  const aimFrom = (source: THREE.Object3D): Door | null => {
+  const aimFrom = (source: THREE.Object3D): Clickable | null => {
     tmp.identity().extractRotation(source.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(source.matrixWorld);
     raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tmp);
-    return doorUnder();
+    return under();
   };
 
   let dragging = false;
@@ -449,8 +674,7 @@ async function start(): Promise<void> {
     if (moved > 6 || renderer.xr.isPresenting || e.target !== renderer.domElement) return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    const d = doorUnder();
-    if (d) void visit(d);
+    under()?.act();
   });
   window.addEventListener("pointermove", (e) => {
     if (dragging && !renderer.xr.isPresenting) {
@@ -470,10 +694,7 @@ async function start(): Promise<void> {
         new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }),
       ),
     );
-    c.addEventListener("select", () => {
-      const d = aimFrom(c);
-      if (d) void visit(d);
-    });
+    c.addEventListener("select", () => aimFrom(c)?.act());
     rig.add(c);
     controllers.push(c);
   }
@@ -503,7 +724,7 @@ async function start(): Promise<void> {
     if (!forward && !strafe) return;
     stepVec.set(strafe, 0, -forward).normalize().multiplyScalar(2.2 * dt).applyAxisAngle(THREE.Object3D.DEFAULT_UP, rig.rotation.y);
     rig.position.add(stepVec);
-    const limit = radius + 1.5;
+    const limit = RADIUS + 1.5;
     const dist = Math.hypot(rig.position.x, rig.position.z);
     if (dist > limit) rig.position.multiplyScalar(limit / dist);
   };
@@ -546,6 +767,8 @@ async function start(): Promise<void> {
     });
   } else vrButton.textContent = navigator.xr ? "VR isn't available on this device" : "This browser has no WebXR";
 
+  attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "walk" });
+
   window.addEventListener("resize", () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
@@ -554,8 +777,20 @@ async function start(): Promise<void> {
 
   // ------------------------------------------------------ test hooks
   let aimed: string | null = null;
+  const where = new THREE.Vector3();
   hooks.doors = () =>
-    doors.map((d) => ({ id: d.entry.id, title: d.entry.world.title, domain: hostParts(d.entry.world.url).domain, position: d.group.position.toArray().map((n) => Math.round(n * 100) / 100) }));
+    doors.map((d) => ({
+      id: d.entry.id,
+      title: d.entry.world.title,
+      domain: hostParts(d.entry.world.url).domain,
+      wall: d.wall,
+      position: d.group.getWorldPosition(where).toArray().map((n) => Math.round(n * 100) / 100),
+    }));
+  hooks.toggle = (id) => {
+    const d = doors.find((x) => x.entry.id === id);
+    if (d) void toggle(d);
+  };
+  hooks.putBack = () => void putBack();
   hooks.aim = (id) => (aimed = id);
   hooks.visit = (id) => {
     const d = doors.find((x) => x.entry.id === id);
@@ -572,8 +807,24 @@ async function start(): Promise<void> {
   const aimIndex = params.get("aim");
   if (aimIndex !== null) aimed = doors[Number(aimIndex)]?.entry.id ?? null;
 
+  // Which way the visitor faces on arriving (spec §14.1). Back from a world:
+  // the door they left through. Otherwise their own wall if it has doors, and
+  // the suggestions if it doesn't, so nobody starts by facing empty frames.
+  const left = readLeft();
+  const leftDoor = left?.from === "walk" ? doors.find((d) => d.entry.id === left.id) : undefined;
+  if (leftDoor) {
+    leftDoor.group.getWorldPosition(where);
+    rig.rotation.y = Math.atan2(-where.x, -where.z);
+    state.facing = "door";
+  } else if (doors.some((d) => d.wall === "yours")) state.facing = "yours";
+  else {
+    rig.rotation.y = Math.PI;
+    state.facing = "suggested";
+  }
+
   // --------------------------------------------------------- frames
   const doorLine = $("door-line");
+
   const accent = new THREE.Color(ACCENT);
   const white = new THREE.Color(0xffffff);
   const started = performance.now();
@@ -583,26 +834,30 @@ async function start(): Promise<void> {
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
     presence.update(dt);
-    let hovered: Door | null = null;
+    let pointed: Clickable | null = null;
     if (renderer.xr.isPresenting) {
-      for (const c of controllers) hovered = (c.visible ? aimFrom(c) : null) ?? hovered;
+      for (const c of controllers) pointed = (c.visible ? aimFrom(c) : null) ?? pointed;
       const through = walkedThrough();
       if (through) void visit(through);
     } else {
       walk(dt);
       raycaster.setFromCamera(ndc, camera);
-      hovered = doorUnder();
+      pointed = under();
       const through = walkedThrough();
       if (through) void visit(through);
     }
-    if (aimed) hovered = doors.find((d) => d.entry.id === aimed) ?? hovered;
-    renderer.domElement.style.cursor = hovered ? "pointer" : "grab";
-    if ((hovered?.entry.id ?? null) !== state.hovered) {
+    if (aimed) pointed = clickables.find((c) => c.door?.entry.id === aimed && c.mesh === c.door.view) ?? pointed;
+    renderer.domElement.style.cursor = pointed ? "pointer" : "grab";
+    const hovered = pointed?.door ?? null;
+    const key = pointed ? `${hovered?.entry.id ?? ""}|${pointed.say}` : null;
+    if (key !== state.pointed) {
+      state.pointed = key;
       state.hovered = hovered?.entry.id ?? null;
-      const w = hovered?.entry.world;
-      const host = w ? hostParts(w.url) : null;
       doorLine.replaceChildren();
-      if (w && host) {
+      if (pointed?.say) doorLine.append(pointed.say);
+      else if (hovered) {
+        const w = hovered.entry.world;
+        const host = hostParts(w.url);
         const where = document.createElement("span");
         where.className = "key";
         where.textContent = `${host.prefix}${host.domain}`;
@@ -610,23 +865,36 @@ async function start(): Promise<void> {
       }
     }
     for (const d of doors) {
-      d.hover += ((d === hovered ? 1 : 0) - d.hover) * Math.min(1, dt * 12);
+      // A door answers to being pointed at; its button answers on its own.
+      const onDoor = pointed?.door === d && pointed.mesh === d.view;
+      d.hover += ((onDoor ? 1 : 0) - d.hover) * Math.min(1, dt * 12);
       (d.frame.material as THREE.MeshBasicMaterial).color.copy(white).lerp(accent, d.hover);
       d.info.visible = d.hover > 0.5;
       d.view.position.z = -0.12 * d.hover; // the door swings in a little
     }
+    for (const c of clickables) if (c.mesh !== c.door?.view) c.mesh.scale.setScalar(c === pointed ? 1.12 : 1);
+    if (toast && performance.now() > toastUntil) {
+      camera.remove(toast);
+      toast.material.map?.dispose();
+      toast.material.dispose();
+      toast = null;
+    }
+    furniture.update(t, dt);
     renderer.render(scene, camera);
   });
   state.ready = true;
 
   // Newer announcements from relays, after the bundled set is on screen.
   try {
-    const authors = [...new Set([catalog.curator.pubkey, ...catalog.entries.map((e) => e.event.pubkey)])];
+    const authors = [...new Set([catalog.curator.pubkey, ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((x) => x.event.pubkey)])];
     const res = await queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 200 }, 4000);
-    const before = JSON.stringify(catalog.entries.map((e) => [e.id, e.event.id]));
+    const shown = () => JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), saved.map((x) => x.event.id)]);
+    const before = shown();
     catalog = buildCatalog(bundleJson as unknown as StarterBundle, res.events);
-    if (before !== JSON.stringify(catalog.entries.map((e) => [e.id, e.event.id]))) await buildDoors();
-    state.relays = Object.values(res.relays).filter((s) => s === "eose").length;
+    const fresher = refreshSaved(saved, res.events);
+    if (fresher !== saved) keep(fresher);
+    if (before !== shown()) await buildDoors();
+    state.relays = Object.values(res.relays).filter((x) => x === "eose").length;
   } catch {
     /* the bundled set stands */
   }

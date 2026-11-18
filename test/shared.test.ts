@@ -8,6 +8,8 @@ import { decidePreview, pickPreview, sniffImage } from "../src/shared/preview.js
 import { finalizeEvent, getPublicKey, parseManifest, parseWorldEvent, verifyEvent, verifyOrigin, type NostrEvent } from "@nswp/core";
 import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../src/shared/publishing.js";
 import { rankShelves } from "../src/shared/rank.js";
+import { DEFAULT_ROOM, roomFromInput } from "../src/shared/room.js";
+import { addSaved, parseLeft, parseSaved, refreshSaved, removeSaved, restoreSaved, savedEntries, SAVED_LIMIT, wallSlot } from "../src/shared/saved.js";
 import { checkedSigner } from "../src/shared/session.js";
 import { cleanRelays } from "../src/shared/settings.js";
 import { plainShelf, shelfDefs, whySentence, type Candidate } from "../src/shared/shelves.js";
@@ -305,5 +307,116 @@ describe("door plate (spec §6.7)", () => {
       { text: "3D", tone: "plain" },
       { text: "Gentle", tone: "plain" },
     ]);
+  });
+});
+
+describe("your doors (spec §14.1)", () => {
+  const catalog = buildCatalog(starter);
+  const [a, b, c] = catalog.entries as [(typeof catalog.entries)[0], (typeof catalog.entries)[0], (typeof catalog.entries)[0]];
+
+  it("gives each saved place the first free place on the wall", () => {
+    let list = addSaved([], a, 100);
+    list = addSaved(list, b, 101);
+    list = addSaved(list, c, 102);
+    expect(list.map((s) => [s.id, s.slot])).toEqual([[a.id, 0], [b.id, 1], [c.id, 2]]);
+    expect(addSaved(list, a, 103)).toBe(list); // already saved
+  });
+
+  it("never moves a door when another is removed, and reuses the gap", () => {
+    let list = addSaved(addSaved(addSaved([], a, 1), b, 2), c, 3);
+    list = removeSaved(list, a.id);
+    expect(list.map((s) => [s.id, s.slot])).toEqual([[b.id, 1], [c.id, 2]]);
+    list = addSaved(list, a, 4);
+    expect(list.find((s) => s.id === a.id)!.slot).toBe(0);
+    expect(list.map((s) => s.slot)).toEqual([0, 1, 2]);
+  });
+
+  it("puts a removed door back where it was, unless another took its place", () => {
+    const full = addSaved(addSaved([], a, 1), b, 2);
+    const removed = full.find((s) => s.id === a.id)!;
+    const without = removeSaved(full, a.id);
+    expect(restoreSaved(without, removed).find((s) => s.id === a.id)!.slot).toBe(0);
+    const taken = addSaved(without, c, 3); // c takes the gap at 0
+    expect(restoreSaved(taken, removed).find((s) => s.id === a.id)!.slot).toBe(2);
+  });
+
+  it("drops stored entries that are tampered with, mislabelled or repeated, and repairs places", () => {
+    const good = addSaved(addSaved([], a, 1), b, 2);
+    const stored = JSON.parse(JSON.stringify(good)) as typeof good;
+    const raw = [
+      stored[0],
+      { ...stored[1]!, event: { ...stored[1]!.event, content: "changed" } }, // signature no longer matches
+      { ...stored[0]!, id: b.id }, // says it is another world
+      stored[0], // twice
+      { id: c.id, event: c.event, savedAt: 5, slot: 0 }, // a place already taken
+      "junk",
+    ];
+    const parsed = parseSaved(raw);
+    expect(parsed.map((s) => [s.id, s.slot])).toEqual([[a.id, 0], [c.id, 1]]);
+    expect(parseSaved("nope")).toEqual([]);
+  });
+
+  it("stops at the limit", () => {
+    const many = Array.from({ length: SAVED_LIMIT }, (_, i) => ({ id: `x${i}`, event: a.event, savedAt: 0, slot: i }));
+    expect(addSaved(many, a, 1)).toBe(many);
+  });
+
+  it("takes a newer announcement of a saved place, and only from the same publisher", () => {
+    const list = addSaved([], a, 1);
+    const sk = new Uint8Array(32).fill(7);
+    const stranger = finalizeEvent({ kind: a.event.kind, created_at: a.event.created_at + 10, tags: a.event.tags, content: a.event.content }, sk);
+    expect(refreshSaved(list, [stranger])).toBe(list);
+    expect(refreshSaved(list, [a.event])).toBe(list); // not newer
+  });
+
+  it("draws saved places in wall order, using the catalogue's copy when it is as new", () => {
+    const list = addSaved(addSaved([], b, 1), a, 2); // b at 0, a at 1
+    const drawn = savedEntries(list, catalog);
+    expect(drawn.map((e) => e.id)).toEqual([b.id, a.id]);
+    expect(drawn[0]).toBe(catalog.entries.find((e) => e.id === b.id));
+    // A saved place the catalogue doesn't know is still a door.
+    const alone = savedEntries(list, { entries: [], unlisted: [], curator: catalog.curator });
+    expect(alone.map((e) => [e.id, e.rank])).toEqual([[b.id, null], [a.id, null]]);
+  });
+
+  it("stands the first places either side of the middle, then alternately outward", () => {
+    expect([0, 1, 2, 3, 4].map(wallSlot)).toEqual([-0.5, 0.5, -1.5, 1.5, -2.5]);
+  });
+
+  it("only believes a well-formed note of the door a visitor left through", () => {
+    expect(parseLeft('{"id":"37300:k:d","from":"walk"}')).toEqual({ id: "37300:k:d", from: "walk" });
+    expect(parseLeft('{"id":"x","from":"elsewhere"}')).toBeNull();
+    expect(parseLeft("not json")).toBeNull();
+    expect(parseLeft(null)).toBeNull();
+  });
+});
+
+describe("the room's layout (spec §4.5)", () => {
+  it("has a default that draws", () => {
+    expect(DEFAULT_ROOM.layout.room.template).toBe("open");
+    expect(DEFAULT_ROOM.layout.items.length).toBeGreaterThan(0);
+    expect(DEFAULT_ROOM.skipped).toBe(0);
+  });
+
+  it("takes a world template's home.json, keeping furniture and leaving out what would contact another site", () => {
+    const room = roomFromInput({
+      room: { template: "hall", color: "#e6cfa8", accent: "#c8553d" },
+      items: [
+        { type: "bench", position: [0, 0, -4] },
+        { type: "frame", position: [0, 1.6, -8.8], args: ["https://example.org/a.jpg", "a".repeat(64)] },
+        { type: "portal", position: [3, 0, -5], args: ["https://example.org/"] },
+        { type: "note", position: [0, 2, -6], args: ["Hello"] },
+      ],
+    })!;
+    expect(room.layout.items.map((i) => i.type)).toEqual(["bench", "note"]);
+    expect(room.skipped).toBe(2);
+    expect(room.layout.room.template).toBe("open"); // a hall's walls would stand across the doors
+    expect(room.layout.room.accent).toBe("#c8553d");
+  });
+
+  it("refuses something that isn't a layout", () => {
+    expect(roomFromInput({ hello: "world" })).toBeNull();
+    expect(roomFromInput(null)).toBeNull();
+    expect(roomFromInput("text")).toBeNull();
   });
 });

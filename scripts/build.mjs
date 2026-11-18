@@ -39,7 +39,8 @@ await build({
   alias: {
     "@nswp/core": join(root, "vendor/nswp/nswp-core.js"),
     bitfeed: join(root, "vendor/bitfeed/bitfeed.js"),
-    "nswp-sdk/three": join(root, "vendor/nswp/nswp-sdk-three.js"),
+    "nswp-sdk/three": join(root, "vendor/nswp/sdk/three.js"),
+    "nswp-sdk/home": join(root, "vendor/nswp/sdk/home.js"),
   },
 });
 
