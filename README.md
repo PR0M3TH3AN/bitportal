@@ -267,6 +267,26 @@ person who wants to watch selects the sharer in People and presses "Watch".
 It opens on a panel of their own, to move, size, pin or put away. The sharer
 sees how many are watching, and stopping or leaving ends it for everyone.
 
+## Blocking someone everywhere
+
+Blocking someone in a world keeps the two of you apart in that world: you
+don't see or hear each other, and everyone else still sees you both. Each
+world is its own site, so that block stops at its door. To make it hold
+everywhere, BitPortal keeps a list of its own.
+
+When a visitor leaves a world where they blocked someone, the Airlock names
+who and offers "Block this person everywhere you go". Ticked, they go on the
+list, and the Airlock hands the list to every world the visitor arrives in,
+which keeps them apart there too. The box starts unticked, because the link
+that reports a block is something anyone could write. People blocked in
+BitPortal's own room are on the list already.
+
+Settings, on the front page, shows the list with Unblock beside each person,
+and anyone reported on the way home who is still waiting for an answer. Two
+things to know: each world arrived in learns the keys on the list, which is
+the cost of a block that travels; and only people who go by a name can be on
+it, since a guest is a new person every visit.
+
 ## Staying joined as you travel
 
 Someone who is in a room, in BitPortal's own room or in a world, stays joined

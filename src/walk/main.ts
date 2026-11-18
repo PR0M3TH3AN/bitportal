@@ -18,6 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { ARRIVED_JOINED } from "../shared/travel.js";
+import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
 import { addCameraControls, addPanelControls, addRoomControls, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
@@ -345,7 +346,7 @@ async function start(): Promise<void> {
   void readSignedIn().then((who) => {
     const home = homeOf(loadHome(), who?.pubkey);
     if (!home) return;
-    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, ...travelling() })) });
+    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic })) });
   });
   try {
     // Said once, when they were meant to arrive at their home and didn't.
@@ -652,7 +653,7 @@ async function start(): Promise<void> {
       /* already ended */
     }
     // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, ...travelling() }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -896,14 +897,18 @@ async function start(): Promise<void> {
     state.mirror = mirror.look;
   }
   // Brought here by the Airlock from a world where they were in the room: it says so once, on this site only.
-  let arrived: { joined?: boolean; mic?: boolean } | null = null;
+  // The people they have blocked everywhere are blocked here too: this room is their own client's.
+  let arrived: { joined?: boolean; mic?: boolean; blocked?: string[] } = { blocked: loadBlockedEverywhere().map((b) => b.key) };
   try {
     const note = sessionStorage.getItem(ARRIVED_JOINED);
     sessionStorage.removeItem(ARRIVED_JOINED);
-    if (note) arrived = { joined: true, mic: note === "mic" };
+    if (note) arrived = { ...arrived, joined: true, mic: note === "mic" };
   } catch {
     /* storage unavailable: they are asked, as before */
   }
+  // Someone they blocked in a world, reported on the way home, is waiting for their answer.
+  const waiting = loadPendingBlocks().length;
+  if (waiting) setTimeout(() => controls.say(`You blocked ${waiting === 1 ? "1 person" : `${waiting} people`} in a world. To block them everywhere you go, say so in Settings on the front page, or at your next door.`), 3000);
   ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false }));
 
   // -------------------------------------------------------- walking
