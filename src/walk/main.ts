@@ -100,6 +100,7 @@ interface TestHooks {
   roomInfo(): unknown;
   teleport(x: number, z: number): void;
   device?: unknown;
+  spot?: (name: string, u: number, v: number) => { local: number[]; screen: number[] } | null;
   computers?: Computers;
 }
 declare global {
@@ -688,6 +689,14 @@ async function start(): Promise<void> {
     const world = object ? object.getWorldPosition(new THREE.Vector3()) : (panels?.pointOf(name) ?? null);
     if (!world) return null;
     return { world: world.toArray().map((n) => Math.round(n * 1000) / 1000), local: rig.worldToLocal(world.clone()).toArray() };
+  };
+  // A spot on something flat, by how far across and down it is (each from 0 to 1): where a button drawn on a panel is.
+  hooks.spot = (name, u, v) => {
+    const object = scene.getObjectByName(name);
+    if (!object) return null;
+    const world = object.localToWorld(new THREE.Vector3(u - 0.5, 0.5 - v, 0));
+    const at = world.clone().project(camera);
+    return { local: rig.worldToLocal(world.clone()).toArray(), screen: [Math.round(((at.x + 1) / 2) * innerWidth), Math.round(((1 - at.y) / 2) * innerHeight)] };
   };
   hooks.where = () => {
     camera.getWorldPosition(headNow);
