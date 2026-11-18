@@ -8,7 +8,7 @@ import {
   panoramaTexture,
   textSprite,
   turnVisitor
-} from "./shared-JHTIFB7O.js";
+} from "./shared-UP2ZOHVF.js";
 import "./shared-REPWSNOI.js";
 export {
   addRoomControls,
