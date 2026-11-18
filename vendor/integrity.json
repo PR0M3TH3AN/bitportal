@@ -6,7 +6,7 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "ea5ee3dcdbd519aee83263f0fd77251653504474",
+        "commit": "30a0ed7fe765125e81acc72d0c23892429abcc58",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
