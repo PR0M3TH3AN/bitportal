@@ -242,8 +242,10 @@ they see and never loosen what the host decided.
 
 ## Sound
 
-The room has sound: steps, presses, doors, people coming and going, and a
-quiet music made in the browser. The Sound part of the menu holds the
+The room has sound: steps, presses, doors, people coming and going, a low
+hum, and four pieces of music that play in turn. All of it is recorded, was
+chosen by ear, and is served from this site
+([where each file came from](public/sounds/README.md)). The Sound part of the menu holds the
 visitor's own volumes (effects, music, voices, all off) and their own music:
 songs added from their device, kept in this browser, and heard by nobody
 else. Each world has its own sounds and its own copy of that menu; a

@@ -95,6 +95,8 @@ if (take("nswp", "@nswp/core")) {
   execFileSync(tsc, ["-p", join(repo, "packages/sdk"), "--noEmit", "false", "--emitDeclarationOnly", "--declaration", "--rootDir", join(repo, "packages/sdk/src"), "--outDir", join(out, "sdk-types")], { stdio: "inherit" });
   // Its licence, and the notices for the libraries built into these files, travel with them.
   for (const name of ["LICENSE", "THIRD-PARTY-NOTICES.md"]) cpSync(join(repo, name), join(out, name));
+  // The sounds every place starts with: recorded cues and a room's hum, with a note of where each came from.
+  cpSync(join(repo, "packages", "sdk", "sounds"), join(out, "sounds"), { recursive: true });
   const version = JSON.parse(readFileSync(join(repo, "packages/core/package.json"), "utf8")).version;
   packages["@nswp/core"] = { path: "vendor/nswp", version, license: "MIT", source: src, files: hashDir(out) };
 }
