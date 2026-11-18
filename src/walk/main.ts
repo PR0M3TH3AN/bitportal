@@ -513,7 +513,7 @@ async function start(): Promise<void> {
 
   const header = (wall: Wall, text: string) => {
     const sign = textSprite(text, INK, 4.2);
-    sign.position.set(0, 4.9, -RADIUS - 0.4);
+    sign.position.set(0, 4.3, -RADIUS - 0.4); // low enough to clear the page's top bar on a tall screen
     walls[wall].add(sign);
   };
 
@@ -769,11 +769,31 @@ async function start(): Promise<void> {
 
   attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "walk" });
 
-  window.addEventListener("resize", () => {
+  // On a flat screen the page's own controls cover the bottom of the picture,
+  // and on a phone that is where the doors are. So the picture is shifted up
+  // until eye level sits in the middle of the space the controls leave free.
+  // Pointing still lines up: rays are made from the same shifted camera.
+  const hud = document.querySelector<HTMLElement>(".walk-hud")!;
+  const topBar = document.querySelector<HTMLElement>(".walk-top")!;
+  const fit = () => {
+    if (renderer.xr.isPresenting) return; // the headset sets its own view
     camera.aspect = innerWidth / innerHeight;
+    // A tall screen sees a wider slice top to bottom, so that it still takes in
+    // three doors side by side and not one and a half.
+    const across = THREE.MathUtils.degToRad(52);
+    camera.fov = Math.min(90, Math.max(62, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(across / 2) / camera.aspect))));
+    const shift = Math.min(Math.round((hud.offsetHeight - topBar.offsetHeight) / 2), Math.round(innerHeight * 0.3));
+    if (shift > 0) camera.setViewOffset(innerWidth, innerHeight, 0, shift, innerWidth, innerHeight);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
-  });
+    state.shift = Math.max(shift, 0);
+  };
+  window.addEventListener("resize", fit);
+  // The controls change height as lines of text come and go.
+  new ResizeObserver(fit).observe(hud);
+  renderer.xr.addEventListener("sessionend", fit);
+  fit();
 
   // ------------------------------------------------------ test hooks
   let aimed: string | null = null;

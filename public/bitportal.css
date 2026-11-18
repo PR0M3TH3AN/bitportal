@@ -249,6 +249,20 @@ body.walk { overflow: hidden; background: #0a0b0d; color: #f2f3f6; }
 .walk-door { font-size: 1rem; min-height: 1.5em; }
 .walk-help { color: #aab0bd; }
 @media (hover: none) { .walk-help { display: none; } }
+/* The controls must not change height as text comes and goes: the picture is
+   placed above them, and would jump. So the line about the door being pointed
+   at is always one line, and the spoken note takes no room. */
+.walk-door { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.walk-note { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* A phone: the controls take as little of the picture as they can. */
+@media (max-width: 640px) {
+  .walk-top { padding: 8px 12px; gap: 8px; }
+  .walk-top .button, .walk-hud .button { min-height: 40px; padding: 6px 12px; font-size: 0.9rem; }
+  .walk-top .top-actions { gap: 6px; flex-wrap: nowrap; }
+  .walk-hud { gap: 6px 8px; padding: 10px 12px; }
+  .walk-status { font-size: 0.78rem; line-height: 1.35; }
+  .walk-door { font-size: 0.85rem; }
+}
 
 /* ---------- pages with forms (identity, announce a world) ---------- */
 .page { max-width: 760px; padding-block: clamp(28px, 6vw, 64px); }
