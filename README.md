@@ -22,6 +22,10 @@ Live, and experimental: <https://portal.bitblocks.network/>
 - **Your doors.** Save a door and it is yours: first on the list, on your own
   wall in the room, and one press away from any page under **Your doors**.
   Saved places are kept on this device and are never published.
+- **Your look** (`/look/`) is how other people see you when you share a room:
+  a figure built from a few parts and colours, with a mark that is yours. It is
+  kept on this device. The page before each world asks whether to go as
+  yourself or plain.
 - **The room** (`/walk/`) is where you start when you would rather stand
   somewhere than read a list, on a screen or in a VR headset. Your doors are
   on the wall ahead, each in a place it keeps. Suggested doors are on the wall

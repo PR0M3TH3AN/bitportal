@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Your look · BitPortal</title>
+<meta name="description" content="Choose how other people see you in a world. It stays on this device.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body>
+<header class="top">
+  <div class="frame top-row">
+    <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
+    <span class="top-actions"><a class="button" href="/walk/">Your room</a><a class="button" href="/">Back to the lobby</a></span>
+  </div>
+</header>
+<main class="frame page look-page">
+  <h1>Your look</h1>
+  <p class="lede">How other people see you when you share a room in a world. Pick the parts and the colours. The mark on the chest and back is yours and isn't a choice.</p>
+  <p id="look-state" class="look-state" role="status"></p>
+  <div class="look-layout">
+    <div class="look-view">
+      <!-- The figure, live. Drag to turn it. Drawn by the page's script. -->
+      <div id="look-stage" class="look-stage" aria-hidden="true"></div>
+      <div class="look-actions">
+        <button id="look-surprise" class="button" type="button">Surprise me</button>
+        <button id="look-turn" class="button" type="button">See the back</button>
+      </div>
+    </div>
+    <form id="look-form" class="look-form" aria-label="Parts and colours"></form>
+  </div>
+  <section class="notes">
+    <h2>What to know</h2>
+    <ul>
+      <li>Your look is kept on this device. BitPortal has no server to send it to.</li>
+      <li>A world sees it only when you go there as yourself. The page before each world asks, every time.</li>
+      <li>A look that is the same everywhere makes you recognisable everywhere. Going plain, you are a different figure each visit.</li>
+      <li>A world may dress its visitors its own way. Your mark is the part meant to stay.</li>
+    </ul>
+    <div class="look-actions">
+      <button id="look-again" class="button" type="button">Start again with a new mark</button>
+      <button id="look-forget" class="button" type="button">Stop wearing a look</button>
+    </div>
+  </section>
+</main>
+<script type="module" src="/look/main.js"></script>
+</body>
+</html>

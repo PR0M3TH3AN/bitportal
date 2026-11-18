@@ -422,3 +422,41 @@ describe("the room's layout (spec §4.5)", () => {
     expect(roomFromInput("text")).toBeNull();
   });
 });
+
+import { decodeLook, generatedLook } from "@nswp/core";
+import { inlineLook, lookOf, newSeed, parseKept, surprise } from "../src/shared/look.js";
+
+describe("the visitor's look", () => {
+  it("makes a seed by chance, in the form a look can carry", () => {
+    const seed = newSeed();
+    expect(seed).toMatch(/^g[0-9a-f]{24}$/);
+    expect(newSeed()).not.toBe(seed);
+  });
+
+  it("reads back only what a kept look can hold", () => {
+    expect(parseKept(null)).toBeNull();
+    expect(parseKept("not json")).toBeNull();
+    expect(parseKept('{"seed":"x"}')).toBeNull();
+    expect(parseKept('{"seed":"g0123456789abcdef01234567","choices":{"head":"tall","evil":"<script>","color":"#102030"}}')).toEqual({ seed: "g0123456789abcdef01234567", choices: { head: "tall", color: "#102030" } });
+  });
+
+  it("draws a kept look as its seed gives it, with the choices on top", () => {
+    const kept = { seed: "g0123456789abcdef01234567", choices: { head: "tall", body: "wings" } };
+    const look = lookOf(kept);
+    expect(look.head).toBe("tall");
+    expect(look.body).toBe(generatedLook(kept.seed).body); // not on the list: the seed's own stays
+    expect(look.mark).toBe(generatedLook(kept.seed).mark);
+  });
+
+  it("travels in a form a world reads back as the same look", () => {
+    const kept = surprise({ seed: "g0123456789abcdef01234567", choices: {} }, () => 0.42);
+    const read = decodeLook(inlineLook(kept));
+    expect(read.ok && read.value.look).toEqual(lookOf(kept));
+    expect(inlineLook(kept).length).toBeLessThan(600);
+  });
+
+  it("keeps the mark when everything else is changed by chance", () => {
+    const kept = { seed: "g0123456789abcdef01234567", choices: {} };
+    expect(lookOf(surprise(kept)).mark).toBe(lookOf(kept).mark);
+  });
+});

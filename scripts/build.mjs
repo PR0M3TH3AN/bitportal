@@ -24,6 +24,7 @@ await build({
     "walk/main": join(root, "src/walk/main.ts"),
     "account/main": join(root, "src/account/main.ts"),
     "publish/main": join(root, "src/publish/main.ts"),
+    "look/main": join(root, "src/look/main.ts"),
   },
   bundle: true,
   splitting: true, // keeps the headset emulator out of the page until asked for
@@ -49,7 +50,7 @@ cpSync(join(root, "public"), out, { recursive: true });
 cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
-for (const page of ["account", "publish"]) {
+for (const page of ["account", "publish", "look"]) {
   mkdirSync(join(out, page), { recursive: true });
   cpSync(join(root, `src/${page}/index.html`), join(out, page, "index.html"));
 }
