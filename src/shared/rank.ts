@@ -16,7 +16,7 @@ registry
     id: "bitportal.curatorOrder",
     async score(c) {
       const m = meta(c);
-      return { score: m.total > 1 ? 1 - m.rank / (m.total - 1) : 1, reason: "the starter set ranks it highly" };
+      return { score: m.total > 1 ? 1 - m.rank / (m.total - 1) : 1, reason: "its list ranks it highly" };
     },
   })
   .registerScorer("bitportal.deviceFit", {

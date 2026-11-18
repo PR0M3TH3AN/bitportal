@@ -112,8 +112,16 @@ export function refreshSaved(list: SavedPlace[], events: unknown[]): SavedPlace[
   return changed ? next : list;
 }
 
+/** The addresses the visitor's saved places lead to. */
+export function savedUrls(list: SavedPlace[]): string[] {
+  return list.flatMap((s) => {
+    const parsed = parseWorldEvent(s.event);
+    return parsed.ok ? [parsed.value.url] : [];
+  });
+}
+
 /** Saved places as doors, in wall order. Where the catalogue has a newer announcement, that one is drawn. */
-export function savedEntries(list: SavedPlace[], catalog: Pick<Catalog, "entries" | "unlisted" | "curator">): Entry[] {
+export function savedEntries(list: SavedPlace[], catalog: Pick<Catalog, "entries" | "unlisted">): Entry[] {
   const out: Entry[] = [];
   for (const s of bySlot(list)) {
     const known = catalog.entries.find((e) => e.id === s.id) ?? catalog.unlisted.find((e) => e.id === s.id);
@@ -123,7 +131,7 @@ export function savedEntries(list: SavedPlace[], catalog: Pick<Catalog, "entries
     }
     const parsed = parseWorldEvent(s.event);
     if (!parsed.ok) continue;
-    out.push({ id: s.id, world: parsed.value, event: s.event, rank: known?.rank ?? null, curatorListing: s.event.pubkey === catalog.curator.pubkey });
+    out.push({ id: s.id, world: parsed.value, event: s.event, rank: known?.rank ?? null, curatorListing: known?.curatorListing ?? false, listedBy: known?.listedBy ?? null });
   }
   return out;
 }

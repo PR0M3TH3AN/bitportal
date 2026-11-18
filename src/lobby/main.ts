@@ -7,14 +7,16 @@
  */
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import bundleJson from "../starter/starter-set.json";
-import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
+import { buildCatalog, type Catalog, type Entry, type ListView, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
+import { commonTopics, isFinding, matches, type Find } from "../shared/find.js";
+import { findList, follow, followedAuthors, FOLLOW_LIMIT, isFollowed, loadFollowed, readListAddress, refreshFollowed, storeFollowed, unfollow, type FollowedList } from "../shared/lists.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadedPreview, loadPreview, type PreviewDecision } from "../shared/preview.js";
 import { attachJumpList } from "../shared/jump.js";
 import { saveRoomText, storedRoomText } from "../shared/room.js";
-import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, storeSaved, type SavedPlace } from "../shared/saved.js";
+import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, savedUrls, storeSaved, type SavedPlace } from "../shared/saved.js";
 import { readSignedIn } from "../shared/session.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
@@ -42,15 +44,22 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 const shortKey = (pubkey: string) => `${pubkey.slice(0, 6)}…${pubkey.slice(-4)}`;
 
 let settings: Settings = loadSettings();
-let catalog: Catalog = buildCatalog(bundle);
+/** Your doors: kept on this device, drawn first, and left out of the shelves (spec §14.1). */
+let saved: SavedPlace[] = loadSaved();
+/** The lists you follow: kept on this device too (NSWP-08). */
+let followed: FollowedList[] = loadFollowed();
+/** What relays have sent this visit. */
+let relayEvents: unknown[] = [];
+const makeCatalog = (): Catalog => buildCatalog(bundle, relayEvents, { followed, showStarter: settings.showStarter, taken: savedUrls(saved) });
+let catalog: Catalog = makeCatalog();
+/** What the visitor is looking for, if anything. */
+const find: Find = { query: "", topic: "" };
 let device: Device = { vr: false, tier: detectTier(navigator.userAgent, (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile) };
 let shelves: Shelf[] = [];
 let engine = "";
 let notice = "";
 let relayNote = "";
 let signedIn: { pubkey: string; name?: string } | null = null;
-/** Your doors: kept on this device, drawn first, and left out of the shelves (spec §14.1). */
-let saved: SavedPlace[] = loadSaved();
 const OPTOUT_KEY = "bitportal:optout";
 /** The room at the top of the page, once it is up. The page is whole without it. */
 let hero: import("./hero.js").Hero | null = null;
@@ -267,26 +276,122 @@ function shelfSection(shelf: Shelf, warn = false): HTMLElement {
   );
 }
 
-function draw(): void {
-  const c = catalog.curator;
-  const source = $("source");
-  source.replaceChildren(
-    signedIn ? "You're signed in, but your follows don't shape this lobby yet. These doors come from " : "You're browsing signed out. These doors come from ",
-    el("strong", {}, c.title),
-    ", a list signed by ",
-    el("span", { class: "key", title: c.pubkey }, shortKey(c.pubkey)),
-    ". ",
+const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** One shelf for a list on show: its worlds in its curator's order. */
+function listShelf(l: ListView, index: number): HTMLElement | null {
+  const hidden = optedOut();
+  const ids = l.ids.filter((id) => !hidden.has(id) && !isSaved(saved, id));
+  if (ids.length === 0 && l.missing === 0) return null;
+  const blurb = [
+    l.description,
+    `A list by ${shortKey(l.pubkey)}.`,
+    l.missing > 0 ? `${count(l.missing, "world")} on it ${l.missing === 1 ? "hasn't" : "haven't"} been found on your relays.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return shelfSection({ id: `list-${index}`, title: l.title, blurb, items: ids.map((id) => ({ id, why: "" })) });
+}
+
+function setShowUnlisted(on: boolean): void {
+  settings = { ...settings, showUnlisted: on };
+  saveSettings(settings);
+  draw();
+}
+
+/** Worlds that announced themselves and that no list on show names (NSWP-08, "Worlds nobody has listed"). */
+function unlistedSection(): HTMLElement | null {
+  const unlisted = catalog.unlisted.filter((e) => !isSaved(saved, e.id));
+  if (unlisted.length === 0) return null;
+  if (!settings.showUnlisted) {
+    const show = el("button", { class: "button", type: "button", id: "show-unlisted" }, "Show them");
+    show.addEventListener("click", () => setShowUnlisted(true));
+    return el(
+      "section",
+      { class: "shelf shelf-held", "aria-labelledby": "shelf-unlisted" },
+      el("h2", { id: "shelf-unlisted" }, "Announced, not on your lists"),
+      el(
+        "p",
+        { class: "shelf-blurb" },
+        `${count(unlisted.length, "world has", "worlds have")} announced ${unlisted.length === 1 ? "itself" : "themselves"} that none of your lists ${unlisted.length === 1 ? "names" : "name"}. Anyone can publish an announcement, and nobody you've chosen has looked at ${unlisted.length === 1 ? "this one" : "these"}.`,
+      ),
+      el("p", { class: "shelf-actions" }, show),
+    );
+  }
+  const section = shelfSection(
+    {
+      id: "unlisted",
+      title: "Announced, not on your lists",
+      blurb: `Anyone can publish an announcement. Nobody you've chosen has looked at these, and none is checked until you open its door.${catalog.unlistedHeld > 0 ? ` ${count(catalog.unlistedHeld, "more is", "more are")} held back: one key shows three at most.` : ""}`,
+      items: unlisted.map((e) => ({ id: e.id, why: "" })),
+    },
+    true,
   );
-  const about = el("button", { class: "link", type: "button" }, "About this list");
-  about.addEventListener("click", openSettings);
-  source.append(about);
+  const hide = el("button", { class: "button", type: "button", id: "hide-unlisted" }, "Hide these");
+  hide.addEventListener("click", () => setShowUnlisted(false));
+  section.append(el("p", { class: "shelf-actions" }, hide));
+  return section;
+}
 
-  $("r-doors").textContent = String(catalog.entries.length);
-  $("r-curator").textContent = shortKey(c.pubkey);
+/** What the find bar turns up, across everything on the page. */
+function foundSection(): HTMLElement {
+  const mine = savedEntries(saved, catalog);
+  const loose = catalog.unlisted.filter((e) => !isSaved(saved, e.id));
+  const pool = [...mine, ...visibleEntries(), ...(settings.showUnlisted ? loose : [])];
+  const hits = pool.filter((e) => matches(e.world, find));
+  const heldHits = settings.showUnlisted ? 0 : loose.filter((e) => matches(e.world, find)).length;
+  const what = [find.query.trim() ? `"${find.query.trim()}"` : "", find.topic ? `the topic ${find.topic}` : ""].filter(Boolean).join(" and ");
+  const section = el(
+    "section",
+    { class: "shelf", "aria-labelledby": "shelf-found" },
+    el("h2", { id: "shelf-found" }, hits.length ? `${count(hits.length, "world matches", "worlds match")}` : "Nothing here matches"),
+    el("p", { class: "shelf-blurb", role: "status" }, hits.length ? `Matching ${what}, among your doors and the lists on show.` : `No world among your doors and the lists on show matches ${what}.`),
+    el("ul", { class: "doors" }, ...hits.map((e) => door(e, ""))),
+  );
+  if (heldHits > 0) {
+    const show = el("button", { class: "link", type: "button" }, "Show them");
+    show.addEventListener("click", () => setShowUnlisted(true));
+    section.append(el("p", { class: "shelf-actions small" }, `${count(heldHits, "world", "worlds")} that nobody has listed also ${heldHits === 1 ? "matches" : "match"}. `, show));
+  }
+  const clear = el("button", { class: "button", type: "button" }, "Clear");
+  clear.addEventListener("click", () => {
+    find.query = "";
+    find.topic = "";
+    $<HTMLInputElement>("find-q").value = "";
+    draw();
+  });
+  section.append(el("p", { class: "shelf-actions" }, clear));
+  return section;
+}
 
+/** The topics worth narrowing by, as buttons under the find bar. */
+function drawTopics(): void {
+  const pool = [...savedEntries(saved, catalog), ...catalog.entries, ...(settings.showUnlisted ? catalog.unlisted : [])];
+  const topics = commonTopics(pool.map((e) => e.world));
+  if (find.topic && !topics.includes(find.topic)) topics.unshift(find.topic);
+  const box = $("find-topics");
+  const had = (document.activeElement as HTMLElement | null)?.dataset?.topic;
+  box.replaceChildren(
+    ...topics.map((t) => {
+      const b = el("button", { class: "topic", type: "button", "aria-pressed": String(find.topic === t), "data-topic": t }, t);
+      b.addEventListener("click", () => {
+        find.topic = find.topic === t ? "" : t;
+        draw();
+      });
+      return b;
+    }),
+  );
+  if (had) box.querySelector<HTMLElement>(`[data-topic="${CSS.escape(had)}"]`)?.focus();
+}
+
+function drawShelves(): void {
   const main = $("shelves");
   main.replaceChildren();
   if (notice) main.append(el("p", { class: "notice", role: "status" }, notice));
+  if (isFinding(find)) {
+    main.append(foundSection());
+    return;
+  }
   const mine = savedEntries(saved, catalog);
   if (mine.length > 0) {
     main.append(
@@ -298,30 +403,44 @@ function draw(): void {
       }),
     );
   }
+  // A list you chose to follow comes before anything ranked: it is your choice, not BitPortal's.
+  catalog.lists.forEach((l, i) => {
+    if (l.starter) return;
+    const shelf = listShelf(l, i);
+    if (shelf) main.append(shelf);
+  });
   if (visibleEntries().length === 0) {
-    main.append(
-      el(
-        "p",
-        { class: "empty" },
-        mine.length > 0 ? "You've saved every door on this list." : "The starter set has no worlds to show. Check your relays in Settings, or try again later.",
-      ),
-    );
+    if (catalog.lists.length === 0) {
+      const open = el("button", { class: "button", type: "button" }, "Your lists");
+      open.addEventListener("click", () => openLists());
+      main.append(el("p", { class: "empty" }, "You aren't showing any list, so there are no doors here but your own. Follow a list, or bring BitPortal's own back."), el("p", { class: "shelf-actions" }, open));
+    } else {
+      main.append(el("p", { class: "empty" }, mine.length > 0 ? "You've saved every door on your lists." : "Your lists have no worlds to show. Check your relays in Settings, or try again later."));
+    }
   }
-  for (const s of shelves) main.append(shelfSection(s));
-  const unlisted = catalog.unlisted.filter((e) => !isSaved(saved, e.id));
-  if (settings.showUnlisted && unlisted.length > 0) {
-    main.append(
-      shelfSection(
-        {
-          id: "unlisted",
-          title: "Announced on your relays, not reviewed",
-          blurb: "Anyone can publish an announcement. Nobody you've chosen has looked at these.",
-          items: unlisted.map((e) => ({ id: e.id, why: "" })),
-        },
-        true,
-      ),
-    );
-  }
+  // Ranked shelves are for choosing among many. A single short list of your own is already all there is to see.
+  const worthRanking = catalog.lists.some((l) => l.starter) || catalog.lists.length > 1 || visibleEntries().length >= 6;
+  if (worthRanking) for (const s of shelves) main.append(shelfSection(s));
+  const unlisted = unlistedSection();
+  if (unlisted) main.append(unlisted);
+}
+
+function draw(): void {
+  const source = $("source");
+  const lead = signedIn ? "You're signed in, but your follows don't shape this lobby yet. " : "You're browsing signed out. ";
+  const only = catalog.lists.length === 1 ? catalog.lists[0]! : null;
+  if (only) source.replaceChildren(lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: only.pubkey }, shortKey(only.pubkey)), ". ");
+  else if (catalog.lists.length === 0) source.replaceChildren(lead, "You aren't showing any list. ");
+  else source.replaceChildren(lead, `These doors come from the ${catalog.lists.length} lists you've chosen. `);
+  const about = el("button", { class: "link", type: "button", id: "open-lists" }, "Your lists");
+  about.addEventListener("click", () => openLists());
+  source.append(about);
+
+  $("r-doors").textContent = String(catalog.entries.length);
+  $("r-curator").textContent = only ? shortKey(only.pubkey) : catalog.lists.length === 0 ? "nobody" : `${catalog.lists.length} keys`;
+
+  drawTopics();
+  drawShelves();
   $("foot-note").textContent = [
     `BitPortal ${VERSION}`,
     settings.ranking && engine ? `ranking by BitFeed ${engine}` : "ranking off",
@@ -388,6 +507,11 @@ function openDetail(entry: Entry, why: string): void {
     void rank().then(draw);
   });
 
+  const onLists = catalog.lists.filter((l) => l.ids.includes(entry.id)).map((l) => l.title);
+  const announced = `Announced by the key ${shortKey(entry.event.pubkey)}.`;
+  const where = onLists.length ? ` On ${onLists.length === 1 ? "the list" : "the lists"} ${onLists.join(", ")}.` : isSaved(saved, entry.id) ? "" : " It is on none of your lists.";
+  const provenance = el("p", { class: "provenance" }, entry.curatorListing ? `This description was written by the curator of ${entry.listedBy ?? "a list you follow"}. The site hasn't announced itself.` : announced + where);
+
   // Opening a door is the visitor's interest in this world: from here its own
   // site may be contacted, for verification and for a preview only it holds.
   openedDoors.add(entry.id);
@@ -398,13 +522,7 @@ function openDetail(entry: Entry, why: string): void {
     w.summary ? el("p", { class: "lede" }, w.summary) : null,
     chips,
     status,
-    el(
-      "p",
-      { class: "provenance" },
-      entry.curatorListing
-        ? `This description was written by ${catalog.curator.title}. The site hasn't announced itself.`
-        : `Announced by the key ${shortKey(entry.event.pubkey)}.`,
-    ),
+    provenance,
     why ? el("p", { class: "why" }, why) : null,
     el("p", { class: "next" }, "Visiting opens the Airlock, which shows the address once more before you leave."),
     keepNote,
@@ -430,7 +548,11 @@ function openDetail(entry: Entry, why: string): void {
     const text = r.state === "no-manifest" && entry.curatorListing ? "Not verified, as expected for a site that hasn't announced itself." : VERIFY_TEXT[r.state];
     status.textContent = text;
     status.className = r.state === "verified" ? "verify verify-ok" : "verify verify-warn";
-    if (r.state === "verified") draw();
+    if (r.state === "verified") {
+      // The site vouches for this key, so whoever wrote it, it is the site's own word.
+      provenance.textContent = announced + where;
+      draw();
+    }
   };
   const cached = cachedVerification(entry.id, w.createdAt);
   if (cached) show(cached);
@@ -440,16 +562,19 @@ function openDetail(entry: Entry, why: string): void {
 // ------------------------------------------------------------ settings
 function openSettings(): void {
   const dialog = $<HTMLDialogElement>("settings");
-  const c = catalog.curator;
+  dialog.setAttribute("aria-label", "Settings");
   const rankBox = el("input", { type: "checkbox", id: "set-ranking" });
   rankBox.checked = settings.ranking;
-  const unlistedBox = el("input", { type: "checkbox", id: "set-unlisted" });
-  unlistedBox.checked = settings.showUnlisted;
   const relays = el("textarea", { id: "set-relays", rows: "4", spellcheck: "false" });
   relays.value = settings.relays.join("\n");
   const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3df2a0"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
   roomBox.value = storedRoomText();
   const roomNote = el("p", { class: "small", role: "status" });
+  const lists = el("button", { class: "link", type: "button" }, "Your lists");
+  lists.addEventListener("click", () => {
+    dialog.close();
+    openLists();
+  });
   const save = el("button", { class: "button primary", type: "submit" }, "Save settings");
   const cancel = el("button", { class: "button", type: "button" }, "Cancel");
   cancel.addEventListener("click", () => dialog.close());
@@ -457,18 +582,14 @@ function openSettings(): void {
     "form",
     { method: "dialog" },
     el("h2", {}, "Settings"),
-    el("h3", {}, "The list behind this lobby"),
-    el("p", {}, el("strong", {}, c.title), `. ${c.description}`),
-    el("p", { class: "small" }, "Signed by ", el("span", { class: "key" }, c.pubkey), `. Last changed ${new Date(c.updatedAt * 1000).toLocaleDateString()}.`),
-    el("p", { class: "small" }, "A starter set is someone's hand-picked list. It decides what a new visitor sees, so its author is always named. Choosing a different list arrives with sign-in."),
+    el("h3", {}, "Lists"),
+    el("p", { class: "small" }, "Which lists fill this lobby, and whether to show worlds nobody has listed, are under ", lists, "."),
     el("h3", {}, "Ranking"),
     el("label", { class: "check", for: "set-ranking" }, rankBox, " Rank shelves with BitFeed and say why each world is there"),
     el("p", { class: "small" }, "Off shows one list in date order, with no ranking code loaded."),
     el("h3", {}, "Relays"),
     el("label", { for: "set-relays" }, "Where BitPortal looks for announcements, one address per line"),
     relays,
-    el("label", { class: "check", for: "set-unlisted" }, unlistedBox, " Also show worlds the starter set doesn't include"),
-    el("p", { class: "small" }, "Those are unreviewed: anyone can publish an announcement."),
     el("h3", {}, "Your room"),
     el("label", { for: "set-room" }, "The walk-in room's furniture, as a home layout. Leave empty for BitPortal's own."),
     roomBox,
@@ -485,12 +606,176 @@ function openSettings(): void {
       return;
     }
     const cleaned = cleanRelays(relays.value.split(/\s+/));
-    settings = { ranking: rankBox.checked, showUnlisted: unlistedBox.checked, relays: cleaned.length ? cleaned : settings.relays };
+    settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays };
     saveSettings(settings);
     void refresh();
   });
   dialog.replaceChildren(form);
   dialog.showModal();
+}
+
+// --------------------------------------------------------------- lists
+/** Put a change to the visitor's lists on the page, and say whether this browser is keeping it. */
+function keepFollowed(next: FollowedList[]): boolean {
+  followed = next;
+  const kept = storeFollowed(followed);
+  catalog = makeCatalog();
+  void rank().then(() => {
+    draw();
+    hero?.refresh();
+  });
+  return kept;
+}
+
+/**
+ * Your lists: what fills the lobby, and the way to follow someone else's.
+ * `address` is a list to look up straight away, from a link someone shared.
+ */
+function openLists(address = ""): void {
+  const dialog = $<HTMLDialogElement>("settings");
+  dialog.setAttribute("aria-label", "Your lists");
+  const rows = el("ul", { class: "list-rows" });
+  const note = el("p", { class: "small", role: "status" });
+  const drawRows = () => {
+    const starterOn = settings.showStarter;
+    const c = catalog.curator;
+    const row = (title: string, meta: string, description: string, ...buttons: HTMLElement[]) =>
+      el("li", {}, el("p", { class: "list-title" }, el("strong", {}, title)), el("p", { class: "small" }, meta), description ? el("p", { class: "small" }, description) : null, el("p", { class: "list-actions" }, ...buttons));
+    const copy = (naddr: string) => {
+      const b = el("button", { class: "link", type: "button" }, "Copy its address");
+      b.addEventListener("click", () => {
+        void navigator.clipboard?.writeText(naddr).then(
+          () => (note.textContent = "Copied. Anyone can follow the list with that address."),
+          () => (note.textContent = naddr),
+        );
+      });
+      return b;
+    };
+    const toggle = el("button", { class: "link", type: "button", id: "toggle-starter" }, starterOn ? "Put it away" : "Show it again");
+    toggle.addEventListener("click", () => {
+      settings = { ...settings, showStarter: !starterOn };
+      saveSettings(settings);
+      keepFollowed(followed);
+      note.textContent = starterOn ? "Put away. Its worlds are no longer on your shelves." : "Showing again.";
+      drawRows();
+    });
+    const starterView = catalog.lists.find((l) => l.starter);
+    rows.replaceChildren(
+      row(
+        c.title,
+        `BitPortal's own list, signed by ${shortKey(c.pubkey)}. ${starterOn ? `${count(starterView?.ids.length ?? 0, "world")}, last changed ${new Date(c.updatedAt * 1000).toLocaleDateString()}.` : "Put away."}`,
+        c.description,
+        toggle,
+        copy(encodeNaddr({ kind: CURATION_SET_KIND, pubkey: c.pubkey, identifier: bundle.set.tags.find((t) => t[0] === "d")?.[1] ?? "", relays: settings.relays.slice(0, 2) })),
+      ),
+      ...followed.map((f) => {
+        const view = catalog.lists.find((l) => l.id === f.id);
+        const stop = el("button", { class: "link", type: "button" }, "Stop following");
+        stop.addEventListener("click", () => {
+          keepFollowed(unfollow(followed, f.id));
+          note.textContent = `You've stopped following ${view?.title ?? "that list"}.`;
+          drawRows();
+        });
+        const [, pubkey = "", ...d] = f.id.split(":");
+        return row(
+          view?.title ?? f.id,
+          `Signed by ${shortKey(pubkey)}. ${count(view?.ids.length ?? 0, "world")}${view?.missing ? `, ${view.missing} more not found on your relays` : ""}, last changed ${new Date((view?.updatedAt ?? 0) * 1000).toLocaleDateString()}.`,
+          view?.description ?? "",
+          stop,
+          copy(encodeNaddr({ kind: CURATION_SET_KIND, pubkey, identifier: d.join(":"), relays: settings.relays.slice(0, 2) })),
+        );
+      }),
+    );
+  };
+  drawRows();
+
+  // Following someone else's list.
+  const input = el("input", { type: "text", id: "list-address", spellcheck: "false", autocomplete: "off", placeholder: "naddr1…" });
+  input.value = address;
+  const look = el("button", { class: "button", type: "submit" }, "Find it");
+  const found = el("div", { class: "list-found" });
+  const status = el("p", { class: "small", role: "status" });
+  const lookUp = async () => {
+    found.replaceChildren();
+    const read = readListAddress(input.value);
+    if ("error" in read) {
+      status.textContent = read.error;
+      status.className = "small verify-warn";
+      return;
+    }
+    status.className = "small";
+    status.textContent = "Asking your relays for it.";
+    look.disabled = true;
+    const hit = await findList(read.address, settings.relays).catch(() => null);
+    look.disabled = false;
+    if (!hit || !hit.list.coordinate || !hit.list.pubkey) {
+      status.textContent = "None of your relays has that list. Its curator may have published it somewhere else.";
+      status.className = "small verify-warn";
+      return;
+    }
+    const id = hit.list.coordinate;
+    status.textContent = "";
+    const add = el("button", { class: "button primary", type: "button", id: "follow-list" }, isFollowed(followed, id) ? "Following" : "Follow this list");
+    add.disabled = isFollowed(followed, id) || id.startsWith(`${CURATION_SET_KIND}:${catalog.curator.pubkey}:`);
+    add.addEventListener("click", () => {
+      const next = follow(followed, hit.event, hit.worlds, Math.floor(Date.now() / 1000));
+      if (next === followed) {
+        status.textContent = `You can follow ${FOLLOW_LIMIT} lists. Stop following one to add another.`;
+        status.className = "small verify-warn";
+        return;
+      }
+      const kept = keepFollowed(next);
+      found.replaceChildren();
+      input.value = "";
+      note.textContent = kept ? `You're following ${hit.list.title}. It has a shelf of its own now.` : `You're following ${hit.list.title}, but this browser isn't keeping it (a private window?), so it lasts until you leave the page.`;
+      drawRows();
+    });
+    found.replaceChildren(
+      el("p", { class: "list-title" }, el("strong", {}, hit.list.title)),
+      el("p", {}, hit.list.description || "Its curator hasn't described it."),
+      el("p", { class: "small" }, "Signed by ", el("span", { class: "key" }, hit.list.pubkey), `. It names ${count(hit.list.worlds.length, "world")}; your relays have ${hit.worlds.length === hit.list.worlds.length ? "all of them" : `${hit.worlds.length} of them`}.`),
+      el("p", { class: "small" }, "Following it puts its worlds on a shelf here. It doesn't vouch for them: each door still says for itself whether its site is verified."),
+      el("p", { class: "list-actions" }, add),
+    );
+  };
+  const form = el("form", { class: "row" }, input, look);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    void lookUp();
+  });
+
+  const unlistedBox = el("input", { type: "checkbox", id: "set-unlisted" });
+  unlistedBox.checked = settings.showUnlisted;
+  unlistedBox.addEventListener("change", () => setShowUnlisted(unlistedBox.checked));
+  const close = el("button", { class: "button", type: "button" }, "Close");
+  close.addEventListener("click", () => dialog.close());
+
+  dialog.replaceChildren(
+    el("h2", {}, "Your lists"),
+    el("p", {}, "A list is someone's signed choice of worlds. Each list you follow has a shelf here."),
+    el("p", { class: "small" }, "Which lists you follow is kept on this device. Following one tells nobody, its curator included."),
+    rows,
+    note,
+    el("h3", {}, "Follow a list"),
+    el("label", { for: "list-address" }, "A list's address. Whoever made the list can give it to you."),
+    form,
+    status,
+    found,
+    el("h3", {}, "Worlds nobody has listed"),
+    el("label", { class: "check", for: "set-unlisted" }, unlistedBox, " Show worlds that have announced themselves and aren't on any of your lists"),
+    el("p", { class: "small" }, "They have a shelf of their own, marked unreviewed. Anyone can publish an announcement, so one key shows three there at most."),
+    el("h3", {}, "Make a list"),
+    el(
+      "p",
+      { class: "small" },
+      "A list is a signed note, and anyone can publish one. BitPortal can't make one for you yet. The nswp tool can: see ",
+      el("a", { href: "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/08-lists.md", rel: "noopener" }, "how worlds are found"),
+      ".",
+    ),
+    el("div", { class: "actions" }, close),
+  );
+  dialog.showModal();
+  if (address) void lookUp();
 }
 
 // --------------------------------------------------------------- relays
@@ -510,20 +795,30 @@ async function refresh(): Promise<void> {
   await rank();
   draw();
   faceLeftDoor();
-  const authors = [...new Set([catalog.curator.pubkey, ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((s) => s.event.pubkey)])];
-  const known = await queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 200 }, 4000);
+  const authors = [...new Set([catalog.curator.pubkey, ...followedAuthors(followed), ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((s) => s.event.pubkey)])].slice(0, 400);
+  // Two questions, both to relays and to nobody else: what do the keys on the
+  // visitor's lists say now, and who else has announced a world?
+  const [known, loose] = await Promise.all([
+    queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 400 }, 4000),
+    queryRelays(settings.relays, { kinds: [WORLD_KIND], limit: 200 }, 4000),
+  ]);
   const fresher = refreshSaved(saved, known.events);
   if (fresher !== saved) {
     saved = fresher;
     storeSaved(saved);
   }
-  const extra = settings.showUnlisted ? (await queryRelays(settings.relays, { kinds: [WORLD_KIND], limit: 60 }, 4000)).events : [];
+  const fresherLists = refreshFollowed(followed, known.events);
+  if (fresherLists !== followed) {
+    followed = fresherLists;
+    storeFollowed(followed);
+  }
   const answered = Object.values(known.relays).filter((s) => s === "eose").length;
   relayNote = `${answered} of ${Object.keys(known.relays).length} relays answered`;
-  const before = JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), catalog.unlisted.map((e) => e.id)]);
-  catalog = buildCatalog(bundle, [...known.events, ...extra]);
-  const after = JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), catalog.unlisted.map((e) => e.id)]);
-  if (before !== after) {
+  const shown = () => JSON.stringify([catalog.lists.map((l) => [l.id, l.updatedAt, l.ids]), catalog.entries.map((e) => e.event.id), catalog.unlisted.map((e) => e.id)]);
+  const before = shown();
+  relayEvents = [...known.events, ...loose.events];
+  catalog = makeCatalog();
+  if (before !== shown()) {
     await rank();
     hero?.refresh();
   }
@@ -564,6 +859,13 @@ async function startHero(): Promise<void> {
 
 async function start(): Promise<void> {
   $("open-settings").addEventListener("click", openSettings);
+  const q = $<HTMLInputElement>("find-q");
+  q.addEventListener("input", () => {
+    find.query = q.value;
+    drawShelves();
+  });
+  $("find").addEventListener("submit", (e) => e.preventDefault());
+  $("open-lists-2").addEventListener("click", () => openLists());
   attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "list" });
   // Walking in from the page moves into the room first, then goes there.
   $<HTMLAnchorElement>("walk-in").addEventListener("click", (e) => {
@@ -586,6 +888,12 @@ async function start(): Promise<void> {
     device = { ...device, vr: navigator.xr ? await navigator.xr.isSessionSupported("immersive-vr") : false };
   } catch {
     /* stays false */
+  }
+  // A link someone shared to a list: look it up and ask, rather than follow it unasked.
+  const shared = new URLSearchParams(location.search).get("list");
+  if (shared) {
+    history.replaceState(null, "", location.pathname + location.hash);
+    openLists(shared);
   }
   await refresh();
 }

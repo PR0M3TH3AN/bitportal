@@ -30,6 +30,7 @@ import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 import { loadRoom } from "../shared/room.js";
 import { addSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, restoreSaved, savedEntries, storeSaved, WALL_DOORS, wallSlot, type SavedPlace } from "../shared/saved.js";
+import { followedAuthors, loadFollowed, refreshFollowed, storeFollowed } from "../shared/lists.js";
 import { loadSettings } from "../shared/settings.js";
 import type { Candidate } from "../shared/shelves.js";
 import { cachedVerification } from "../shared/verify.js";
@@ -323,7 +324,10 @@ async function start(): Promise<void> {
   scene.fog = new THREE.Fog(0x04070b, 60, 300);
 
   // ------------------------------------------------------------- doors
-  let catalog: Catalog = buildCatalog(bundleJson as unknown as StarterBundle);
+  // The same lists as the page: BitPortal's own, unless it is put away, and the ones the visitor follows.
+  let followed = loadFollowed();
+  const makeCatalog = (events: unknown[] = []): Catalog => buildCatalog(bundleJson as unknown as StarterBundle, events, { followed, showStarter: settings.showStarter });
+  let catalog: Catalog = makeCatalog();
   let saved: SavedPlace[] = loadSaved();
   /** The last door removed this visit, so one slip of the hand can be undone. */
   let lastRemoved: { place: SavedPlace; title: string } | null = null;
@@ -514,7 +518,8 @@ async function start(): Promise<void> {
       doors.push(makeDoor(entry, why, "suggested", slot));
     }
     if (hidden > 0) makeMore("suggested", perWall, hidden);
-    header("suggested", ordered.length ? `Suggested\nPicked by ${catalog.curator.title}` : "Suggested\nYou've saved every door on this list");
+    const from = catalog.lists.length === 1 ? `Picked by ${catalog.lists[0]!.title}` : catalog.lists.length === 0 ? "You aren't showing any list" : `From the ${catalog.lists.length} lists you've chosen`;
+    header("suggested", ordered.length ? `Suggested\n${from}` : catalog.lists.length === 0 ? `Suggested\n${from}` : "Suggested\nYou've saved every door on your lists");
 
     state.doorCount = doors.length;
     state.yours = mine.length;
@@ -954,11 +959,16 @@ async function start(): Promise<void> {
 
   // Newer announcements from relays, after the bundled set is on screen.
   try {
-    const authors = [...new Set([catalog.curator.pubkey, ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((x) => x.event.pubkey)])];
-    const res = await queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 200 }, 4000);
+    const authors = [...new Set([catalog.curator.pubkey, ...followedAuthors(followed), ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((x) => x.event.pubkey)])].slice(0, 400);
+    const res = await queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 400 }, 4000);
+    const fresherLists = refreshFollowed(followed, res.events);
+    if (fresherLists !== followed) {
+      followed = fresherLists;
+      storeFollowed(followed);
+    }
     const shown = () => JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), saved.map((x) => x.event.id)]);
     const before = shown();
-    catalog = buildCatalog(bundleJson as unknown as StarterBundle, res.events);
+    catalog = makeCatalog(res.events);
     const fresher = refreshSaved(saved, res.events);
     if (fresher !== saved) keep(fresher);
     if (before !== shown()) await buildDoors();
