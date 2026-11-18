@@ -25,6 +25,8 @@
  */
 import * as THREE from "three";
 import type { XrInput } from "./input.js";
+import { type Keyboard } from "./keyboard.js";
+import { type Library } from "./library.js";
 import type { Controls } from "./ui/model.js";
 import { type PanelPlace, type PanelSource } from "./panel-store.js";
 export type { PanelPlace, PanelRecord, PanelSource } from "./panel-store.js";
@@ -46,6 +48,8 @@ export interface PanelsOptions {
     keep?: string;
     /** Called when a panel is opened, moved, resized or put away. */
     onChange?: () => void;
+    /** The headset session, if there is one: its browser may have a keyboard of its own to offer. */
+    session?: () => XRSession | null | undefined;
 }
 export interface Panel {
     readonly id: string;
@@ -73,10 +77,16 @@ export interface Panels {
         place?: Partial<PanelPlace>;
         keep?: boolean;
     }): Panel;
-    /** Hang a file the visitor chose from their own device: a picture or a video. It is kept in this browser. */
+    /** Hang a file the visitor chose from their own device: a picture or a video. It goes into their library, and is kept in this browser. */
     openFile(file: Blob & {
         name?: string;
     }): Promise<Panel | null>;
+    /** A keyboard to type on inside a headset. Its keys are found by `pick()` and pressed by `press()`, like a panel's. */
+    readonly keyboard: Keyboard;
+    /** The pictures and video of the visitor's own that this browser keeps, and a board to choose one from. */
+    readonly library: Library;
+    /** Where something `pick()` could return is in the world: a key, a cell of the library. For a test to point at. */
+    pointOf(hit: string): THREE.Vector3 | null;
     list(): Panel[];
     /** Hide every panel, or show them again. They keep their places. */
     visible: boolean;

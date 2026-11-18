@@ -1,5 +1,6 @@
 import {
   DEFAULT_COMFORT,
+  LIBRARY_LIMITS,
   PANEL_LIMITS,
   addCameraControls,
   addPanelControls,
@@ -11,6 +12,8 @@ import {
   createConsole,
   createCrossing,
   createFigure,
+  createKeyboard,
+  createLibrary,
   createPanels,
   createPortalWindow,
   createPresence,
@@ -23,10 +26,11 @@ import {
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-SKJJBY5H.js";
+} from "./shared-OFWH52QF.js";
 import "./shared-OXCAHDPV.js";
 export {
   DEFAULT_COMFORT,
+  LIBRARY_LIMITS,
   PANEL_LIMITS,
   addCameraControls,
   addPanelControls,
@@ -38,6 +42,8 @@ export {
   createConsole,
   createCrossing,
   createFigure,
+  createKeyboard,
+  createLibrary,
   createPanels,
   createPortalWindow,
   createPresence,

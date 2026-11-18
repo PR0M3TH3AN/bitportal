@@ -75,7 +75,11 @@ lobby or a world would need to agree with it on is in
   own device in frames, move them by the bar, resize them and put them away.
   They are kept in this browser, with any file you hang, and are there next
   visit. Nothing is uploaded, and nobody else in the room sees them. A panel
-  can't show another website: no page is allowed to draw one.
+  can't show another website: no page is allowed to draw one. In a headset
+  you write on a keyboard drawn in the room, and choose from **Your pictures
+  and video**: everything you have hung, and every picture you take with the
+  camera. The headset's own files are the browser's to show, so adding a new
+  file from the device is done on a flat screen.
 - **Crossing costs as little as a browser allows.** Leaving the room, its
   walls rise round you into a small chamber; you arrive in a world standing
   in the same chamber, and its doors open when the world is ready. From a
