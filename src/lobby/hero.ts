@@ -11,10 +11,10 @@
  * it the page is whole: the list is the same doors.
  */
 import * as THREE from "three";
+import { createEnvironment } from "nswp-sdk/home";
 import { createPortalWindow, panoramaTexture } from "nswp-sdk/three";
 import type { Entry } from "../shared/catalog.js";
 import { archMaskTexture, DOOR_H, DOOR_W, flatViewTexture, frameTexture, viewTexture } from "../shared/door3d.js";
-import { createEnvironment } from "../shared/environment.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 
 export interface Hero {

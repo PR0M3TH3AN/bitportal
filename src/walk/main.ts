@@ -24,7 +24,6 @@ import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, flatViewTexture, frameTexture, viewTexture } from "../shared/door3d.js";
-import { createEnvironment } from "../shared/environment.js";
 import { createJumpList } from "../shared/jump.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
@@ -308,9 +307,7 @@ async function start(): Promise<void> {
     icon: "help",
     note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there. Select a door, or walk through it, to see where it leads before you go.",
   });
-  // The ground and the skyline: BitPortal's own, in the room's accent.
-  const environment = createEnvironment(room.layout.room.accent);
-  scene.add(environment.group);
+  // The ground and the skyline come with the home (nswp-sdk/home), in the room's own colours.
   scene.background = new THREE.Color(0x04070b);
   scene.fog = new THREE.Fog(0x04070b, 60, 300);
 
@@ -918,7 +915,6 @@ async function start(): Promise<void> {
     xrConsole.aim(pointed?.onConsole ?? null);
     xrConsole.update(dt, camera, renderer.xr.isPresenting);
     furniture.update(t, dt);
-    environment.update(t);
     renderer.render(scene, camera);
   });
   state.ready = true;
