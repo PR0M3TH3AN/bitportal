@@ -31,7 +31,7 @@ import {
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-OH5UPTSW.js";
+} from "./shared-3UJG5UJ6.js";
 import "./shared-OXCAHDPV.js";
 import {
   browserVoice,

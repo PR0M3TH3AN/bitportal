@@ -895,7 +895,7 @@ async function start(): Promise<void> {
   } catch {
     /* storage unavailable: they are asked, as before */
   }
-  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived }));
+  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels }));
 
   // -------------------------------------------------------- walking
   const keys = new Set<string>();
