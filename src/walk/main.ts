@@ -18,7 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addRoomControls, addViewControls, createConsole, createFigure, createPortalWindow, createPresence, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addRoomControls, addViewControls, createConsole, createCrossing, createFigure, createPortalWindow, createPresence, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -83,6 +83,8 @@ interface TestHooks {
   console?: XrConsole;
   /** What the visitor's hands are doing in a headset, as the input layer reads them. */
   input?: () => unknown;
+  /** Where a crossing stands: arriving in the chamber, its doors opening, leaving, or none. */
+  crossing?: () => string;
   /** Point the mouse ray at a door, as if hovering it. */
   aim(id: string | null): void;
   visit(id: string): void;
@@ -581,6 +583,9 @@ async function start(): Promise<void> {
 
   // ------------------------------------------------------- leaving
   let leaving = false;
+  // Leaving and coming back happen in the kit's chamber: the same small room at both ends of every trip.
+  const crossing = createCrossing({ scene, camera, accent: ACCENT, textColor: INK, motion: () => controls.theme.motion });
+  hooks.crossing = () => crossing.state;
   const visit = async (door: Door) => {
     if (leaving) return;
     leaving = true;
@@ -591,15 +596,20 @@ async function start(): Promise<void> {
     } catch {
       /* storage unavailable */
     }
-    document.body.classList.add("leaving");
     const w = door.entry.world;
+    // The walls come up, with where this door leads over them. The Airlock is next, and it is what checks.
+    const to = hostParts(w.url);
+    await crossing.leave({ title: w.title, address: `${to.prefix}${to.domain}` });
+    document.body.classList.add("leaving");
     const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: door.entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
+    // Left from a headset: say so, and the world at the other end offers the way back into one first.
+    const immersive = renderer.xr.isPresenting;
     try {
       await renderer.xr.getSession()?.end();
     } catch {
       /* already ended */
     }
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -745,7 +755,7 @@ async function start(): Promise<void> {
     controls,
     accent: ACCENT,
     // Walking smoothly reaches as far as walking with the keys does: into a doorway, which is how one is chosen on foot.
-    canStand: (x, z) => Math.hypot(x, z) <= RADIUS + 1.5,
+    canStand: (x, z) => crossing.allows(x, z) && Math.hypot(x, z) <= RADIUS + 1.5,
     stepFrom: (i) => {
       if (!aimFrom(controllers[i]!)) stepToFloor();
     },
@@ -805,7 +815,24 @@ async function start(): Promise<void> {
   };
 
   // ------------------------------------------------------------- VR
-  void addViewControls(controls, { renderer, rig, camera, hud, onState: (s) => (state.xr = s) });
+  // Back from a world (the Airlock says so in the address, and it is taken off at once). Someone who left a
+  // headset session to come home is offered the way back into one, first and alone.
+  const back = location.hash.replace(/^#/, "").split("&");
+  const cameBack = back.includes("back");
+  const cameFromHeadset = cameBack && back.includes("xr=1");
+  if (cameBack) history.replaceState(history.state, "", location.pathname + location.search);
+  let offered = cameFromHeadset;
+  void addViewControls(controls, {
+    renderer,
+    rig,
+    camera,
+    hud,
+    onState: (s) => (state.xr = s),
+    ...(cameFromHeadset ? { arrived: { title: "BitPortal" } } : {}),
+    onOffer: (showing) => (offered = showing),
+  }).then((supported) => {
+    if (!supported) offered = false;
+  });
 
   // On a flat screen the page's own controls cover the bottom of the picture,
   // and on a phone that is where the doors are. So the picture is shifted up
@@ -919,6 +946,7 @@ async function start(): Promise<void> {
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
     xrInput.update(dt);
+    crossing.update(t, dt);
     presence.update(dt);
     let pointed: Clickable | null = null;
     reticle.visible = false;
@@ -978,6 +1006,11 @@ async function start(): Promise<void> {
     mirror?.tick(t);
     renderer.render(scene, camera);
   });
+  // Coming home, the visitor steps out of the same room they left the world in, facing the door they went through.
+  if (cameBack) {
+    camera.updateMatrixWorld(true);
+    crossing.arrive({ title: "BitPortal", address: location.host, hold: () => offered });
+  }
   state.ready = true;
 
   // Newer announcements from relays, after the bundled set is on screen.

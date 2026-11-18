@@ -11,6 +11,7 @@
 import {
   buildArrivalUrl,
   checkDestination,
+  fragmentSaysImmersive,
   finalizeEvent,
   getPublicKey,
   fetchManifest,
@@ -197,9 +198,15 @@ async function render(): Promise<void> {
     // Opened with no destination: the visitor is coming home (NSWP spec §6.3).
     // Nothing is being crossed into, so there is nothing to confirm. A fragment
     // that is present but unreadable still gets the explanation below.
-    if (location.hash.length <= 1) {
-      // Back to the start they left from: the room if they walked out of it, the list otherwise.
-      location.replace(new URL(readLeft()?.from === "walk" ? "/walk/" : "/", location.origin).href);
+    // A world may add that the visitor left a headset session to come home (xr=1). It is still the way home.
+    const fromHeadset = fragmentSaysImmersive(location.hash);
+    if (location.hash.length <= 1 || location.hash === "#xr=1") {
+      // Back to the start they left from: the room if they walked out of it, the list otherwise. The room is
+      // told they are coming back, so they arrive in the chamber they left a world in.
+      const toRoom = readLeft()?.from === "walk";
+      const home = new URL(toRoom ? "/walk/" : "/", location.origin);
+      if (toRoom) home.hash = fromHeadset ? "back&xr=1" : "back";
+      location.replace(home.href);
       return;
     }
     $("landing").hidden = false;
@@ -220,6 +227,8 @@ async function render(): Promise<void> {
 
   const verified = !!a.verification?.verified;
   const entry = entryFromFragment();
+  // Read on a headset's flat panel with a controller's ray: everything to press is larger.
+  if (req.immersive) document.body.classList.add("from-vr");
   const approvalKey = a.world?.pubkey ? `${a.origin}|${a.world.pubkey}|${a.world.d}` : null;
   const approved = readJson<Record<string, boolean>>(APPROVED, {});
   const fastPath = verified && !!approvalKey && approved[approvalKey] === true && !a.publisherChanged && a.warnings.length === 0;
@@ -389,7 +398,7 @@ async function render(): Promise<void> {
     }
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
-    location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}) }));
+    location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}) }));
   };
   go.addEventListener("click", () => void leave());
   card.append(el("div", { class: "actions" }, backButton(), go));
