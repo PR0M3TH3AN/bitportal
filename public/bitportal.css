@@ -454,3 +454,7 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 .home-checks li.no { border-color: var(--bitportal-warn); color: var(--bitportal-warn); background: var(--bitportal-warn-ground); }
 .home-checks li.no::before { content: "\2717"; }
 .home-checks li.maybe::before { content: "\2013"; color: var(--bitportal-muted); }
+
+/* ---------- the operator's own controls, on a world's sheet ---------- */
+.operator { margin-top: 18px; padding: 12px 14px; border-left: 2px solid var(--bitportal-accent); background: var(--bitportal-paper); }
+.operator .actions { margin-top: 10px; justify-content: flex-start; }

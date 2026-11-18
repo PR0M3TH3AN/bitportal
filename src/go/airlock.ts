@@ -9,6 +9,7 @@
  * Adapted from the NSWP reference Airlock (MIT).
  */
 import {
+  audienceOf,
   wayWithoutDestination,
   HOME_CAPABILITY,
   normalizeUrl,
@@ -34,6 +35,7 @@ import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalog.js";
 import { placeKind } from "../shared/plate.js";
 import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
+import { INSTANCE } from "../shared/instance.js";
 import { readLeft } from "../shared/saved.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
 import { issuePass } from "../shared/pass.js";
@@ -261,6 +263,24 @@ async function render(): Promise<void> {
     return;
   }
 
+  // Whoever runs this copy has said it won't send anyone to a world that is for adults. The address is still shown,
+  // as it always is: this is about what this site does, not about where a visitor may go.
+  if (a.world && !INSTANCE.allowAdult && audienceOf(a.world) === "adult") {
+    main.append(
+      el(
+        "section",
+        { class: "card blocked", id: "blocked-adult" },
+        el("h1", {}, "This copy of BitPortal doesn't open this door"),
+        el("p", { class: "host" }, el("span", { class: "prefix" }, a.hostPrefix), el("strong", {}, a.domain)),
+        el("p", {}, a.world.audience === "adult" ? "This world says it is for adults." : "This world carries a content warning and doesn't say who it is for, so it is taken to be for adults."),
+        el("p", {}, "Whoever runs this copy has chosen not to send anyone to worlds for adults. That is their decision about this site, not a judgement of the world."),
+        el("p", { class: "muted small" }, "Reason: adult_not_allowed"),
+        el("div", { class: "actions" }, backButton()),
+      ),
+    );
+    return;
+  }
+
   const verified = !!a.verification?.verified;
   const entry = entryFromFragment();
   // Read on a headset's flat panel with a controller's ray: everything to press is larger.
@@ -291,6 +311,9 @@ async function render(): Promise<void> {
   if (w?.perf) chips.append(chip(`Runs on: ${w.perf} and up`));
   if (w?.status && w.status !== "live") chips.append(chip(`Status: ${w.status}`, w.status === "retired" ? "bad" : "plain"));
   if (w?.contentWarning !== undefined) chips.append(chip(`Content warning${w.contentWarning ? `: ${w.contentWarning}` : ""}`, "bad"));
+  if (w?.audience === "kids") chips.append(chip("For kids", "ok"));
+  else if (w?.audience === "general") chips.append(chip("Not made for kids"));
+  else if (w) chips.append(chip("Not rated by its maker"));
 
   const device = el("p", { class: "muted" }, vr ? "This device can enter VR. You'll press Enter VR again on arrival." : "This device can't enter VR; the world opens in your browser.");
 

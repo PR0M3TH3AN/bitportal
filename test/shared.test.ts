@@ -164,6 +164,7 @@ describe("publishing a world", () => {
     seated: "supported",
     perf: "standalone",
     topics: "Art, #museum art",
+    audience: "general",
     status: "beta",
     rooms: true,
   };
@@ -458,5 +459,22 @@ describe("the visitor's look", () => {
   it("keeps the mark when everything else is changed by chance", () => {
     const kept = { seed: "g0123456789abcdef01234567", choices: {} };
     expect(lookOf(surprise(kept)).mark).toBe(lookOf(kept).mark);
+  });
+});
+
+describe("who a world is for, on the Announce page", () => {
+  const base = { url: "https://w.example/", id: "my-world", title: "W", summary: "", modes: ["inline-3d"], locomotion: "", intensity: "", seated: "", perf: "", topics: "", status: "live", rooms: false };
+
+  it("has to be said: nothing is announced until its maker chooses", () => {
+    expect(validateForm({ ...base, audience: "" }).map((i) => i.field)).toEqual(["audience"]);
+    expect(validateForm({ ...base, audience: "everyone" }).map((i) => i.field)).toEqual(["audience"]);
+    for (const audience of ["kids", "general", "adult"]) expect(validateForm({ ...base, audience })).toEqual([]);
+  });
+
+  it("goes into the announcement, with the warning other apps read when it is for adults", () => {
+    const tags = (audience: string) => formToEvent({ ...base, audience }, 1).tags.filter((t) => t[0] === "audience" || t[0] === "content-warning");
+    expect(tags("kids")).toEqual([["audience", "kids"]]);
+    expect(tags("general")).toEqual([["audience", "general"]]);
+    expect(tags("adult")).toEqual([["content-warning", "adult"], ["audience", "adult"]]);
   });
 });

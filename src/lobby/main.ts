@@ -5,7 +5,7 @@
  * own site is contacted when the visitor opens its door, never before. The
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
-import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
+import { audienceOf, buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type ListView, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
@@ -17,7 +17,9 @@ import { decidePreview, loadedPreview, loadPreview, type PreviewDecision } from 
 import { attachJumpList } from "../shared/jump.js";
 import { saveRoomText, storedRoomText } from "../shared/room.js";
 import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, savedUrls, storeSaved, type SavedPlace } from "../shared/saved.js";
-import { readSignedIn } from "../shared/session.js";
+import { quietSigner, readSignedIn } from "../shared/session.js";
+import { changedAllowList, isOperator, loadOperatorLists, publishAllowList, storeOperatorLists } from "../shared/operator.js";
+import { INSTANCE } from "../shared/instance.js";
 import { checkHome, homeOf, loadHome, storeHome, type HomeChoice } from "../shared/home.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
@@ -51,7 +53,12 @@ let saved: SavedPlace[] = loadSaved();
 let followed: FollowedList[] = loadFollowed();
 /** What relays have sent this visit. */
 let relayEvents: unknown[] = [];
-const makeCatalog = (): Catalog => buildCatalog(bundle, relayEvents, { followed, showStarter: settings.showStarter, taken: savedUrls(saved) });
+/** The key signed in here, when it is one of this copy's operators: they see the worlds waiting to be listed, and can list them. */
+let operatorKey: string | null = null;
+const makeCatalog = (): Catalog => buildCatalog(bundle, relayEvents, { followed, showStarter: settings.showStarter, taken: savedUrls(saved), operatorLists: loadOperatorLists(), operatorView: !!operatorKey });
+/** Whether worlds no list names are on the page: where a visitor asked, or for an operator of a copy that shows only its own list. */
+const showingUnlisted = (): boolean => settings.showUnlisted || (catalog.policy.allowListOnly && !!operatorKey);
+const AUDIENCE_WORDS = { kids: "For kids", general: "Not made for kids", adult: "Adults only", unrated: "Not rated by its maker" } as const;
 let catalog: Catalog = makeCatalog();
 /** What the visitor is looking for, if anything. */
 const find: Find = { query: "", topic: "" };
@@ -304,6 +311,18 @@ function setShowUnlisted(on: boolean): void {
 function unlistedSection(): HTMLElement | null {
   const unlisted = catalog.unlisted.filter((e) => !isSaved(saved, e.id));
   if (unlisted.length === 0) return null;
+  if (catalog.policy.allowListOnly) {
+    // Only an operator gets this far: nobody else is given these worlds at all.
+    return shelfSection(
+      {
+        id: "unlisted",
+        title: "Waiting to be listed",
+        blurb: "Only you see these, because you run this copy. They announced themselves, and none is on your list. Open one to look at it, and list it if it belongs here. A world for adults can't be listed.",
+        items: unlisted.map((e) => ({ id: e.id, why: AUDIENCE_WORDS[audienceOf(e.world)] })),
+      },
+      true,
+    );
+  }
   if (!settings.showUnlisted) {
     const show = el("button", { class: "button", type: "button", id: "show-unlisted" }, "Show them");
     show.addEventListener("click", () => setShowUnlisted(true));
@@ -338,9 +357,9 @@ function unlistedSection(): HTMLElement | null {
 function foundSection(): HTMLElement {
   const mine = savedEntries(saved, catalog);
   const loose = catalog.unlisted.filter((e) => !isSaved(saved, e.id));
-  const pool = [...mine, ...visibleEntries(), ...(settings.showUnlisted ? loose : [])];
+  const pool = [...mine, ...visibleEntries(), ...(showingUnlisted() ? loose : [])];
   const hits = pool.filter((e) => matches(e.world, find));
-  const heldHits = settings.showUnlisted ? 0 : loose.filter((e) => matches(e.world, find)).length;
+  const heldHits = showingUnlisted() ? 0 : loose.filter((e) => matches(e.world, find)).length;
   const what = [find.query.trim() ? `"${find.query.trim()}"` : "", find.topic ? `the topic ${find.topic}` : ""].filter(Boolean).join(" and ");
   const section = el(
     "section",
@@ -367,7 +386,7 @@ function foundSection(): HTMLElement {
 
 /** The topics worth narrowing by, as buttons under the find bar. */
 function drawTopics(): void {
-  const pool = [...savedEntries(saved, catalog), ...catalog.entries, ...(settings.showUnlisted ? catalog.unlisted : [])];
+  const pool = [...savedEntries(saved, catalog), ...catalog.entries, ...(showingUnlisted() ? catalog.unlisted : [])];
   const topics = commonTopics(pool.map((e) => e.world));
   if (find.topic && !topics.includes(find.topic)) topics.unshift(find.topic);
   const box = $("find-topics");
@@ -433,7 +452,7 @@ function draw(): void {
   if (only) source.replaceChildren(lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: only.pubkey }, shortKey(only.pubkey)), ". ");
   else if (catalog.lists.length === 0) source.replaceChildren(lead, "You aren't showing any list. ");
   else source.replaceChildren(lead, `These doors come from the ${catalog.lists.length} lists you've chosen. `);
-  const about = el("button", { class: "link", type: "button", id: "open-lists" }, "Your lists");
+  const about = el("button", { class: "link", type: "button", id: "open-lists" }, catalog.policy.allowListOnly ? "The lists here" : "Your lists");
   about.addEventListener("click", () => openLists());
   source.append(about);
 
@@ -442,6 +461,7 @@ function draw(): void {
 
   drawTopics();
   drawShelves();
+  drawPolicy();
   $("foot-note").textContent = [
     `BitPortal ${VERSION}`,
     settings.ranking && engine ? `ranking by BitFeed ${engine}` : "ranking off",
@@ -450,6 +470,82 @@ function draw(): void {
   ]
     .filter(Boolean)
     .join(", ");
+}
+
+// ------------------------------------------------------------ the operator
+/**
+ * For whoever runs this copy, signed in: put this world on the site's list, or take it off. Each press signs the
+ * changed list with their own sign-in and publishes it. Nobody else is shown this.
+ */
+function operatorActions(entry: Entry): HTMLElement | null {
+  const me = operatorKey;
+  if (!me) return null;
+  const note = el("p", { class: "small", role: "status" });
+  const mine = () => catalog.operatorLists.find((e) => e.pubkey === me) ?? null;
+  const onMine = () => !!mine()?.tags.some((t) => t[0] === "a" && t[1] === entry.id);
+  const shipped = catalog.allowed.has(entry.id) && !onMine();
+  const button = el("button", { class: "button", type: "button", id: "operator-list" });
+  const label = () => (button.textContent = onMine() ? "Take off this site's list" : "List on this site");
+  label();
+  const box = el("div", { class: "operator", id: "operator-actions" }, el("p", { class: "small" }, "You run this copy of BitPortal. What you list here is what its visitors see."), note);
+  if (audienceOf(entry.world) === "adult") {
+    note.textContent = "This world is for adults, by its maker's word or because it carries a warning without saying who it is for. This site doesn't list those.";
+    return box;
+  }
+  if (shipped) note.textContent = "It is on the list this copy ships with. Listing it yourself keeps it here whatever that list does.";
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    const adding = !onMine();
+    note.textContent = "Signing with your sign-in…";
+    const quiet = await quietSigner(me);
+    if (!quiet) {
+      note.textContent = "Your sign-in is locked. Unlock it on the Sign in page, then try again.";
+      button.disabled = false;
+      return;
+    }
+    try {
+      const { event, accepted } = await publishAllowList(quiet.signer, changedAllowList(mine(), entry.id, adding), settings.relays);
+      // Shown at once, and kept: the page doesn't wait for a relay to say it back.
+      relayEvents = [...relayEvents, event];
+      catalog = makeCatalog();
+      storeOperatorLists(catalog.operatorLists);
+      note.textContent = `${adding ? "Listed" : "Taken off"}. ${accepted ? `${count(accepted, "relay")} took the change.` : "No relay took the change, so it is only on this device for now. Try again when they answer."}`;
+      label();
+      void rank().then(draw);
+    } catch {
+      note.textContent = "That couldn't be signed. Nothing was changed.";
+    } finally {
+      quiet.close();
+      button.disabled = false;
+    }
+  });
+  box.append(el("div", { class: "actions" }, button));
+  return box;
+}
+
+/**
+ * Say, on the page, what this copy shows and what it leaves out. An operator's policy is theirs to set and the
+ * visitor's to know about.
+ */
+function drawPolicy(): void {
+  const p = catalog.policy;
+  if (!p.allowListOnly && p.allowAdult) return; // nothing is held back: the page says what it always said
+  const left = [catalog.withheld.adult ? `${count(catalog.withheld.adult, "world")} for adults` : "", catalog.withheld.notListed ? `${count(catalog.withheld.notListed, "world")} nobody running this copy has listed` : "", catalog.withheld.lists ? `${count(catalog.withheld.lists, "list")} you follow` : ""].filter(Boolean);
+  $("yours-title").textContent = p.allowListOnly ? "This copy shows the worlds its operator has listed." : "This copy doesn't show worlds for adults.";
+  const lede = document.querySelector(".yours-lede");
+  if (lede) {
+    lede.textContent = `BitPortal is a client anyone can host, and each copy answers to whoever hosts it. On this one${p.allowListOnly ? ", a world appears when its operator has put it on their list" : ""}${!p.allowAdult ? `${p.allowListOnly ? ", and never" : ", a world never appears"} if it is for adults` : ""}. That is about what this site shows. Where you go is yours to decide: any address can be typed into your browser.${left.length ? ` Not shown here just now: ${left.join(", ")}.` : ""}`;
+  }
+  const ways = document.querySelector(".yours-ways");
+  if (ways && !ways.hasAttribute("data-policy")) {
+    ways.setAttribute("data-policy", "");
+    const listing = ways.children[1]?.cloneNode(true) as HTMLElement | undefined; // "You want it on BitPortal's list", as the page wrote it
+    ways.replaceChildren(
+      el("div", {}, el("h3", {}, "You have a world"), el("p", {}, "Announce it with your own key, and say who it is for: kids, not made for kids, or adults. Announcing doesn't put it on this site. The operator's list does."), el("p", {}, el("a", { class: "button", href: "/publish/" }, "Announce a world"))),
+      ...(listing ? [listing] : []),
+      el("div", {}, el("h3", {}, "You'd rather choose for yourself"), el("p", {}, p.allowListOnly ? "Following other people's lists is switched off on this copy. BitPortal is open source: a copy you host answers to you." : "Follow anyone's list, and it gets a shelf here."), el("p", {}, el("a", { class: "button", href: "https://github.com/PR0M3TH3AN/bitportal" }, "The source"))),
+    );
+  }
 }
 
 // -------------------------------------------------------------- detail
@@ -479,6 +575,9 @@ function openDetail(entry: Entry, why: string): void {
   if (w.capabilities.includes("rooms")) chips.append(chip("Shared rooms"));
   if (w.status !== "live") chips.append(chip(`Status: ${w.status}`));
   if (w.contentWarning !== undefined) chips.append(chip(`Content warning${w.contentWarning ? `: ${w.contentWarning}` : ""}`, "chip-warn"));
+  // Who it is for, in its maker's own word, or that they didn't say.
+  const audience = audienceOf(w);
+  chips.append(chip(AUDIENCE_WORDS[audience], audience === "adult" ? "chip-warn" : ""));
   if (fit.reason) chips.append(chip(fit.reason, fit.ok ? "" : "chip-warn"));
 
   const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
@@ -527,6 +626,7 @@ function openDetail(entry: Entry, why: string): void {
     why ? el("p", { class: "why" }, why) : null,
     el("p", { class: "next" }, "Visiting opens the Airlock, which shows the address once more before you leave."),
     keepNote,
+    operatorActions(entry),
     el("div", { class: "actions" }, close, keep, visit),
   ];
   dialog.replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));
@@ -681,7 +781,28 @@ function keepFollowed(next: FollowedList[]): boolean {
  * Your lists: what fills the lobby, and the way to follow someone else's.
  * `address` is a list to look up straight away, from a link someone shared.
  */
+/** On a copy that shows only its operator's lists: which they are. There is nothing to follow, so there is nothing to choose. */
+function openOperatorLists(): void {
+  const dialog = $<HTMLDialogElement>("settings");
+  dialog.setAttribute("aria-label", "The lists here");
+  const close = el("button", { class: "button", type: "button" }, "Close");
+  close.addEventListener("click", () => dialog.close());
+  dialog.replaceChildren(
+    el("h2", {}, "The lists here"),
+    el("p", { class: "lede" }, "This copy of BitPortal shows only worlds on lists signed by whoever runs it, and no world that is for adults."),
+    el(
+      "ul",
+      { class: "list-rows" },
+      ...catalog.lists.map((l) => el("li", {}, el("p", { class: "list-title" }, l.title), el("p", { class: "small" }, `Signed by ${shortKey(l.pubkey)}. ${count(l.ids.length, "world")}, last changed ${new Date(l.updatedAt * 1000).toLocaleDateString()}.`), l.description ? el("p", { class: "small" }, l.description) : "")),
+    ),
+    el("p", { class: "small" }, followed.length ? `You follow ${count(followed.length, "list")} of other people's. They are kept on this device and not shown on this copy.` : "Following other people's lists is switched off on this copy."),
+    el("div", { class: "actions" }, close),
+  );
+  dialog.showModal();
+}
+
 function openLists(address = ""): void {
+  if (catalog.policy.allowListOnly) return openOperatorLists();
   const dialog = $<HTMLDialogElement>("settings");
   dialog.setAttribute("aria-label", "Your lists");
   const rows = el("ul", { class: "list-rows" });
@@ -845,7 +966,9 @@ async function refresh(): Promise<void> {
   await rank();
   draw();
   faceLeftDoor();
-  const authors = [...new Set([catalog.curator.pubkey, ...followedAuthors(followed), ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((s) => s.event.pubkey)])].slice(0, 400);
+  // The operators' keys are asked about too: their lists are what this copy shows.
+  const listed = [...catalog.allowed].map((id) => id.split(":")[1] ?? "").filter(Boolean);
+  const authors = [...new Set([catalog.curator.pubkey, ...INSTANCE.operators, ...listed, ...followedAuthors(followed), ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((s) => s.event.pubkey)])].slice(0, 400);
   // Two questions, both to relays and to nobody else: what do the keys on the
   // visitor's lists say now, and who else has announced a world?
   const [known, loose] = await Promise.all([
@@ -868,6 +991,7 @@ async function refresh(): Promise<void> {
   const before = shown();
   relayEvents = [...known.events, ...loose.events];
   catalog = makeCatalog();
+  storeOperatorLists(catalog.operatorLists);
   if (before !== shown()) {
     await rank();
     hero?.refresh();
@@ -932,6 +1056,12 @@ async function start(): Promise<void> {
     const link = $("account-link");
     link.textContent = who.name ?? shortKey(who.pubkey);
     link.title = "Your identity";
+    // Whoever runs this copy is shown what is waiting for them, which nobody else here is.
+    if (isOperator(who.pubkey)) {
+      operatorKey = who.pubkey;
+      catalog = makeCatalog();
+      void rank().then(draw);
+    }
     draw();
   });
   try {

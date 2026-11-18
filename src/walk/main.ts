@@ -26,6 +26,8 @@ import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../s
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
 import { homeOf, loadHome } from "../shared/home.js";
+import { INSTANCE } from "../shared/instance.js";
+import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
 import { readSignedIn } from "../shared/session.js";
 import { createJumpList } from "../shared/jump.js";
 import { addComputers, type Computers } from "./computers.js";
@@ -360,7 +362,8 @@ async function start(): Promise<void> {
   // ------------------------------------------------------------- doors
   // The same lists as the page: BitPortal's own, unless it is put away, and the ones the visitor follows.
   let followed = loadFollowed();
-  const makeCatalog = (events: unknown[] = []): Catalog => buildCatalog(bundleJson as unknown as StarterBundle, events, { followed, showStarter: settings.showStarter });
+  // And the same policy: what this copy's operator lists, and nothing that is for adults (src/shared/instance.ts).
+  const makeCatalog = (events: unknown[] = []): Catalog => buildCatalog(bundleJson as unknown as StarterBundle, events, { followed, showStarter: settings.showStarter, operatorLists: loadOperatorLists() });
   let catalog: Catalog = makeCatalog();
   let saved: SavedPlace[] = loadSaved();
   /** The last door removed this visit, so one slip of the hand can be undone. */
@@ -1125,7 +1128,9 @@ async function start(): Promise<void> {
 
   // Newer announcements from relays, after the bundled set is on screen.
   try {
-    const authors = [...new Set([catalog.curator.pubkey, ...followedAuthors(followed), ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((x) => x.event.pubkey)])].slice(0, 400);
+    // Whoever announced a world the operators listed is asked too, or a listed world nobody here has heard from stays missing.
+    const listed = [...catalog.allowed].map((id) => id.split(":")[1] ?? "").filter(Boolean);
+    const authors = [...new Set([catalog.curator.pubkey, ...INSTANCE.operators, ...listed, ...followedAuthors(followed), ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((x) => x.event.pubkey)])].slice(0, 400);
     const res = await queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 400 }, 4000);
     const fresherLists = refreshFollowed(followed, res.events);
     if (fresherLists !== followed) {
@@ -1135,6 +1140,12 @@ async function start(): Promise<void> {
     const shown = () => JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), saved.map((x) => x.event.id)]);
     const before = shown();
     catalog = makeCatalog(res.events);
+    storeOperatorLists(catalog.operatorLists);
+    if (catalog.operatorLists.length) {
+      // The operators' lists may name worlds this page only now knows to ask about.
+      const more = [...new Set([...catalog.allowed].map((id) => id.split(":")[1] ?? "").filter((k) => k && !authors.includes(k)))].slice(0, 200);
+      if (more.length) catalog = makeCatalog([...res.events, ...(await queryRelays(settings.relays, { kinds: [WORLD_KIND], authors: more, limit: 400 }, 4000)).events]);
+    }
     const fresher = refreshSaved(saved, res.events);
     if (fresher !== saved) keep(fresher);
     if (before !== shown()) await buildDoors();

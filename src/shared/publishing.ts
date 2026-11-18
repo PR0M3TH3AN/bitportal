@@ -16,6 +16,8 @@ export interface WorldForm {
   seated: string;
   perf: string;
   topics: string;
+  /** Who the world is for: "kids", "general" or "adult". "" until its maker says. */
+  audience: string;
   status: string;
   rooms: boolean;
 }
@@ -45,6 +47,8 @@ export function validateForm(f: WorldForm): FormIssue[] {
   if (!/^[a-z0-9][a-z0-9._-]{1,63}$/.test(f.id)) issues.push({ field: "id", message: "The ID needs 2 to 64 lowercase letters, digits, dots, hyphens or underscores." });
   if (f.summary.length > 200) issues.push({ field: "summary", message: "Keep the one-line description under 200 characters." });
   if (f.modes.length === 0) issues.push({ field: "modes", message: "Tick at least one way the world can be viewed." });
+  // Asked of every maker, and never guessed: a site that keeps adult worlds out reads this.
+  if (!["kids", "general", "adult"].includes(f.audience)) issues.push({ field: "audience", message: "Say who the world is for." });
   return issues;
 }
 
@@ -71,6 +75,7 @@ export function formToInput(f: WorldForm, createdAt: number): WorldInput {
     input.summary = f.summary.trim();
     input.description = f.summary.trim();
   }
+  if (f.audience === "kids" || f.audience === "general" || f.audience === "adult") input.audience = f.audience;
   if (f.perf) input.perf = f.perf;
   if (f.status && f.status !== "live") input.status = f.status;
   return input;
@@ -93,6 +98,7 @@ export function worldToForm(w: World): WorldForm {
     seated: w.comfort.seated ?? "",
     perf: w.perf ?? "",
     topics: w.topics.join(", "),
+    audience: w.audience ?? "",
     status: w.status,
     rooms: w.capabilities.includes("rooms"),
   };
