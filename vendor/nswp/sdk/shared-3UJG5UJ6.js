@@ -2686,6 +2686,8 @@ var RoomSession = class {
     look: /* @__PURE__ */ new Set(),
     identity: /* @__PURE__ */ new Set(),
     recording: /* @__PURE__ */ new Set(),
+    screen: /* @__PURE__ */ new Set(),
+    video: /* @__PURE__ */ new Set(),
     audio: /* @__PURE__ */ new Set(),
     status: /* @__PURE__ */ new Set()
   };
@@ -2696,6 +2698,12 @@ var RoomSession = class {
   pass = null;
   passUntil = 0;
   recordingTimer;
+  /** This visitor's shared screen, while they share one. */
+  screen = null;
+  screenTimer;
+  /** Whose screens this visitor is watching. */
+  watched = /* @__PURE__ */ new Set();
+  watchTimer;
   mic = null;
   timers = [];
   closed = false;
@@ -2889,7 +2897,7 @@ var RoomSession = class {
     this.peers.set(pubkey, peer);
     pc.ontrack = (e) => {
       const stream = e.streams[0] ?? new MediaStream([e.track]);
-      this.emit("audio", peer.member, stream);
+      this.emit(e.track.kind === "video" ? "video" : "audio", peer.member, stream);
     };
     pc.onconnectionstatechange = () => {
       if ((pc.connectionState === "failed" || pc.connectionState === "closed") && this.peers.get(pubkey) === peer) this.drop(pubkey, peer.open);
@@ -2907,6 +2915,16 @@ var RoomSession = class {
       this.introduce(ch);
     };
     ch.onmessage = (e) => {
+      if (e.data === "scr:1" || e.data === "scr:0") {
+        peer.sharingUntil = e.data === "scr:1" ? Date.now() + RECORDING_HOLD_MS : 0;
+        this.markSharing(peer);
+        return;
+      }
+      if (e.data === "watch:1" || e.data === "watch:0") {
+        peer.watchingUntil = e.data === "watch:1" ? Date.now() + RECORDING_HOLD_MS : 0;
+        void this.feed(peer);
+        return;
+      }
       if (e.data === "rec:1" || e.data === "rec:0") {
         peer.recordingUntil = e.data === "rec:1" ? Date.now() + RECORDING_HOLD_MS : 0;
         this.markRecording(peer);
@@ -3029,10 +3047,14 @@ var RoomSession = class {
   audioTransceiver(pc) {
     return pc.getTransceivers().find((t) => t.receiver.track.kind === "audio");
   }
+  videoTransceiver(pc) {
+    return pc.getTransceivers().find((t) => t.receiver.track.kind === "video");
+  }
   async offerTo(pubkey) {
     const peer = this.createPeer(pubkey);
     const audio = peer.pc.addTransceiver("audio", { direction: "sendrecv" });
     if (this.mic) await audio.sender.replaceTrack(this.mic);
+    peer.pc.addTransceiver("video", { direction: "sendrecv" });
     this.wirePoseChannel(peer, peer.pc.createDataChannel("pose", { ordered: false, maxRetransmits: 0 }));
     await peer.pc.setLocalDescription(await peer.pc.createOffer());
     const sdp = await this.gathered(peer.pc);
@@ -3049,6 +3071,8 @@ var RoomSession = class {
       audio.direction = "sendrecv";
       if (this.mic) await audio.sender.replaceTrack(this.mic);
     }
+    const video = this.videoTransceiver(peer.pc);
+    if (video) video.direction = "sendrecv";
     await peer.pc.setLocalDescription(await peer.pc.createAnswer());
     const answer = await this.gathered(peer.pc);
     if (this.peers.get(pubkey) === peer) this.publish(buildSignal(this.topic, this.key, pubkey, { t: "answer", sdp: answer }));
@@ -3058,6 +3082,92 @@ var RoomSession = class {
     if (on === peer.member.recording) return;
     peer.member.recording = on;
     this.emit("recording", peer.member, on);
+  }
+  markSharing(peer) {
+    const on = (peer.sharingUntil ?? 0) > Date.now();
+    if (on === !!peer.member.sharing) return;
+    peer.member.sharing = on;
+    if (!on) this.watched.delete(peer.member.pubkey);
+    this.emit("screen", peer.member, on);
+  }
+  /** Send this visitor's screen to a member who is watching it, and stop when they aren't or there is none. */
+  async feed(peer) {
+    const wants = !!this.screen && (peer.watchingUntil ?? 0) > Date.now();
+    if (wants === !!peer.fed) return;
+    peer.fed = wants;
+    try {
+      const sender = this.videoTransceiver(peer.pc)?.sender;
+      await sender?.replaceTrack(wants ? this.screen : null);
+      if (wants && sender) {
+        const params = sender.getParameters();
+        params.degradationPreference = "maintain-resolution";
+        for (const e of params.encodings ?? []) e.maxBitrate = 25e5;
+        await sender.setParameters(params).catch(() => {
+        });
+      }
+    } catch {
+    }
+  }
+  tellAll(word, to) {
+    for (const peer of this.peers.values()) {
+      if (!peer.open || peer.pose?.readyState !== "open" || to && !to(peer)) continue;
+      try {
+        peer.pose.send(word);
+      } catch {
+      }
+    }
+  }
+  /**
+   * Offer a screen to the room, or stop. Offering sends nothing by itself:
+   * each member is told it is there, and it goes only to those who ask to
+   * watch. Stopping takes it from everyone at once.
+   */
+  async setScreen(track) {
+    this.screen = track;
+    this.self.sharing = !!track;
+    clearInterval(this.screenTimer);
+    const say = () => this.tellAll(this.screen ? "scr:1" : "scr:0");
+    say();
+    if (track) this.screenTimer = setInterval(say, 2e3);
+    else setTimeout(say, 400);
+    await Promise.all(
+      [...this.peers.values()].map(async (peer) => {
+        peer.fed = false;
+        await this.feed(peer).catch(() => {
+        });
+        if (!track) await this.videoTransceiver(peer.pc)?.sender.replaceTrack(null).catch(() => {
+        });
+      })
+    );
+  }
+  /** Whether this visitor is offering their screen. */
+  get sharing() {
+    return !!this.screen;
+  }
+  /** How many members this visitor's screen is going to now. */
+  get screenViewers() {
+    return this.screen ? [...this.peers.values()].filter((p) => p.open && p.fed).length : 0;
+  }
+  /**
+   * Ask to be sent a member's screen, or to stop being sent it. Nothing
+   * arrives unless they are sharing. It is asked again every couple of
+   * seconds while watching, so a member who stops being asked stops sending.
+   */
+  watch(pubkey, on) {
+    if (on) this.watched.add(pubkey);
+    else this.watched.delete(pubkey);
+    const peer = this.peers.get(pubkey);
+    if (peer?.open && peer.pose?.readyState === "open") {
+      try {
+        peer.pose.send(on ? "watch:1" : "watch:0");
+      } catch {
+      }
+    }
+    clearInterval(this.watchTimer);
+    if (this.watched.size) this.watchTimer = setInterval(() => this.tellAll("watch:1", (p) => this.watched.has(p.member.pubkey)), 2e3);
+  }
+  isWatching(pubkey) {
+    return this.watched.has(pubkey);
   }
   /**
    * Say that you are recording what you see, or have stopped. The others are
@@ -3095,6 +3205,8 @@ var RoomSession = class {
     const now = Date.now();
     for (const [pubkey, peer] of this.peers) {
       this.markRecording(peer);
+      this.markSharing(peer);
+      void this.feed(peer);
       if (!peer.open && now - peer.startedAt > CONNECT_TIMEOUT_MS) this.drop(pubkey, false);
       else if (peer.open && now - peer.lastSeen > SILENT_TIMEOUT_MS) this.drop(pubkey, true);
     }
@@ -3132,6 +3244,8 @@ var RoomSession = class {
       }
     }
     this.closed = true;
+    clearInterval(this.screenTimer);
+    clearInterval(this.watchTimer);
     for (const t of this.timers) clearInterval(t);
     removeEventListener("pagehide", this.onPageHide);
     for (const pubkey of [...this.peers.keys()]) this.drop(pubkey, true);
@@ -6095,6 +6209,14 @@ function createPresence(d) {
     dress(a, member.look);
     return a;
   };
+  let screenTrack = null;
+  const screens = /* @__PURE__ */ new Map();
+  const stopScreen = () => {
+    if (!screenTrack) return;
+    screenTrack.onended = null;
+    screenTrack.stop();
+    screenTrack = null;
+  };
   let keptBlocks = loadBlocked();
   const blockedNow = /* @__PURE__ */ new Map();
   const blockedKeys = () => [...keptBlocks.map((b) => b.key), ...blockedNow.keys()];
@@ -6160,6 +6282,8 @@ function createPresence(d) {
     sendTimer = void 0;
     session?.leave();
     session = null;
+    stopScreen();
+    screens.clear();
     for (const key of [...avatars.keys()]) removeAvatar(key);
     pendingStreams.clear();
     changed();
@@ -6221,6 +6345,7 @@ function createPresence(d) {
       changed();
     });
     s.on("leave", (m) => {
+      screens.delete(m.pubkey);
       removeAvatar(m.pubkey);
       pendingStreams.delete(m.pubkey);
       changed();
@@ -6231,6 +6356,10 @@ function createPresence(d) {
       if (!a.target) stepApart(s.self.pubkey, m.pubkey, pose);
       a.target = pose;
     });
+    s.on("video", (m, stream) => {
+      screens.set(m.pubkey, stream);
+    });
+    s.on("screen", () => changed());
     s.on("audio", (m, stream) => {
       pendingStreams.set(m.pubkey, stream);
       const a = avatars.get(m.pubkey);
@@ -6256,6 +6385,41 @@ function createPresence(d) {
     },
     get micOn() {
       return !!micTrack;
+    },
+    get screenOn() {
+      return !!screenTrack;
+    },
+    get screenViewers() {
+      return session?.screenViewers ?? 0;
+    },
+    async shareScreen(track) {
+      if (!session) {
+        track?.stop();
+        return;
+      }
+      stopScreen();
+      screenTrack = track;
+      if (track) {
+        track.contentHint = "detail";
+        track.onended = () => {
+          if (screenTrack !== track) return;
+          screenTrack = null;
+          void session?.setScreen(null);
+          changed();
+        };
+      }
+      await session.setScreen(track);
+      changed();
+    },
+    watch(pubkey, on) {
+      session?.watch(pubkey, on);
+      changed();
+    },
+    isWatching(pubkey) {
+      return !!session?.isWatching(pubkey);
+    },
+    screenOf(pubkey) {
+      return screens.get(pubkey) ?? null;
     },
     join,
     leave,
@@ -6531,6 +6695,8 @@ function createPortalWindow(geometry, pano, opts = {}) {
 var JOINED_KEY = () => `nswp:joined:${location.pathname}`;
 function addRoomControls(controls, presence, opts = {}) {
   const useTone = new URLSearchParams(opts.search ?? location.search).get("mic") === "tone";
+  const useTestScreen = new URLSearchParams(opts.search ?? location.search).get("screen") === "test";
+  const canShare = useTestScreen || typeof navigator.mediaDevices?.getDisplayMedia === "function";
   let invited = roomNameFromHash(location.hash);
   let busy = false;
   let last = invited ? "You were invited to a private room. Joining shows your IP address to the others in it." : "Joining lets you see and hear others here. It shows your IP address to them.";
@@ -6544,12 +6710,12 @@ function addRoomControls(controls, presence, opts = {}) {
     const others = s.members.length;
     const who = s.status === "no-relays" ? "can't reach any relay" : others === 0 ? "nobody else here yet" : others === 1 ? "1 other person here" : `${others} other people here`;
     const as = s.self.guest ? "" : ` You are here as ${s.self.name}.`;
-    return `${presence.roomName ? "Private room" : "Open room"}: ${who}.${as}${presence.micOn ? " Your microphone is on." : ""}`;
+    return `${presence.roomName ? "Private room" : "Open room"}: ${who}.${as}${presence.micOn ? " Your microphone is on." : ""}${presence.screenOn ? ` You are sharing your screen: ${presence.screenViewers === 0 ? "nobody is watching" : presence.screenViewers === 1 ? "1 person is watching" : `${presence.screenViewers} people are watching`}.` : ""}`;
   };
   const refresh = () => {
     const s = presence.session;
     opts.onState?.(
-      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn } : null
+      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn, screen: presence.screenOn, sharing: s.members.filter((m) => m.sharing).map((m) => m.pubkey), watching: [...watching.keys()] } : null
     );
     controls.addSection({ id: "room", label: "Room", icon: "room", note: status });
     people();
@@ -6570,6 +6736,62 @@ function addRoomControls(controls, presence, opts = {}) {
     } catch {
       return false;
     }
+  };
+  const watching = /* @__PURE__ */ new Map();
+  const sharers = /* @__PURE__ */ new Set();
+  const stopWatching = (pubkey, panelGone = false) => {
+    const w = watching.get(pubkey);
+    if (!w) return;
+    watching.delete(pubkey);
+    presence.watch(pubkey, false);
+    w.video.srcObject = null;
+    w.texture?.dispose();
+    if (!panelGone) w.panel?.close();
+  };
+  const startWatching = (m) => {
+    const stream = presence.screenOf(m.pubkey);
+    if (!opts.panels || !stream || watching.has(m.pubkey)) return false;
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.srcObject = stream;
+    const w = { video, texture: null, panel: null };
+    watching.set(m.pubkey, w);
+    const show = () => {
+      if (w.panel || watching.get(m.pubkey) !== w || !video.videoWidth || !video.videoHeight) return;
+      w.texture = new THREE12.VideoTexture(video);
+      w.texture.colorSpace = THREE12.SRGBColorSpace;
+      w.panel = opts.panels.open(
+        { kind: "custom", title: `${m.name}'s screen`, texture: w.texture, aspect: video.videoWidth / video.videoHeight, onClose: () => stopWatching(m.pubkey, true) },
+        { keep: false }
+      );
+      refresh();
+    };
+    video.addEventListener("loadedmetadata", show);
+    video.addEventListener("resize", show);
+    void video.play().catch(() => {
+    });
+    presence.watch(m.pubkey, true);
+    return true;
+  };
+  const testScreen = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1280;
+    canvas.height = 720;
+    const g = canvas.getContext("2d");
+    let n = 0;
+    const draw = () => {
+      g.fillStyle = "#10243a";
+      g.fillRect(0, 0, 1280, 720);
+      g.fillStyle = "#ffd166";
+      g.font = "64px sans-serif";
+      g.fillText(`A shared screen, frame ${++n}`, 80, 380);
+    };
+    draw();
+    const timer = setInterval(draw, 200);
+    const track = canvas.captureStream(10).getVideoTracks()[0];
+    track.addEventListener("ended", () => clearInterval(timer));
+    return track;
   };
   let listed = [];
   let extras = [];
@@ -6593,7 +6815,7 @@ function addRoomControls(controls, presence, opts = {}) {
         section: "people",
         kind: "swatch",
         color: m.look.light,
-        label: () => m.recording ? `${m.name}, recording` : m.name,
+        label: () => `${m.name}${m.recording ? ", recording" : ""}${m.sharing ? ", sharing their screen" : ""}`,
         act: () => {
           chosen = m.pubkey;
           people();
@@ -6602,7 +6824,29 @@ function addRoomControls(controls, presence, opts = {}) {
         }
       })
     );
+    for (const key of [...watching.keys()]) if (!here.some((m) => m.pubkey === key && m.sharing)) stopWatching(key);
+    for (const m of here) {
+      if (m.sharing && !sharers.has(m.pubkey)) controls.say(opts.panels ? `${m.name} is sharing their screen. Select them in People to watch.` : `${m.name} is sharing their screen.`);
+      if (m.sharing) sharers.add(m.pubkey);
+      else sharers.delete(m.pubkey);
+    }
     const who = here.find((m) => m.pubkey === chosen);
+    if (who?.sharing && opts.panels) {
+      extras.push("person-watch");
+      controls.add({
+        id: "person-watch",
+        section: "people",
+        icon: "panel",
+        on: () => watching.has(who.pubkey),
+        label: () => watching.has(who.pubkey) ? `Stop watching ${who.name}'s screen` : `Watch ${who.name}'s screen`,
+        act: () => {
+          if (watching.has(who.pubkey)) stopWatching(who.pubkey);
+          else if (startWatching(who)) controls.say(`${who.name}'s screen is opening on a panel of your own. Put the panel away to stop.`);
+          else controls.say(`${who.name}'s screen can't be shown here.`);
+          refresh();
+        }
+      });
+    }
     if (who) {
       extras.push("person-mute", "person-block");
       controls.add(
@@ -6624,6 +6868,7 @@ function addRoomControls(controls, presence, opts = {}) {
           icon: "exit",
           label: `Block ${who.name}`,
           act: () => {
+            stopWatching(who.pubkey);
             const name = presence.block(who.pubkey);
             if (!name) return;
             chosen = null;
@@ -6668,6 +6913,7 @@ function addRoomControls(controls, presence, opts = {}) {
       hidden: () => busy,
       act: async () => {
         if (presence.session) {
+          for (const key of [...watching.keys()]) stopWatching(key);
           presence.leave();
           tell("You left the room.");
           return refresh();
@@ -6695,6 +6941,30 @@ function addRoomControls(controls, presence, opts = {}) {
       act: async () => {
         if (presence.micOn) await presence.setMicrophone(null);
         else if (!await microphone()) tell("The microphone is blocked or unavailable.");
+        refresh();
+      }
+    },
+    {
+      id: "room-screen",
+      section: "room",
+      icon: "panel",
+      on: () => presence.screenOn,
+      label: () => presence.screenOn ? "Stop sharing your screen" : "Share your screen",
+      // A phone or a headset's browser can't offer a screen. It can still watch one.
+      hidden: () => !presence.session || !canShare,
+      act: async () => {
+        if (presence.screenOn) {
+          await presence.shareScreen(null);
+          tell("You stopped sharing your screen.");
+          return refresh();
+        }
+        try {
+          const track = useTestScreen ? testScreen() : (await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 15, max: 30 } }, audio: false })).getVideoTracks()[0];
+          await presence.shareScreen(track);
+          tell("Your screen is offered to this room. It is sent only to people who choose to watch. Share one window if anything else on your screen is private.");
+        } catch {
+          tell("Nothing was shared.");
+        }
         refresh();
       }
     },

@@ -239,6 +239,14 @@ Not built: a list of what a host refuses (a strict copy has no use for one),
 a kids-only setting, and BitGate, which will let each visitor tighten what
 they see and never loosen what the host decided.
 
+## Sharing a screen in the room
+
+Someone at a desk or laptop, joined in the room, can press "Share your
+screen". Everyone in the room is told, and nobody is shown anything: each
+person who wants to watch selects the sharer in People and presses "Watch".
+It opens on a panel of their own, to move, size, pin or put away. The sharer
+sees how many are watching, and stopping or leaving ends it for everyone.
+
 ## Staying joined as you travel
 
 Someone who is in a room, in BitPortal's own room or in a world, stays joined
