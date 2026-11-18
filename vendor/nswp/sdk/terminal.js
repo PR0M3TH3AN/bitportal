@@ -5068,6 +5068,7 @@ import {
   cleanSize,
   getPublicKey,
   grantCode,
+  isPublicKey,
   openBridgeSignal,
   parseBridgeControl,
   ROOM_SIGNAL_KIND,
@@ -5075,6 +5076,8 @@ import {
 } from "@nswp/core";
 var DEFAULT_ICE = [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }];
 var encoder = new TextEncoder();
+var Said = class extends Error {
+};
 function openBridgeLink(o) {
   let status = { at: "signing" };
   let over = false;
@@ -5106,8 +5109,14 @@ function openBridgeLink(o) {
   void (async () => {
     const sessionKey = crypto.getRandomValues(new Uint8Array(32));
     const session = getPublicKey(sessionKey);
-    const grant = await o.sign(buildBridgeGrant({ session, bridge: o.bridge }));
-    if (!verifyEvent(grant) || grant.pubkey !== o.owner || grant.kind !== BRIDGE_GRANT_KIND) throw new Error("The signer didn't sign the request as it was.");
+    if (!isPublicKey(o.bridge)) throw new Said("That isn't a computer's key. Forget this computer and add it again from the link its Bridge prints.");
+    let grant;
+    try {
+      grant = await o.sign(buildBridgeGrant({ session, bridge: o.bridge }));
+    } catch {
+      throw new Said("Your key didn't sign the request. Check you are still signed in, then press here to try again.");
+    }
+    if (!verifyEvent(grant) || grant.pubkey !== o.owner || grant.kind !== BRIDGE_GRANT_KIND) throw new Said("Your key didn't sign the request as it was, so it wasn't sent.");
     if (over) return;
     const code = grantCode(grant.id);
     pc = new RTCPeerConnection({ iceServers: o.iceServers ?? DEFAULT_ICE });
@@ -5192,7 +5201,7 @@ function openBridgeLink(o) {
         if (status.at === "finding") end({ at: "closed", why: reached ? "Your computer didn't answer. Is the Bridge running on it?" : "No relay could be reached, so your computer couldn't be asked." });
       }, o.answerMs ?? 2e4)
     );
-  })().catch((e) => end({ at: "closed", why: e instanceof Error && e.message ? e.message : "The request couldn't be made." }));
+  })().catch((e) => end({ at: "closed", why: e instanceof Said ? e.message : "The request couldn't be made. Is this computer's key the one its Bridge printed?" }));
   return {
     get status() {
       return status;

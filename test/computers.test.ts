@@ -1,9 +1,12 @@
 /** The computers a visitor has added to their home (src/shared/computers.ts). */
 import { describe, expect, it } from "vitest";
-import { encodeNpub } from "@nswp/core";
+import { encodeNpub, getPublicKey } from "@nswp/core";
 import { addComputer, cleanBridgeRelays, COMPUTER_LIMIT, computersOf, loadComputers, pairingRequest, parseComputers, removeComputer, storeComputers, type Computer } from "../src/shared/computers.js";
 
-const key = (n: number) => n.toString(16).padStart(2, "0").repeat(32);
+/** A real public key for each number: a key somebody could hold. */
+const key = (n: number) => getPublicKey(new Uint8Array(32).fill(n));
+/** The right length and letters, and no key at all. */
+const NOT_A_KEY = "cd".repeat(32);
 const ME = key(1);
 const pc = (n: number, over: Partial<Computer> = {}): Computer => ({ pubkey: key(n), owner: ME, name: `Computer ${n}`, relays: [], addedAt: n, ...over });
 
@@ -20,7 +23,7 @@ describe("a pairing link", () => {
   });
 
   it("asks nothing when there is no key, or not a key", () => {
-    for (const hash of ["", "#back", "#back&xr=1", "#bridge=", "#bridge=npub1nonsense", "#bridge=hello", `#room=${key(7)}`]) expect(pairingRequest(hash), hash).toBeNull();
+    for (const hash of ["", "#back", "#back&xr=1", "#bridge=", "#bridge=npub1nonsense", "#bridge=hello", `#room=${key(7)}`, `#bridge=${NOT_A_KEY}`, `#bridge=${encodeNpub(NOT_A_KEY)}`]) expect(pairingRequest(hash), hash).toBeNull();
   });
 });
 
@@ -38,7 +41,7 @@ describe("what is kept", () => {
 
   it("drops anything that isn't a computer", () => {
     expect(parseComputers("nope")).toEqual([]);
-    expect(parseComputers([null, {}, { pubkey: "zz", owner: ME }, { pubkey: key(2), owner: "me" }, { pubkey: ME, owner: ME }, pc(4), pc(4)])).toEqual([pc(4)]);
+    expect(parseComputers([null, {}, { pubkey: "zz", owner: ME }, { pubkey: key(2), owner: "me" }, { pubkey: ME, owner: ME }, { ...pc(3), pubkey: NOT_A_KEY }, { ...pc(3), owner: NOT_A_KEY }, pc(4), pc(4)])).toEqual([pc(4)]);
     // A name is one tidy line, and there is always one.
     expect(parseComputers([pc(5, { name: "  Desk\n\u202e  PC  " }), pc(6, { name: "" })]).map((c) => c.name)).toEqual(["Desk PC", "My computer"]);
     expect(parseComputers([pc(5, { name: "x".repeat(99) })])[0]!.name.length).toBe(32);

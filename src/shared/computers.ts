@@ -7,7 +7,7 @@
  * key, the name the visitor gave it and whose it is. It stays in this browser
  * and is never published: which computers someone owns is nobody's business.
  */
-import { cleanName, decodeNpub, isHex64 } from "@nswp/core";
+import { cleanName, decodeNpub, isPublicKey } from "@nswp/core";
 
 export interface Computer {
   /** The Bridge's public key. */
@@ -50,7 +50,7 @@ export function parseComputers(raw: unknown): Computer[] {
   if (!Array.isArray(raw)) return [];
   const out: Computer[] = [];
   for (const item of raw as Partial<Computer>[]) {
-    if (!item || typeof item !== "object" || !isHex64(item.pubkey) || !isHex64(item.owner) || item.pubkey === item.owner) continue;
+    if (!item || typeof item !== "object" || !isPublicKey(item.pubkey) || !isPublicKey(item.owner) || item.pubkey === item.owner) continue; // real keys only: the right length is not enough
     if (out.some((c) => c.pubkey === item.pubkey && c.owner === item.owner)) continue;
     out.push({
       pubkey: item.pubkey,

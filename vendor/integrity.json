@@ -6,13 +6,13 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "46ba1cf427f20efeecfe54b74d22e8191a475eb5",
+        "commit": "6f369208d741540c8166ae5f0900fb3c9878b19d",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
         "LICENSE": "bc40ab40278d23777e57ea2872fbaf64663e1c7d6faf4f5ca31e8f4686351b15",
         "THIRD-PARTY-NOTICES.md": "624065ee6be636d194ad58096b748b1626d115044bb38b5d69540dfdbd505052",
-        "nswp-core.js": "398088a94392230f79c880b32b51f10f181399537381da5b13e38eea496c0332",
+        "nswp-core.js": "adc1c31fc3f58239f8eec23b075c8e1bad830e21ee695a0ba17b58c755158aeb",
         "sdk-types/actions.d.ts": "02df5d85a055dd8c4a01b20d850f4e8c66782de7e6f561a2b8142945d013759d",
         "sdk-types/alloy.d.ts": "122964d77c3f7bd795f4c9471afc8089af77ff5b856da40e054b1af9b829147f",
         "sdk-types/bridge-link.d.ts": "48ec99671179031758e2dded53b7f010e9a235596f8214386854a91d13c5b9dc",
@@ -46,7 +46,7 @@
         "sdk/shared-OXCAHDPV.js": "91317fa1a7cca3f88e0e35e38976ca41a32d95bcc744e581a4f4b15c65ef5c89",
         "sdk/shared-QLSLERQ3.js": "eb4a8e71a94c3b9ea153fda5aceddf26646c6a12c0c036f6a031b9a46410d2dd",
         "sdk/shared-RDSPER6D.js": "4e8869d2efcca1dfab2fa20c56dea05c6e8750f1b2719f2525eb691438525969",
-        "sdk/terminal.js": "e7a535795c40ed708b9c529a6e01e4b7b32006866383dc2c26093699665a8981",
+        "sdk/terminal.js": "798545b2922f94ff75af86fafd41481470d579a9b73e1e5456f93e72ef6c49eb",
         "sdk/three.js": "5f1579eb89449d2f72172d39733fcd4673a46b439034633010f34169f12b2404",
         "sdk/ui.js": "e9e6722d59a4ac8f4b508bd1b74383864885abcf30aa9352c28154e6bb71ba70",
         "types/arrival.d.ts": "146c6caa3f9467aad00f7d5bc96200e65f349dcbd88080cc26fbf522dfaa8fea",
@@ -54,7 +54,7 @@
         "types/bridge.d.ts": "e687b52f87adfc033afa07d38941a6da1a42b99c835b25c6cd9ed636d087d71c",
         "types/constants.d.ts": "42c9ec713df7f0b01ac94a39bd729867bccb342e7c25764b97d0c780fb812240",
         "types/destination.d.ts": "fa497e8f8c612e069efa278e80bf6c24c7343f1c0acab8734a4da811d00184e5",
-        "types/event.d.ts": "a55181cd67e871d16d5cc35f26a58140519702e7676b4d7046867a5303e82f33",
+        "types/event.d.ts": "2abfc869243f06fdc029a6ad017cb98f8e9f2e544803b193d91643c74044bc54",
         "types/index.d.ts": "e09926b4d1218d21f0c7227fa08a7246a402a2e0aa0fe3c29050340be3e23966",
         "types/layout.d.ts": "ad8d722d37130595bb6b483e90668be10bef6a0fabb8e6982736bf77c775dae7",
         "types/list.d.ts": "1c2af26c548232ca71b27daf4f49106c9c4b4de4296df929bff10f1b6a7b3160",
