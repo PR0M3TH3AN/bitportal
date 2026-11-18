@@ -1,4 +1,5 @@
 import {
+  DEFAULT_COMFORT,
   addCameraControls,
   addRoomControls,
   addViewControls,
@@ -8,16 +9,19 @@ import {
   createFigure,
   createPortalWindow,
   createPresence,
+  createXrInput,
   panoramaTexture,
+  readPad,
   recordClip,
   saveFile,
   takePicture,
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-G5KMBNU2.js";
+} from "./shared-3FS6LLKN.js";
 import "./shared-KPLONJID.js";
 export {
+  DEFAULT_COMFORT,
   addCameraControls,
   addRoomControls,
   addViewControls,
@@ -27,7 +31,9 @@ export {
   createFigure,
   createPortalWindow,
   createPresence,
+  createXrInput,
   panoramaTexture,
+  readPad,
   recordClip,
   saveFile,
   takePicture,

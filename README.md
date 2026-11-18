@@ -54,7 +54,10 @@ lobby or a world would need to agree with it on is in
   same as every world's: on a flat screen a HUD with a row of keys along the
   bottom (1 to 6 press them) and a Menu; in a headset a console that comes up
   above your left wrist, or from the small **Menu** button low in front of
-  you. It has Turn around (the other wall is behind you), the room and
+  you. With controllers of any make, a stick turns you and steps you where
+  you point, and B or Y opens the console; tracked hands work by pinching.
+  Smooth walking is a choice under **Moving**. All of it is extra: pointing
+  and selecting does everything. It has Turn around (the other wall is behind you), the room and
   microphone, the list, and a Look section for its colours. Joining the room
   shows your IP address to the others in it, so nothing connects before you
   ask.
