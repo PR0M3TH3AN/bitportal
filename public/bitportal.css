@@ -1,6 +1,10 @@
-/* BitPortal. In the BitBlocks family: the same Ubuntu Sans, the same flat
-   monochrome ground, and one product colour of its own. The only curve in
-   the interface is the arch of a door. */
+/* BitPortal. In the BitBlocks family: the same Ubuntu Sans, and one product
+   colour of its own, here turned up to a light source.
+
+   The look is the grid before the worlds: a dark plane ruled with light, with
+   doors standing on it. Three shapes carry it. The arch is a door. The block,
+   a small square notch or mark, is a bit. The grid is the space between. The
+   worlds supply every other colour, through their doors. */
 
 @font-face {
   font-family: "Ubuntu Sans V";
@@ -14,118 +18,165 @@
 }
 
 :root {
-  --bitportal-paper: #eef0f4;
-  --bitportal-surface: #ffffff;
-  --bitportal-ink: #0b0c0e;
-  --bitportal-muted: #5b6270;
-  --bitportal-line: #d3d6de;
-  --bitportal-accent: #1f9d5f;      /* BitPortal green: doors that are open */
-  --bitportal-accent-ink: #04170d;
-  --bitportal-ok: #14713f;
-  --bitportal-warn: #8a4b00;
-  --bitportal-warn-ground: #fff1d6;
-  --bitportal-bad: #a3192b;
+  --bitportal-paper: #04070b;        /* the void the grid is drawn on */
+  --bitportal-surface: #0a1118;      /* a panel standing on it */
+  --bitportal-raised: #101a24;
+  --bitportal-ink: #e9f3f2;
+  --bitportal-muted: #8494a0;
+  --bitportal-line: #1a2733;
+  --bitportal-accent: #3df2a0;       /* BitPortal green, lit */
+  --bitportal-accent-rgb: 61, 242, 160;
+  --bitportal-accent-ink: #021a10;
+  --bitportal-ok: #3df2a0;
+  --bitportal-warn: #ffc65c;
+  --bitportal-warn-ground: #221904;
+  --bitportal-bad: #ff7a8a;
   --edge: clamp(16px, 5vw, 72px);
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bitportal-paper: #0a0b0d;
-    --bitportal-surface: #101217;
-    --bitportal-ink: #f2f3f6;
-    --bitportal-muted: #8b91a0;
-    --bitportal-line: #23262d;
-    --bitportal-accent: #3fc584;
-    --bitportal-ok: #6fdc9b;
-    --bitportal-warn: #ffcf70;
-    --bitportal-warn-ground: #2e230c;
-    --bitportal-bad: #ff8b98;
-  }
-}
-:root[data-theme="dark"] {
-  --bitportal-paper: #0a0b0d; --bitportal-surface: #101217; --bitportal-ink: #f2f3f6;
-  --bitportal-muted: #8b91a0; --bitportal-line: #23262d; --bitportal-accent: #3fc584;
-  --bitportal-ok: #6fdc9b; --bitportal-warn: #ffcf70; --bitportal-warn-ground: #2e230c; --bitportal-bad: #ff8b98;
+  --px: 6px;                          /* one block */
+  /* A rectangle with one block cut from each corner. */
+  --notch: polygon(0 var(--px), var(--px) var(--px), var(--px) 0, calc(100% - var(--px)) 0, calc(100% - var(--px)) var(--px), 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, var(--px) calc(100% - var(--px)), 0 calc(100% - var(--px)));
+  --mono: "Ubuntu Sans Mono V", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
+html { background: var(--bitportal-paper); }
 body {
   margin: 0;
-  background: var(--bitportal-paper);
   color: var(--bitportal-ink);
   font-family: "Ubuntu Sans V", system-ui, sans-serif;
-  font-size: 18px; line-height: 1.5;
+  font-size: 17px; line-height: 1.55; font-weight: 420;
   -webkit-font-smoothing: antialiased;
+  /* The grid, faintly, behind every page. */
+  background:
+    linear-gradient(rgba(var(--bitportal-accent-rgb), 0.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(var(--bitportal-accent-rgb), 0.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    var(--bitportal-paper);
 }
 .frame { max-width: 1240px; margin: 0 auto; padding-inline: var(--edge); }
-a { color: inherit; text-underline-offset: 3px; }
+a { color: inherit; text-underline-offset: 3px; text-decoration-color: rgba(var(--bitportal-accent-rgb), 0.6); }
+a:hover { color: var(--bitportal-accent); }
 h1, h2, h3, p { margin: 0; }
-.small { font-size: 0.83rem; color: var(--bitportal-muted); }
-.key, .door-host, .detail-host, .host, .full-url {
-  font-family: "Ubuntu Sans Mono V", ui-monospace, Menlo, monospace;
-}
+h1, h2 { font-stretch: 112%; }
+.small { font-size: 0.84rem; color: var(--bitportal-muted); }
+.key, .door-host, .detail-host, .host, .full-url { font-family: var(--mono); }
 .key { overflow-wrap: anywhere; }
-:focus-visible { outline: 3px solid var(--bitportal-accent); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--bitportal-ink); outline-offset: 3px; }
+::selection { background: var(--bitportal-accent); color: var(--bitportal-accent-ink); }
 
 /* ---------- top bar ---------- */
-.top { border-bottom: 1px solid var(--bitportal-line); background: var(--bitportal-paper); }
+.top { border-bottom: 1px solid var(--bitportal-line); background: rgba(4, 7, 11, 0.86); }
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
-.wordmark { display: inline-flex; align-items: center; gap: 11px; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; text-decoration: none; }
+.wordmark { display: inline-flex; align-items: center; gap: 12px; font-weight: 800; font-stretch: 112%; font-size: 1.28rem; letter-spacing: -0.01em; text-decoration: none; }
+.wordmark:hover { color: var(--bitportal-ink); }
 .top-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-.glyph { width: 15px; height: 22px; border: 2.5px solid var(--bitportal-ink); border-bottom-width: 5px; border-radius: 8px 8px 0 0; background: var(--bitportal-accent); }
+/* The mark: a lit doorway on its sill. */
+.glyph { width: 15px; height: 21px; border-radius: 8px 8px 0 0; background: linear-gradient(var(--bitportal-accent), rgba(var(--bitportal-accent-rgb), 0.3)); box-shadow: 0 5px 0 -1px var(--bitportal-ink), 0 0 18px rgba(var(--bitportal-accent-rgb), 0.7); margin-bottom: 4px; }
 
+/* A button is a block with its corners cut: an outline, filled when it is the main thing to do. */
 .button {
-  font: inherit; font-weight: 600; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 48px; padding: 10px 20px;
-  color: var(--bitportal-ink); background: transparent;
-  border: 1.5px solid var(--bitportal-ink); border-radius: 0; text-decoration: none;
+  --edge-c: rgba(233, 243, 242, 0.5); --fill-c: var(--bitportal-paper);
+  position: relative; isolation: isolate;
+  font: inherit; font-weight: 620; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 10px 20px;
+  color: var(--bitportal-ink); background: var(--edge-c); border: 0; border-radius: 0;
+  clip-path: var(--notch); text-decoration: none;
+  transition: color 0.15s;
 }
-.button:hover { background: var(--bitportal-ink); color: var(--bitportal-paper); }
-.button.primary { background: var(--bitportal-accent); border-color: var(--bitportal-accent); color: var(--bitportal-accent-ink); }
-.button.primary:hover { background: var(--bitportal-ink); border-color: var(--bitportal-ink); color: var(--bitportal-paper); }
+.button::before { content: ""; position: absolute; inset: 1.5px; z-index: -1; clip-path: var(--notch); background: var(--fill-c); transition: background 0.15s; }
+.button:hover { --edge-c: var(--bitportal-accent); --fill-c: #06241a; color: var(--bitportal-accent); }
+.button.primary { --edge-c: var(--bitportal-accent); --fill-c: var(--bitportal-accent); color: var(--bitportal-accent-ink); font-weight: 700; }
+.button.primary:hover { --edge-c: var(--bitportal-ink); --fill-c: var(--bitportal-ink); color: var(--bitportal-paper); }
 .button:disabled { opacity: 0.5; cursor: default; }
-.link { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+/* The cut corners would cut the focus ring off too, so a focused button is a plain block with a ring. */
+.button:focus-visible { clip-path: none; }
+.link { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(var(--bitportal-accent-rgb), 0.6); text-underline-offset: 3px; }
+.link:hover { color: var(--bitportal-accent); }
 
-/* ---------- lobby ---------- */
-.intro {
-  margin-top: clamp(28px, 6vw, 72px);
-  max-width: 17ch;
-  font-size: clamp(2rem, 5.6vw, 3.6rem); font-weight: 750; line-height: 1.02; letter-spacing: -0.025em; text-wrap: balance;
+/* ---------- the landing: the room, live ---------- */
+body.home .top { position: absolute; left: 0; right: 0; top: 0; z-index: 5; background: none; border-bottom-color: transparent; }
+.hero { position: relative; min-height: min(92vh, 900px); display: grid; align-items: center; overflow: hidden; border-bottom: 1px solid rgba(var(--bitportal-accent-rgb), 0.35); background: var(--bitportal-paper); }
+.hero-stage { position: absolute; inset: 0; }
+.hero-stage canvas { display: block; width: 100%; height: 100%; }
+/* The grid, drawn flat, until the live room is up. It stays where there is no room to show. */
+.hero-stage::before {
+  content: ""; position: absolute; left: -50%; right: -50%; bottom: -8%; height: 62%;
+  transform-origin: 50% 100%; transform: perspective(520px) rotateX(64deg);
+  background:
+    linear-gradient(rgba(var(--bitportal-accent-rgb), 0.5) 1.5px, transparent 1.5px) 0 0 / 64px 64px,
+    linear-gradient(90deg, rgba(var(--bitportal-accent-rgb), 0.5) 1.5px, transparent 1.5px) 0 0 / 64px 64px;
+  -webkit-mask-image: linear-gradient(transparent, #000 70%); mask-image: linear-gradient(transparent, #000 70%);
 }
-.source { margin-top: 18px; max-width: 62ch; color: var(--bitportal-muted); }
-.source strong { color: var(--bitportal-ink); font-weight: 650; }
-.notice { margin-top: 28px; padding: 12px 16px; background: var(--bitportal-warn-ground); color: var(--bitportal-warn); max-width: 70ch; }
-.empty { margin-top: 48px; max-width: 50ch; }
+.hero-stage.live::before { content: none; }
+/* Dark behind the words, so they read over whatever the room is showing. */
+.hero::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(4, 7, 11, 0.96) 0%, rgba(4, 7, 11, 0.86) 28%, rgba(4, 7, 11, 0) 52%), linear-gradient(rgba(4, 7, 11, 0.7), rgba(4, 7, 11, 0) 22%); }
+.hero-copy { position: relative; z-index: 2; width: 100%; padding-block: 120px 84px; pointer-events: none; }
+.hero-copy a, .hero-copy button { pointer-events: auto; }
+.intro {
+  max-width: 15ch;
+  font-size: clamp(2.4rem, 5.3vw, 4.7rem); font-weight: 780; font-stretch: 120%; line-height: 0.98; letter-spacing: -0.028em; text-wrap: balance;
+}
+.hero-lede { margin-top: 22px; max-width: 40ch; font-size: 1.16rem; color: rgba(233, 243, 242, 0.84); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.hero-actions .button { min-height: 54px; padding-inline: 26px; font-size: 1.05rem; }
+/* What this is, in three facts. */
+.readout { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 44px 0 0; }
+.readout div { display: grid; gap: 1px; padding-left: 12px; border-left: 2px solid var(--bitportal-accent); }
+.readout dt { font-size: 0.8rem; color: var(--bitportal-muted); }
+.readout dd { margin: 0; font-family: var(--mono); font-size: 0.95rem; }
+/* The door being pointed at in the room. */
+.hero-target { position: absolute; z-index: 2; right: var(--edge); bottom: 22px; max-width: min(70vw, 520px); padding: 7px 12px; pointer-events: none;
+  font-family: var(--mono); font-size: 0.86rem; color: var(--bitportal-ink); background: rgba(4, 7, 11, 0.78); border-left: 2px solid var(--bitportal-accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-target:empty { display: none; }
+@media (max-width: 820px) {
+  .hero { min-height: 0; display: block; }
+  .hero-stage { position: relative; height: 46vh; min-height: 300px; margin-top: 68px; }
+  .hero::before { background: linear-gradient(rgba(4, 7, 11, 0.9), rgba(4, 7, 11, 0) 16%, rgba(4, 7, 11, 0) 40%, rgba(4, 7, 11, 1) 58%); }
+  .hero-copy { padding-block: 0 44px; margin-top: -34px; }
+  .hero-target { position: static; margin: 14px var(--edge) 0; max-width: none; }
+  .readout { margin-top: 32px; }
+}
 
-.shelf { margin-top: clamp(40px, 7vw, 80px); }
-.shelf h2 { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; }
-.shelf-blurb { margin-top: 4px; color: var(--bitportal-muted); max-width: 62ch; }
-.shelf-warn h2::before { content: "Unreviewed: "; color: var(--bitportal-warn); }
+/* ---------- the list of doors ---------- */
+.source { margin-top: clamp(36px, 6vw, 64px); max-width: 66ch; color: var(--bitportal-muted); }
+.source strong { color: var(--bitportal-ink); font-weight: 650; }
+.notice { margin-top: 28px; padding: 12px 16px; background: var(--bitportal-warn-ground); color: var(--bitportal-warn); border-left: 2px solid var(--bitportal-warn); max-width: 70ch; }
+.empty { margin-top: 48px; max-width: 50ch; color: var(--bitportal-muted); }
+
+.shelf { margin-top: clamp(44px, 7vw, 84px); }
+.shelf h2 { display: flex; align-items: center; gap: 12px; font-size: 1.5rem; font-weight: 720; letter-spacing: -0.01em; }
+.shelf h2::before { content: ""; width: 9px; height: 9px; background: var(--bitportal-accent); flex: none; box-shadow: 0 0 14px rgba(var(--bitportal-accent-rgb), 0.8); }
+.shelf-blurb { margin-top: 6px; color: var(--bitportal-muted); max-width: 62ch; }
+.shelf-warn h2::before { background: var(--bitportal-warn); box-shadow: none; }
+.shelf-warn h2::after { content: "unreviewed"; font: 600 0.8rem var(--mono); color: var(--bitportal-warn); border: 1px solid currentColor; padding: 1px 8px; }
 
 .doors {
-  list-style: none; margin: 26px 0 0; padding: 0;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 34px 26px;
+  list-style: none; margin: 30px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: 40px 28px;
 }
 .door {
   font: inherit; color: inherit; text-align: left; cursor: pointer;
-  display: grid; gap: 12px; width: 100%; padding: 0; background: none; border: 0;
+  display: grid; gap: 14px; width: 100%; padding: 0; background: none; border: 0;
 }
-.door:focus-visible { outline-offset: 6px; }
+.door:focus-visible { outline-offset: 8px; }
 
 /* The doorway. Its view is generated from the world's own address, so nothing
-   is fetched from the world to draw it. */
+   is fetched from the world to draw it. It stands on a sill, like the doors in
+   the room. */
 .door-view {
   position: relative; display: block; overflow: hidden;
   aspect-ratio: 5 / 7;
-  border: 2.5px solid var(--bitportal-ink); border-bottom-width: 8px;
+  border: 2px solid rgba(233, 243, 242, 0.9); border-bottom: 0;
   border-radius: 50% 50% 0 0 / 36% 36% 0 0;
   background:
     radial-gradient(circle at var(--glow-x) var(--glow-y), var(--glow) 0 6%, transparent 24%),
     linear-gradient(to bottom, var(--sky-top), var(--sky-low) 66%, var(--ground) 66%);
-  transition: border-color 0.15s, transform 0.25s;
+  transition: border-color 0.15s, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .door-view::after {  /* a path leading in from the threshold */
   content: ""; position: absolute; left: 50%; bottom: 0; width: 52%; height: 34%;
@@ -139,37 +190,59 @@ h1, h2, h3, p { margin: 0; }
 .door-view.has-preview { background: var(--ground) var(--preview) 50% 30% / 440% auto no-repeat; }
 .door-view.has-preview.preview-flat { background-size: cover; background-position: 50% 50%; }
 .door-view.has-preview::after { content: none; }
-.door:hover .door-view, .door:focus-visible .door-view { border-color: var(--bitportal-accent); transform: translateY(-4px); }
+.door:hover .door-view, .door:focus-visible .door-view { border-color: var(--bitportal-accent); transform: translateY(-5px); }
 
-.door-plate { display: grid; gap: 3px; }
-.door-title { font-weight: 650; line-height: 1.25; }
-.door-host { font-size: 0.85rem; overflow-wrap: anywhere; }
+.door-plate { display: grid; gap: 4px; padding-top: 13px; position: relative; }
+/* The sill, and the light that comes on under a door being considered. */
+.door-plate::before { content: ""; position: absolute; left: -6px; right: -6px; top: -14px; height: 5px; background: var(--bitportal-ink); transition: background 0.15s, box-shadow 0.15s; }
+.door:hover .door-plate::before, .door:focus-visible .door-plate::before { background: var(--bitportal-accent); box-shadow: 0 0 22px 2px rgba(var(--bitportal-accent-rgb), 0.65); }
+.door-title { font-weight: 660; line-height: 1.25; }
+.door-host { font-size: 0.84rem; overflow-wrap: anywhere; color: rgba(233, 243, 242, 0.9); }
 .host-prefix { color: var(--bitportal-muted); }
-.door-marks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.mark { font-size: 0.78rem; font-weight: 600; padding: 1px 8px; border: 1.5px solid currentColor; }
+.door-marks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.mark { font: 600 0.74rem var(--mono); padding: 1px 7px; border: 1px solid currentColor; }
 .mark:not(.mark-verified, .mark-warn) { color: var(--bitportal-muted); }
 .mark-verified { color: var(--bitportal-ok); }
 .mark-verified::before { content: "✓ "; }
 .mark-warn { color: var(--bitportal-warn); }
 
-.foot { margin-top: clamp(56px, 9vw, 120px); padding-block: 28px 44px; border-top: 1px solid var(--bitportal-line); display: grid; gap: 8px; }
+/* ---------- how a crossing goes: three steps, in order ---------- */
+.how { margin-top: clamp(64px, 10vw, 128px); }
+.how h2 { font-size: clamp(1.6rem, 3.6vw, 2.5rem); font-weight: 760; letter-spacing: -0.02em; max-width: 20ch; line-height: 1.05; }
+.how ol { list-style: none; margin: 34px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0; counter-reset: step; border-top: 1px solid rgba(var(--bitportal-accent-rgb), 0.4); }
+.how li { counter-increment: step; position: relative; padding: 26px 26px 6px 0; }
+.how li::before { content: counter(step); display: block; font: 700 2.6rem/1 var(--mono); color: transparent; -webkit-text-stroke: 1.5px var(--bitportal-accent); margin-bottom: 14px; }
+/* A block on the line where each step starts. */
+.how li::after { content: ""; position: absolute; left: 0; top: -5px; width: 9px; height: 9px; background: var(--bitportal-accent); }
+.how h3 { font-size: 1.12rem; font-weight: 700; }
+.how p { margin-top: 6px; color: var(--bitportal-muted); max-width: 36ch; }
 
-/* ---------- sheets (world details, settings) ---------- */
-.sheet {
-  width: min(600px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto;
-  padding: clamp(20px, 4vw, 34px);
-  color: var(--bitportal-ink); background: var(--bitportal-surface);
-  border: 2.5px solid var(--bitportal-ink); border-radius: 0;
-  overflow-x: hidden;
+.foot { margin-top: clamp(64px, 9vw, 128px); padding-block: 28px 48px; border-top: 1px solid var(--bitportal-line); display: grid; gap: 8px; }
+
+/* ---------- panels: sheets, cards ---------- */
+/* A panel is a block of the surface with a lit top edge and a bit at one corner. */
+.sheet, .card {
+  color: var(--bitportal-ink);
+  border: 1px solid var(--bitportal-line); border-top: 2px solid var(--bitportal-accent); border-radius: 0;
+  background:
+    linear-gradient(var(--bitportal-accent), var(--bitportal-accent)) 100% 100% / 8px 8px no-repeat,
+    var(--bitportal-surface);
 }
-.sheet::backdrop { background: rgb(5 6 8 / 0.62); }
-.sheet h2 { font-size: 1.7rem; font-weight: 750; line-height: 1.1; letter-spacing: -0.015em; }
-.sheet h3 { margin-top: 26px; font-size: 1.05rem; font-weight: 700; }
+.sheet {
+  width: min(620px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; overflow-x: hidden;
+  padding: clamp(20px, 4vw, 34px);
+  box-shadow: 0 0 0 1px rgba(var(--bitportal-accent-rgb), 0.12), 0 30px 90px rgba(0, 0, 0, 0.7);
+  scrollbar-width: thin; scrollbar-color: rgba(var(--bitportal-accent-rgb), 0.5) transparent;
+}
+.sheet::backdrop { background: rgba(2, 4, 7, 0.76); }
+.sheet h2 { font-size: 1.75rem; font-weight: 760; line-height: 1.08; letter-spacing: -0.018em; }
+.sheet h3 { margin-top: 28px; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+.sheet h3::before { content: ""; width: 7px; height: 7px; background: var(--bitportal-accent); flex: none; }
 .sheet p { margin-top: 10px; }
 .detail-preview-wrap { margin-bottom: 20px; }
 .detail-preview {
   display: none; aspect-ratio: 12 / 5; cursor: grab; touch-action: pan-y;
-  border: 2.5px solid var(--bitportal-ink);
+  border: 1px solid rgba(233, 243, 242, 0.5);
   background: var(--preview) calc(50% + var(--pan, 0px)) 50% / 300% auto repeat-x;
 }
 .detail-preview.has-preview { display: block; }
@@ -177,9 +250,9 @@ h1, h2, h3, p { margin: 0; }
 .detail-preview:active { cursor: grabbing; }
 .sheet .preview-caption { margin-top: 6px; font-size: 0.85rem; color: var(--bitportal-muted); }
 .sheet .preview-held { margin: 0 0 10px; color: var(--bitportal-muted); }
-.detail-host { margin-top: 0; font-size: 0.95rem; overflow-wrap: anywhere; }
+.detail-host { margin-top: 0; font-size: 0.95rem; overflow-wrap: anywhere; color: var(--bitportal-accent); }
 .lede { font-size: 1.1rem; }
-.verify { padding: 10px 14px; border-left: 4px solid var(--bitportal-muted); background: var(--bitportal-paper); }
+.verify { padding: 10px 14px; border-left: 2px solid var(--bitportal-muted); background: var(--bitportal-paper); }
 .verify-ok { border-color: var(--bitportal-ok); color: var(--bitportal-ok); }
 .verify-warn { border-color: var(--bitportal-warn); color: var(--bitportal-warn); background: var(--bitportal-warn-ground); }
 .provenance, .next { color: var(--bitportal-muted); font-size: 0.92rem; }
@@ -187,7 +260,7 @@ h1, h2, h3, p { margin: 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin-top: 26px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.chip { font-size: 0.85rem; padding: 2px 10px; border: 1.5px solid var(--bitportal-line); }
+.chip { font: 500 0.8rem var(--mono); padding: 3px 10px; border: 1px solid var(--bitportal-line); color: rgba(233, 243, 242, 0.86); }
 .chip-warn, .chip.warn { color: var(--bitportal-warn); border-color: currentColor; }
 .chip.ok { color: var(--bitportal-ok); border-color: currentColor; font-weight: 650; }
 .chip.ok::before { content: "✓ "; }
@@ -198,50 +271,55 @@ h1, h2, h3, p { margin: 0; }
 label { display: block; margin-top: 10px; }
 textarea {
   display: block; width: 100%; margin-top: 8px; padding: 10px 12px;
-  font: 0.9rem/1.5 "Ubuntu Sans Mono V", ui-monospace, monospace;
+  font: 0.88rem/1.5 var(--mono);
   color: var(--bitportal-ink); background: var(--bitportal-paper);
-  border: 1.5px solid var(--bitportal-ink); border-radius: 0;
+  border: 1px solid rgba(233, 243, 242, 0.4); border-radius: 0;
   max-width: 100%; resize: vertical;
 }
+textarea:focus, input:focus { border-color: var(--bitportal-accent); }
 
 /* ---------- the Airlock ---------- */
-.airlock { max-width: 720px; padding-block: clamp(24px, 6vw, 64px); }
-.checking { color: var(--bitportal-muted); }
-.card { padding: clamp(20px, 4vw, 34px); background: var(--bitportal-surface); border: 2.5px solid var(--bitportal-ink); }
-.card.blocked { border-color: var(--bitportal-bad); }
+/* The one page a visitor must be able to read without effort. The look stays out of the way of the address. */
+.airlock { max-width: 740px; padding-block: clamp(24px, 6vw, 64px); }
+.checking { color: var(--bitportal-muted); font-family: var(--mono); }
+.checking::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 10px; background: var(--bitportal-accent); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.15; } }
+.card { padding: clamp(20px, 4vw, 36px); }
+.card.blocked { border-top-color: var(--bitportal-bad); background: linear-gradient(var(--bitportal-bad), var(--bitportal-bad)) 100% 100% / 8px 8px no-repeat, var(--bitportal-surface); }
 .card h1 { font-size: 1.5rem; font-weight: 750; line-height: 1.15; margin-top: 18px; }
 .card > h1:first-child { margin-top: 0; }
 .card p { margin-top: 10px; }
 .leaving { color: var(--bitportal-muted); }
-.host { margin-top: 2px; font-size: clamp(1.7rem, 7.4vw, 3rem); font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
+.host { margin-top: 4px; font-size: clamp(1.7rem, 7.4vw, 3.1rem); font-weight: 700; line-height: 1.08; overflow-wrap: anywhere; color: var(--bitportal-ink); }
 .host .prefix { color: var(--bitportal-muted); font-weight: 400; }
 .full-url { font-size: 0.82rem; color: var(--bitportal-muted); overflow-wrap: anywhere; }
 .muted { color: var(--bitportal-muted); }
 .issues { margin: 16px 0 0; padding: 12px 16px 12px 34px; }
-.issues.warn { background: var(--bitportal-warn-ground); color: var(--bitportal-warn); }
-.issues.bad { color: var(--bitportal-bad); border: 1.5px solid currentColor; }
-fieldset.identity { margin: 22px 0 0; padding: 8px 16px 14px; border: 1.5px solid var(--bitportal-line); }
+.issues.warn { background: var(--bitportal-warn-ground); color: var(--bitportal-warn); border-left: 2px solid var(--bitportal-warn); }
+.issues.bad { color: var(--bitportal-bad); border: 1px solid currentColor; }
+fieldset.identity { margin: 22px 0 0; padding: 8px 16px 14px; border: 1px solid var(--bitportal-line); }
 fieldset.identity legend { font-weight: 650; padding-inline: 6px; }
 fieldset.identity label { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
 fieldset.identity input { width: 20px; height: 20px; accent-color: var(--bitportal-accent); }
 .remember { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; }
 .remember input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--bitportal-accent); flex: none; }
 .remember label { margin: 0; }
-.fast { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 8px 8px 8px 16px; border: 1.5px solid var(--bitportal-ok); color: var(--bitportal-ok); font-weight: 650; }
+.fast { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 8px 8px 8px 16px; border: 1px solid var(--bitportal-ok); color: var(--bitportal-ok); font-weight: 650; }
 [hidden] { display: none !important; }
 
-/* ---------- the walk-in lobby ---------- */
-body.walk { overflow: hidden; background: #0a0b0d; color: #f2f3f6; }
+/* ---------- the room ---------- */
+body.walk { overflow: hidden; background: var(--bitportal-paper); }
 .walk #stage { position: fixed; inset: 0; }
 .walk #stage canvas { display: block; touch-action: none; }
 .walk.leaving #stage { opacity: 0.35; transition: opacity 0.3s; }
 
 /* ---------- pages with forms (identity, announce a world) ---------- */
-.page { max-width: 760px; padding-block: clamp(28px, 6vw, 64px); }
-.page > h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); font-weight: 750; line-height: 1.05; letter-spacing: -0.02em; }
-.page .lede { margin-top: 12px; max-width: 60ch; }
-.step { margin-top: clamp(32px, 6vw, 52px); }
-.step h2, .notes h2 { font-size: 1.3rem; font-weight: 700; }
+.page { max-width: 780px; padding-block: clamp(28px, 6vw, 72px); }
+.page > h1 { font-size: clamp(2rem, 5.4vw, 3.2rem); font-weight: 780; font-stretch: 118%; line-height: 1; letter-spacing: -0.025em; }
+.page .lede { margin-top: 14px; max-width: 60ch; color: rgba(233, 243, 242, 0.86); }
+.step { margin-top: clamp(32px, 6vw, 52px); padding-top: 22px; border-top: 1px solid var(--bitportal-line); position: relative; }
+.step::before { content: ""; position: absolute; left: 0; top: -5px; width: 9px; height: 9px; background: var(--bitportal-accent); }
+.step h2, .notes h2 { font-size: 1.3rem; font-weight: 720; }
 .step p, .notes ul { margin-top: 8px; }
 .next-steps { margin-top: 20px; display: grid; gap: 10px; justify-items: start; }
 /* BitLogin draws its own card, so this wrapper adds no frame of its own. */
@@ -249,15 +327,16 @@ body.walk { overflow: hidden; background: #0a0b0d; color: #f2f3f6; }
 .notes { margin-top: 44px; }
 .notes ul { padding-left: 1.2em; color: var(--bitportal-muted); max-width: 64ch; }
 .notes li + li { margin-top: 6px; }
-.identity-box { margin-top: 12px; border: 1.5px solid var(--bitportal-line); padding: 10px 16px; }
+.notes li::marker { color: var(--bitportal-accent); content: "▪  "; }
+.identity-box { margin-top: 12px; border: 1px solid var(--bitportal-line); padding: 10px 16px; background: var(--bitportal-surface); }
 .identity-box summary { cursor: pointer; font-weight: 650; min-height: 32px; }
 .identity-box[open] summary { margin-bottom: 14px; }
 input[type="text"], input[type="url"], select {
   display: block; width: 100%; min-height: 48px; margin-top: 6px; padding: 8px 12px;
   font: inherit; color: var(--bitportal-ink); background: var(--bitportal-surface);
-  border: 1.5px solid var(--bitportal-ink); border-radius: 0;
+  border: 1px solid rgba(233, 243, 242, 0.4); border-radius: 0;
 }
-input[type="url"], #f-id { font-family: "Ubuntu Sans Mono V", ui-monospace, monospace; font-size: 0.95rem; }
+input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 .step label { margin-top: 18px; font-weight: 600; }
 .step label .small { font-weight: 400; }
 .step .check { font-weight: 400; margin-top: 10px; }
@@ -265,20 +344,33 @@ input[type="url"], #f-id { font-family: "Ubuntu Sans Mono V", ui-monospace, mono
 .row input { flex: 1 1 260px; margin-top: 6px; }
 .row .button { margin-top: 6px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 18px; }
-.step fieldset { margin: 20px 0 0; padding: 6px 16px 14px; border: 1.5px solid var(--bitportal-line); }
+.step fieldset { margin: 20px 0 0; padding: 6px 16px 14px; border: 1px solid var(--bitportal-line); }
 .step fieldset legend { font-weight: 600; padding-inline: 6px; }
 .result { display: grid; gap: 8px; margin-top: 14px; }
 .result .verify { margin: 0; }
 .code {
   margin: 12px 0; padding: 14px; overflow: auto; max-height: 340px;
-  font: 0.82rem/1.5 "Ubuntu Sans Mono V", ui-monospace, monospace;
-  background: var(--bitportal-paper); border: 1.5px solid var(--bitportal-line); white-space: pre;
+  font: 0.82rem/1.5 var(--mono);
+  background: var(--bitportal-paper); border: 1px solid var(--bitportal-line); border-left: 2px solid var(--bitportal-accent); white-space: pre;
 }
 .page .issues.bad { margin-bottom: 14px; }
 
 /* The jump list: saved places, one press away (spec §14.1). */
 .jump-list { list-style: none; margin: 18px 0; padding: 0; display: grid; gap: 8px; }
-.jump-row { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--bitportal-line, rgba(255,255,255,.16)); border-radius: 10px; color: inherit; text-decoration: none; }
-.jump-row:hover, .jump-row:focus-visible { border-color: var(--bitportal-accent, #3fc584); }
-.jump-title { font-weight: 600; }
-.jump-host { font-size: 0.83rem; }
+.jump-row { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--bitportal-line); border-left: 2px solid rgba(var(--bitportal-accent-rgb), 0.5); color: inherit; text-decoration: none; background: var(--bitportal-paper); }
+.jump-row:hover, .jump-row:focus-visible { border-color: var(--bitportal-accent); color: inherit; }
+.jump-title { font-weight: 620; }
+.jump-host { font-size: 0.84rem; color: var(--bitportal-muted); }
+
+/* ---------- a phone ---------- */
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .top-row { min-height: 60px; gap: 8px; }
+  .wordmark { font-size: 1.08rem; gap: 9px; }
+  .top-actions { flex-wrap: nowrap; gap: 6px; }
+  .top-actions .button { min-height: 38px; padding: 6px 9px; font-size: 0.84rem; --px: 4px; }
+  .hero-stage { margin-top: 60px; }
+  .doors { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 34px 18px; }
+  .actions { justify-content: stretch; }
+  .actions .button { flex: 1 1 auto; }
+}

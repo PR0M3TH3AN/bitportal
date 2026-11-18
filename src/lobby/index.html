@@ -9,17 +9,39 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/bitportal.css">
 </head>
-<body>
+<body class="home">
 <header class="top">
   <div class="frame top-row">
     <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
-    <span class="top-actions"><a class="button primary" href="/walk/">Walk in</a><button id="jump-button" class="button" type="button">Your doors</button><a id="account-link" class="button" href="/account/">Sign in</a><button id="open-settings" class="button" type="button">Settings</button></span>
+    <span class="top-actions"><button id="jump-button" class="button" type="button">Your doors</button><a id="account-link" class="button" href="/account/">Sign in</a><button id="open-settings" class="button" type="button">Settings</button></span>
   </div>
 </header>
+<section class="hero" aria-labelledby="intro">
+  <!-- The room, live: the same doors as the list below, so it is hidden from assistive technology. Drawn by the page's script; without it the grid behind stays. -->
+  <div id="hero-stage" class="hero-stage" aria-hidden="true"></div>
+  <div class="frame hero-copy">
+    <h1 id="intro" class="intro">Doors to VR worlds that nobody owns but their makers.</h1>
+    <p class="hero-lede">BitPortal is a lobby for the open spatial web. That is its room, live. Every door in it shows where it really leads before you go through.</p>
+    <p class="hero-actions"><a id="walk-in" class="button primary" href="/walk/">Walk in</a><a class="button" href="#shelves">See the doors</a></p>
+    <dl class="readout">
+      <div><dt>Doors open</dt><dd id="r-doors">6</dd></div>
+      <div><dt>List signed by</dt><dd id="r-curator">a named key</dd></div>
+      <div><dt>To look around</dt><dd>No account</dd></div>
+    </dl>
+  </div>
+  <p id="hero-target" class="hero-target" aria-hidden="true"></p>
+</section>
 <main class="frame">
-  <h1 class="intro">Doors to VR worlds that nobody owns but their makers.</h1>
   <p id="source" class="source"></p>
   <div id="shelves"></div>
+  <section class="how" aria-labelledby="how-title">
+    <h2 id="how-title">A door can't lie about where it goes.</h2>
+    <ol>
+      <li><h3>Pick a door</h3><p>Each one shows the address it leads to, in full, and whether that site vouches for it.</p></li>
+      <li><h3>Stop at the Airlock</h3><p>A plain page shows the real address once more and waits for you. Nothing about your trip is sent to a server.</p></li>
+      <li><h3>Arrive</h3><p>The world opens on its own site. Its way back brings you here, facing the door you left through.</p></li>
+    </ol>
+  </section>
 </main>
 <footer class="frame foot">
   <p id="foot-note" class="small"></p>
