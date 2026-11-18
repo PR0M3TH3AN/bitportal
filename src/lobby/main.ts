@@ -642,6 +642,7 @@ function openSettings(): void {
     el("label", { for: "set-home" }, "A world of your own to start in"),
     homeAddress,
     el("p", { class: "small" }, "It has to be shown to be yours: announced with your key, at a site that admits your key, and saying it can be a home. Your doors, your sign-in and your computers stay here in BitPortal, and your home has a way to them. If your home ever doesn't answer, you start in BitPortal's room."),
+    el("p", { class: "small" }, "Two things make a world yours. Its site admits the key you sign in with: in a world from the NSWP template, that is your npub as \"owner\" in world.json. And you announce its address with that key, on ", el("a", { href: "/publish/" }, "Announce a world"), "."),
     homeChecks,
     el("div", { class: "actions" }, homeCheck, homeUse),
     el("div", { class: "actions" }, cancel, save),
