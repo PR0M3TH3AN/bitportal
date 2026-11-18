@@ -18,7 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome } from "nswp-sdk/home";
-import { attachRoomControls, createPortalWindow, createPresence, panoramaTexture, textSprite } from "nswp-sdk/three";
+import { attachRoomControls, createPortalWindow, createPresence, createWorldMenu, menuItemFor, panoramaTexture, textSprite, turnVisitor, type WorldMenu } from "nswp-sdk/three";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
@@ -63,6 +63,12 @@ interface TestHooks {
   toggle(id: string): void;
   /** Put the last removed door back. */
   putBack(): void;
+  /** Step towards a spot on the floor, as pointing at it and selecting would. */
+  step(x: number, z: number): void;
+  /** Where the visitor's head is over the floor: [x, z] in metres. */
+  where(): [number, number];
+  /** The menu shown in a headset. */
+  menu?: WorldMenu;
   /** Point the mouse ray at a door, as if hovering it. */
   aim(id: string | null): void;
   visit(id: string): void;
@@ -87,6 +93,7 @@ const RADIUS = 8;
 /** The angle between neighbouring doors: twelve fit on a wall. */
 const SLOT = THREE.MathUtils.degToRad(13);
 const PLATE_W = 1.7;
+const USED_A_DOOR = "bitportal:used-a-door";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 function hostParts(url: string): { prefix: string; domain: string } {
@@ -254,19 +261,19 @@ function plateTexture(entry: Entry, device: Device): THREE.CanvasTexture {
 
 /** A small button on the wall: a word on a dark pill. */
 function pillTexture(text: string): THREE.CanvasTexture {
-  return canvasTexture(512, 192, (g) => {
+  return canvasTexture(640, 192, (g) => {
     g.fillStyle = "rgba(16,18,23,0.94)";
     g.strokeStyle = INK;
     g.lineWidth = 6;
     g.beginPath();
-    g.roundRect(6, 6, 500, 180, 90);
+    g.roundRect(6, 6, 628, 180, 90);
     g.fill();
     g.stroke();
     g.fillStyle = INK;
     g.font = '600 84px "Ubuntu Sans V", system-ui, sans-serif';
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(text, 256, 100, 440);
+    g.fillText(text, 320, 100, 560);
   });
 }
 
@@ -323,7 +330,7 @@ async function start(): Promise<void> {
   const params = new URLSearchParams(location.search);
   const emulate = params.get("xr") === "emulate";
   const state: Record<string, unknown> = { ready: false, xr: "idle", emulate, leaving: null, hovered: null };
-  const hooks: TestHooks = { state, doors: () => [], aim: () => {}, visit: () => {}, toggle: () => {}, putBack: () => {}, roomInfo: () => [], teleport: () => {} };
+  const hooks: TestHooks = { state, doors: () => [], aim: () => {}, visit: () => {}, toggle: () => {}, putBack: () => {}, step: () => {}, where: () => [0, 0], roomInfo: () => [], teleport: () => {} };
   window.__bitportalTest = hooks;
   if (emulate) {
     // Test aid for people without a headset: pretend to be a Meta Quest 3.
@@ -391,9 +398,10 @@ async function start(): Promise<void> {
   const doorGeo = new THREE.PlaneGeometry(DOOR_W, DOOR_H);
   const plateH = PLATE_W * (420 / 1024);
   const plateGeo = new THREE.PlaneGeometry(PLATE_W, plateH);
-  // As large as the row above a door allows: it has to be hit from across the room with a hand-held ray.
-  const pillGeo = new THREE.PlaneGeometry(0.72, 0.27);
-  const widePillGeo = new THREE.PlaneGeometry(0.9, 0.34);
+  // A button has to be hit from across the room with a hand-held ray, so it is
+  // a metre wide, and stands clear of the door it belongs to.
+  const pillGeo = new THREE.PlaneGeometry(1.0, 0.3);
+  const widePillGeo = pillGeo;
   const sillGeo = new THREE.BoxGeometry(DOOR_W + 0.1, 0.06, 0.24);
   // Your wall is ahead of where a visitor first stands; the suggested wall is behind.
   const walls: Record<Wall, THREE.Group> = { yours: new THREE.Group(), suggested: new THREE.Group() };
@@ -458,10 +466,10 @@ async function start(): Promise<void> {
     const sill = new THREE.Mesh(sillGeo, new THREE.MeshBasicMaterial({ color: 0xf2f3f6 }));
     sill.position.set(0, 0.03, 0.05);
     const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device), transparent: true }));
-    plate.position.set(0, DOOR_H + 0.32 + plateH / 2, 0);
-    // The door's one button, in the row between the arch and the plate.
+    plate.position.set(0, DOOR_H + 0.52 + plateH / 2, 0);
+    // The door's one button, in a row of its own between the arch and the plate.
     const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save);
-    button.position.set(DOOR_W / 2 - 0.36, DOOR_H + 0.16, 0.03);
+    button.position.set(0, DOOR_H + 0.28, 0.03);
     // Large and well in front of the door: readable from the middle of the room.
     const info = textSprite(infoLines(entry, why, vr), INK, 2.6);
     info.position.set(0, 1.25, 2.2);
@@ -634,6 +642,11 @@ async function start(): Promise<void> {
     leaving = true;
     state.leaving = door.entry.id;
     rememberLeft({ id: door.entry.id, from: "walk" });
+    try {
+      localStorage.setItem(USED_A_DOOR, "1"); // they know how a door works now
+    } catch {
+      /* storage unavailable */
+    }
     document.body.classList.add("leaving");
     const w = door.entry.world;
     const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: door.entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
@@ -645,13 +658,94 @@ async function start(): Promise<void> {
     location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }));
   };
 
-  // ------------------------------------------------------ pointing
   const raycaster = new THREE.Raycaster();
+  raycaster.camera = camera; // rays from a hand don't set it, and signs need it
+
+  // ------------------------------------------------- the menu in a headset
+  // In a headset the page's buttons are out of reach, so the same ones go in a
+  // small menu in the room. Turn around matters most: the other wall is behind
+  // the visitor, and someone seated can't turn to face it.
+  const menu = createWorldMenu({
+    textColor: INK,
+    note: () => $("room-status").textContent ?? "",
+    items: [
+      { label: "Turn around", act: () => turnVisitor(rig, camera, 180) },
+      menuItemFor($<HTMLButtonElement>("room-button")),
+      menuItemFor($<HTMLButtonElement>("mic-button")),
+      { label: "See the list", act: () => location.assign("/") },
+      { label: "Leave VR", act: () => renderer.xr.getSession()?.end() },
+    ],
+  });
+  scene.add(menu.group);
+  hooks.menu = menu;
+
+  // ------------------------------------------------------ pointing
+  // Stepping: point at the floor and select to stand there. It is how someone
+  // with no keyboard gets close enough to a door to read it. A step is a jump,
+  // never a slide, and it stops short of the walls: going through a door is
+  // done by choosing the door.
+  const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const spot = new THREE.Vector3();
+  const headNow = new THREE.Vector3();
+  const floorSpot = (): THREE.Vector3 | null => {
+    if (!raycaster.ray.intersectPlane(floorPlane, spot)) return null;
+    camera.getWorldPosition(headNow);
+    let dx = spot.x - headNow.x;
+    let dz = spot.z - headNow.z;
+    const far = Math.hypot(dx, dz);
+    if (far < 0.3) return null;
+    if (far > 5) {
+      dx *= 5 / far;
+      dz *= 5 / far;
+    }
+    spot.set(headNow.x + dx, 0, headNow.z + dz);
+    const out = Math.hypot(spot.x, spot.z);
+    const limit = RADIUS - 1.2;
+    if (out > limit) spot.multiplyScalar(limit / out);
+    return spot;
+  };
+  const stepToFloor = () => {
+    const to = floorSpot();
+    if (!to) return;
+    camera.getWorldPosition(headNow);
+    rig.position.x += to.x - headNow.x;
+    rig.position.z += to.z - headNow.z;
+    state.steps = ((state.steps as number | undefined) ?? 0) + 1;
+  };
+  const reticle = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.28, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false }));
+  reticle.rotation.x = -Math.PI / 2;
+  reticle.renderOrder = 5;
+  reticle.visible = false;
+  scene.add(reticle);
+  hooks.step = (x, z) => {
+    camera.getWorldPosition(raycaster.ray.origin);
+    raycaster.ray.direction.set(x, 0, z).sub(raycaster.ray.origin).normalize();
+    if (!under()) stepToFloor();
+  };
+  hooks.where = () => {
+    camera.getWorldPosition(headNow);
+    return [Math.round(headNow.x * 100) / 100, Math.round(headNow.z * 100) / 100];
+  };
+
   const ndc = new THREE.Vector2(2, 2); // off-screen until the mouse moves
   /** What the current ray points at: a door, or one of the room's buttons. */
   const under = (): Clickable | null => {
-    const hit = raycaster.intersectObjects(clickables.map((c) => c.mesh), false)[0];
-    return hit ? (clickables.find((c) => c.mesh === hit.object) ?? null) : null;
+    const button = menu.pick(raycaster);
+    if (button) return { mesh: button, say: "", act: () => menu.press(button) };
+    for (const hit of raycaster.intersectObjects(clickables.map((c) => c.mesh), false)) {
+      const found = clickables.find((c) => c.mesh === hit.object);
+      if (!found) continue;
+      // A door is its arch, not the rectangle the arch is drawn on. The corners
+      // above the curve are empty wall, and they are right beside the door's button.
+      if (found.door?.view === found.mesh && hit.uv) {
+        const x = (hit.uv.x - 0.5) * DOOR_W;
+        const y = hit.uv.y * DOOR_H;
+        const spring = DOOR_H - DOOR_W / 2;
+        if (y > spring && Math.hypot(x, y - spring) > DOOR_W / 2) continue;
+      }
+      return found;
+    }
+    return null;
   };
   const tmp = new THREE.Matrix4();
   const aimFrom = (source: THREE.Object3D): Clickable | null => {
@@ -674,7 +768,9 @@ async function start(): Promise<void> {
     if (moved > 6 || renderer.xr.isPresenting || e.target !== renderer.domElement) return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    under()?.act();
+    const thing = under();
+    if (thing) thing.act();
+    else stepToFloor();
   });
   window.addEventListener("pointermove", (e) => {
     if (dragging && !renderer.xr.isPresenting) {
@@ -694,7 +790,11 @@ async function start(): Promise<void> {
         new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }),
       ),
     );
-    c.addEventListener("select", () => aimFrom(c)?.act());
+    c.addEventListener("select", () => {
+      const thing = aimFrom(c); // leaves the ray pointing where this hand points
+      if (thing) thing.act();
+      else stepToFloor();
+    });
     rig.add(c);
     controllers.push(c);
   }
@@ -842,6 +942,21 @@ async function start(): Promise<void> {
     state.facing = "suggested";
   }
 
+  // A first visit gets one line on how a door is used, low in front of the
+  // visitor, below the doors. It is never shown again once they have used one.
+  let knowsDoors = true;
+  try {
+    knowsDoors = localStorage.getItem(USED_A_DOOR) === "1";
+  } catch {
+    /* storage unavailable: say nothing */
+  }
+  if (!knowsDoors) {
+    const hint = textSprite("Point at a door and select it: click, tap, pull the trigger or pinch.\nYou'll see where it leads before you go.", INK, 2.6);
+    hint.position.set(-Math.sin(rig.rotation.y) * 3.4, 0.62, -Math.cos(rig.rotation.y) * 3.4);
+    scene.add(hint);
+    state.hint = true;
+  }
+
   // --------------------------------------------------------- frames
   const doorLine = $("door-line");
 
@@ -855,8 +970,18 @@ async function start(): Promise<void> {
     lastT = t;
     presence.update(dt);
     let pointed: Clickable | null = null;
+    reticle.visible = false;
     if (renderer.xr.isPresenting) {
-      for (const c of controllers) pointed = (c.visible ? aimFrom(c) : null) ?? pointed;
+      for (const c of controllers) {
+        if (!c.visible) continue;
+        const thing = aimFrom(c);
+        pointed = thing ?? pointed;
+        const to = thing ? null : floorSpot();
+        if (to) {
+          reticle.position.set(to.x, 0.02, to.z);
+          reticle.visible = true;
+        }
+      }
       const through = walkedThrough();
       if (through) void visit(through);
     } else {
@@ -899,6 +1024,8 @@ async function start(): Promise<void> {
       toast.material.dispose();
       toast = null;
     }
+    menu.aim(pointed && !clickables.includes(pointed) ? pointed.mesh : null);
+    menu.update(dt, camera, renderer.xr.isPresenting);
     furniture.update(t, dt);
     renderer.render(scene, camera);
   });
