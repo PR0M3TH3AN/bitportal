@@ -18,7 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addRoomControls, addViewControls, createConsole, createFigure, createPortalWindow, createPresence, panoramaTexture, textSprite, type Figure, type XrConsole } from "nswp-sdk/three";
+import { addCameraControls, addRoomControls, addViewControls, createConsole, createFigure, createPortalWindow, createPresence, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -81,6 +81,8 @@ interface TestHooks {
   camera?: unknown;
   /** The console shown in a headset. */
   console?: XrConsole;
+  /** What the visitor's hands are doing in a headset, as the input layer reads them. */
+  input?: () => unknown;
   /** Point the mouse ray at a door, as if hovering it. */
   aim(id: string | null): void;
   visit(id: string): void;
@@ -724,12 +726,32 @@ async function start(): Promise<void> {
     );
     c.addEventListener("select", () => {
       const thing = aimFrom(c); // leaves the ray pointing where this hand points
-      if (thing) thing.act();
-      else stepToFloor();
+      if (thing) {
+        xrInput.pulse(i, 0.5, 30);
+        thing.act();
+      } else stepToFloor();
     });
     rig.add(c);
     controllers.push(c);
   }
+  // Sticks and buttons, for visitors who have them, from any make of controller (the NSWP kit's input
+  // layer). They add to pointing and selecting and never replace it: a stick's step is the same step.
+  // Nothing in this room is picked up, and nothing about a controller is fetched from anywhere.
+  const xrInput: XrInput = createXrInput({
+    renderer,
+    scene,
+    rig,
+    camera,
+    controls,
+    accent: ACCENT,
+    // Walking smoothly reaches as far as walking with the keys does: into a doorway, which is how one is chosen on foot.
+    canStand: (x, z) => Math.hypot(x, z) <= RADIUS + 1.5,
+    stepFrom: (i) => {
+      if (!aimFrom(controllers[i]!)) stepToFloor();
+    },
+    onMenu: () => xrConsole.setOpen(!xrConsole.open),
+  });
+  hooks.input = () => xrInput.info();
 
   // ------------------------------------------------------- presence
   let refreshRoom = () => {};
@@ -896,6 +918,7 @@ async function start(): Promise<void> {
     const t = (performance.now() - started) / 1000;
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
+    xrInput.update(dt);
     presence.update(dt);
     let pointed: Clickable | null = null;
     reticle.visible = false;
