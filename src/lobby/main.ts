@@ -324,7 +324,7 @@ function unlistedSection(): HTMLElement | null {
         id: "unlisted",
         title: "Waiting to be listed",
         blurb: "Only you see these, because you run this copy. They announced themselves, and none is on your list. Open one to look at it, and list it if it belongs here. A world for adults can't be listed.",
-        items: unlisted.map((e) => ({ id: e.id, why: AUDIENCE_WORDS[audienceOf(e.world)] })),
+        items: unlisted.map((e) => ({ id: e.id, why: "" })),
       },
       true,
     );
@@ -477,6 +477,7 @@ function draw(): void {
   const only = catalog.lists.length === 1 ? catalog.lists[0]! : null;
   if (only) source.replaceChildren(lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: only.pubkey }, shortKey(only.pubkey)), ". ");
   else if (catalog.lists.length === 0) source.replaceChildren(lead, "You aren't showing any list. ");
+  else if (catalog.policy.allowListOnly && !showingUnlisted()) source.replaceChildren(lead, "These doors are the ones this copy's operator has listed. ");
   else source.replaceChildren(lead, `These doors come from the ${catalog.lists.length} lists you've chosen. `);
   const about = el("button", { class: "link", type: "button", id: "open-lists" }, catalog.policy.allowListOnly ? "The lists here" : "Your lists");
   about.addEventListener("click", () => openLists());
@@ -647,7 +648,7 @@ function openDetail(entry: Entry, why: string): void {
 
   const onLists = catalog.lists.filter((l) => l.ids.includes(entry.id)).map((l) => l.title);
   const announced = `Announced by the key ${shortKey(entry.event.pubkey)}.`;
-  const where = onLists.length ? ` On ${onLists.length === 1 ? "the list" : "the lists"} ${onLists.join(", ")}.` : isSaved(saved, entry.id) ? "" : " It is on none of your lists.";
+  const where = onLists.length ? ` On ${onLists.length === 1 ? "the list" : "the lists"} ${onLists.join(", ")}.` : isSaved(saved, entry.id) ? "" : catalog.policy.allowListOnly ? " It is not on this site's list." : " It is on none of your lists.";
   const provenance = el("p", { class: "provenance" }, entry.curatorListing ? `This description was written by the curator of ${entry.listedBy ?? "a list you follow"}. The site hasn't announced itself.` : announced + where);
 
   // Opening a door is the visitor's interest in this world: from here its own
