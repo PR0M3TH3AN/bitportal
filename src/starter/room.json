@@ -1,7 +1,7 @@
 {
   "d": "room",
   "title": "Your room",
-  "room": {"template": "open", "color": "#101217", "accent": "#3fc584"},
+  "room": {"template": "open", "color": "#101217", "accent": "#3df2a0"},
   "items": [
     {"type": "bench", "position": [-3.4, 0, 0], "rotation": 90},
     {"type": "bench", "position": [3.4, 0, 0], "rotation": -90},

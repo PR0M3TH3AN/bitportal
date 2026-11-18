@@ -13,8 +13,12 @@ Test build: <https://bitportal.vercel.app/>
 
 ## What it does
 
-- **The lobby** (`/`) shows worlds as doors, on shelves ranked by
+- **The lobby** (`/`) opens with the room itself, live, at the top of the
+  page: the same doors on the same grid, and choosing one there opens it.
+  Below, the same worlds are a list of doors on shelves ranked by
   [BitFeed](https://feed.bitblocks.network/). Each world says why it is there.
+  The live room is skipped where it can't be drawn or the visitor has asked
+  to save data; the page is whole without it.
 - **Your doors.** Save a door and it is yours: first on the list, on your own
   wall in the room, and one press away from any page under **Your doors**.
   Saved places are kept on this device and are never published.

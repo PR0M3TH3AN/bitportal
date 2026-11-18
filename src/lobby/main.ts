@@ -52,6 +52,8 @@ let signedIn: { pubkey: string; name?: string } | null = null;
 /** Your doors: kept on this device, drawn first, and left out of the shelves (spec §14.1). */
 let saved: SavedPlace[] = loadSaved();
 const OPTOUT_KEY = "bitportal:optout";
+/** The room at the top of the page, once it is up. The page is whole without it. */
+let hero: import("./hero.js").Hero | null = null;
 
 function optedOut(): Set<string> {
   try {
@@ -279,6 +281,9 @@ function draw(): void {
   about.addEventListener("click", openSettings);
   source.append(about);
 
+  $("r-doors").textContent = String(catalog.entries.length);
+  $("r-curator").textContent = shortKey(c.pubkey);
+
   const main = $("shelves");
   main.replaceChildren();
   if (notice) main.append(el("p", { class: "notice", role: "status" }, notice));
@@ -442,7 +447,7 @@ function openSettings(): void {
   unlistedBox.checked = settings.showUnlisted;
   const relays = el("textarea", { id: "set-relays", rows: "4", spellcheck: "false" });
   relays.value = settings.relays.join("\n");
-  const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3fc584"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
+  const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3df2a0"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
   roomBox.value = storedRoomText();
   const roomNote = el("p", { class: "small", role: "status" });
   const save = el("button", { class: "button primary", type: "submit" }, "Save settings");
@@ -518,13 +523,55 @@ async function refresh(): Promise<void> {
   const before = JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), catalog.unlisted.map((e) => e.id)]);
   catalog = buildCatalog(bundle, [...known.events, ...extra]);
   const after = JSON.stringify([catalog.entries.map((e) => [e.id, e.event.id]), catalog.unlisted.map((e) => e.id)]);
-  if (before !== after) await rank();
+  if (before !== after) {
+    await rank();
+    hero?.refresh();
+  }
   draw();
+}
+
+/**
+ * Put the room at the top of the page. It draws the doors the list already
+ * has, from the same bundled data and the same mirror, so it contacts nothing
+ * the list doesn't (spec §5.7). It is skipped for anyone who has asked their
+ * browser to save data.
+ */
+async function startHero(): Promise<void> {
+  if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+  const stage = $("hero-stage");
+  const target = $("hero-target");
+  try {
+    const { mountHero } = await import("./hero.js");
+    hero = mountHero(stage, {
+      accent: "#3df2a0",
+      entries: () => {
+        const hidden = optedOut();
+        return catalog.entries.filter((e) => !hidden.has(e.id));
+      },
+      chosen: (e) => e.rank !== null || isSaved(saved, e.id),
+      onPoint: (e) => {
+        if (!e) return void (target.textContent = "");
+        const host = hostParts(e.world.url);
+        target.textContent = `${e.world.title}, at ${host.prefix}${host.domain}`;
+      },
+      onOpen: (e) => openDetail(e, ""),
+    });
+    if (hero) stage.classList.add("live");
+  } catch {
+    /* the drawn grid stays */
+  }
 }
 
 async function start(): Promise<void> {
   $("open-settings").addEventListener("click", openSettings);
   attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "list" });
+  // Walking in from the page moves into the room first, then goes there.
+  $<HTMLAnchorElement>("walk-in").addEventListener("click", (e) => {
+    if (!hero || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    void hero.enter().then(() => location.assign("/walk/"));
+  });
+  void startHero();
   draw(); // the bundled set, at once
   // Who is signed in, read from BitLogin's small public record (no widget loaded here).
   void readSignedIn().then((who) => {
