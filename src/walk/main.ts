@@ -18,7 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addRoomControls, addViewControls, createConsole, createCrossing, createFigure, createPortalWindow, createPresence, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -58,6 +58,8 @@ interface Clickable {
   mesh: THREE.Mesh | null;
   /** What it is called on the console, when it is there. */
   onConsole?: string;
+  /** What it is called on one of the visitor's panels, when it is there. */
+  onPanel?: string;
   /** What selecting it does, in words, for the line under the room. */
   say: string;
   act(): void;
@@ -85,6 +87,12 @@ interface TestHooks {
   input?: () => unknown;
   /** Where a crossing stands: arriving in the chamber, its doors opening, leaving, or none. */
   crossing?: () => string;
+  /** The visitor's panels. */
+  panels?: Panels;
+  /** Where a named thing is on the page, in pixels. */
+  screenOf?: (name: string) => number[] | null;
+  /** Where a named thing is, in the space a headset's controllers are placed in. */
+  thing?: (name: string) => { world: number[]; local: number[] } | null;
   /** Point the mouse ray at a door, as if hovering it. */
   aim(id: string | null): void;
   visit(id: string): void;
@@ -666,16 +674,33 @@ async function start(): Promise<void> {
     raycaster.ray.direction.set(x, 0, z).sub(raycaster.ray.origin).normalize();
     if (!under()) stepToFloor();
   };
+  hooks.screenOf = (name) => {
+    const object = scene.getObjectByName(name);
+    if (!object) return null;
+    const at = object.getWorldPosition(new THREE.Vector3()).project(camera);
+    return at.z > 1 ? null : [Math.round(((at.x + 1) / 2) * innerWidth), Math.round(((1 - at.y) / 2) * innerHeight)];
+  };
+  hooks.thing = (name) => {
+    const object = scene.getObjectByName(name);
+    if (!object) return null;
+    const world = object.getWorldPosition(new THREE.Vector3());
+    return { world: world.toArray().map((n) => Math.round(n * 1000) / 1000), local: rig.worldToLocal(world.clone()).toArray() };
+  };
   hooks.where = () => {
     camera.getWorldPosition(headNow);
     return [Math.round(headNow.x * 100) / 100, Math.round(headNow.z * 100) / 100];
   };
 
   const ndc = new THREE.Vector2(2, 2); // off-screen until the mouse moves
+  // The visitor's own panels: notes, pictures and video they hang in their room. Set up further down.
+  let panels: Panels | null = null;
   /** What the current ray points at: a door, or one of the room's buttons. */
   const under = (): Clickable | null => {
     const button = xrConsole.pick(raycaster);
     if (button) return { mesh: null, onConsole: button, say: "", act: () => xrConsole.press(button) };
+    // A panel hangs in front of whatever is behind it, a door included.
+    const onPanel = panels?.pick(raycaster);
+    if (onPanel) return { mesh: null, onPanel, say: "", act: () => panels!.press(onPanel) };
     for (const hit of raycaster.intersectObjects(clickables.flatMap((c) => (c.mesh ? [c.mesh] : [])), false)) {
       const found = clickables.find((c) => c.mesh === hit.object);
       if (!found) continue;
@@ -702,13 +727,24 @@ async function start(): Promise<void> {
   let dragging = false;
   let lastX = 0;
   let moved = 0;
+  // A panel taken by its bar is dragged; anything else, and the drag turns the view.
+  let panelDrag = false;
   renderer.domElement.addEventListener("pointerdown", (e) => {
-    dragging = true;
+    ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    panelDrag = !renderer.xr.isPresenting && !!panels?.pointer("down", raycaster);
+    dragging = !panelDrag;
     lastX = e.clientX;
     moved = 0;
   });
   window.addEventListener("pointerup", (e) => {
     dragging = false;
+    if (panelDrag) {
+      panelDrag = false;
+      raycaster.setFromCamera(ndc, camera);
+      panels?.pointer("up", raycaster);
+      return;
+    }
     if (moved > 6 || renderer.xr.isPresenting || e.target !== renderer.domElement) return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
@@ -723,6 +759,10 @@ async function start(): Promise<void> {
       lastX = e.clientX;
     }
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    if (panelDrag) {
+      raycaster.setFromCamera(ndc, camera);
+      panels?.pointer("move", raycaster);
+    }
   });
 
   const controllers: THREE.Group[] = [];
@@ -762,6 +802,11 @@ async function start(): Promise<void> {
     onMenu: () => xrConsole.setOpen(!xrConsole.open),
   });
   hooks.input = () => xrInput.info();
+  // The visitor's panels are theirs: kept in this browser, with any file they hang, and sent nowhere. They are
+  // not published, and nobody else in the room sees them.
+  panels = createPanels({ scene, camera, accent: ACCENT, textColor: INK, input: xrInput, keep: "bitportal:panels" });
+  addPanelControls(controls, panels, { presenting: () => renderer.xr.isPresenting, kept: true });
+  hooks.panels = panels;
 
   // ------------------------------------------------------- presence
   let refreshRoom = () => {};
@@ -946,6 +991,7 @@ async function start(): Promise<void> {
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
     xrInput.update(dt);
+    panels!.update(t, dt);
     crossing.update(t, dt);
     presence.update(dt);
     let pointed: Clickable | null = null;
@@ -1001,6 +1047,7 @@ async function start(): Promise<void> {
       toast = null;
     }
     xrConsole.aim(pointed?.onConsole ?? null);
+    panels!.aim(pointed?.onPanel ?? null);
     xrConsole.update(dt, camera, renderer.xr.isPresenting);
     furniture.update(t, dt);
     mirror?.tick(t);

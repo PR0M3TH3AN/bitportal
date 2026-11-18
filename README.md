@@ -71,6 +71,11 @@ lobby or a world would need to agree with it on is in
   your mark with a frame round it. It is a choice on every trip, never the
   first one offered, and the Airlock never asks you to sign in: if your
   session can't sign just then, it says so and you choose again.
+- **Panels.** In the room you can hang notes, pictures and video from your
+  own device in frames, move them by the bar, resize them and put them away.
+  They are kept in this browser, with any file you hang, and are there next
+  visit. Nothing is uploaded, and nobody else in the room sees them. A panel
+  can't show another website: no page is allowed to draw one.
 - **Crossing costs as little as a browser allows.** Leaving the room, its
   walls rise round you into a small chamber; you arrive in a world standing
   in the same chamber, and its doors open when the world is ready. From a
