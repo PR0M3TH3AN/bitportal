@@ -1,6 +1,7 @@
 {
-  "note": "Vercel project IDs for BitPortal's test deployment (not secrets). Deploy with `npm run build && npm run deploy`.",
+  "note": "Vercel project IDs for BitPortal (not secrets). Deploy with `npm run build && npm run deploy`.",
   "orgId": "team_qGxY9CogxTxoSQFaQ31VEDKp",
   "projectId": "prj_uuNlt09NbWXIAm9iIrEtMf3pHXiL",
-  "url": "https://bitportal.vercel.app/"
+  "url": "https://portal.bitblocks.network/",
+  "was": "bitportal.vercel.app"
 }
