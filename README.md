@@ -71,6 +71,14 @@ lobby or a world would need to agree with it on is in
   your mark with a frame round it. It is a choice on every trip, never the
   first one offered, and the Airlock never asks you to sign in: if your
   session can't sign just then, it says so and you choose again.
+- **Crossing costs as little as a browser allows.** Leaving the room, its
+  walls rise round you into a small chamber; you arrive in a world standing
+  in the same chamber, and its doors open when the world is ready. From a
+  headset that is three actions at most: the door, the Airlock's Continue,
+  and Enter VR at the other end, which is offered first, large and alone. Two
+  to a world you've told the Airlock to skip for. Coming home works the same
+  way
+  ([NSWP-02](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/02-doors.md)).
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
   the verification result, comfort notes, and a button to continue. Worlds
   send visitors back here when they take a portal.

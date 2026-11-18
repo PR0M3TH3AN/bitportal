@@ -5,7 +5,9 @@ import {
   addViewControls,
   canRecord,
   capturePanorama,
+  createChamber,
   createConsole,
+  createCrossing,
   createFigure,
   createPortalWindow,
   createPresence,
@@ -18,7 +20,7 @@ import {
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-3FS6LLKN.js";
+} from "./shared-RRBZZ5SS.js";
 import "./shared-KPLONJID.js";
 export {
   DEFAULT_COMFORT,
@@ -27,7 +29,9 @@ export {
   addViewControls,
   canRecord,
   capturePanorama,
+  createChamber,
   createConsole,
+  createCrossing,
   createFigure,
   createPortalWindow,
   createPresence,
