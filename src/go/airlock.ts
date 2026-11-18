@@ -32,7 +32,7 @@ import { placeKind } from "../shared/plate.js";
 import { readLeft } from "../shared/saved.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
 import { issuePass } from "../shared/pass.js";
-import { checkedSigner, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
+import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -268,7 +268,12 @@ async function render(): Promise<void> {
   const mine = a.nswpAware ? loadLook() : null;
   // Who is signed in, from BitLogin's public record: no widget, nothing asked. `?signer=test` stands in a throwaway.
   const testKey = new URLSearchParams(location.search).get("signer") === "test" ? crypto.getRandomValues(new Uint8Array(32)) : null;
-  const who = !a.nswpAware ? null : testKey ? { pubkey: getPublicKey(testKey), name: "Test visitor" } : await readSignedIn();
+  const who: { pubkey: string; name?: string } | null = !a.nswpAware ? null : testKey ? { pubkey: getPublicKey(testKey), name: "Test visitor" } : await readSignedIn();
+  // The name people will see is the one in the visitor's own profile, when their sign-in doesn't carry one.
+  if (who && !who.name) {
+    const name = await profileName(who.pubkey, loadSettings().relays);
+    if (name) who.name = name;
+  }
   // By name is for a site that has proved it is who it says: a pass names the visitor's key for good.
   const canName = !!who && verified;
   const remembered = goMode();

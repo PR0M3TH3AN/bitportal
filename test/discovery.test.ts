@@ -243,3 +243,16 @@ describe("issuing a pass (NSWP-10)", () => {
     await expect(issuePass(signer, { origin: SITE }, { now: T, random: (b) => b.set(ALICE) })).rejects.toMatchObject({ code: "no_session_key" });
   });
 });
+
+import { nameFromProfile } from "../src/shared/session.js";
+
+describe("the name in a profile", () => {
+  it("prefers the display name, and tidies it like any name", () => {
+    expect(nameFromProfile(JSON.stringify({ name: "ada", display_name: "  Ada\nLovelace " }))).toBe("Ada Lovelace");
+    expect(nameFromProfile(JSON.stringify({ name: "ada", display_name: "  " }))).toBe("ada");
+    expect(nameFromProfile(JSON.stringify({ displayName: "Ada" }))).toBe("Ada");
+    expect(nameFromProfile(JSON.stringify({ name: 7, about: "hello" }))).toBe("");
+    expect(nameFromProfile("not json")).toBe("");
+    expect([...nameFromProfile(JSON.stringify({ name: "x".repeat(200) }))].length).toBe(48);
+  });
+});
