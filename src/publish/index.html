@@ -50,8 +50,16 @@
       <input id="f-id" name="id" type="text" maxlength="64" spellcheck="false" required>
       <label for="f-summary">One-line description</label>
       <input id="f-summary" name="summary" type="text" maxlength="200">
-      <label for="f-topics">Topics <span class="small">(a few words, separated by commas)</span></label>
-      <input id="f-topics" name="topics" type="text" maxlength="120" spellcheck="false">
+      <label for="f-topics">Hashtags <span class="small">(a few words people would look for, separated by commas)</span></label>
+      <input id="f-topics" name="topics" type="text" maxlength="120" spellcheck="false" placeholder="gallery, photography">
+      <label for="f-audience">Who it is for</label>
+      <select id="f-audience" name="audience" required>
+        <option value="">Choose one</option>
+        <option value="kids">Kids: made for children</option>
+        <option value="general">Not made for kids</option>
+        <option value="adult">Adults only (NSFW)</option>
+      </select>
+      <p class="small">This is your word about your world, and it has to be true. A site that keeps adult worlds out, as this one does, reads it. A world for adults also gets the content warning other Nostr apps understand.</p>
       <fieldset>
         <legend>How it can be viewed</legend>
         <label class="check"><input type="checkbox" name="modes" value="immersive-vr" checked> In a VR headset</label>

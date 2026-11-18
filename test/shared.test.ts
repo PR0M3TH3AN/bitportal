@@ -89,8 +89,8 @@ describe("shelves", () => {
   });
 
   it("every recipe names only providers BitPortal registers or BitFeed ships", () => {
-    const known = new Set(["bitfeed.input", "bitfeed.recency", "bitfeed.random", "bitportal.curatorOrder", "bitportal.deviceFit", "bitportal.gentle", "bitportal.fitsDevice", "bitportal.notIntense"]);
-    for (const def of shelfDefs("2026-11-17")) {
+    const known = new Set(["bitfeed.input", "bitfeed.recency", "bitfeed.random", "bitportal.curatorOrder", "bitportal.deviceFit", "bitportal.gentle", "bitportal.fitsDevice", "bitportal.notIntense", "bitportal.tastes", "bitportal.hasTopic"]);
+    for (const def of shelfDefs("2026-11-17", ["art", "quiet"])) {
       const used = [...def.recipe.sources, ...(def.recipe.filters ?? []), ...(def.recipe.scorers ?? [])].map((p) => p.provider);
       expect(used.filter((p) => !known.has(p))).toEqual([]);
       const weights = (def.recipe.scorers ?? []).reduce((sum, s) => sum + (s.weight ?? 0), 0);
@@ -164,6 +164,7 @@ describe("publishing a world", () => {
     seated: "supported",
     perf: "standalone",
     topics: "Art, #museum art",
+    audience: "general",
     status: "beta",
     rooms: true,
   };
@@ -458,5 +459,61 @@ describe("the visitor's look", () => {
   it("keeps the mark when everything else is changed by chance", () => {
     const kept = { seed: "g0123456789abcdef01234567", choices: {} };
     expect(lookOf(surprise(kept)).mark).toBe(lookOf(kept).mark);
+  });
+});
+
+describe("who a world is for, on the Announce page", () => {
+  const base = { url: "https://w.example/", id: "my-world", title: "W", summary: "", modes: ["inline-3d"], locomotion: "", intensity: "", seated: "", perf: "", topics: "", status: "live", rooms: false };
+
+  it("has to be said: nothing is announced until its maker chooses", () => {
+    expect(validateForm({ ...base, audience: "" }).map((i) => i.field)).toEqual(["audience"]);
+    expect(validateForm({ ...base, audience: "everyone" }).map((i) => i.field)).toEqual(["audience"]);
+    for (const audience of ["kids", "general", "adult"]) expect(validateForm({ ...base, audience })).toEqual([]);
+  });
+
+  it("goes into the announcement, with the warning other apps read when it is for adults", () => {
+    const tags = (audience: string) => formToEvent({ ...base, audience }, 1).tags.filter((t) => t[0] === "audience" || t[0] === "content-warning");
+    expect(tags("kids")).toEqual([["audience", "kids"]]);
+    expect(tags("general")).toEqual([["audience", "general"]]);
+    expect(tags("adult")).toEqual([["content-warning", "adult"], ["audience", "adult"]]);
+  });
+});
+
+describe("ranking by the hashtags a visitor likes", () => {
+  const now = 1_800_000_000;
+  const world = (id: string, rank: number, topics: string[], taste: number, tasteWhy = ""): Candidate => ({ id, createdAt: now - 86400, rank, total: 8, fits: true, intensity: "low", topics, taste, tasteWhy });
+  // The lists put them in this order. The visitor likes #art and has said less #game.
+  const cands = [
+    world("arcade", 0, ["game"], 0),
+    world("grove", 1, ["quiet"], 0.5),
+    world("tour", 2, ["help"], 0.5),
+    world("gallery", 3, ["art"], 1, "it has #art, which you asked for more of"),
+    ...["a", "b", "c", "d"].map((n, i) => world(n, 4 + i, [], 0.5)),
+  ];
+
+  it("lifts a world with a hashtag they like, sinks one they don't, and says why", async () => {
+    const start = (await rankShelves(cands, now, "2026-11-17", ["art"]))[0]!;
+    const order = start.items.map((i) => i.id);
+    // First on the lists, and now behind what it stood ahead of. It sinks; it isn't removed.
+    expect(order.indexOf("gallery")).toBeLessThan(order.indexOf("arcade"));
+    expect(order.indexOf("grove")).toBeLessThan(order.indexOf("arcade"));
+    expect(order).toContain("arcade");
+    expect(start.items.find((i) => i.id === "gallery")!.why).toMatch(/#art, which you asked for more of/);
+    expect(start.items.find((i) => i.id === "arcade")!.why).not.toMatch(/asked for/);
+  });
+
+  it("gives each hashtag they like a shelf of its own, with only the worlds that carry it", async () => {
+    const shelves = await rankShelves(cands, now, "2026-11-17", ["art", "nothing-has-this"]);
+    const art = shelves.find((s) => s.id === "tag-art")!;
+    expect(art.title).toBe("#art");
+    expect(art.items.map((i) => i.id)).toEqual(["gallery"]);
+    expect(shelves.find((s) => s.id === "tag-nothing-has-this")!.items).toEqual([]);
+  });
+
+  it("changes nothing for a visitor with no tastes", async () => {
+    const plain = cands.map((c) => ({ ...c, taste: 0.5, tasteWhy: "" }));
+    const withNone = (await rankShelves(plain, now, "2026-11-17"))[0]!.items.map((i) => i.id);
+    expect(withNone[0]).toBe("arcade"); // the lists' own first choice
+    expect((await rankShelves(plain, now, "2026-11-17")).some((s) => s.id.startsWith("tag-"))).toBe(false);
   });
 });

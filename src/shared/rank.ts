@@ -32,6 +32,22 @@ registry
       return { score: i === "low" ? 1 : i === "medium" ? 0.5 : 0.3, reason: "it is gentle on comfort" };
     },
   })
+  .registerScorer("bitportal.tastes", {
+    id: "bitportal.tastes",
+    async score(c) {
+      const m = meta(c);
+      const score = m.taste ?? 0.5;
+      // Only a hashtag they like is a reason worth giving. No view, and "less of this", say nothing.
+      return { score, reason: score > 0.5 ? (m.tasteWhy ?? "") : "" };
+    },
+  })
+  .registerFilter("bitportal.hasTopic", {
+    id: "bitportal.hasTopic",
+    async evaluate(c, _context, params) {
+      const topic = typeof params.topic === "string" ? params.topic : "";
+      return !!topic && (meta(c).topics ?? []).includes(topic);
+    },
+  })
   .registerFilter("bitportal.fitsDevice", {
     id: "bitportal.fitsDevice",
     async evaluate(c) {
@@ -47,10 +63,10 @@ registry
 
 const feed = createBitFeed({ registry });
 
-export async function rankShelves(candidates: Candidate[], now: number, daySeed: string): Promise<Shelf[]> {
+export async function rankShelves(candidates: Candidate[], now: number, daySeed: string, liked: readonly string[] = []): Promise<Shelf[]> {
   const input = candidates.map((c) => ({ id: c.id, value: c.id, metadata: c as unknown as Record<string, unknown> }));
   const shelves: Shelf[] = [];
-  for (const def of shelfDefs(daySeed)) {
+  for (const def of shelfDefs(daySeed, liked)) {
     const result = await feed.compose({ recipe: def.recipe, candidates: input, context: { now }, ...(def.limit ? { limit: def.limit } : {}) });
     shelves.push({
       id: def.id,

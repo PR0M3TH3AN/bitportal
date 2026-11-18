@@ -13,6 +13,12 @@ export interface Candidate {
   total: number;
   fits: boolean;
   intensity: string | null;
+  /** Its hashtags, as its maker gave them. */
+  topics?: string[];
+  /** How well those suit the visitor: 1 for one they like, 0 for one they don't, 0.5 otherwise (src/shared/tastes.ts). */
+  taste?: number;
+  /** A few words on why, when it is because of a hashtag they like. */
+  tasteWhy?: string;
 }
 
 export interface ShelfItem {
@@ -38,20 +44,40 @@ export interface ShelfDef {
 
 const DAY = 86400;
 
-export function shelfDefs(daySeed: string): ShelfDef[] {
+/** A shelf for one hashtag the visitor likes: every world that carries it, newest first. */
+function tagShelf(tag: string): ShelfDef {
+  return {
+    id: `tag-${tag}`,
+    title: `#${tag}`,
+    blurb: "A hashtag you asked for more of.",
+    recipe: {
+      spec: "bitfeed/1",
+      name: `#${tag}`,
+      sources: [{ provider: "bitfeed.input", lane: "all" }],
+      filters: [{ provider: "bitportal.hasTopic", params: { topic: tag } }],
+      scorers: [{ provider: "bitfeed.recency", weight: 1, params: { field: "createdAt", halfLife: 30 * DAY } }],
+    },
+  };
+}
+
+/** The shelves, in order. `liked` adds one for each of the first few hashtags the visitor likes. */
+export function shelfDefs(daySeed: string, liked: readonly string[] = []): ShelfDef[] {
   return [
     {
       id: "start",
       title: "Good places to start",
-      blurb: "Your lists' order, nudged towards what suits this device.",
+      blurb: "Your lists' order, nudged towards what suits this device and the hashtags you like.",
       recipe: {
         spec: "bitfeed/1",
         name: "Good places to start",
         seed: daySeed,
         sources: [{ provider: "bitfeed.input", lane: "all" }],
         scorers: [
-          { provider: "bitportal.curatorOrder", weight: 0.65 },
-          { provider: "bitportal.deviceFit", weight: 0.25 },
+          { provider: "bitportal.curatorOrder", weight: 0.35 },
+          // What the visitor asked for more and less of. With no tastes every world scores the same here, and the
+          // order is the lists' and the device's, as it was.
+          { provider: "bitportal.tastes", weight: 0.4 },
+          { provider: "bitportal.deviceFit", weight: 0.15 },
           { provider: "bitfeed.random", weight: 0.1 },
         ],
       },
@@ -83,6 +109,7 @@ export function shelfDefs(daySeed: string): ShelfDef[] {
         scorers: [{ provider: "bitfeed.recency", weight: 1, params: { field: "createdAt", halfLife: 30 * DAY } }],
       },
     },
+    ...liked.slice(0, 3).map(tagShelf),
   ];
 }
 

@@ -19,7 +19,7 @@ export function placeKind(world: Pick<World, "modes">): string {
   return world.modes.includes("2d") ? "Web page" : "";
 }
 
-export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning">, fit: { ok: boolean; reason: string }, verified: boolean): Mark[] {
+export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience">>, fit: { ok: boolean; reason: string }, verified: boolean): Mark[] {
   const marks: Mark[] = [];
   const kind = placeKind(world);
   if (kind) marks.push({ text: kind, tone: "plain" });
@@ -30,5 +30,8 @@ export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarn
   else if (intensity === "low") marks.push({ text: "Gentle", tone: "plain" });
   else if (intensity === "medium") marks.push({ text: "Moderate", tone: "plain" });
   if (world.contentWarning !== undefined) marks.push({ text: "Content warning", tone: "warn" });
+  // Who its maker says it is for, where that changes anything for the person looking.
+  if (world.audience === "kids") marks.push({ text: "For kids", tone: "ok" });
+  else if (world.audience === "adult") marks.push({ text: "Adults only", tone: "warn" });
   return marks;
 }

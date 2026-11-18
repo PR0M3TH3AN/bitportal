@@ -1,0 +1,44 @@
+/**
+ * What this copy of BitPortal will and won't show: the operator's policy
+ * (NSWP spec §15, "instance policy").
+ *
+ * BitPortal is a client anyone can host, and each copy answers to whoever
+ * hosts it. This file is that person's settings. It decides what the pages
+ * on this site list and link to. It decides nothing about where a visitor
+ * may go: they can type any address into their browser.
+ *
+ * Everything here is disclosed to visitors, on the page, in plain words.
+ */
+export interface InstancePolicy {
+  /**
+   * The keys of whoever runs this copy, as hex. A list of worlds one of
+   * them signs, named `allowList`, is this site's allow list. The key that
+   * signed the list BitPortal ships with counts as one of them.
+   */
+  operators: readonly string[];
+  /** The name (`d`) of the operators' list of allowed worlds. */
+  allowList: string;
+  /**
+   * Show only worlds on the operators' lists. Lists a visitor follows, and
+   * the shelf of worlds nobody listed, are then not shown here at all.
+   */
+  allowListOnly: boolean;
+  /**
+   * Whether worlds that are for adults may be shown or gone to from here.
+   * False: they are left out everywhere, and the Airlock won't send anyone
+   * to one. A world is taken as adult when it says so, and when it carries
+   * a content warning without saying who it is for.
+   */
+  allowAdult: boolean;
+}
+
+export const INSTANCE: InstancePolicy = {
+  // npub15jnttpymeytm80hatjqcvhhqhzrhx6gxp8pq0wn93rhnu8s9h9dsha32lx
+  operators: ["a4a6b5849bc917b3befd5c81865ee0b88773690609c207ba6588ef3e1e05b95b"],
+  allowList: "bitportal",
+  allowListOnly: true,
+  allowAdult: false,
+};
+
+/** A policy with nothing switched on: every world, every list. What BitPortal did before it had one, and what tests of other things use. */
+export const OPEN_POLICY: InstancePolicy = { operators: [], allowList: "bitportal", allowListOnly: false, allowAdult: true };

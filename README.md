@@ -200,10 +200,61 @@ After re-signing, publish each new event with the NSWP repo's CLI:
 node ../Nostr-Spatial-Web-Protocol--NSWP-/packages/cli/dist/nswp.mjs publish <event.json>
 ```
 
+## What this copy shows, and who decides
+
+Whoever hosts a copy of BitPortal answers for what it shows. Their answers are
+in one file, `src/shared/instance.ts`, and they bind every visitor of that
+copy:
+
+| Setting | The copy at bitblocks.network | Means |
+|---|---|---|
+| `operators` | one key | Whose lists count as this copy's own |
+| `allowList` | `bitportal` | The name (`d`) of the operator's list: an ordinary NIP-51 list, kind 30004 |
+| `allowListOnly` | `true` | Show a world only when the operator's list or the starter set has it. No lists a visitor follows, no worlds nobody has listed |
+| `allowAdult` | `false` | Never show a world that is for adults, and never send anyone to one |
+
+A world says who it is for with `audience` on its announcement: `kids`,
+`general` or `adult`
+([NSWP-01](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/01-worlds.md)).
+A world with a content warning and no audience is taken as adult. That is the
+maker's word and a maker can lie, which is why the list comes first: on a
+strict copy a world nobody listed isn't shown whatever it says about itself,
+and a listed world that says it is for adults is dropped all the same.
+
+The same answer holds in the lobby, the room, saved doors and the Airlock. The
+Airlock still shows the address of a world it won't send anyone to: this is
+what the site does, not a wall around the visitor. The lobby says in plain
+words what the copy shows and how many worlds it is holding back.
+
+**The operator, signed in with their key,** sees a shelf of worlds waiting to
+be listed, and each world's page has "List on this site" or "Take off this
+site's list". Either signs a new version of the one list and publishes it to
+the relays. A world for adults can't be listed. Nobody else sees any of this.
+
+**Hosting your own copy:** put your own key in `operators` and choose your own
+answers. `OPEN_POLICY` in the same file is the copy with no host's list and
+nothing held back, which is how BitPortal behaved before.
+
+Not built: a list of what a host refuses (a strict copy has no use for one),
+a kids-only setting, and BitGate, which will let each visitor tighten what
+they see and never loosen what the host decided.
+
+## Hashtags
+
+A world's topics are its hashtags. Press one on a world's page, or in "Find a
+world", to see every world here that carries it. "More #tag" and "Less #tag"
+tell the ranking what the visitor likes: worlds with a liked hashtag move up
+and say so, the first three liked hashtags get a shelf each, and a disliked
+one moves its worlds down without hiding them. Settings lists them and can
+forget any. What a visitor likes is kept in this browser
+(`bitportal:hashtags`) and sent nowhere.
+
 ## How a world gets a door
 
-Nobody has to ask. A world that announces itself is on the shelf of announced
-worlds for any visitor who opens it, and anyone can publish a list
+On the copy at bitblocks.network, a world gets a door when the operator lists
+it (see "What this copy shows" above). On an open copy nobody has to ask: a
+world that announces itself is on the shelf of announced worlds for any
+visitor who opens it. Either way anyone can publish a list
 ([NSWP-08](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/08-lists.md)).
 
 To be on BitPortal's own list, a publisher opens a request with the form at
@@ -289,7 +340,8 @@ npm run build && npm run deploy
 Going by name in BitPortal's own room (it works in worlds), profile pages,
 a feed, messages and notifications, shelves from the people you follow
 (it waits for names and profiles), making a list from inside BitPortal, search
-beyond what the page already holds, trust labels (BitGate) and paid entry
+beyond what the page already holds, hashtags in the room (they are in the
+lobby), trust labels (BitGate) and paid entry
 (BitUnlock). Rooms are a first cut:
 guests only, no moderation. See the
 NSWP spec's roadmap (§20).

@@ -2,7 +2,12 @@
 import { describe, expect, it } from "vitest";
 import { buildListEvent, buildWorldEvent, encodeNaddr, finalizeEvent, getPublicKey, type NostrEvent } from "@nswp/core";
 import bundle from "../src/starter/starter-set.json";
-import { buildCatalog, UNLISTED_LIMITS, type StarterBundle } from "../src/shared/catalog.js";
+import { buildCatalog as buildWithPolicy, UNLISTED_LIMITS, type CatalogOptions, type StarterBundle } from "../src/shared/catalog.js";
+import { OPEN_POLICY } from "../src/shared/instance.js";
+
+// These are about finding worlds where a copy of BitPortal lets everything be found. What this site's own policy
+// shows and withholds is in policy.test.ts.
+const buildCatalog = (b: StarterBundle, events: unknown[] = [], opts: CatalogOptions = {}) => buildWithPolicy(b, events, { policy: OPEN_POLICY, ...opts });
 import { commonTopics, matches, matchesQuery } from "../src/shared/find.js";
 import { follow, FOLLOW_LIMIT, followedAuthors, KEPT_WORLDS, parseFollowed, readList, readListAddress, refreshFollowed, unfollow } from "../src/shared/lists.js";
 
