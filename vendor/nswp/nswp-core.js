@@ -5970,7 +5970,13 @@ var BRIDGE_LIMITS = {
   /** The largest frame either side sends or accepts, in bytes. */
   frameBytes: 65536,
   nameChars: 80,
-  whyChars: 200
+  whyChars: 200,
+  /** Speech is sent as 16-bit samples, one channel, at this many a second. */
+  speechRate: 16e3,
+  /** The longest anyone may speak in one go, in seconds. */
+  speechSeconds: 90,
+  /** The most text one go may come back as. */
+  speechChars: 2e3
 };
 function bridgeTopic(bridge) {
   return bytesToHex(sha256(utf8ToBytes(`nswp/bridge/1
@@ -6098,12 +6104,32 @@ function parseBridgeControl(text) {
   if (o.t === "ready") {
     if (typeof o.name !== "string") return null;
     const name = [...o.name.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ").replace(/\s+/g, " ").trim()].slice(0, BRIDGE_LIMITS.nameChars).join("");
-    return { t: "ready", name };
+    return { t: "ready", name, speech: o.speech === true };
   }
   if (o.t === "exit") {
     const code = whole(o.code, -1, 255);
     return code === null ? null : { t: "exit", code };
   }
+  return null;
+}
+function cleanSpeechText(text) {
+  const cleaned = text.normalize("NFC").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ").replace(/\s+/g, " ").trim();
+  return [...cleaned].slice(0, BRIDGE_LIMITS.speechChars).join("");
+}
+function parseSpeechControl(text) {
+  if (text.length > BRIDGE_LIMITS.speechChars * 8) return null;
+  let o;
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    o = parsed;
+  } catch {
+    return null;
+  }
+  if (o.t === "begin") return { t: "begin", lang: typeof o.lang === "string" && /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/.test(o.lang) ? o.lang : "en" };
+  if (o.t === "end" || o.t === "cancel") return { t: o.t };
+  if (o.t === "text") return typeof o.text === "string" ? { t: "text", text: cleanSpeechText(o.text) } : null;
+  if (o.t === "sorry") return { t: "sorry", why: typeof o.why === "string" ? cleanSpeechText(o.why).slice(0, BRIDGE_LIMITS.whyChars) : "" };
   return null;
 }
 
@@ -6168,6 +6194,7 @@ export {
   claimsKey,
   cleanName,
   cleanSize,
+  cleanSpeechText,
   coordinate,
   decodeArrival,
   decodeLook,
@@ -6215,6 +6242,7 @@ export {
   parseListEvent,
   parseManifest,
   parsePortal,
+  parseSpeechControl,
   parseWorldEvent,
   portalTarget,
   previewOnWorldOrigin,

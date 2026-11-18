@@ -1,8 +1,9 @@
 import {
+  computerVoice,
   forApplication,
   keyBytes,
   pasteBytes
-} from "./shared-HRTYAXW7.js";
+} from "./shared-HAGFA4R3.js";
 import {
   __commonJS,
   __toESM
@@ -5071,6 +5072,7 @@ import {
   isPublicKey,
   openBridgeSignal,
   parseBridgeControl,
+  parseSpeechControl,
   ROOM_SIGNAL_KIND,
   verifyEvent
 } from "@nswp/core";
@@ -5083,6 +5085,8 @@ function openBridgeLink(o) {
   let over = false;
   let pc = null;
   let channel = null;
+  let ears = null;
+  let heard = null;
   let size = cleanSize(o.cols, o.rows) ?? { cols: 80, rows: 24 };
   const sockets = [];
   const timers = [];
@@ -5132,7 +5136,7 @@ function openBridgeLink(o) {
       if (over) return;
       if (typeof e.data === "string") {
         const said = parseBridgeControl(e.data);
-        if (said?.t === "ready") set({ at: "open", name: said.name });
+        if (said?.t === "ready") set({ at: "open", name: said.name, speech: said.speech });
         if (said?.t === "exit") end({ at: "ended", code: said.code });
         return;
       }
@@ -5217,6 +5221,46 @@ function openBridgeLink(o) {
       size = next;
       if (!over && channel?.readyState === "open") channel.send(JSON.stringify({ t: "size", ...size }));
     },
+    transcribe(pcm, lang) {
+      return new Promise((resolve, reject) => {
+        if (over || status.at !== "open" || !pc) return reject(new Error("The terminal isn't open."));
+        if (!status.speech) return reject(new Error("Your computer isn't set to listen. Start its Bridge with --voice."));
+        if (heard) return reject(new Error("Still working out the last thing you said."));
+        const seconds = pcm.length / BRIDGE_LIMITS.speechRate;
+        if (seconds > BRIDGE_LIMITS.speechSeconds) return reject(new Error(`That was more than ${BRIDGE_LIMITS.speechSeconds} seconds. Say it in shorter pieces.`));
+        if (!ears) {
+          ears = pc.createDataChannel("speech", { ordered: true });
+          ears.onmessage = (e) => {
+            const said = typeof e.data === "string" ? parseSpeechControl(e.data) : null;
+            const waiting = heard;
+            if (!waiting || said?.t !== "text" && said?.t !== "sorry") return;
+            heard = null;
+            clearTimeout(waiting.timer);
+            if (said.t === "text") waiting.resolve(said.text);
+            else waiting.reject(new Error(said.why || "Your computer couldn't make that out."));
+          };
+          ears.onclose = () => {
+            ears = null;
+            const waiting = heard;
+            heard = null;
+            if (waiting) {
+              clearTimeout(waiting.timer);
+              waiting.reject(new Error("Your computer stopped listening."));
+            }
+          };
+        }
+        const ch = ears;
+        heard = { resolve, reject, timer: setTimeout(() => heard && (heard.reject(new Error("Your computer took too long over that.")), heard = null), 12e4) };
+        const go = () => {
+          ch.send(JSON.stringify({ t: "begin", lang }));
+          const bytes = new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+          for (let i = 0; i < bytes.length; i += 16384) ch.send(bytes.slice(i, i + 16384));
+          ch.send(JSON.stringify({ t: "end" }));
+        };
+        if (ch.readyState === "open") go();
+        else ch.addEventListener("open", go, { once: true });
+      });
+    },
     close: () => end({ at: "closed", why: "You closed it." })
   };
 }
@@ -5245,6 +5289,7 @@ var STRIP = 116;
 var H = SCREEN + PAD * 2 + STRIP;
 var FACE = `ui-monospace, "DejaVu Sans Mono", "Liberation Mono", Menlo, Consolas, monospace`;
 var BUTTONS = [
+  { id: "speak", label: "Speak", w: 170 },
   { id: "back", label: "\u25B2", w: 124 },
   { id: "forward", label: "\u25BC", w: 124 },
   { id: "larger", label: "A+", w: 124 },
@@ -5386,13 +5431,14 @@ function openTerminalPanel(o) {
     g.fillStyle = focused || said && Date.now() < said.until ? accent : QUIET;
     g.fillText(hint, PAD, H - STRIP / 2 + 1, hintWidth);
     for (const b of placed) {
-      const usable = b.id === "larger" ? cell.cols > TERMINAL_COLUMNS[0] : b.id === "smaller" ? cell.cols < TERMINAL_COLUMNS.at(-1) : live();
+      const usable = b.id === "larger" ? cell.cols > TERMINAL_COLUMNS[0] : b.id === "smaller" ? cell.cols < TERMINAL_COLUMNS.at(-1) : b.id === "speak" ? status.at === "open" && !!voice.source : live();
+      const lit = b.id === "speak" && voice.state !== "idle";
       g.globalAlpha = usable ? 1 : 0.35;
-      g.fillStyle = "#1c2836";
+      g.fillStyle = lit ? accent : "#1c2836";
       g.beginPath();
       g.roundRect(b.x, b.y, b.w, b.h, 10);
       g.fill();
-      g.fillStyle = FG;
+      g.fillStyle = lit ? BG : FG;
       g.textAlign = "center";
       g.font = "bold 40px system-ui, sans-serif";
       g.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 2);
@@ -5407,10 +5453,20 @@ function openTerminalPanel(o) {
     setTimeout(draw, 16);
   };
   const say = (text2) => {
-    said = { text: text2, until: Date.now() + 2500 };
+    said = text2 ? { text: text2, until: Date.now() + (text2.length > 60 ? 6e3 : 2500) } : null;
     redraw();
-    setTimeout(redraw, 2600);
+    setTimeout(redraw, (text2.length > 60 ? 6e3 : 2500) + 100);
   };
+  const voice = o.panels.keyboard.voice;
+  let unlisten = null;
+  const unheard = voice.subscribe(() => redraw());
+  const speak = () => voice.toggle({
+    onText(words) {
+      term.scrollToBottom();
+      link?.send(pasteBytes(`${words} `, term.modes.bracketedPasteMode));
+    },
+    say
+  });
   const send = (bytes) => {
     term.scrollToBottom();
     link?.send(forApplication(bytes, term.modes.applicationCursorKeysMode));
@@ -5499,6 +5555,7 @@ function openTerminalPanel(o) {
   const pressButton = (id) => {
     if (id === "larger") return step(-1);
     if (id === "smaller") return step(1);
+    if (id === "speak") return status.at === "open" ? speak() : void 0;
     if (!live()) return;
     if (id === "back") return scroll(-(cell.rows - 2));
     if (id === "forward") return scroll(cell.rows - 2);
@@ -5519,6 +5576,11 @@ function openTerminalPanel(o) {
       onStatus(next) {
         status = next;
         if (next.at !== "open") blur();
+        unlisten?.();
+        unlisten = null;
+        const through = link;
+        if (next.at === "open" && next.speech && through) unlisten = voice.add(computerVoice(where, (pcm, lang) => through.transcribe(pcm, lang)));
+        if (next.at !== "open") voice.cancel();
         o.onStatus?.(next);
         redraw();
       }
@@ -5545,6 +5607,8 @@ function openTerminalPanel(o) {
         if (closed) return;
         blur();
         closed = true;
+        unlisten?.();
+        unheard();
         link?.close();
         removeEventListener("pagehide", onLeave);
         term.dispose();
@@ -5552,7 +5616,7 @@ function openTerminalPanel(o) {
         o.onClosed?.();
       }
     },
-    { place: { width: 1.3 }, keep: false }
+    { place: { width: 1.3, ...o.place }, keep: false, ...o.look ? { look: o.look } : {}, ...o.pin ? { pin: o.pin } : {} }
   );
   draw();
   connect();
