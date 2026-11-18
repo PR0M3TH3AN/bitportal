@@ -6040,6 +6040,114 @@ function verifyBridgeGrant(event, opts) {
   if (opts.seen?.has(event.id)) c.error("grant_reused", "id", "The grant has been used before.");
   return c.result({ id: event.id, session: session ?? "", expiresAt });
 }
+var BRIDGE_WORLD_GRANT_KIND = 27303;
+var WORLD_GRANT_LIMITS = {
+  defaultTtlSec: 8 * 3600,
+  maxTtlSec: 12 * 3600
+};
+function cleanWorldOrigin(input) {
+  if (typeof input !== "string" || input.length > 300) return null;
+  let u;
+  try {
+    u = new URL(input.trim());
+  } catch {
+    return null;
+  }
+  if (u.username || u.password) return null;
+  const own = u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "[::1]";
+  if (u.protocol !== "https:" && !(u.protocol === "http:" && own)) return null;
+  return u.origin;
+}
+function buildWorldGrant(input) {
+  const world = cleanWorldOrigin(input.world);
+  if (!world) throw new Error("not a world's address: https, or this computer itself");
+  const created = input.createdAt ?? nowSeconds();
+  const ttl = Math.max(300, Math.min(input.ttlSec ?? WORLD_GRANT_LIMITS.defaultTtlSec, WORLD_GRANT_LIMITS.maxTtlSec));
+  return {
+    kind: BRIDGE_WORLD_GRANT_KIND,
+    created_at: created,
+    tags: [
+      ["nswp:session", input.session],
+      ["nswp:bridge", input.bridge],
+      ["nswp:world", world],
+      ["expiration", String(created + ttl)]
+    ],
+    content: ""
+  };
+}
+function verifyWorldGrant(event, opts) {
+  const c = new Collector();
+  if (!verifyEvent(event)) {
+    c.error("bad_signature", "", "The grant is not a validly signed Nostr event.");
+    return c.result(null);
+  }
+  const now = opts.now ?? nowSeconds();
+  if (event.kind !== BRIDGE_WORLD_GRANT_KIND) c.error("wrong_kind", "kind", `Expected kind ${BRIDGE_WORLD_GRANT_KIND}.`);
+  if (event.pubkey !== opts.owner) c.error("not_owner", "pubkey", "The grant was not signed by this Bridge's owner.");
+  const one = (name) => {
+    const t = getTags(event, name);
+    if (t.length !== 1 || !t[0][1]) {
+      c.error(t.length > 1 ? "duplicate_tag" : "missing_tag", `tags.${name}`, `Exactly one "${name}" tag is required.`);
+      return void 0;
+    }
+    return t[0][1];
+  };
+  const session = one("nswp:session");
+  const bridge = one("nswp:bridge");
+  const world = one("nswp:world");
+  const exp = one("expiration");
+  if (getTags(event, "nswp:origin").length) c.error("names_a_site", "tags.nswp:origin", "A world grant names its world with nswp:world, and carries no nswp:origin.");
+  if (bridge !== void 0 && bridge !== opts.bridge) c.error("bridge_mismatch", "tags.nswp:bridge", "The grant was made for a different Bridge.");
+  if (world !== void 0) {
+    if (cleanWorldOrigin(world) !== world) c.error("invalid_world", "tags.nswp:world", "The world must be an origin: https, or this computer itself.");
+    else if (!opts.worlds.includes(world)) c.error("world_not_allowed", "tags.nswp:world", "This Bridge was not told about that world.");
+  }
+  if (session !== void 0) {
+    if (!isHex64(session)) c.error("invalid_session", "tags.nswp:session", "The session key must be 64 lowercase hex characters.");
+    else if (session === event.pubkey || session === opts.bridge) c.error("invalid_session", "tags.nswp:session", "The session key must be a throwaway: not the owner's key, and not the Bridge's.");
+    else if (session !== opts.session) c.error("session_mismatch", "tags.nswp:session", "The grant is for a different session key.");
+  }
+  const expiresAt = exp !== void 0 ? Number(exp) : NaN;
+  if (exp !== void 0) {
+    if (!/^\d+$/.test(exp) || !Number.isSafeInteger(expiresAt)) c.error("invalid_expiration", "tags.expiration", "expiration must be an integer timestamp.");
+    else {
+      if (expiresAt <= now) c.error("grant_expired", "tags.expiration", "The grant has expired.");
+      if (expiresAt - event.created_at > WORLD_GRANT_LIMITS.maxTtlSec) c.error("ttl_too_long", "tags.expiration", `A world grant may live at most ${WORLD_GRANT_LIMITS.maxTtlSec / 3600} hours.`);
+    }
+  }
+  if (event.created_at > now + BRIDGE_LIMITS.skewSec) c.error("created_in_future", "created_at", "The grant is dated in the future.");
+  return c.result({ id: event.id, session: session ?? "", world: world ?? "", expiresAt });
+}
+var b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+var unb64url = (text) => Uint8Array.from(atob(text.replace(/-/g, "+").replace(/_/g, "/")), (ch) => ch.charCodeAt(0));
+function packBrought(b) {
+  return b64url(utf8ToBytes(JSON.stringify({ v: 1, grant: b.grant, sessionKey: b.sessionKey, bridge: b.bridge, name: b.name, relays: b.relays, immersive: b.immersive })));
+}
+function readBrought(text, origin, now = nowSeconds()) {
+  if (typeof text !== "string" || text.length > 6e3) return null;
+  let o;
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(unb64url(text)));
+    if (typeof parsed !== "object" || parsed === null) return null;
+    o = parsed;
+  } catch {
+    return null;
+  }
+  const world = cleanWorldOrigin(origin);
+  if (o.v !== 1 || !world || typeof o.sessionKey !== "string" || !/^[0-9a-f]{64}$/.test(o.sessionKey) || !isHex64(o.bridge)) return null;
+  let session;
+  try {
+    session = getPublicKey(Uint8Array.from(o.sessionKey.match(/../g).map((h) => parseInt(h, 16))));
+  } catch {
+    return null;
+  }
+  if (!verifyEvent(o.grant)) return null;
+  const checked = verifyWorldGrant(o.grant, { owner: o.grant.pubkey, bridge: o.bridge, session, worlds: [world], now });
+  if (!checked.ok) return null;
+  const relays = (Array.isArray(o.relays) ? o.relays : []).filter((r) => typeof r === "string" && r.length <= 200 && /^wss:\/\/[^\s]+$/.test(r)).slice(0, 4);
+  const name = typeof o.name === "string" ? [...o.name.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ").replace(/\s+/g, " ").trim()].slice(0, 32).join("") : "";
+  return { grant: o.grant, sessionKey: o.sessionKey, bridge: o.bridge, name: name || "your computer", relays, immersive: o.immersive === true };
+}
 function validMessage2(m) {
   if (typeof m !== "object" || m === null) return false;
   const o = m;
@@ -6139,6 +6247,7 @@ export {
   AVATAR_KIND,
   BRIDGE_GRANT_KIND,
   BRIDGE_LIMITS,
+  BRIDGE_WORLD_GRANT_KIND,
   BUILTIN_ITEMS,
   CAPABILITIES,
   COMFORT,
@@ -6171,6 +6280,7 @@ export {
   STATUSES,
   VERSION,
   WELL_KNOWN_PATH,
+  WORLD_GRANT_LIMITS,
   WORLD_KIND,
   applyChoices,
   arrivalParam,
@@ -6188,6 +6298,7 @@ export {
   buildRoomPass,
   buildSignal,
   buildWorldEvent,
+  buildWorldGrant,
   checkDestination,
   checkPictureBytes,
   checkPreviewBytes,
@@ -6195,6 +6306,7 @@ export {
   cleanName,
   cleanSize,
   cleanSpeechText,
+  cleanWorldOrigin,
   coordinate,
   decodeArrival,
   decodeLook,
@@ -6233,6 +6345,7 @@ export {
   nowSeconds,
   openBridgeSignal,
   openSignal,
+  packBrought,
   packPose,
   parseAirlockFragment,
   parseAvatarEvent,
@@ -6249,6 +6362,7 @@ export {
   publishEvent,
   queryRelays,
   randomNonce,
+  readBrought,
   roomTopic,
   serializeEvent,
   shortNpub,
@@ -6262,5 +6376,6 @@ export {
   verifyEvent,
   verifyOrigin,
   verifyRoomPass,
+  verifyWorldGrant,
   wellKnownUrl
 };

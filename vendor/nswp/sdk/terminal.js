@@ -2,8 +2,9 @@ import {
   computerVoice,
   forApplication,
   keyBytes,
-  pasteBytes
-} from "./shared-HAGFA4R3.js";
+  pasteBytes,
+  wasRefreshed
+} from "./shared-U2U7QRDK.js";
 import {
   __commonJS,
   __toESM
@@ -5111,18 +5112,21 @@ function openBridgeLink(o) {
     set(next);
   };
   void (async () => {
-    const sessionKey = crypto.getRandomValues(new Uint8Array(32));
+    const sessionKey = o.held?.sessionKey ?? crypto.getRandomValues(new Uint8Array(32));
     const session = getPublicKey(sessionKey);
     if (!isPublicKey(o.bridge)) throw new Said("That isn't a computer's key. Forget this computer and add it again from the link its Bridge prints.");
     let grant;
-    try {
-      grant = await o.sign(buildBridgeGrant({ session, bridge: o.bridge }));
-    } catch {
-      throw new Said("Your key didn't sign the request. Check you are still signed in, then press here to try again.");
+    if (o.held) grant = o.held.grant;
+    else {
+      if (!o.sign || !o.owner) throw new Said("Nothing here can ask your computer.");
+      try {
+        grant = await o.sign(buildBridgeGrant({ session, bridge: o.bridge }));
+      } catch {
+        throw new Said("Your key didn't sign the request. Check you are still signed in, then press here to try again.");
+      }
+      if (!verifyEvent(grant) || grant.pubkey !== o.owner || grant.kind !== BRIDGE_GRANT_KIND) throw new Said("Your key didn't sign the request as it was, so it wasn't sent.");
     }
-    if (!verifyEvent(grant) || grant.pubkey !== o.owner || grant.kind !== BRIDGE_GRANT_KIND) throw new Said("Your key didn't sign the request as it was, so it wasn't sent.");
     if (over) return;
-    const code = grantCode(grant.id);
     pc = new RTCPeerConnection({ iceServers: o.iceServers ?? DEFAULT_ICE });
     const ch = pc.createDataChannel("term", { ordered: true });
     channel = ch;
@@ -5161,6 +5165,7 @@ function openBridgeLink(o) {
     }
     if (over) return;
     const open = buildBridgeSignal(o.bridge, sessionKey, o.bridge, { t: "open", grant, sdp: pc.localDescription.sdp });
+    const code = grantCode(o.held ? open.id : grant.id);
     const seen = /* @__PURE__ */ new Set();
     const onNote = (raw) => {
       const note = openBridgeSignal(raw, sessionKey, o.bridge);
@@ -5263,6 +5268,99 @@ function openBridgeLink(o) {
     },
     close: () => end({ at: "closed", why: "You closed it." })
   };
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bring-terminals.ts
+import { DEFAULT_RELAYS } from "@nswp/core";
+var EACH = 4;
+var OPEN = "nswp:brought-open";
+function addBroughtTerminals(o) {
+  const { brought, controls } = o;
+  const open = [];
+  const sessionKey = Uint8Array.from(brought.sessionKey.match(/../g).map((h) => parseInt(h, 16)));
+  const expires = Number(brought.grant.tags.find((t) => t[0] === "expiration")?.[1] ?? 0);
+  const ranOut = () => Date.now() / 1e3 >= expires;
+  controls.addSection({
+    id: "computers",
+    label: "Your computer",
+    icon: "panel",
+    note: () => `You brought this from your home, because you are building this world. A terminal here is on ${brought.name}; this world's own page draws it, so keep to worlds whose code is yours. Nobody else here sees it.`
+  });
+  const note = () => {
+    try {
+      const hung = open.map((term) => ({ place: term.panel.place(), look: term.panel.look, pin: term.panel.pin, cols: term.size.cols }));
+      sessionStorage.setItem(OPEN, JSON.stringify(hung));
+    } catch {
+    }
+  };
+  addEventListener("pagehide", note);
+  const openOne = (as) => {
+    if (ranOut()) {
+      controls.say("What you brought from your home has run out. Go home and come back to bring your terminals again.");
+      return null;
+    }
+    if (open.length >= EACH) {
+      controls.say(`${EACH} terminals are open. Put one away first.`);
+      return null;
+    }
+    try {
+      const headset = o.presenting();
+      const term = openTerminalPanel({
+        panels: o.panels,
+        bridge: brought.bridge,
+        held: { grant: brought.grant, sessionKey },
+        relays: brought.relays.length ? brought.relays : DEFAULT_RELAYS,
+        name: brought.name,
+        cols: as?.cols ?? (headset ? 80 : 100),
+        ...as?.place && typeof as.place === "object" ? { place: as.place } : {},
+        ...as?.look && typeof as.look === "object" ? { look: as.look } : {},
+        ...Array.isArray(as?.pin) ? { pin: as.pin } : {},
+        ...o.accent !== void 0 ? { accent: o.accent } : {},
+        presenting: o.presenting,
+        onStatus(status) {
+          if (status.at === "asking") controls.say(`Say yes at ${brought.name}. The code is ${status.code}.`);
+        },
+        onClosed() {
+          const at = open.indexOf(term);
+          if (at >= 0) open.splice(at, 1);
+          note();
+        }
+      });
+      open.push(term);
+      note();
+      return term;
+    } catch {
+      controls.say("The terminal couldn't be opened. Put a panel away and try again.");
+      return null;
+    }
+  };
+  controls.add({ id: "brought-terminal", section: "computers", icon: "panel", label: `A terminal on ${brought.name}`, short: "Terminal", hidden: ranOut, act: () => void openOne() });
+  const restore = async () => {
+    let hung = [];
+    try {
+      const kept = JSON.parse(sessionStorage.getItem(OPEN) ?? "[]");
+      if (Array.isArray(kept)) hung = kept.filter((h) => h && typeof h.cols === "number").slice(0, EACH);
+    } catch {
+      return;
+    }
+    if (!hung.length || open.length) return;
+    for (const h of hung) {
+      const term = openOne(h);
+      if (!term) break;
+      await new Promise((done) => {
+        const started = Date.now();
+        const look = setInterval(() => {
+          const at = term.status.at;
+          if (at === "open" || at === "closed" || at === "ended" || Date.now() - started > 9e4) {
+            clearInterval(look);
+            done();
+          }
+        }, 250);
+      });
+    }
+  };
+  if (wasRefreshed()) void restore();
+  return { terminals: () => [...open], restore };
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/terminal.ts
@@ -5566,8 +5664,9 @@ function openTerminalPanel(o) {
     status = { at: "signing" };
     link = openBridgeLink({
       bridge: o.bridge,
-      owner: o.owner,
-      sign: o.sign,
+      ...o.held ? { held: o.held } : {},
+      ...o.owner ? { owner: o.owner } : {},
+      ...o.sign ? { sign: o.sign } : {},
       relays: o.relays,
       cols: cell.cols,
       rows: cell.rows,
@@ -5646,6 +5745,7 @@ function openTerminalPanel(o) {
 }
 export {
   TERMINAL_COLUMNS,
+  addBroughtTerminals,
   nearestColumns,
   openTerminalPanel
 };
