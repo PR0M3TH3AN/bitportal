@@ -598,8 +598,8 @@ function asafenumber(value, title = "") {
     throw new RangeError(prefix + "expected safe integer, got " + value);
   }
 }
-function numberToHexUnpadded(num2) {
-  const hex = abignumber(num2).toString(16);
+function numberToHexUnpadded(num3) {
+  const hex = abignumber(num3).toString(16);
   return hex.length & 1 ? "0" + hex : hex;
 }
 function hexToNumber(hex) {
@@ -752,7 +752,7 @@ function mod(a, b) {
   const result = a % b;
   return result >= _0n2 ? result : b + result;
 }
-function pow(num2, power, modulo) {
+function pow(num3, power, modulo) {
   if (modulo <= _1n2)
     throw new Error("pow: expected modulus > 1, got " + modulo);
   if (typeof power !== "bigint")
@@ -762,8 +762,8 @@ function pow(num2, power, modulo) {
   if (power === _0n2)
     return _1n2;
   if (power === _1n2)
-    return num2;
-  let d = num2 % modulo;
+    return num3;
+  let d = num3 % modulo;
   if (d < _0n2)
     d += modulo;
   if (power < POW_WINDOWED_MIN) {
@@ -990,18 +990,18 @@ function FpInvertBatch(Fp, nums, passZero = false) {
   abool(passZero, "passZero");
   const F = Fp;
   const inverted = new Array(nums.length).fill(passZero ? F.ZERO : void 0);
-  const multipliedAcc = nums.reduce((acc, num2, i) => {
-    if (F.is0(num2))
+  const multipliedAcc = nums.reduce((acc, num3, i) => {
+    if (F.is0(num3))
       return acc;
     inverted[i] = acc;
-    return F.mul(acc, num2);
+    return F.mul(acc, num3);
   }, F.ONE);
   const invertedAcc = F.inv(multipliedAcc);
-  nums.reduceRight((acc, num2, i) => {
-    if (F.is0(num2))
+  nums.reduceRight((acc, num3, i) => {
+    if (F.is0(num3))
       return acc;
     inverted[i] = F.mul(acc, inverted[i]);
-    return F.mul(acc, num2);
+    return F.mul(acc, num3);
   }, invertedAcc);
   return inverted;
 }
@@ -1067,32 +1067,32 @@ var _Field = class {
     this.BYTES = nByteLength;
     Object.freeze(this);
   }
-  create(num2) {
-    return mod(num2, this.ORDER);
+  create(num3) {
+    return mod(num3, this.ORDER);
   }
-  isValid(num2) {
-    if (typeof num2 !== "bigint")
-      throw new TypeError("invalid field element: expected bigint, got " + typeof num2);
-    return _0n2 <= num2 && num2 < this.ORDER;
+  isValid(num3) {
+    if (typeof num3 !== "bigint")
+      throw new TypeError("invalid field element: expected bigint, got " + typeof num3);
+    return _0n2 <= num3 && num3 < this.ORDER;
   }
-  is0(num2) {
-    return num2 === _0n2;
+  is0(num3) {
+    return num3 === _0n2;
   }
   // is valid and invertible
-  isValidNot0(num2) {
-    return !this.is0(num2) && this.isValid(num2);
+  isValidNot0(num3) {
+    return !this.is0(num3) && this.isValid(num3);
   }
-  isOdd(num2) {
-    return (num2 & _1n2) === _1n2;
+  isOdd(num3) {
+    return (num3 & _1n2) === _1n2;
   }
-  neg(num2) {
-    return mod(-num2, this.ORDER);
+  neg(num3) {
+    return mod(-num3, this.ORDER);
   }
   eql(lhs, rhs) {
     return lhs === rhs;
   }
-  sqr(num2) {
-    return mod(num2 * num2, this.ORDER);
+  sqr(num3) {
+    return mod(num3 * num3, this.ORDER);
   }
   add(lhs, rhs) {
     return mod(lhs + rhs, this.ORDER);
@@ -1103,15 +1103,15 @@ var _Field = class {
   mul(lhs, rhs) {
     return mod(lhs * rhs, this.ORDER);
   }
-  pow(num2, power) {
-    return pow(num2, power, this.ORDER);
+  pow(num3, power) {
+    return pow(num3, power, this.ORDER);
   }
   div(lhs, rhs) {
     return mod(lhs * invert(rhs, this.ORDER), this.ORDER);
   }
   // Same as above, but doesn't normalize
-  sqrN(num2) {
-    return num2 * num2;
+  sqrN(num3) {
+    return num3 * num3;
   }
   addN(lhs, rhs) {
     return lhs + rhs;
@@ -1122,17 +1122,17 @@ var _Field = class {
   mulN(lhs, rhs) {
     return lhs * rhs;
   }
-  inv(num2) {
-    return invert(num2, this.ORDER);
+  inv(num3) {
+    return invert(num3, this.ORDER);
   }
-  sqrt(num2) {
+  sqrt(num3) {
     let sqrt = FIELD_SQRT.get(this);
     if (!sqrt)
       FIELD_SQRT.set(this, sqrt = FpSqrt(this.ORDER));
-    return sqrt(this, num2);
+    return sqrt(this, num3);
   }
-  toBytes(num2) {
-    return this.isLE ? numberToBytesLE(num2, this.BYTES) : numberToBytesBE(num2, this.BYTES);
+  toBytes(num3) {
+    return this.isLE ? numberToBytesLE(num3, this.BYTES) : numberToBytesBE(num3, this.BYTES);
   }
   fromBytes(bytes, skipValidation = false) {
     abytes2(bytes);
@@ -1190,8 +1190,8 @@ function mapHashToField(key, fieldOrder, isLE2 = false) {
   const minLen = Math.max(getMinHashLength(fieldOrder), 16);
   if (len < minLen || len > 1024)
     throw new Error("expected " + minLen + "-1024 bytes of input, got " + len);
-  const num2 = isLE2 ? bytesToNumberLE(key) : bytesToNumberBE(key);
-  const reduced = mod(num2, fieldOrder - _1n2) + _1n2;
+  const num3 = isLE2 ? bytesToNumberLE(key) : bytesToNumberBE(key);
+  const reduced = mod(num3, fieldOrder - _1n2) + _1n2;
   return isLE2 ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
 }
 
@@ -1731,12 +1731,12 @@ var _DER = {
   // - add zero byte if exists
   // - if next byte doesn't have a flag, leading zero is not allowed (minimal encoding)
   _int: {
-    encode(num2) {
+    encode(num3) {
       const { Err: E } = _DER;
-      abignumber(num2);
-      if (num2 < _0n4)
+      abignumber(num3);
+      if (num3 < _0n4)
         throw new E("integer: negative integers are not allowed");
-      let hex = numberToHexUnpadded(num2);
+      let hex = numberToHexUnpadded(num3);
       if (Number.parseInt(hex[0], 16) & 8)
         hex = "00" + hex;
       if (hex.length & 1)
@@ -1790,7 +1790,7 @@ var DER = /* @__PURE__ */ (() => {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/abstract/weierstrass.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-var divNearest = (num2, den) => (num2 + (num2 >= 0 ? den : -den) / _2n2) / den;
+var divNearest = (num3, den) => (num3 + (num3 >= 0 ? den : -den) / _2n2) / den;
 function _splitEndoScalar(k, basis, n) {
   aInRange("scalar", k, _0n5, n);
   const [[a1, b1], [a2, b2]] = basis;
@@ -2295,8 +2295,8 @@ function ecdh(Point, ecdhOpts = {}) {
   });
   function isValidSecretKey(secretKey) {
     try {
-      const num2 = Fn.fromBytes(secretKey);
-      return Fn.isValidNot0(num2);
+      const num3 = Fn.fromBytes(secretKey);
+      return Fn.isValidNot0(num3);
     } catch (error) {
       return false;
     }
@@ -2384,10 +2384,10 @@ function ecdsa(Point, hash, ecdsaOpts = {}) {
     const HALF = CURVE_ORDER >> _1n4;
     return number > HALF;
   }
-  function validateRS(title, num2) {
-    if (!Fn.isValidNot0(num2))
+  function validateRS(title, num3) {
+    if (!Fn.isValidNot0(num3))
       throw new Error(`invalid signature ${title}: out of range 1..Point.Fn.ORDER`);
-    return num2;
+    return num3;
   }
   function assertFieldSignIsSupported() {
     if (!Fp.isOdd)
@@ -2499,17 +2499,17 @@ function ecdsa(Point, hash, ecdsaOpts = {}) {
   const bits2int = opts.bits2int === void 0 ? function bits2int_def(bytes) {
     if (bytes.length > 8192)
       throw new Error("input is too large");
-    const num2 = bytesToNumberBE(bytes);
+    const num3 = bytesToNumberBE(bytes);
     const delta = bytes.length * 8 - fnBits;
-    return delta > 0 ? num2 >> BigInt(delta) : num2;
+    return delta > 0 ? num3 >> BigInt(delta) : num3;
   } : opts.bits2int;
   const bits2int_modN = opts.bits2int_modN === void 0 ? function bits2int_modN_def(bytes) {
     return Fn.create(bits2int(bytes));
   } : opts.bits2int_modN;
   const ORDER_MASK = bitMask(fnBits);
-  function int2octets(num2) {
-    aInRange("num < 2^" + fnBits, num2, _0n5, ORDER_MASK);
-    return Fn.toBytes(num2);
+  function int2octets(num3) {
+    aInRange("num < 2^" + fnBits, num3, _0n5, ORDER_MASK);
+    return Fn.toBytes(num3);
   }
   function validateMsgAndHash(message, prehash) {
     abytes2(message, void 0, "message");
@@ -5494,17 +5494,156 @@ function unpackPose(data) {
   return pose;
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/layout.ts
+var HOME_LAYOUT_KIND = 37302;
+var ITEM_KIND = 37303;
+var ROOM_TEMPLATES = ["hall", "open"];
+var BUILTIN_ITEMS = ["frame", "portal", "note", "plant", "lamp", "bench", "table", "plinth"];
+var LAYOUT_ACCESS = ["open", "invite", "list", "follows", "ticket"];
+var LAYOUT_LIMITS = {
+  placements: 64,
+  publishedItems: 16,
+  /** Furthest a placement may be from the home's origin, in metres. */
+  reach: 50,
+  noteChars: 280,
+  /** A picture in a frame (spec §10.1). */
+  pictureBytes: 1024 * 1024
+};
+var DEFAULT_ROOM = { template: "hall", color: "#101217", accent: "#3fc584" };
+var HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+var num2 = (n) => String(Math.round(n * 1e3) / 1e3);
+function buildLayoutEvent(l) {
+  const room = { ...DEFAULT_ROOM, ...l.room };
+  const tags = [["d", l.d]];
+  if (l.title) tags.push(["title", l.title]);
+  tags.push(["room", room.template, room.color, room.accent]);
+  for (const item of l.items ?? []) {
+    tags.push(["item", item.type, item.position.map(num2).join(" "), num2(item.rotation ?? 0), ...item.args ?? []]);
+  }
+  if (l.access) tags.push(["access", l.access]);
+  if (l.contentWarning !== void 0) tags.push(["content-warning", l.contentWarning]);
+  tags.push(["alt", `Home layout${l.title ? `: ${l.title}` : ""}`]);
+  return { kind: HOME_LAYOUT_KIND, created_at: l.createdAt ?? Math.floor(Date.now() / 1e3), tags, content: "" };
+}
+function parsePosition(text) {
+  const parts = (text ?? "").trim().split(/\s+/).map(Number);
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n) || Math.abs(n) > LAYOUT_LIMITS.reach)) return null;
+  return parts;
+}
+function portalTarget(arg) {
+  if (!arg) return null;
+  const c = parseCoordinate(arg);
+  if (c) return c.kind === WORLD_KIND ? { coordinate: arg, pubkey: c.pubkey, d: c.identifier } : null;
+  const chk = checkDestination(arg);
+  return chk.ok ? { url: chk.value.url } : null;
+}
+function parseLayoutEvent(input) {
+  const c = new Collector();
+  if (!isPlainObject(input) || !Array.isArray(input.tags)) {
+    c.error("invalid_event", "", "A layout must be an event object with tags.");
+    return c.result(void 0);
+  }
+  if (input.kind !== HOME_LAYOUT_KIND) c.error("wrong_kind", "kind", `A layout is kind ${HOME_LAYOUT_KIND}.`);
+  const tags = input.tags.filter((t) => Array.isArray(t) && t.every((v) => typeof v === "string"));
+  const event = { tags };
+  const d = getTagValue(event, "d");
+  if (!d) c.error("missing_tag", "tags.d", "A layout needs a `d` tag naming the place.");
+  if (c.errors.length > 0) return c.result(void 0);
+  const room = { ...DEFAULT_ROOM };
+  const roomTag = tags.find((t) => t[0] === "room");
+  if (roomTag) {
+    if (ROOM_TEMPLATES.includes(roomTag[1] ?? "")) room.template = roomTag[1];
+    else c.warn("unknown_value", "tags.room", `Unknown room template "${roomTag[1] ?? ""}"; using "${room.template}".`);
+    if (roomTag[2] && HEX_COLOR.test(roomTag[2])) room.color = roomTag[2];
+    if (roomTag[3] && HEX_COLOR.test(roomTag[3])) room.accent = roomTag[3];
+  }
+  const items = [];
+  const published = /* @__PURE__ */ new Set();
+  tags.filter((t) => t[0] === "item").forEach((t, i) => {
+    const path = `tags.item[${i}]`;
+    if (items.length >= LAYOUT_LIMITS.placements) {
+      if (items.length === LAYOUT_LIMITS.placements && i === LAYOUT_LIMITS.placements) c.warn("too_many_items", path, `A layout holds at most ${LAYOUT_LIMITS.placements} placements; the rest were dropped.`);
+      return;
+    }
+    const type = t[1] ?? "";
+    const position = parsePosition(t[2]);
+    const rotation = Number(t[3] ?? "0");
+    if (!position || !Number.isFinite(rotation)) {
+      c.warn("item_position_invalid", path, "A placement needs a position in metres (`x y z`) and a rotation in degrees; it was dropped.");
+      return;
+    }
+    const args = t.slice(4);
+    const coordinate2 = parseCoordinate(type);
+    if (coordinate2) {
+      if (coordinate2.kind !== ITEM_KIND) {
+        c.warn("item_unknown", path, "A placement can name only an item definition; it was dropped.");
+        return;
+      }
+      if (!published.has(type) && published.size >= LAYOUT_LIMITS.publishedItems) {
+        c.warn("too_many_items", path, `A layout uses at most ${LAYOUT_LIMITS.publishedItems} different published items; this one was dropped.`);
+        return;
+      }
+      published.add(type);
+      items.push({ source: "published", type, position, rotation, args });
+      return;
+    }
+    if (!BUILTIN_ITEMS.includes(type)) {
+      c.warn("item_unknown", path, `"${type}" isn't in the built-in catalogue; it was dropped.`);
+      return;
+    }
+    if (type === "frame" && !(checkDestination(args[0] ?? "").ok && isHex64(args[1]))) {
+      c.warn("item_args_invalid", path, "A frame needs an https picture address and its SHA-256; it was dropped.");
+      return;
+    }
+    if (type === "portal" && !portalTarget(args[0])) {
+      c.warn("item_args_invalid", path, "A portal needs a world's coordinate or an https address; it was dropped.");
+      return;
+    }
+    if (type === "note") {
+      if (!args[0]) {
+        c.warn("item_args_invalid", path, "A note needs some text; it was dropped.");
+        return;
+      }
+      if (args[0].length > LAYOUT_LIMITS.noteChars) args[0] = `${args[0].slice(0, LAYOUT_LIMITS.noteChars - 1)}\u2026`;
+    }
+    items.push({ source: "builtin", type, position, rotation, args });
+  });
+  const access = getTagValue(event, "access");
+  if (access !== void 0 && !LAYOUT_ACCESS.includes(access)) c.warn("unknown_value", "tags.access", `Unknown access rule "${access}".`);
+  const warning = tags.find((t) => t[0] === "content-warning");
+  const layout = {
+    d,
+    room,
+    items,
+    createdAt: typeof input.created_at === "number" ? input.created_at : 0
+  };
+  const title = getTagValue(event, "title");
+  if (title) layout.title = title;
+  if (access !== void 0 && LAYOUT_ACCESS.includes(access)) layout.access = access;
+  if (warning) layout.contentWarning = warning[1] ?? "";
+  if (isHex64(input.pubkey)) layout.pubkey = input.pubkey;
+  return c.result(layout);
+}
+function checkPictureBytes(expectedSha256, bytes) {
+  return bytes.length <= LAYOUT_LIMITS.pictureBytes && bytesToHex(sha256(bytes)) === expectedSha256;
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/index.ts
 var VERSION = "0.1.0";
 export {
   AVATAR_KIND,
+  BUILTIN_ITEMS,
   CAPABILITIES,
   COMFORT,
   CURATION_SET_KIND,
   Collector,
   DEFAULT_RELAYS,
   ENTRY_ASSERTION_KIND,
+  HOME_LAYOUT_KIND,
   INPUTS,
+  ITEM_KIND,
+  LAYOUT_ACCESS,
+  LAYOUT_LIMITS,
   LIMITS,
   MODES,
   NswpError,
@@ -5515,6 +5654,7 @@ export {
   ROOM_LIMITS,
   ROOM_PASS_KIND,
   ROOM_SIGNAL_KIND,
+  ROOM_TEMPLATES,
   SCHEMAS,
   STATUSES,
   VERSION,
@@ -5526,9 +5666,11 @@ export {
   buildArrivalUrl,
   buildEntryAssertion,
   buildHello,
+  buildLayoutEvent,
   buildSignal,
   buildWorldEvent,
   checkDestination,
+  checkPictureBytes,
   checkPreviewBytes,
   coordinate,
   decodeArrival,
@@ -5558,9 +5700,11 @@ export {
   packPose,
   parseAirlockFragment,
   parseCoordinate,
+  parseLayoutEvent,
   parseManifest,
   parsePortal,
   parseWorldEvent,
+  portalTarget,
   previewOnWorldOrigin,
   publishEvent,
   queryRelays,

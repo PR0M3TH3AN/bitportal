@@ -24,6 +24,7 @@ import {
 } from "@nswp/core";
 import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../shared/publishing.js";
 import { checkedSigner, shortKey, watchBitLogin, type Session } from "../shared/session.js";
+import { attachJumpList } from "../shared/jump.js";
 import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
 
@@ -36,6 +37,7 @@ window.bitportal = { version: VERSION };
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const settings = loadSettings();
+attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "list" });
 const dryRun = new URLSearchParams(location.search).get("signer") === "test";
 
 const form = $<HTMLFormElement>("form");

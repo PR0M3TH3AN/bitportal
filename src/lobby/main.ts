@@ -12,6 +12,9 @@ import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadedPreview, loadPreview, type PreviewDecision } from "../shared/preview.js";
+import { attachJumpList } from "../shared/jump.js";
+import { saveRoomText, storedRoomText } from "../shared/room.js";
+import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, storeSaved, type SavedPlace } from "../shared/saved.js";
 import { readSignedIn } from "../shared/session.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
@@ -46,6 +49,8 @@ let engine = "";
 let notice = "";
 let relayNote = "";
 let signedIn: { pubkey: string; name?: string } | null = null;
+/** Your doors: kept on this device, drawn first, and left out of the shelves (spec §14.1). */
+let saved: SavedPlace[] = loadSaved();
 const OPTOUT_KEY = "bitportal:optout";
 
 function optedOut(): Set<string> {
@@ -58,11 +63,11 @@ function optedOut(): Set<string> {
 
 function visibleEntries(): Entry[] {
   const hidden = optedOut();
-  return catalog.entries.filter((e) => !hidden.has(e.id));
+  return catalog.entries.filter((e) => !hidden.has(e.id) && !isSaved(saved, e.id));
 }
 
 function entryById(id: string): Entry | undefined {
-  return catalog.entries.find((e) => e.id === id) ?? catalog.unlisted.find((e) => e.id === id);
+  return savedEntries(saved, catalog).find((e) => e.id === id) ?? catalog.entries.find((e) => e.id === id) ?? catalog.unlisted.find((e) => e.id === id);
 }
 
 function candidates(): Candidate[] {
@@ -126,7 +131,8 @@ const openedDoors = new Set<string>();
 function previewFor(entry: Entry): PreviewDecision {
   // Only the curator's own list counts as "chosen". A world that merely turned
   // up on a relay shows a placeholder until the visitor asks (spec §5.8).
-  return decidePreview(entry.world, { chosen: entry.rank !== null, asked: askedPreview.has(entry.id), doorOpen: openedDoors.has(entry.id) });
+  // A place the visitor saved is one they chose themselves.
+  return decidePreview(entry.world, { chosen: entry.rank !== null || isSaved(saved, entry.id), asked: askedPreview.has(entry.id), doorOpen: openedDoors.has(entry.id) });
 }
 
 function paintPreview(target: HTMLElement, url: string, type: string): void {
@@ -245,7 +251,7 @@ function door(entry: Entry, why: string): HTMLElement {
     ),
   );
   button.addEventListener("click", () => openDetail(entry, why));
-  return el("li", {}, button);
+  return el("li", { "data-door": entry.id }, button);
 }
 
 function shelfSection(shelf: Shelf, warn = false): HTMLElement {
@@ -276,18 +282,36 @@ function draw(): void {
   const main = $("shelves");
   main.replaceChildren();
   if (notice) main.append(el("p", { class: "notice", role: "status" }, notice));
+  const mine = savedEntries(saved, catalog);
+  if (mine.length > 0) {
+    main.append(
+      shelfSection({
+        id: "yours",
+        title: "Your doors",
+        blurb: "Places you saved. They're kept on this device and aren't published.",
+        items: mine.map((e) => ({ id: e.id, why: "" })),
+      }),
+    );
+  }
   if (visibleEntries().length === 0) {
-    main.append(el("p", { class: "empty" }, "The starter set has no worlds to show. Check your relays in Settings, or try again later."));
+    main.append(
+      el(
+        "p",
+        { class: "empty" },
+        mine.length > 0 ? "You've saved every door on this list." : "The starter set has no worlds to show. Check your relays in Settings, or try again later.",
+      ),
+    );
   }
   for (const s of shelves) main.append(shelfSection(s));
-  if (settings.showUnlisted && catalog.unlisted.length > 0) {
+  const unlisted = catalog.unlisted.filter((e) => !isSaved(saved, e.id));
+  if (settings.showUnlisted && unlisted.length > 0) {
     main.append(
       shelfSection(
         {
           id: "unlisted",
           title: "Announced on your relays, not reviewed",
           blurb: "Anyone can publish an announcement. Nobody you've chosen has looked at these.",
-          items: catalog.unlisted.map((e) => ({ id: e.id, why: "" })),
+          items: unlisted.map((e) => ({ id: e.id, why: "" })),
         },
         true,
       ),
@@ -334,8 +358,30 @@ function openDetail(entry: Entry, why: string): void {
 
   const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
   const visit = el("a", { class: "button primary", href: buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }) }, "Visit this world");
+  visit.addEventListener("click", () => rememberLeft({ id: entry.id, from: "list" }));
   const close = el("button", { class: "button", type: "button" }, "Close");
   close.addEventListener("click", () => dialog.close());
+  // Saving puts the door on the visitor's own shelf and wall. It tells nobody.
+  const keep = el("button", { class: "button", type: "button" });
+  const keepNote = el("p", { class: "small", role: "status" });
+  const labelKeep = () => (keep.textContent = isSaved(saved, entry.id) ? "Remove from your doors" : "Save to your doors");
+  labelKeep();
+  keep.addEventListener("click", () => {
+    const had = isSaved(saved, entry.id);
+    const next = had ? removeSaved(saved, entry.id) : addSaved(saved, entry, Math.floor(Date.now() / 1000));
+    if (next === saved) {
+      keepNote.textContent = "Your doors are full. Remove one to save another.";
+      return;
+    }
+    saved = next;
+    keepNote.textContent = storeSaved(saved)
+      ? had
+        ? "Removed from your doors."
+        : "Saved. It's under Your doors at the top of this page, and on your wall in the walk-in room. It's kept on this device only."
+      : "This browser isn't keeping saved places (a private window?), so this lasts until you leave the page.";
+    labelKeep();
+    void rank().then(draw);
+  });
 
   // Opening a door is the visitor's interest in this world: from here its own
   // site may be contacted, for verification and for a preview only it holds.
@@ -356,7 +402,8 @@ function openDetail(entry: Entry, why: string): void {
     ),
     why ? el("p", { class: "why" }, why) : null,
     el("p", { class: "next" }, "Visiting opens the Airlock, which shows the address once more before you leave."),
-    el("div", { class: "actions" }, close, visit),
+    keepNote,
+    el("div", { class: "actions" }, close, keep, visit),
   ];
   dialog.replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));
   dialog.showModal();
@@ -395,6 +442,9 @@ function openSettings(): void {
   unlistedBox.checked = settings.showUnlisted;
   const relays = el("textarea", { id: "set-relays", rows: "4", spellcheck: "false" });
   relays.value = settings.relays.join("\n");
+  const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3fc584"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
+  roomBox.value = storedRoomText();
+  const roomNote = el("p", { class: "small", role: "status" });
   const save = el("button", { class: "button primary", type: "submit" }, "Save settings");
   const cancel = el("button", { class: "button", type: "button" }, "Cancel");
   cancel.addEventListener("click", () => dialog.close());
@@ -414,9 +464,21 @@ function openSettings(): void {
     relays,
     el("label", { class: "check", for: "set-unlisted" }, unlistedBox, " Also show worlds the starter set doesn't include"),
     el("p", { class: "small" }, "Those are unreviewed: anyone can publish an announcement."),
+    el("h3", {}, "Your room"),
+    el("label", { for: "set-room" }, "The walk-in room's furniture, as a home layout. Leave empty for BitPortal's own."),
+    roomBox,
+    el("p", { class: "small" }, "This is the same home.json a world made from the NSWP world template uses. The room takes its colours, plants, lamps, benches, tables, plinths and notes. It doesn't draw pictures or portals: your doors are the wall in front of you. Kept on this device."),
+    roomNote,
     el("div", { class: "actions" }, cancel, save),
   );
-  form.addEventListener("submit", () => {
+  form.addEventListener("submit", (e) => {
+    const kept = saveRoomText(roomBox.value);
+    if ("error" in kept) {
+      e.preventDefault(); // keep the dialog open so the reason can be read
+      roomNote.textContent = kept.error;
+      roomNote.className = "small verify-warn";
+      return;
+    }
     const cleaned = cleanRelays(relays.value.split(/\s+/));
     settings = { ranking: rankBox.checked, showUnlisted: unlistedBox.checked, relays: cleaned.length ? cleaned : settings.relays };
     saveSettings(settings);
@@ -427,11 +489,29 @@ function openSettings(): void {
 }
 
 // --------------------------------------------------------------- relays
+/** Coming back from a world: the door the visitor left through is in front of them. Once per page. */
+let facedLeft = false;
+function faceLeftDoor(): void {
+  if (facedLeft) return;
+  facedLeft = true;
+  const left = readLeft();
+  if (left?.from !== "list") return;
+  const back = [...document.querySelectorAll<HTMLElement>("[data-door]")].find((li) => li.dataset.door === left.id);
+  back?.scrollIntoView({ block: "center" });
+  back?.querySelector("button")?.focus({ preventScroll: true });
+}
+
 async function refresh(): Promise<void> {
   await rank();
   draw();
-  const authors = [...new Set([catalog.curator.pubkey, ...catalog.entries.map((e) => e.event.pubkey)])];
+  faceLeftDoor();
+  const authors = [...new Set([catalog.curator.pubkey, ...catalog.entries.map((e) => e.event.pubkey), ...saved.map((s) => s.event.pubkey)])];
   const known = await queryRelays(settings.relays, { kinds: [WORLD_KIND, CURATION_SET_KIND], authors, limit: 200 }, 4000);
+  const fresher = refreshSaved(saved, known.events);
+  if (fresher !== saved) {
+    saved = fresher;
+    storeSaved(saved);
+  }
   const extra = settings.showUnlisted ? (await queryRelays(settings.relays, { kinds: [WORLD_KIND], limit: 60 }, 4000)).events : [];
   const answered = Object.values(known.relays).filter((s) => s === "eose").length;
   relayNote = `${answered} of ${Object.keys(known.relays).length} relays answered`;
@@ -444,6 +524,7 @@ async function refresh(): Promise<void> {
 
 async function start(): Promise<void> {
   $("open-settings").addEventListener("click", openSettings);
+  attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "list" });
   draw(); // the bundled set, at once
   // Who is signed in, read from BitLogin's small public record (no widget loaded here).
   void readSignedIn().then((who) => {

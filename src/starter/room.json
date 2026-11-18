@@ -1,0 +1,15 @@
+{
+  "d": "room",
+  "title": "Your room",
+  "room": {"template": "open", "color": "#101217", "accent": "#3fc584"},
+  "items": [
+    {"type": "bench", "position": [-3.4, 0, 0], "rotation": 90},
+    {"type": "bench", "position": [3.4, 0, 0], "rotation": -90},
+    {"type": "lamp", "position": [-9.4, 0, 0]},
+    {"type": "lamp", "position": [9.4, 0, 0]},
+    {"type": "plant", "position": [-8.9, 0, 1.6]},
+    {"type": "plant", "position": [-8.9, 0, -1.6]},
+    {"type": "plant", "position": [8.9, 0, 1.6]},
+    {"type": "plant", "position": [8.9, 0, -1.6]}
+  ]
+}

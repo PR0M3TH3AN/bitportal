@@ -12,6 +12,7 @@
     "paths": {
       "@nswp/core": ["./vendor/nswp/types/index.d.ts"],
       "nswp-sdk/three": ["./vendor/nswp/sdk-types/three.d.ts"],
+      "nswp-sdk/home": ["./vendor/nswp/sdk-types/home.d.ts"],
       "bitfeed": ["./src/types/bitfeed.d.ts"]
     }
   },

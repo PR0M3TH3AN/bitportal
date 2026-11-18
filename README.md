@@ -15,10 +15,18 @@ Test build: <https://bitportal.vercel.app/>
 
 - **The lobby** (`/`) shows worlds as doors, on shelves ranked by
   [BitFeed](https://feed.bitblocks.network/). Each world says why it is there.
-- **The walk-in lobby** (`/walk/`) is the same doors as a hall you stand in,
-  on a screen or in a VR headset. Point at a door and select it, or walk
-  through it. Press **Join the room** to see and talk to other visitors;
-  joining shows your IP address to them, so nothing connects before you ask.
+- **Your doors.** Save a door and it is yours: first on the list, on your own
+  wall in the room, and one press away from any page under **Your doors**.
+  Saved places are kept on this device and are never published.
+- **The room** (`/walk/`) is where you start when you would rather stand
+  somewhere than read a list, on a screen or in a VR headset. Your doors are
+  on the wall ahead, each in a place it keeps. Suggested doors are on the wall
+  behind. Point at a door and select it, or walk through it. Coming back from
+  a world, you face the door you left through. The room's furniture is a home
+  layout, the same format as a world template's `home.json`, and can be
+  replaced in Settings. Press **Join the room** to see and talk to other
+  visitors; joining shows your IP address to them, so nothing connects before
+  you ask.
 - **Opening a door** checks, at that moment, whether the world's site vouches
   for the key that announced it ("Verified").
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
@@ -47,6 +55,9 @@ Test build: <https://bitportal.vercel.app/>
 - Destinations travel in the URL fragment, which servers never see.
 - A site that hasn't adopted NSWP gets a plain visit, with nothing added to
   its address.
+- Saved doors and the room's layout stay in this browser. The room draws only
+  built-in furniture from a layout: no pictures and nothing else that would
+  contact another site.
 - No analytics, and no server-side code.
 
 ## The starter set
@@ -123,7 +134,7 @@ file hashes in `vendor/integrity.json` (BitBlocks convention D7):
 |---|---|---|
 | `@nswp/core` | the NSWP repo | `vendor/nswp/` |
 | BitFeed standalone | the BitFeed repo | `vendor/bitfeed/` |
-| `nswp-sdk/three` (avatars, voice, rooms) | the NSWP repo | `vendor/nswp/` |
+| `nswp-sdk/three` (avatars, voice, rooms) and `nswp-sdk/home` (the room's furniture) | the NSWP repo | `vendor/nswp/` |
 | BitLogin widget | the bitlogin repo's `release/` folder | `public/vendor/bitlogin/` |
 | Ubuntu Sans fonts | the bitblocks repo | `public/fonts/` |
 

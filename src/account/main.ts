@@ -1,5 +1,7 @@
 /** The account page: BitLogin's own sign-in surface, and what signing in gives you. */
+import { attachJumpList } from "../shared/jump.js";
 import { shortKey, watchBitLogin } from "../shared/session.js";
+import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
 
 declare global {
@@ -9,6 +11,7 @@ declare global {
 }
 window.bitportal = { version: VERSION };
 
+attachJumpList(document.getElementById("jump-button") as HTMLButtonElement, { relays: () => loadSettings().relays, from: "list" });
 const who = document.getElementById("who")!;
 const next = document.getElementById("next")!;
 let settled = false;
