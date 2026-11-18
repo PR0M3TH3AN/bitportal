@@ -10,6 +10,11 @@
  * it: with a real keyboard anywhere, and with the kit's drawn one in a
  * headset. Press anywhere else to stop typing into it.
  *
+ * Along its foot are five buttons, each one press: back and forward through
+ * what has scrolled away, larger and smaller letters, and copy. The panel's
+ * own + and - change how large the whole panel is; these change how much
+ * fits on it.
+ *
  *   const term = openTerminalPanel({ panels, bridge, owner, relays, sign, presenting });
  *   term.close();
  */
@@ -18,6 +23,9 @@ import { type BridgeStatus } from "./bridge-link.js";
 import type { Panel, Panels } from "./panels.js";
 import type { EventTemplate, NostrEvent } from "@nswp/core";
 export type { BridgeStatus } from "./bridge-link.js";
+/** How many letters fit across, from the largest letters to the smallest. */
+export declare const TERMINAL_COLUMNS: readonly [60, 80, 100, 120, 140, 160];
+export type TerminalButton = "back" | "forward" | "larger" | "smaller" | "copy";
 export interface TerminalPanelOptions {
     panels: Panels;
     /** The computer's Bridge, as 64 hex characters. */
@@ -28,13 +36,15 @@ export interface TerminalPanelOptions {
     relays: string[];
     /** What the owner calls this computer, for the panel's bar. */
     name?: string;
+    /** How many letters fit across to begin with: one of `TERMINAL_COLUMNS`. 100 unless told. */
     cols?: number;
-    rows?: number;
     accent?: THREE.ColorRepresentation;
     /** Whether the visitor is in a headset now: there, pressing the panel brings up the drawn keyboard. */
     presenting?: () => boolean;
     iceServers?: RTCIceServer[];
     onStatus?(status: BridgeStatus): void;
+    /** The visitor chose larger or smaller letters. A home may remember it. */
+    onColumns?(cols: number): void;
     /** The panel was put away, and the connection with it. */
     onClosed?(): void;
 }
@@ -43,12 +53,27 @@ export interface TerminalPanel {
     readonly status: BridgeStatus;
     /** Whether keys typed go to it. */
     readonly focused: boolean;
+    /** How many letters fit across, and how many lines down. */
+    readonly size: {
+        cols: number;
+        rows: number;
+    };
     focus(): void;
     blur(): void;
     /** Send keys, as if typed. */
     type(bytes: string): void;
     /** What is on its screen, as lines of text. */
     text(): string[];
+    /** Go back or forward through what has scrolled away, by so many lines. */
+    scroll(lines: number): void;
+    /** Fit this many letters across: the nearest of `TERMINAL_COLUMNS`. The program is told its new size. */
+    setColumns(cols: number): void;
+    /** Put what is on the screen on the clipboard. Resolves false where the browser won't allow it. */
+    copy(): Promise<boolean>;
+    /** Where each button along the foot is on the panel's picture, each from 0 to 1 with y downwards. For a test to press. */
+    buttons(): Record<TerminalButton, [number, number]>;
     close(): void;
 }
+/** The nearest size there is to the one asked for. */
+export declare function nearestColumns(cols: number): number;
 export declare function openTerminalPanel(o: TerminalPanelOptions): TerminalPanel;

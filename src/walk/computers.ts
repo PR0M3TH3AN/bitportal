@@ -41,8 +41,24 @@ export interface Computers {
   /** For tests: stand in a throwaway identity, made in this page, and return its public key. Nothing in an address can do this. */
   useTestIdentity(): string;
   list(): Computer[];
-  /** The open terminals, by their Bridge's key. */
-  terminals(): Map<string, TerminalPanel>;
+  /** The open terminals, oldest first. */
+  terminals(): TerminalPanel[];
+}
+
+/** How many terminals may be open on one computer at once: as many as its Bridge keeps. */
+export const TERMINALS_EACH = 4;
+const LETTERS = "bitportal:terminal-letters";
+
+/** How many letters across the visitor last chose, on a flat screen and in a headset. Kept in this browser. */
+function lettersKept(): { flat?: number; headset?: number } {
+  try {
+    const kept = JSON.parse(localStorage.getItem(LETTERS) ?? "{}") as { flat?: unknown; headset?: unknown };
+    const ok = (n: unknown) => (typeof n === "number" && n >= 40 && n <= 200 ? n : undefined);
+    const [flat, headset] = [ok(kept.flat), ok(kept.headset)];
+    return { ...(flat ? { flat } : {}), ...(headset ? { headset } : {}) };
+  } catch {
+    return {};
+  }
 }
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] => {
@@ -54,7 +70,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLEl
 export function addComputers(o: ComputersOptions): Computers {
   const { controls } = o;
   const dialog = document.getElementById("pair") as HTMLDialogElement;
-  const open = new Map<string, TerminalPanel>();
+  const open: { pubkey: string; term: TerminalPanel }[] = [];
   let test: { pubkey: string; signer: Signer } | null = null;
   let who: string | null = null;
   let shown: string[] = [];
@@ -134,13 +150,14 @@ export function addComputers(o: ComputersOptions): Computers {
   const openTerminal = async (c: Computer) => {
     const panels = o.panels();
     if (!panels) return;
-    if (open.has(c.pubkey)) return controls.say(`The terminal on ${c.name} is already open.`);
+    if (open.filter((t) => t.pubkey === c.pubkey).length >= TERMINALS_EACH) return controls.say(`${TERMINALS_EACH} terminals are open on ${c.name}. Put one away first.`);
     if ((await identify()) !== c.owner) return controls.say("Sign in on the front page first, as the key this computer answers.");
     const quiet = await signer(c.owner);
     if (!quiet) return controls.say("Your sign-in is locked. Unlock it on the front page, then try again.");
     try {
       // The terminal's code is fetched now, the first time one is opened, and not before.
       const { openTerminalPanel } = await import("nswp-sdk/terminal");
+      const headset = o.presenting();
       const term = openTerminalPanel({
         panels,
         bridge: c.pubkey,
@@ -148,19 +165,27 @@ export function addComputers(o: ComputersOptions): Computers {
         sign: (template: EventTemplate): Promise<NostrEvent> => quiet.signer.signEvent(template),
         relays: [...new Set([...c.relays, ...(c.relays.length ? [] : [...DEFAULT_RELAYS, ...o.relays()])])].slice(0, 8),
         name: c.name,
-        // Fewer, larger letters in a headset, where the panel is read from a step away.
-        ...(o.presenting() ? { cols: 80, rows: 24 } : {}),
+        // Fewer, larger letters in a headset, where the panel is read from a step away; or what they chose last time.
+        cols: (headset ? lettersKept().headset : lettersKept().flat) ?? (headset ? 80 : 100),
+        onColumns(cols) {
+          try {
+            localStorage.setItem(LETTERS, JSON.stringify({ ...lettersKept(), [headset ? "headset" : "flat"]: cols }));
+          } catch {
+            /* not kept this time */
+          }
+        },
         accent: o.accent,
         presenting: o.presenting,
         onStatus(status) {
           if (status.at === "asking") controls.say(`Say yes at ${c.name}. The code is ${status.code}.`);
         },
         onClosed() {
-          open.delete(c.pubkey);
+          const at = open.findIndex((t) => t.term === term);
+          if (at >= 0) open.splice(at, 1);
           quiet.close();
         },
       });
-      open.set(c.pubkey, term);
+      open.push({ pubkey: c.pubkey, term });
     } catch {
       quiet.close();
       controls.say("The terminal couldn't be opened. Put a panel away and try again.");
@@ -174,7 +199,7 @@ export function addComputers(o: ComputersOptions): Computers {
     shown = mine.flatMap((c) => [`terminal-${c.pubkey.slice(0, 12)}`, `forget-${c.pubkey.slice(0, 12)}`]);
     controls.add(
       ...mine.flatMap((c) => [
-        { id: `terminal-${c.pubkey.slice(0, 12)}`, section: "computers", icon: "panel" as const, label: `A terminal on ${c.name}`, short: "Terminal", act: () => void openTerminal(c) },
+        { id: `terminal-${c.pubkey.slice(0, 12)}`, section: "computers", icon: "panel" as const, label: `A terminal on ${c.name}`, short: "Terminal", act: () => void openTerminal(c) }, // each press opens another, up to a few
         // Forgetting is done where the whole of what is forgotten can be read.
         {
           id: `forget-${c.pubkey.slice(0, 12)}`,
@@ -184,7 +209,7 @@ export function addComputers(o: ComputersOptions): Computers {
           short: "Forget",
           hidden: o.presenting,
           act: () => {
-            open.get(c.pubkey)?.close();
+            for (const t of open.filter((x) => x.pubkey === c.pubkey)) t.term.close();
             storeComputers(removeComputer(loadComputers(), c.pubkey, c.owner));
             refresh();
             controls.say(`${c.name} is forgotten here. Stop the Bridge on it too.`);
@@ -212,6 +237,6 @@ export function addComputers(o: ComputersOptions): Computers {
       return pubkey;
     },
     list: () => (who ? computersOf(loadComputers(), who) : []),
-    terminals: () => open,
+    terminals: () => open.map((t) => t.term),
   };
 }

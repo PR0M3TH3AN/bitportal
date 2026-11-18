@@ -87,6 +87,9 @@ lobby or a world would need to agree with it on is in
   in a headset on the drawn one, which has Esc, Tab, Ctrl and the arrows.
   The computer answers your key and nobody else's, and asks on its own
   screen, with a code that matches the panel's, before a terminal opens.
+  Buttons along the panel's foot look back through what has scrolled away,
+  make the letters larger or smaller, and copy what is on the screen. Up to
+  four terminals can be open on a computer at once.
   Which computers you have added is kept in this browser and sent nowhere.
   A terminal can do anything you can do on that computer, so add only a
   computer you started the Bridge on yourself. No world can see or reach

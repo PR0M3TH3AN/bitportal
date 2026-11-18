@@ -2,7 +2,7 @@ import {
   forApplication,
   keyBytes,
   pasteBytes
-} from "./shared-NTGJ43ZC.js";
+} from "./shared-HRTYAXW7.js";
 import {
   __commonJS,
   __toESM
@@ -5213,9 +5213,11 @@ function openBridgeLink(o) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/terminal.ts
+var TERMINAL_COLUMNS = [60, 80, 100, 120, 140, 160];
 var BASE = ["#1b2430", "#ff6b6b", "#7bd88f", "#ffd166", "#6cb6ff", "#d699ff", "#5fd7d7", "#d7dee7", "#5c6b7c", "#ff8f8f", "#a5f0b4", "#ffe08a", "#9fd0ff", "#e6bcff", "#93eded", "#ffffff"];
 var BG = "#0a1018";
 var FG = "#dfe7ef";
+var QUIET = "#9fb0c0";
 function paletteColor(n) {
   if (n < 16) return BASE[n];
   if (n < 232) {
@@ -5227,124 +5229,167 @@ function paletteColor(n) {
   return `rgb(${g},${g},${g})`;
 }
 var rgb = (n) => `#${n.toString(16).padStart(6, "0")}`;
-var PAD = 20;
-var STRIP = 40;
-var CH = 30;
-var FONT = `24px ui-monospace, "DejaVu Sans Mono", "Liberation Mono", Menlo, Consolas, monospace`;
+var W = 1920;
+var SCREEN = 1152;
+var PAD = 24;
+var STRIP = 116;
+var H = SCREEN + PAD * 2 + STRIP;
+var FACE = `ui-monospace, "DejaVu Sans Mono", "Liberation Mono", Menlo, Consolas, monospace`;
+var BUTTONS = [
+  { id: "back", label: "\u25B2", w: 124 },
+  { id: "forward", label: "\u25BC", w: 124 },
+  { id: "larger", label: "A+", w: 124 },
+  { id: "smaller", label: "A\u2212", w: 124 },
+  { id: "copy", label: "Copy", w: 170 }
+];
+var GAP = 12;
+function nearestColumns(cols) {
+  return TERMINAL_COLUMNS.reduce((best, c) => Math.abs(c - cols) < Math.abs(best - cols) ? c : best, TERMINAL_COLUMNS[2]);
+}
 function openTerminalPanel(o) {
-  const cols = o.cols ?? 100;
-  const rows = o.rows ?? 30;
   const accent = `#${new THREE.Color(o.accent ?? 16758364).getHexString()}`;
   const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
   const g = canvas.getContext("2d");
-  g.font = FONT;
-  const CW = Math.max(8, Math.ceil(g.measureText("M").width));
-  canvas.width = cols * CW + PAD * 2;
-  canvas.height = rows * CH + PAD * 2 + STRIP;
+  g.font = `100px ${FACE}`;
+  const ratio = Math.max(0.4, g.measureText("M").width / 100);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
-  const term = new import_headless.Terminal({ cols, rows, scrollback: 2e3, allowProposedApi: true });
+  const measure = (cols) => {
+    const cw = Math.floor((W - PAD * 2) / cols);
+    const px = Math.floor(cw / ratio);
+    const ch = Math.round(px * 1.22);
+    return { cols, cw, px, ch, rows: Math.max(5, Math.floor(SCREEN / ch)), left: Math.floor((W - cw * cols) / 2) };
+  };
+  let cell = measure(nearestColumns(o.cols ?? 100));
+  const term = new import_headless.Terminal({ cols: cell.cols, rows: cell.rows, scrollback: 3e3, allowProposedApi: true });
   let link = null;
   let status = { at: "signing" };
   let focused = false;
   let closed = false;
   let scheduled = false;
+  let said = null;
   const where = o.name || "your computer";
+  const placed = (() => {
+    let x = W - PAD;
+    return [...BUTTONS].reverse().map((b) => {
+      x -= b.w;
+      const at = { ...b, x, y: H - STRIP + 12, h: STRIP - 24 };
+      x -= GAP;
+      return at;
+    });
+  })();
+  const hintWidth = placed.at(-1).x - PAD * 2;
   const message = (lines) => {
     g.textAlign = "center";
     g.textBaseline = "middle";
-    const scale = canvas.width / 1200;
-    const total = lines.reduce((n, l) => n + (l.size ?? 40) * scale * 1.5, 0);
-    let y = (canvas.height - STRIP) / 2 - total / 2;
+    const total = lines.reduce((n, l) => n + (l.size ?? 62) * 1.5, 0);
+    let y = (H - STRIP) / 2 - total / 2;
     for (const l of lines) {
-      const size = Math.round((l.size ?? 40) * scale);
-      g.font = `${(l.size ?? 0) >= 100 ? "bold " : ""}${size}px system-ui, sans-serif`;
+      const size = l.size ?? 62;
+      g.font = `${size >= 150 ? "bold " : ""}${size}px system-ui, sans-serif`;
       g.fillStyle = l.color ?? FG;
       y += size * 0.75;
-      g.fillText(l.text, canvas.width / 2, y, canvas.width - 80);
+      g.fillText(l.text, W / 2, y, W - 120);
       y += size * 0.75;
     }
     g.textAlign = "left";
   };
   const drawScreen = () => {
     const buffer = term.buffer.active;
-    const cell = buffer.getNullCell();
+    const one = buffer.getNullCell();
+    const { cw, ch, px, left } = cell;
+    const face = `${px}px ${FACE}`;
     g.textBaseline = "middle";
-    for (let y = 0; y < rows; y++) {
+    for (let y = 0; y < cell.rows; y++) {
       const line = buffer.getLine(buffer.viewportY + y);
       if (!line) continue;
-      const top = PAD + y * CH;
-      for (let x = 0; x < cols; x++) {
-        line.getCell(x, cell);
-        const width = cell.getWidth();
+      const top = PAD + y * ch;
+      for (let x = 0; x < cell.cols; x++) {
+        line.getCell(x, one);
+        const width = one.getWidth();
         if (!width) continue;
-        let fg = cell.isFgDefault() ? FG : cell.isFgRGB() ? rgb(cell.getFgColor()) : paletteColor(cell.getFgColor());
-        let bg = cell.isBgDefault() ? null : cell.isBgRGB() ? rgb(cell.getBgColor()) : paletteColor(cell.getBgColor());
-        if (cell.isInverse()) [fg, bg] = [bg ?? BG, fg];
+        let fg = one.isFgDefault() ? FG : one.isFgRGB() ? rgb(one.getFgColor()) : paletteColor(one.getFgColor());
+        let bg = one.isBgDefault() ? null : one.isBgRGB() ? rgb(one.getBgColor()) : paletteColor(one.getBgColor());
+        if (one.isInverse()) [fg, bg] = [bg ?? BG, fg];
         const here = buffer.viewportY === buffer.baseY && y === buffer.cursorY && x === buffer.cursorX;
         if (here && focused) [fg, bg] = [BG, accent];
         if (bg) {
           g.fillStyle = bg;
-          g.fillRect(PAD + x * CW, top, CW * width, CH);
+          g.fillRect(left + x * cw, top, cw * width, ch);
         }
         if (here && !focused) {
           g.strokeStyle = accent;
           g.lineWidth = 2;
-          g.strokeRect(PAD + x * CW + 1, top + 1, CW * width - 2, CH - 2);
+          g.strokeRect(left + x * cw + 1, top + 1, cw * width - 2, ch - 2);
         }
-        const chars = cell.getChars();
-        if (!chars || chars === " " || cell.isInvisible()) continue;
-        g.font = `${cell.isItalic() ? "italic " : ""}${cell.isBold() ? "bold " : ""}${FONT}`;
-        g.globalAlpha = cell.isDim() ? 0.6 : 1;
+        const chars = one.getChars();
+        if (!chars || chars === " " || one.isInvisible()) continue;
+        g.font = `${one.isItalic() ? "italic " : ""}${one.isBold() ? "bold " : ""}${face}`;
+        g.globalAlpha = one.isDim() ? 0.6 : 1;
         g.fillStyle = fg;
-        g.fillText(chars, PAD + x * CW, top + CH / 2 + 1);
-        if (cell.isUnderline()) g.fillRect(PAD + x * CW, top + CH - 3, CW * width, 2);
+        g.fillText(chars, left + x * cw, top + ch / 2 + 1);
+        if (one.isUnderline()) g.fillRect(left + x * cw, top + ch - 3, cw * width, 2);
         g.globalAlpha = 1;
       }
     }
   };
+  const live = () => status.at === "open" || status.at === "ended";
+  const scrolledBack = () => term.buffer.active.viewportY < term.buffer.active.baseY;
   const draw = () => {
     scheduled = false;
     if (closed) return;
     g.fillStyle = BG;
-    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillRect(0, 0, W, H);
     let hint = "";
     switch (status.at) {
       case "signing":
         message([{ text: "Asking your key to allow this\u2026" }]);
         break;
       case "finding":
-        message([{ text: `Looking for ${where}\u2026` }, { text: `If it asks, the code is ${status.code}.`, size: 30, color: "#9fb0c0" }]);
+        message([{ text: `Looking for ${where}\u2026` }, { text: `If it asks, the code is ${status.code}.`, size: 46, color: QUIET }]);
         break;
       case "asking":
-        message([{ text: `Say yes at ${where}.` }, { text: status.code, size: 150, color: accent }, { text: "It is asking now, and should show this code. If the code is different, say no.", size: 30, color: "#9fb0c0" }]);
+        message([{ text: `Say yes at ${where}.` }, { text: status.code, size: 230, color: accent }, { text: "It is asking now, and should show this code. If the code is different, say no.", size: 46, color: QUIET }]);
         break;
       case "connecting":
         message([{ text: "Connecting\u2026" }]);
         break;
       case "open":
         drawScreen();
-        hint = focused ? "Typing here. Press anywhere else to stop." : "Press here to type.";
+        hint = scrolledBack() ? "Looking back. Typing returns to the end." : focused ? "Typing here. Press anywhere else to stop." : "Press here to type.";
         break;
       case "ended":
         drawScreen();
         hint = `The program ended${status.code ? ` (${status.code})` : ""}. Press here to open another.`;
         break;
       case "closed":
-        message([{ text: status.why }, { text: "Press here to try again.", size: 30, color: "#9fb0c0" }]);
+        message([{ text: status.why }, { text: "Press here to try again.", size: 46, color: QUIET }]);
         break;
     }
+    if (said && Date.now() < said.until) hint = said.text;
     g.fillStyle = "#111a25";
-    g.fillRect(0, canvas.height - STRIP, canvas.width, STRIP);
+    g.fillRect(0, H - STRIP, W, STRIP);
     g.textBaseline = "middle";
-    g.font = "22px system-ui, sans-serif";
-    g.fillStyle = focused ? accent : "#9fb0c0";
-    g.fillText(hint, PAD, canvas.height - STRIP / 2 + 1, canvas.width - PAD * 2 - 300);
-    g.textAlign = "right";
-    g.fillStyle = "#5c6b7c";
-    g.fillText(status.at === "open" ? status.name : "", canvas.width - PAD, canvas.height - STRIP / 2 + 1, 280);
-    g.textAlign = "left";
+    g.font = "34px system-ui, sans-serif";
+    g.fillStyle = focused || said && Date.now() < said.until ? accent : QUIET;
+    g.fillText(hint, PAD, H - STRIP / 2 + 1, hintWidth);
+    for (const b of placed) {
+      const usable = b.id === "larger" ? cell.cols > TERMINAL_COLUMNS[0] : b.id === "smaller" ? cell.cols < TERMINAL_COLUMNS.at(-1) : live();
+      g.globalAlpha = usable ? 1 : 0.35;
+      g.fillStyle = "#1c2836";
+      g.beginPath();
+      g.roundRect(b.x, b.y, b.w, b.h, 10);
+      g.fill();
+      g.fillStyle = FG;
+      g.textAlign = "center";
+      g.font = "bold 40px system-ui, sans-serif";
+      g.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 2);
+      g.textAlign = "left";
+      g.globalAlpha = 1;
+    }
     texture.needsUpdate = true;
   };
   const redraw = () => {
@@ -5352,27 +5397,36 @@ function openTerminalPanel(o) {
     scheduled = true;
     setTimeout(draw, 16);
   };
-  const send = (bytes) => link?.send(forApplication(bytes, term.modes.applicationCursorKeysMode));
+  const say = (text2) => {
+    said = { text: text2, until: Date.now() + 2500 };
+    redraw();
+    setTimeout(redraw, 2600);
+  };
+  const send = (bytes) => {
+    term.scrollToBottom();
+    link?.send(forApplication(bytes, term.modes.applicationCursorKeysMode));
+  };
   term.onData((reply) => link?.send(reply));
   const onKey = (e) => {
     const bytes = keyBytes(e);
     if (bytes === null) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    term.scrollToBottom();
     send(bytes);
   };
   const onPaste = (e) => {
-    const text = e.clipboardData?.getData("text/plain");
-    if (!text) return;
+    const text2 = e.clipboardData?.getData("text/plain");
+    if (!text2) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    link?.send(pasteBytes(text, term.modes.bracketedPasteMode));
+    term.scrollToBottom();
+    link?.send(pasteBytes(text2, term.modes.bracketedPasteMode));
   };
-  const onWheel = (e) => {
-    term.scrollLines(Math.sign(e.deltaY) * 3);
+  const scroll = (lines) => {
+    term.scrollLines(Math.trunc(lines));
     redraw();
   };
+  const onWheel = (e) => scroll(Math.sign(e.deltaY) * 3);
   let pressedHere = false;
   const onDown = () => {
     pressedHere = false;
@@ -5403,6 +5457,44 @@ function openTerminalPanel(o) {
     if (o.presenting?.() && !o.panels.keyboard.isLive) o.panels.keyboard.live({ title: `Typing into ${where}`, onKey: send, onClose: blur });
     redraw();
   };
+  const setColumns = (cols) => {
+    const next = measure(nearestColumns(cols));
+    if (next.cols === cell.cols) return;
+    cell = next;
+    term.resize(cell.cols, cell.rows);
+    link?.resize(cell.cols, cell.rows);
+    o.onColumns?.(cell.cols);
+    say(`${cell.cols} letters across, ${cell.rows} lines.`);
+  };
+  const step = (by) => {
+    const at = TERMINAL_COLUMNS.indexOf(cell.cols);
+    const next = TERMINAL_COLUMNS[at + by];
+    if (next) setColumns(next);
+  };
+  const text = () => {
+    const buffer = term.buffer.active;
+    return Array.from({ length: cell.rows }, (_, y) => buffer.getLine(buffer.viewportY + y)?.translateToString(true) ?? "");
+  };
+  const copy = async () => {
+    const lines = text();
+    while (lines.length && !lines.at(-1).trim()) lines.pop();
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      say("Copied what is on the screen.");
+      return true;
+    } catch {
+      say("This browser wouldn't let the page copy.");
+      return false;
+    }
+  };
+  const pressButton = (id) => {
+    if (id === "larger") return step(-1);
+    if (id === "smaller") return step(1);
+    if (!live()) return;
+    if (id === "back") return scroll(-(cell.rows - 2));
+    if (id === "forward") return scroll(cell.rows - 2);
+    void copy();
+  };
   const connect = () => {
     term.reset();
     status = { at: "signing" };
@@ -5411,8 +5503,8 @@ function openTerminalPanel(o) {
       owner: o.owner,
       sign: o.sign,
       relays: o.relays,
-      cols,
-      rows,
+      cols: cell.cols,
+      rows: cell.rows,
       ...o.iceServers ? { iceServers: o.iceServers } : {},
       onData: (bytes) => term.write(bytes, redraw),
       onStatus(next) {
@@ -5429,12 +5521,15 @@ function openTerminalPanel(o) {
       kind: "custom",
       title: o.name ? `Terminal: ${o.name}` : "Terminal",
       texture,
-      aspect: canvas.width / canvas.height,
-      onPress() {
-        if (status.at === "closed" || status.at === "ended") {
-          pressedHere = true;
-          return connect();
+      aspect: W / H,
+      onPress(x, y) {
+        pressedHere = true;
+        const [px, py] = [x * W, y * H];
+        if (py >= H - STRIP) {
+          const b = placed.find((k) => px >= k.x - GAP / 2 && px <= k.x + k.w + GAP / 2);
+          if (b) return pressButton(b.id);
         }
+        if (status.at === "closed" || status.at === "ended") return connect();
         focus();
       },
       onClose() {
@@ -5462,16 +5557,22 @@ function openTerminalPanel(o) {
     get focused() {
       return focused;
     },
+    get size() {
+      return { cols: cell.cols, rows: cell.rows };
+    },
     focus,
     blur,
     type: send,
-    text() {
-      const buffer = term.buffer.active;
-      return Array.from({ length: rows }, (_, y) => buffer.getLine(buffer.viewportY + y)?.translateToString(true) ?? "");
-    },
+    text,
+    scroll,
+    setColumns,
+    copy,
+    buttons: () => Object.fromEntries(placed.map((b) => [b.id, [(b.x + b.w / 2) / W, (b.y + b.h / 2) / H]])),
     close: () => panel.close()
   };
 }
 export {
+  TERMINAL_COLUMNS,
+  nearestColumns,
   openTerminalPanel
 };

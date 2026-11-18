@@ -148,7 +148,8 @@ function liveRows(layer) {
   const away = [key2("close", "Put the keyboard away", "close", 10)];
   if (layer === "letters") return [top, ...keyRows("letters").slice(0, 3), bottom, away];
   if (layer === "symbols") return [top, chars2("1234567890"), chars2(`:;()$&@"'_`), [...chars2("|~<>{}[]\\"), key2("back", "del", "back", 1)], bottom, away];
-  return [top, chars2("!?`#+=*%^"), [key2("back", "delete", "back", 2)], bottom, away];
+  const pages = [key2("pgup", "page up", "pgup", 2.5), key2("pgdn", "page down", "pgdn", 2.5), key2("home", "home", "home", 1.5), key2("end", "end", "end", 1.5), key2("back", "delete", "back", 2)];
+  return [top, chars2("!?`#+=*%^"), pages, bottom, away];
 }
 function placeLiveKeys(layer) {
   return placeKeys("letters", {}, liveRows(layer));
@@ -197,6 +198,14 @@ var LiveKeys = class {
         return send(`${ESC}[C`);
       case "left":
         return send(`${ESC}[D`);
+      case "pgup":
+        return send(`${ESC}[5~`);
+      case "pgdn":
+        return send(`${ESC}[6~`);
+      case "home":
+        return send(`${ESC}[H`);
+      case "end":
+        return send(`${ESC}[F`);
       case "shift":
         this.shift = this.shift === "off" ? "once" : this.shift === "once" ? "lock" : "off";
         return null;

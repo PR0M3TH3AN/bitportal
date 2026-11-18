@@ -8,7 +8,7 @@ import {
   keyAt,
   placeKeys,
   placeLiveKeys
-} from "./shared-NTGJ43ZC.js";
+} from "./shared-HRTYAXW7.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE12 from "three";
@@ -4294,14 +4294,15 @@ function createKeyboard(o) {
   const at = new THREE7.Vector3();
   const facing2 = new THREE7.Vector3();
   const local = new THREE7.Vector3();
-  const putUp = () => {
+  const putUp = (under = false) => {
     o.camera.getWorldPosition(at);
     o.camera.getWorldDirection(facing2);
     facing2.y = 0;
     if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
     facing2.normalize();
-    group.position.set(at.x + facing2.x * 0.68, Math.max(0.5, at.y - 0.4), at.z + facing2.z * 0.68);
-    group.rotation.set(-32 * (Math.PI / 180), Math.atan2(-facing2.x, -facing2.z), 0, "YXZ");
+    const reach = under ? 0.62 : 0.68;
+    group.position.set(at.x + facing2.x * reach, Math.max(under ? 0.42 : 0.5, at.y - (under ? 0.58 : 0.4)), at.z + facing2.z * reach);
+    group.rotation.set((under ? -42 : -32) * (Math.PI / 180), Math.atan2(-facing2.x, -facing2.z), 0, "YXZ");
     group.visible = true;
   };
   const closeLive = () => {
@@ -4326,7 +4327,7 @@ function createKeyboard(o) {
       live = { keys: new LiveKeys(), o: l };
       title = l.title;
       lay();
-      putUp();
+      putUp(true);
     },
     closeLive,
     ask(a) {
