@@ -25,6 +25,17 @@ lobby or a world would need to agree with it on is in
   [BitFeed](https://feed.bitblocks.network/). Each world says why it is there.
   The live room is skipped where it can't be drawn or the visitor has asked
   to save data; the page is whole without it.
+- **Your lists.** The lobby starts with BitPortal's own list, and that is
+  only one list. Follow anyone's by its address and it gets a shelf of its
+  own; put BitPortal's away if you'd rather. A link of the form
+  `/?list=<naddr>` looks a list up and asks before following it. Which lists
+  you follow is kept on this device and tells nobody.
+- **Worlds nobody has listed.** The lobby says how many worlds have announced
+  themselves that none of your lists name, and shows them when you ask, on a
+  shelf marked unreviewed: three from one key at most, no pictures until you
+  ask for each, and nothing checked until you open a door.
+- **Find a world** by a word, a topic or an address, among everything on the
+  page. It asks nobody.
 - **Your doors.** Save a door and it is yours: first on the list, on your own
   wall in the room, and one press away from any page under **Your doors**.
   Saved places are kept on this device and are never published.
@@ -83,8 +94,8 @@ lobby or a world would need to agree with it on is in
 ## The starter set
 
 A signed-out visitor sees a **starter set**: a hand-picked list signed by a
-named key (`src/starter/starter-set.json`). It currently holds the two NSWP
-reference worlds and four existing WebXR sites. The four are described by the
+named key (`src/starter/starter-set.json`). It currently holds the eight worlds made for
+BitPortal and four existing WebXR sites. The four are described by the
 curator and always shown as "listed by", never as verified.
 
 To change it, edit `src/starter/listings.json` and run:
@@ -117,6 +128,25 @@ After re-signing, publish each new event with the NSWP repo's CLI:
 ```bash
 node ../Nostr-Spatial-Web-Protocol--NSWP-/packages/cli/dist/nswp.mjs publish <event.json>
 ```
+
+## How a world gets a door
+
+Nobody has to ask. A world that announces itself is on the shelf of announced
+worlds for any visitor who opens it, and anyone can publish a list
+([NSWP-08](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/08-lists.md)).
+
+To be on BitPortal's own list, a publisher opens a request with the form at
+`.github/ISSUE_TEMPLATE/list-a-world.yml`. To see what is waiting, with or
+without a request:
+
+```bash
+node ../Nostr-Spatial-Web-Protocol--NSWP-/packages/cli/dist/nswp.mjs worlds --verify --not-on src/starter/starter-set.json
+```
+
+It prints every world announced on the relays that the list doesn't have,
+newest first, and whether each one's site vouches for it.
+Adding a world is the owner's decision each time, and means the steps under
+"The starter set" above.
 
 ## Develop
 
@@ -181,8 +211,10 @@ npm run build && npm run deploy
 
 ## Not built yet
 
-Entering a world under your identity, shelves from the people you follow,
-trust labels (BitGate) and paid entry (BitUnlock). Rooms are a first cut:
+Entering a world under your identity, shelves from the people you follow
+(it waits for names and profiles), making a list from inside BitPortal, search
+beyond what the page already holds, trust labels (BitGate) and paid entry
+(BitUnlock). Rooms are a first cut:
 guests only, no moderation. See the
 NSWP spec's roadmap (§20).
 

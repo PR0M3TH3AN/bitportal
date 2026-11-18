@@ -1,0 +1,40 @@
+name: Ask for a door on BitPortal's list
+description: You have announced a world and would like it on the list BitPortal ships with.
+title: "List: "
+labels: ["listing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        BitPortal's own list is one person's choice of worlds. Nobody needs to be on it: a world you have announced is already on the shelf of announced worlds, and anyone can follow any list.
+
+        Announce your world first (the [three steps](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/add-your-site.md)). This request is public.
+  - type: input
+    id: address
+    attributes:
+      label: Your world's address
+      description: The https address a visitor lands on.
+      placeholder: https://my-world.example/
+    validations:
+      required: true
+  - type: input
+    id: naddr
+    attributes:
+      label: Its announcement
+      description: The naddr that `nswp check <address>` prints, if you have it.
+      placeholder: naddr1…
+  - type: textarea
+    id: about
+    attributes:
+      label: What is there to do?
+      description: A sentence or two. What a visitor finds, and what it needs (a headset, a keyboard, sound).
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: "`nswp check <address>` says \"Verified world\""
+        - label: The way home works for a visitor who arrived through a door
+        - label: Anything a visitor should be warned about is in the announcement (comfort, content warning)

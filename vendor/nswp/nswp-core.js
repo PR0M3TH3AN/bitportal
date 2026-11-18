@@ -5759,6 +5759,67 @@ function checkPictureBytes(expectedSha256, bytes) {
   return bytes.length <= LAYOUT_LIMITS.pictureBytes && bytesToHex(sha256(bytes)) === expectedSha256;
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/list.ts
+var LIST_LIMITS = { worlds: 200, titleChars: 200, descriptionChars: 1e3 };
+function buildListEvent(l) {
+  const tags = [["d", l.d], ["title", l.title]];
+  if (l.description) tags.push(["description", l.description]);
+  for (const w of l.worlds) tags.push(["a", w]);
+  tags.push(["alt", `A list of spatial worlds: ${l.title}`]);
+  return { kind: CURATION_SET_KIND, created_at: l.createdAt ?? nowSeconds(), tags, content: "" };
+}
+function parseListEvent(input, opts = {}) {
+  const c = new Collector();
+  if (typeof input !== "object" || input === null) {
+    c.error("not_an_event", "", "Expected a Nostr event object.");
+    return c.result(null);
+  }
+  const e = input;
+  if (e.kind !== CURATION_SET_KIND) c.error("wrong_kind", "kind", `Expected kind ${CURATION_SET_KIND}, got ${String(e.kind)}.`);
+  if (!Array.isArray(e.tags) || !e.tags.every((t) => Array.isArray(t) && t.every((x) => typeof x === "string"))) {
+    c.error("invalid_tags", "tags", "tags must be an array of string arrays.");
+    return c.result(null);
+  }
+  if (!Number.isInteger(e.created_at)) c.error("invalid_created_at", "created_at", "created_at must be an integer.");
+  if (opts.requireSigned && !hasEventShape(input)) c.error("not_signed", "", "Expected a signed event with id, pubkey and sig.");
+  const pubkey = isHex64(e.pubkey) ? e.pubkey : void 0;
+  if (e.pubkey !== void 0 && !pubkey) c.error("invalid_pubkey", "pubkey", "pubkey must be 64 lowercase hex characters.");
+  const tags = e.tags;
+  const d = getTagValue({ tags }, "d");
+  if (d === void 0) c.error("missing_tag", "tags.d", "A list needs a d tag.");
+  else if (d.length > LIMITS.maxIdLength) c.error("value_too_long", "tags.d", `d must be at most ${LIMITS.maxIdLength} characters.`);
+  let title = getTagValue({ tags }, "title") ?? "";
+  if (title.length > LIST_LIMITS.titleChars) {
+    c.warn("value_too_long", "tags.title", "The title is cut short.");
+    title = title.slice(0, LIST_LIMITS.titleChars);
+  }
+  let description = getTagValue({ tags }, "description") ?? "";
+  if (description.length > LIST_LIMITS.descriptionChars) {
+    c.warn("value_too_long", "tags.description", "The description is cut short.");
+    description = description.slice(0, LIST_LIMITS.descriptionChars);
+  }
+  const worlds = [];
+  let over = false;
+  for (const t of getTags({ tags }, "a")) {
+    const parsed = t[1] ? parseCoordinate(t[1]) : null;
+    if (!parsed || parsed.kind !== WORLD_KIND || parsed.identifier === "") continue;
+    const id = coordinate(parsed);
+    if (worlds.includes(id)) continue;
+    if (worlds.length === LIST_LIMITS.worlds) {
+      over = true;
+      break;
+    }
+    worlds.push(id);
+  }
+  if (over) c.warn("too_many_worlds", "tags.a", `Only the first ${LIST_LIMITS.worlds} worlds on a list are read.`);
+  const list = { d: d ?? "", title: title || (d ?? ""), description, worlds, createdAt: Number.isInteger(e.created_at) ? e.created_at : 0 };
+  if (pubkey) {
+    list.pubkey = pubkey;
+    if (d !== void 0) list.coordinate = coordinate({ kind: CURATION_SET_KIND, pubkey, identifier: d });
+  }
+  return c.result(list);
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/index.ts
 var VERSION = "0.1.0";
 export {
@@ -5776,6 +5837,7 @@ export {
   LAYOUT_ACCESS,
   LAYOUT_LIMITS,
   LIMITS,
+  LIST_LIMITS,
   LOOK_COLORS,
   LOOK_LIMITS,
   LOOK_PARTS,
@@ -5803,6 +5865,7 @@ export {
   buildEntryAssertion,
   buildHello,
   buildLayoutEvent,
+  buildListEvent,
   buildSignal,
   buildWorldEvent,
   checkDestination,
@@ -5845,6 +5908,7 @@ export {
   parseAvatarEvent,
   parseCoordinate,
   parseLayoutEvent,
+  parseListEvent,
   parseManifest,
   parsePortal,
   parseWorldEvent,

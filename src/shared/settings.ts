@@ -5,12 +5,14 @@ export interface Settings {
   /** Use BitFeed ranking. Off = the plain, no-BitBlocks list. */
   ranking: boolean;
   relays: string[];
-  /** Also show worlds found on relays that the starter set doesn't include. */
+  /** Also show worlds announced on relays that none of the visitor's lists name. */
   showUnlisted: boolean;
+  /** Show BitPortal's own list. A visitor who follows other lists can put it away. */
+  showStarter: boolean;
 }
 
 const KEY = "bitportal:settings";
-export const DEFAULTS: Settings = { ranking: true, relays: DEFAULT_RELAYS, showUnlisted: false };
+export const DEFAULTS: Settings = { ranking: true, relays: DEFAULT_RELAYS, showUnlisted: false, showStarter: true };
 
 export function cleanRelays(input: string[]): string[] {
   const out: string[] = [];
@@ -37,6 +39,7 @@ export function loadSettings(search = location.search): Settings {
     ranking: typeof saved.ranking === "boolean" ? saved.ranking : DEFAULTS.ranking,
     relays: relays.length ? relays : DEFAULTS.relays,
     showUnlisted: saved.showUnlisted === true,
+    showStarter: saved.showStarter !== false,
   };
   // ?plain=1 forces the no-BitBlocks lobby without changing saved settings.
   if (new URLSearchParams(search).get("plain") === "1") s.ranking = false;

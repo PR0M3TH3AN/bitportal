@@ -6,13 +6,13 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "bc5324c6ff56eee62a5835bd161ca75aeba7c0b8",
+        "commit": "687898040b854f4c59b81938387581cfdc736e0e",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
         "LICENSE": "bc40ab40278d23777e57ea2872fbaf64663e1c7d6faf4f5ca31e8f4686351b15",
         "THIRD-PARTY-NOTICES.md": "fc17146b226158d37edb032ec202bc14df1fa689b572590ba7adf6de885ef60d",
-        "nswp-core.js": "a3539b1b6abcb22f19721f15ab0324adb9edac405a5f8052ad82d296360a7ec8",
+        "nswp-core.js": "8af46a5f03047e74367ca79cfeb76722a2ea96531f40f9f6ba97293526062027",
         "sdk-types/alloy.d.ts": "122964d77c3f7bd795f4c9471afc8089af77ff5b856da40e054b1af9b829147f",
         "sdk-types/camera.d.ts": "9467bccb746a4f0686db95539619128da28978d6a3ea9ef294f49ba515d20b8d",
         "sdk-types/console.d.ts": "72771b47b922434ce153b42edb65bfca5b9dc070ce955965c041b4ba1a675668",
@@ -40,8 +40,9 @@
         "types/constants.d.ts": "42c9ec713df7f0b01ac94a39bd729867bccb342e7c25764b97d0c780fb812240",
         "types/destination.d.ts": "fa497e8f8c612e069efa278e80bf6c24c7343f1c0acab8734a4da811d00184e5",
         "types/event.d.ts": "a55181cd67e871d16d5cc35f26a58140519702e7676b4d7046867a5303e82f33",
-        "types/index.d.ts": "8d184141226c27d2754c85966362e0a87205f8c25fda999e204983bbb58e316c",
+        "types/index.d.ts": "94092ec7d0bcca7c2f9ffd75465ec150818781c54596a46fc0bd1b85a17e0508",
         "types/layout.d.ts": "ad8d722d37130595bb6b483e90668be10bef6a0fabb8e6982736bf77c775dae7",
+        "types/list.d.ts": "1c2af26c548232ca71b27daf4f49106c9c4b4de4296df929bff10f1b6a7b3160",
         "types/manifest.d.ts": "b0b7d0af1a92d4e6637782b073d3f43aec2ff4a24c6f373d06b87feee39b2070",
         "types/nip19.d.ts": "d4f53a157cec16c7422b012d9d22963b123a051fba53f52105fecfc879d42ce5",
         "types/nip44.d.ts": "55dd5b4f2a7d337f1a297f2a7351704e5730e1b66609ea6555b850346aa0dd0f",

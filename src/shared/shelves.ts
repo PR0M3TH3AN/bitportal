@@ -8,7 +8,7 @@ import type { Recipe } from "bitfeed";
 export interface Candidate {
   id: string;
   createdAt: number;
-  /** Position in the curator's list, 0 first. */
+  /** Position among the worlds on the visitor's lists, 0 first. */
   rank: number;
   total: number;
   fits: boolean;
@@ -43,7 +43,7 @@ export function shelfDefs(daySeed: string): ShelfDef[] {
     {
       id: "start",
       title: "Good places to start",
-      blurb: "The starter set's order, nudged towards what suits this device.",
+      blurb: "Your lists' order, nudged towards what suits this device.",
       recipe: {
         spec: "bitfeed/1",
         name: "Good places to start",
@@ -91,7 +91,7 @@ export function plainShelf(candidates: Candidate[]): Shelf {
   return {
     id: "plain",
     title: "All worlds, newest first",
-    blurb: "Ranking is off. This is the starter set in date order.",
+    blurb: "Ranking is off. These are the worlds on your lists, in date order.",
     items: [...candidates].sort((a, b) => b.createdAt - a.createdAt || a.id.localeCompare(b.id)).map((c) => ({ id: c.id, why: "" })),
   };
 }

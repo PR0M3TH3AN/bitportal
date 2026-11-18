@@ -217,6 +217,40 @@ body.home .top { position: absolute; left: 0; right: 0; top: 0; z-index: 5; back
 .how h3 { font-size: 1.12rem; font-weight: 700; }
 .how p { margin-top: 6px; color: var(--bitportal-muted); max-width: 36ch; }
 
+/* ---------- finding, lists, and getting a door ---------- */
+.find { margin-top: 26px; display: grid; grid-template-columns: max-content minmax(0, 34ch); justify-content: start; align-items: center; gap: 12px 16px; }
+.find label { font-weight: 650; }
+.find input[type="search"] {
+  width: 100%; margin: 0; padding: 9px 12px; font: inherit; color: var(--bitportal-ink);
+  background: var(--bitportal-surface); border: 1px solid var(--bitportal-line); border-radius: 0; outline: 0;
+}
+.find input[type="search"]::placeholder { color: var(--bitportal-muted); }
+.find-topics { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.find-topics:empty { display: none; }
+.topic { font: 500 0.8rem var(--mono); padding: 4px 11px; color: rgba(233, 243, 242, 0.86); background: none; border: 1px solid var(--bitportal-line); cursor: pointer; }
+.topic:hover { border-color: var(--bitportal-accent); color: var(--bitportal-accent); }
+.topic[aria-pressed="true"] { border-color: var(--bitportal-accent); color: var(--bitportal-accent-ink); background: var(--bitportal-accent); font-weight: 700; }
+@media (max-width: 560px) { .find { grid-template-columns: 1fr; } }
+
+.shelf-actions { margin-top: 16px; }
+.shelf-held h2::before { background: none; border: 1.5px solid var(--bitportal-warn); box-shadow: none; }
+
+.list-rows { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--bitportal-line); }
+.list-rows li { padding: 14px 0; border-bottom: 1px solid var(--bitportal-line); }
+.sheet .list-rows p { margin-top: 2px; }
+.sheet .list-title { margin-top: 0; font-size: 1.05rem; }
+.sheet .list-actions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+.list-found { margin-top: 12px; }
+.list-found:not(:empty) { padding: 14px 16px; border-left: 2px solid var(--bitportal-accent); background: var(--bitportal-paper); }
+
+.yours { margin-top: clamp(64px, 10vw, 128px); }
+.yours h2 { font-size: clamp(1.6rem, 3.6vw, 2.5rem); font-weight: 760; letter-spacing: -0.02em; max-width: 20ch; line-height: 1.05; }
+.yours-lede { margin-top: 14px; max-width: 58ch; color: var(--bitportal-muted); }
+.yours-ways { margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px 34px; border-top: 1px solid rgba(var(--bitportal-accent-rgb), 0.4); padding-top: 26px; }
+.yours-ways h3 { font-size: 1.12rem; font-weight: 700; }
+.yours-ways p { margin-top: 8px; color: var(--bitportal-muted); max-width: 38ch; }
+.yours-ways p:has(.button) { margin-top: 16px; }
+
 .foot { margin-top: clamp(64px, 9vw, 128px); padding-block: 28px 48px; border-top: 1px solid var(--bitportal-line); display: grid; gap: 8px; }
 
 /* ---------- panels: sheets, cards ---------- */

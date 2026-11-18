@@ -99,8 +99,8 @@ describe("shelves", () => {
   });
 
   it("explains a ranking with its two strongest reasons", () => {
-    expect(whySentence([{ label: "the starter set ranks it highly", contribution: 0.6 }, { label: "exploration", contribution: 0.05 }, { label: "it runs on this device", contribution: 0.25 }])).toBe(
-      "Here because the starter set ranks it highly and it runs on this device.",
+    expect(whySentence([{ label: "its list ranks it highly", contribution: 0.6 }, { label: "exploration", contribution: 0.05 }, { label: "it runs on this device", contribution: 0.25 }])).toBe(
+      "Here because its list ranks it highly and it runs on this device.",
     );
     expect(whySentence([{ label: "recency", contribution: 0.9 }])).toBe("Here because it is new.");
     expect(whySentence([{ label: "x", contribution: 0 }])).toBe("");
@@ -377,7 +377,7 @@ describe("your doors (spec §14.1)", () => {
     expect(drawn.map((e) => e.id)).toEqual([b.id, a.id]);
     expect(drawn[0]).toBe(catalog.entries.find((e) => e.id === b.id));
     // A saved place the catalogue doesn't know is still a door.
-    const alone = savedEntries(list, { entries: [], unlisted: [], curator: catalog.curator });
+    const alone = savedEntries(list, { entries: [], unlisted: [] });
     expect(alone.map((e) => [e.id, e.rank])).toEqual([[b.id, null], [a.id, null]]);
   });
 

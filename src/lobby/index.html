@@ -33,6 +33,11 @@
 </section>
 <main class="frame">
   <p id="source" class="source"></p>
+  <form id="find" class="find" role="search">
+    <label for="find-q">Find a world</label>
+    <input id="find-q" type="search" placeholder="A name, a topic or an address" autocomplete="off" spellcheck="false">
+    <div id="find-topics" class="find-topics" role="group" aria-label="Narrow by topic"></div>
+  </form>
   <div id="shelves"></div>
   <section class="how" aria-labelledby="how-title">
     <h2 id="how-title">A door can't lie about where it goes.</h2>
@@ -41,6 +46,15 @@
       <li><h3>Stop at the Airlock</h3><p>A plain page shows the real address once more and waits for you. Nothing about your trip is sent to a server.</p></li>
       <li><h3>Arrive</h3><p>The world opens on its own site. Its way back brings you here, facing the door you left through.</p></li>
     </ol>
+  </section>
+  <section class="yours" aria-labelledby="yours-title">
+    <h2 id="yours-title">Nobody decides who gets a door.</h2>
+    <p class="yours-lede">There is no index to apply to. A world announces itself, and anyone can publish a list of the worlds they like. BitPortal's own list is one of them.</p>
+    <div class="yours-ways">
+      <div><h3>You have a world</h3><p>Announce it with your own key. From then on it is on the shelf of announced worlds for anyone who asks to see them, and every curator can find it.</p><p><a class="button" href="/publish/">Announce a world</a></p><p class="small">For a site you already run, <a href="https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/add-your-site.md" rel="noopener">three steps</a> cover it.</p></div>
+      <div><h3>You want it on BitPortal's list</h3><p>Announce it first. Then say so, with its address, and it will be looked at: does the site vouch for the announcement, and does it do what it says.</p><p><a class="button" href="https://github.com/PR0M3TH3AN/bitportal/issues/new?template=list-a-world.yml" rel="noopener">Ask for a door</a></p><p class="small">That opens a form on GitHub, where the request is public.</p></div>
+      <div><h3>You'd rather choose for yourself</h3><p>Follow anyone's list, and it gets a shelf here. Put BitPortal's away if you like. Which lists you follow stays on this device.</p><p><button id="open-lists-2" class="button" type="button">Your lists</button></p></div>
+    </div>
   </section>
 </main>
 <footer class="frame foot">
