@@ -235,34 +235,6 @@ body.walk { overflow: hidden; background: #0a0b0d; color: #f2f3f6; }
 .walk #stage { position: fixed; inset: 0; }
 .walk #stage canvas { display: block; touch-action: none; }
 .walk.leaving #stage { opacity: 0.35; transition: opacity 0.3s; }
-.walk-top { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px var(--edge); pointer-events: none; }
-.walk-top > * { pointer-events: auto; }
-.walk .wordmark { color: #f2f3f6; text-shadow: 0 1px 4px #000; }
-.walk .glyph { border-color: #f2f3f6; }
-.walk .button { color: #f2f3f6; border-color: #f2f3f6; background: #101217; }
-.walk .button:hover { background: #f2f3f6; color: #0a0b0d; }
-.walk .button.primary { background: #3fc584; border-color: #3fc584; color: #04170d; }
-.walk .button.primary:hover { background: #f2f3f6; border-color: #f2f3f6; }
-.walk-hud { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px var(--edge); pointer-events: none; }
-.walk-hud > * { pointer-events: auto; }
-.walk-status { flex-basis: 100%; margin: 0; font-size: 0.9rem; text-shadow: 0 1px 4px #000; pointer-events: none; }
-.walk-door { font-size: 1rem; min-height: 1.5em; }
-.walk-help { color: #aab0bd; }
-@media (hover: none) { .walk-help { display: none; } }
-/* The controls must not change height as text comes and goes: the picture is
-   placed above them, and would jump. So the line about the door being pointed
-   at is always one line, and the spoken note takes no room. */
-.walk-door { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.walk-note { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-/* A phone: the controls take as little of the picture as they can. */
-@media (max-width: 640px) {
-  .walk-top { padding: 8px 12px; gap: 8px; }
-  .walk-top .button, .walk-hud .button { min-height: 40px; padding: 6px 12px; font-size: 0.9rem; }
-  .walk-top .top-actions { gap: 6px; flex-wrap: nowrap; }
-  .walk-hud { gap: 6px 8px; padding: 10px 12px; }
-  .walk-status { font-size: 0.78rem; line-height: 1.35; }
-  .walk-door { font-size: 0.85rem; }
-}
 
 /* ---------- pages with forms (identity, announce a world) ---------- */
 .page { max-width: 760px; padding-block: clamp(28px, 6vw, 64px); }

@@ -22,11 +22,17 @@ function node(tag: string, cls: string, ...children: (Node | string)[]): HTMLEle
 
 /** Make `button` open the jump list. `from` says which start the visitor returns to. */
 export function attachJumpList(button: HTMLButtonElement, opts: { relays: () => string[]; from: Left["from"] }): void {
+  const list = createJumpList(opts);
+  button.addEventListener("click", list.open);
+}
+
+/** The jump list as something to open from anywhere, such as the room's controls. */
+export function createJumpList(opts: { relays: () => string[]; from: Left["from"] }): { open(): void } {
   const dialog = document.createElement("dialog");
   dialog.className = "sheet";
   dialog.setAttribute("aria-label", "Your doors");
   document.body.append(dialog);
-  button.addEventListener("click", () => {
+  const open = () => {
     const saved = loadSaved();
     const list = node("ul", "jump-list");
     for (const s of saved) {
@@ -53,5 +59,6 @@ export function attachJumpList(button: HTMLButtonElement, opts: { relays: () => 
       node("div", "actions", close),
     );
     dialog.showModal();
-  });
+  };
+  return { open };
 }

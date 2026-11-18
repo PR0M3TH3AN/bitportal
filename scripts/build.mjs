@@ -41,6 +41,7 @@ await build({
     bitfeed: join(root, "vendor/bitfeed/bitfeed.js"),
     "nswp-sdk/three": join(root, "vendor/nswp/sdk/three.js"),
     "nswp-sdk/home": join(root, "vendor/nswp/sdk/home.js"),
+    "nswp-sdk/ui": join(root, "vendor/nswp/sdk/ui.js"),
   },
 });
 

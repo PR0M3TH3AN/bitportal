@@ -10,21 +10,8 @@
 <link rel="stylesheet" href="/bitportal.css">
 </head>
 <body class="walk">
+<!-- The room is drawn here. Its controls come from the NSWP controls kit, added by the page's script. -->
 <div id="stage"></div>
-<header class="walk-top">
-  <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
-  <span class="top-actions"><button id="jump-button" class="button" type="button">Your doors</button><a class="button" href="/">See the list</a></span>
-</header>
-<div class="walk-hud">
-  <button id="vr-button" class="button primary" type="button" disabled>Checking for VR…</button>
-  <button id="room-button" class="button" type="button">Join the room</button>
-  <button id="mic-button" class="button" type="button" hidden>Turn microphone on</button>
-  <button id="invite-button" class="button" type="button" hidden>Make a private room</button>
-  <p id="door-line" class="walk-status walk-door" aria-live="polite"></p>
-  <p id="room-note" class="walk-note" role="status"></p>
-  <p id="room-status" class="walk-status" role="status">Joining lets you see and hear other visitors here. It shows your IP address to them.</p>
-  <p class="walk-status walk-help">Your doors are on one wall and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or click the floor to step there. Click a door, or walk through it, to see where it leads.</p>
-</div>
 <script type="module" src="/walk/main.js"></script>
 </body>
 </html>

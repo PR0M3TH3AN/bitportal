@@ -1,21 +1,22 @@
 import {
-  attachRoomControls,
+  addRoomControls,
+  addViewControls,
   capturePanorama,
+  createConsole,
   createPortalWindow,
   createPresence,
-  createWorldMenu,
-  menuItemFor,
   panoramaTexture,
   textSprite,
   turnVisitor
-} from "./shared-CCNFFHP3.js";
+} from "./shared-JHTIFB7O.js";
+import "./shared-REPWSNOI.js";
 export {
-  attachRoomControls,
+  addRoomControls,
+  addViewControls,
   capturePanorama,
+  createConsole,
   createPortalWindow,
   createPresence,
-  createWorldMenu,
-  menuItemFor,
   panoramaTexture,
   textSprite,
   turnVisitor

@@ -18,12 +18,13 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome } from "nswp-sdk/home";
-import { attachRoomControls, createPortalWindow, createPresence, createWorldMenu, menuItemFor, panoramaTexture, textSprite, turnVisitor, type WorldMenu } from "nswp-sdk/three";
+import { addRoomControls, addViewControls, createConsole, createPortalWindow, createPresence, panoramaTexture, textSprite, type XrConsole } from "nswp-sdk/three";
+import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { doorArt } from "../shared/door.js";
-import { attachJumpList } from "../shared/jump.js";
+import { createJumpList } from "../shared/jump.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 import { loadRoom } from "../shared/room.js";
@@ -49,7 +50,10 @@ interface Door {
 
 /** Anything in the room that can be pointed at and selected. */
 interface Clickable {
-  mesh: THREE.Mesh;
+  /** Null for something on the headset console, which isn't one of the room's own meshes. */
+  mesh: THREE.Mesh | null;
+  /** What it is called on the console, when it is there. */
+  onConsole?: string;
   /** What selecting it does, in words, for the line under the room. */
   say: string;
   act(): void;
@@ -67,8 +71,10 @@ interface TestHooks {
   step(x: number, z: number): void;
   /** Where the visitor's head is over the floor: [x, z] in metres. */
   where(): [number, number];
-  /** The menu shown in a headset. */
-  menu?: WorldMenu;
+  /** Everything a visitor can do in the room. */
+  controls?: Controls;
+  /** The console shown in a headset. */
+  console?: XrConsole;
   /** Point the mouse ray at a door, as if hovering it. */
   aim(id: string | null): void;
   visit(id: string): void;
@@ -379,6 +385,26 @@ async function start(): Promise<void> {
   const furniture = createHome(room.layout, { lights: false, textColor: INK });
   scene.add(furniture.group);
   state.furniture = room.layout.items.length;
+
+  // ---------------------------------------------------------- controls
+  // One list of what a visitor can do in the room (the NSWP controls kit). The
+  // HUD draws it on a flat screen and the console draws it in a headset. The
+  // look starts from the room's own accent; the visitor can change it.
+  const controls = createControls({ title: "Your room", address: location.host, theme: { accent: room.layout.room.accent } });
+  const hud = mountHud(controls);
+  hooks.controls = controls;
+  const jumpList = createJumpList({ relays: () => settings.relays, from: "walk" });
+  controls.add(
+    // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
+    { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
+    { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => location.assign("/") },
+  );
+  controls.addSection({
+    id: "help",
+    label: "Help",
+    icon: "help",
+    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there. Select a door, or walk through it, to see where it leads before you go.",
+  });
   scene.background = new THREE.Color(room.layout.room.color).multiplyScalar(0.6);
   scene.fog = new THREE.Fog(scene.background as THREE.Color, 12, 34);
 
@@ -603,7 +629,7 @@ async function start(): Promise<void> {
     camera.add(toast);
     toastUntil = performance.now() + 3600;
     state.said = text;
-    $("room-note").textContent = text.replace(/\n/g, " ");
+    controls.say(text.replace(/\n/g, " "));
   };
 
   const keep = (next: SavedPlace[]): boolean => {
@@ -661,23 +687,13 @@ async function start(): Promise<void> {
   const raycaster = new THREE.Raycaster();
   raycaster.camera = camera; // rays from a hand don't set it, and signs need it
 
-  // ------------------------------------------------- the menu in a headset
-  // In a headset the page's buttons are out of reach, so the same ones go in a
-  // small menu in the room. Turn around matters most: the other wall is behind
-  // the visitor, and someone seated can't turn to face it.
-  const menu = createWorldMenu({
-    textColor: INK,
-    note: () => $("room-status").textContent ?? "",
-    items: [
-      { label: "Turn around", act: () => turnVisitor(rig, camera, 180) },
-      menuItemFor($<HTMLButtonElement>("room-button")),
-      menuItemFor($<HTMLButtonElement>("mic-button")),
-      { label: "See the list", act: () => location.assign("/") },
-      { label: "Leave VR", act: () => renderer.xr.getSession()?.end() },
-    ],
-  });
-  scene.add(menu.group);
-  hooks.menu = menu;
+  // ------------------------------------------------- the console in a headset
+  // In a headset the page can't be seen, so the room's controls go on a console
+  // in the scene. Turn around matters most there: the other wall is behind the
+  // visitor, and someone seated can't turn to face it.
+  const xrConsole = createConsole(controls, { renderer, rig });
+  scene.add(xrConsole.group);
+  hooks.console = xrConsole;
 
   // ------------------------------------------------------ pointing
   // Stepping: point at the floor and select to stand there. It is how someone
@@ -730,9 +746,9 @@ async function start(): Promise<void> {
   const ndc = new THREE.Vector2(2, 2); // off-screen until the mouse moves
   /** What the current ray points at: a door, or one of the room's buttons. */
   const under = (): Clickable | null => {
-    const button = menu.pick(raycaster);
-    if (button) return { mesh: button, say: "", act: () => menu.press(button) };
-    for (const hit of raycaster.intersectObjects(clickables.map((c) => c.mesh), false)) {
+    const button = xrConsole.pick(raycaster);
+    if (button) return { mesh: null, onConsole: button, say: "", act: () => xrConsole.press(button) };
+    for (const hit of raycaster.intersectObjects(clickables.flatMap((c) => (c.mesh ? [c.mesh] : [])), false)) {
       const found = clickables.find((c) => c.mesh === hit.object);
       if (!found) continue;
       // A door is its arch, not the rectangle the arch is drawn on. The corners
@@ -802,13 +818,7 @@ async function start(): Promise<void> {
   // ------------------------------------------------------- presence
   let refreshRoom = () => {};
   const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, onChange: () => refreshRoom() });
-  ({ refresh: refreshRoom } = attachRoomControls(presence, {
-    roomButton: $<HTMLButtonElement>("room-button"),
-    micButton: $<HTMLButtonElement>("mic-button"),
-    inviteButton: $<HTMLButtonElement>("invite-button"),
-    status: $("room-status"),
-    onState: (s) => (state.room = s),
-  }));
+  ({ refresh: refreshRoom } = addRoomControls(controls, presence, { onState: (s) => (state.room = s) }));
 
   // -------------------------------------------------------- walking
   const keys = new Set<string>();
@@ -843,38 +853,13 @@ async function start(): Promise<void> {
   };
 
   // ------------------------------------------------------------- VR
-  const vrButton = $<HTMLButtonElement>("vr-button");
-  if (vr) {
-    vrButton.disabled = false;
-    vrButton.textContent = "Enter VR";
-    vrButton.addEventListener("click", async () => {
-      if (renderer.xr.isPresenting) {
-        await renderer.xr.getSession()?.end();
-        return;
-      }
-      try {
-        const session = await navigator.xr!.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "hand-tracking"] });
-        await renderer.xr.setSession(session);
-        state.xr = "presenting";
-        vrButton.textContent = "Exit VR";
-        session.addEventListener("end", () => {
-          state.xr = "ended";
-          vrButton.textContent = "Enter VR";
-        });
-      } catch (err) {
-        state.xr = `error: ${err instanceof Error ? err.message : String(err)}`;
-      }
-    });
-  } else vrButton.textContent = navigator.xr ? "VR isn't available on this device" : "This browser has no WebXR";
-
-  attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => settings.relays, from: "walk" });
+  void addViewControls(controls, { renderer, rig, camera, hud, onState: (s) => (state.xr = s) });
 
   // On a flat screen the page's own controls cover the bottom of the picture,
   // and on a phone that is where the doors are. So the picture is shifted up
   // until eye level sits in the middle of the space the controls leave free.
   // Pointing still lines up: rays are made from the same shifted camera.
-  const hud = document.querySelector<HTMLElement>(".walk-hud")!;
-  const topBar = document.querySelector<HTMLElement>(".walk-top")!;
+  let covered = "";
   const fit = () => {
     if (renderer.xr.isPresenting) return; // the headset sets its own view
     camera.aspect = innerWidth / innerHeight;
@@ -882,7 +867,9 @@ async function start(): Promise<void> {
     // three doors side by side and not one and a half.
     const across = THREE.MathUtils.degToRad(52);
     camera.fov = Math.min(90, Math.max(62, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(across / 2) / camera.aspect))));
-    const shift = Math.min(Math.round((hud.offsetHeight - topBar.offsetHeight) / 2), Math.round(innerHeight * 0.3));
+    const cover = hud.cover();
+    covered = `${cover.top}|${cover.bottom}`;
+    const shift = Math.min(Math.round((cover.bottom - cover.top) / 2), Math.round(innerHeight * 0.3));
     if (shift > 0) camera.setViewOffset(innerWidth, innerHeight, 0, shift, innerWidth, innerHeight);
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
@@ -890,8 +877,11 @@ async function start(): Promise<void> {
     state.shift = Math.max(shift, 0);
   };
   window.addEventListener("resize", fit);
-  // The controls change height as lines of text come and go.
-  new ResizeObserver(fit).observe(hud);
+  // The controls change height as keys come and go on the hotbar.
+  setInterval(() => {
+    const cover = hud.cover();
+    if (`${cover.top}|${cover.bottom}` !== covered) fit();
+  }, 500);
   renderer.xr.addEventListener("sessionend", fit);
   fit();
 
@@ -958,7 +948,6 @@ async function start(): Promise<void> {
   }
 
   // --------------------------------------------------------- frames
-  const doorLine = $("door-line");
 
   const accent = new THREE.Color(ACCENT);
   const white = new THREE.Color(0xffffff);
@@ -998,16 +987,12 @@ async function start(): Promise<void> {
     if (key !== state.pointed) {
       state.pointed = key;
       state.hovered = hovered?.entry.id ?? null;
-      doorLine.replaceChildren();
-      if (pointed?.say) doorLine.append(pointed.say);
+      if (pointed?.say) controls.setTarget(pointed.say);
       else if (hovered) {
         const w = hovered.entry.world;
         const host = hostParts(w.url);
-        const where = document.createElement("span");
-        where.className = "key";
-        where.textContent = `${host.prefix}${host.domain}`;
-        doorLine.append(`${w.title} at `, where, w.summary ? `. ${w.summary}` : ".");
-      }
+        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`);
+      } else controls.setTarget("");
     }
     for (const d of doors) {
       // A door answers to being pointed at; its button answers on its own.
@@ -1017,15 +1002,15 @@ async function start(): Promise<void> {
       d.info.visible = d.hover > 0.5;
       d.view.position.z = -0.12 * d.hover; // the door swings in a little
     }
-    for (const c of clickables) if (c.mesh !== c.door?.view) c.mesh.scale.setScalar(c === pointed ? 1.12 : 1);
+    for (const c of clickables) if (c.mesh && c.mesh !== c.door?.view) c.mesh.scale.setScalar(c === pointed ? 1.12 : 1);
     if (toast && performance.now() > toastUntil) {
       camera.remove(toast);
       toast.material.map?.dispose();
       toast.material.dispose();
       toast = null;
     }
-    menu.aim(pointed && !clickables.includes(pointed) ? pointed.mesh : null);
-    menu.update(dt, camera, renderer.xr.isPresenting);
+    xrConsole.aim(pointed?.onConsole ?? null);
+    xrConsole.update(dt, camera, renderer.xr.isPresenting);
     furniture.update(t, dt);
     renderer.render(scene, camera);
   });

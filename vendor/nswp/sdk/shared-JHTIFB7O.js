@@ -1,5 +1,10 @@
+import {
+  ICONS,
+  rgb
+} from "./shared-REPWSNOI.js";
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
-import * as THREE2 from "three";
+import * as THREE3 from "three";
 import { spawnOffset } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/hashes/_u64.js
@@ -375,11 +380,11 @@ var SHA2_32B = class extends HashMD {
     this.H = IV[7] | 0;
   }
   get() {
-    const { A, B, C, D, E, F, G, H } = this;
-    return [A, B, C, D, E, F, G, H];
+    const { A, B, C, D, E, F, G, H: H2 } = this;
+    return [A, B, C, D, E, F, G, H2];
   }
   // prettier-ignore
-  set(A, B, C, D, E, F, G, H) {
+  set(A, B, C, D, E, F, G, H2) {
     this.A = A | 0;
     this.B = B | 0;
     this.C = C | 0;
@@ -387,7 +392,7 @@ var SHA2_32B = class extends HashMD {
     this.E = E | 0;
     this.F = F | 0;
     this.G = G | 0;
-    this.H = H | 0;
+    this.H = H2 | 0;
   }
   _cloneInto(to) {
     (to ||= new this.constructor()).set(...this.get());
@@ -403,13 +408,13 @@ var SHA2_32B = class extends HashMD {
       const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
       SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
     }
-    let { A, B, C, D, E, F, G, H } = this;
+    let { A, B, C, D, E, F, G, H: H2 } = this;
     for (let i = 0; i < 64; i++) {
       const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-      const T1 = H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
+      const T1 = H2 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
       const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
       const T2 = sigma0 + Maj(A, B, C) | 0;
-      H = G;
+      H2 = G;
       G = F;
       F = E;
       E = D + T1 | 0;
@@ -425,8 +430,8 @@ var SHA2_32B = class extends HashMD {
     E = E + this.E | 0;
     F = F + this.F | 0;
     G = G + this.G | 0;
-    H = H + this.H | 0;
-    this.set(A, B, C, D, E, F, G, H);
+    H2 = H2 + this.H | 0;
+    this.set(A, B, C, D, E, F, G, H2);
   }
   roundClean() {
     clean(SHA256_W);
@@ -1058,9 +1063,9 @@ function normalizeZ(c, points) {
   const invertedZs = FpInvertBatch(c.Fp, points.map((p) => p.Z));
   return points.map((p, i) => c.fromAffine(p.toAffine(invertedZs[i])));
 }
-function validateW(W, bits, min = 1) {
-  if (!Number.isSafeInteger(W) || W < min || W > bits)
-    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W);
+function validateW(W2, bits, min = 1) {
+  if (!Number.isSafeInteger(W2) || W2 < min || W2 > bits)
+    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W2);
 }
 function validateTableBytes(numPoints, fpBytes) {
   const bytes = numPoints * (4 * fpBytes + 128);
@@ -1107,8 +1112,8 @@ function oddMultiples(p, size) {
     t.push(t[j - 1].add(dbl));
   return t;
 }
-function wnafDigits(n, W) {
-  const size = 2 ** W;
+function wnafDigits(n, W2) {
+  const size = 2 ** W2;
   const half = size / 2;
   const mask = BigInt(size - 1);
   const d = [];
@@ -1125,11 +1130,11 @@ function wnafDigits(n, W) {
   }
   return d;
 }
-function signedWindowDigits(n, W, windows) {
-  const size = 2 ** W;
+function signedWindowDigits(n, W2, windows) {
+  const size = 2 ** W2;
   const half = size / 2;
   const mask = BigInt(size - 1);
-  const shiftBy = BigInt(W);
+  const shiftBy = BigInt(W2);
   const d = [];
   for (let w = 0; w < windows; w++) {
     let v = Number(n & mask);
@@ -1189,9 +1194,9 @@ var ScalarMultiplier = class {
    * @param W - window size
    * @param bits - scalar bitlength the table must cover
    */
-  buildWnafTable(point, W, bits) {
-    const windows = Math.ceil(bits / W) + 1;
-    const half = 2 ** (W - 1);
+  buildWnafTable(point, W2, bits) {
+    const windows = Math.ceil(bits / W2) + 1;
+    const half = 2 ** (W2 - 1);
     const comp = [];
     let base = point;
     for (let w = 0; w < windows; w++) {
@@ -1202,7 +1207,7 @@ var ScalarMultiplier = class {
       }
       base = comp[comp.length - 1].double();
     }
-    return { W, bits, windows, comp };
+    return { W: W2, bits, windows, comp };
   }
   /**
    * Implements ec multiplication using precomputed signed fixed-window wNAF tables.
@@ -1214,9 +1219,9 @@ var ScalarMultiplier = class {
    * @returns real and fake (for const-time) points
    */
   wnafCachedCT(precomputes, n) {
-    const { W, windows, comp } = precomputes;
-    const half = 2 ** (W - 1);
-    const digits = signedWindowDigits(n, W, windows);
+    const { W: W2, windows, comp } = precomputes;
+    const half = 2 ** (W2 - 1);
+    const digits = signedWindowDigits(n, W2, windows);
     let p = this.ZERO;
     let f = this.BASE;
     for (let w = 0; w < windows; w++) {
@@ -1237,11 +1242,11 @@ var ScalarMultiplier = class {
   // Cache key is point identity plus (W, bits); at most two entries exist per point (public-width
   // `Fn.BITS` and blinded `Fn.BITS + BLIND_BITS`). Callers must not reuse the same point with
   // incompatible `transform(...)` layouts and expect a separate cache entry.
-  getWnafPrecomputes(W, point, bits, transform) {
+  getWnafPrecomputes(W2, point, bits, transform) {
     let entries = this.wnafPrecomputes.get(point);
-    let comp = entries?.find((entry) => entry.W === W && entry.bits === bits);
+    let comp = entries?.find((entry) => entry.W === W2 && entry.bits === bits);
     if (!comp) {
-      comp = this.buildWnafTable(point, W, bits);
+      comp = this.buildWnafTable(point, W2, bits);
       if (typeof transform === "function")
         comp = { ...comp, comp: transform(comp.comp) };
       if (!entries) {
@@ -1268,10 +1273,10 @@ var ScalarMultiplier = class {
   // ECDH peer keys) skip building a throwaway cached table in favor of a small fixed-window
   // multiply. `n` must be < 2^bits.
   runCT(point, n, bits, transform) {
-    const W = getWindowSize(point);
-    if (W === 1)
+    const W2 = getWindowSize(point);
+    if (W2 === 1)
       return this.fixedWindowCT(point, n, bits);
-    return this.wnafCachedCT(this.getWnafPrecomputes(W, point, bits, transform), n);
+    return this.wnafCachedCT(this.getWnafPrecomputes(W2, point, bits, transform), n);
   }
   mulCT(point, scalar, transform) {
     this.validateMulInput(point, scalar);
@@ -1305,20 +1310,20 @@ var ScalarMultiplier = class {
    * (this path needs no fake accumulator — its op-count is already scalar-independent).
    */
   fixedWindowCT(point, n, bits) {
-    const W = FW_WINDOW;
-    const size = 1 << W;
-    const mask = bitMask(W);
+    const W2 = FW_WINDOW;
+    const size = 1 << W2;
+    const mask = bitMask(W2);
     const table = new Array(size);
     table[0] = this.ZERO;
     for (let i = 1; i < size; i++)
       table[i] = table[i - 1].add(point);
-    const windows = Math.ceil(bits / W);
+    const windows = Math.ceil(bits / W2);
     let acc = this.ZERO;
     for (let window = windows - 1; window >= 0; window--) {
       if (window !== windows - 1)
-        for (let d = 0; d < W; d++)
+        for (let d = 0; d < W2; d++)
           acc = acc.double();
-      const digit = Number(n >> BigInt(window * W) & mask);
+      const digit = Number(n >> BigInt(window * W2) & mask);
       let sel = table[0];
       for (let i = 1; i < size; i++)
         sel = i === digit ? table[i] : sel;
@@ -1344,22 +1349,22 @@ var ScalarMultiplier = class {
     this.assertPoint(point);
     if (!isPosBig(scalar))
       throw new Error("invalid scalar");
-    const W = getWindowSize(point);
-    if (W === 1 || scalar >= this.Point.Fn.ORDER)
+    const W2 = getWindowSize(point);
+    if (W2 === 1 || scalar >= this.Point.Fn.ORDER)
       return mulAddUnsafe(this.Point, [point], [scalar], true);
-    const precomputes = this.getWnafPrecomputes(W, point, this.bits, transform);
+    const precomputes = this.getWnafPrecomputes(W2, point, this.bits, transform);
     return this.wnafCachedCT(precomputes, scalar).p;
   }
   // Remembers the window size used for precomputed wNAF multiplication of the given point
   // and drops any previously built tables. Usually only the base point is precomputed.
   // W=1 resets the point to the un-precomputed (table-less) paths.
   // W is additionally capped so tables stay under ~2 GiB ({@link TABLE_BYTES_MAX}).
-  setWindowSize(point, W) {
+  setWindowSize(point, W2) {
     this.assertPoint(point);
-    validateW(W, this.bits);
-    const windows = Math.ceil((this.bits + BLIND_BITS) / W) + 1;
-    validateTableBytes(windows * 2 ** (W - 1), this.Point.Fp.BYTES);
-    pointWindowSizes.set(point, W);
+    validateW(W2, this.bits);
+    const windows = Math.ceil((this.bits + BLIND_BITS) / W2) + 1;
+    validateTableBytes(windows * 2 ** (W2 - 1), this.Point.Fp.BYTES);
+    pointWindowSizes.set(point, W2);
     this.wnafPrecomputes.delete(point);
   }
   // True when a window size is set: tables themselves are built lazily on first multiply.
@@ -2387,238 +2392,8 @@ var room = {
   }
 };
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/menu.ts
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/turn.ts
 import * as THREE from "three";
-function menuItemFor(button) {
-  return { label: () => button.textContent ?? "", hidden: () => button.hidden !== false || button.disabled, act: () => button.click() };
-}
-var ROW_W = 0.56;
-var ROW_H = 0.13;
-var GAP = 0.025;
-function drawPill(canvas, text, color) {
-  const g = canvas.getContext("2d");
-  const { width: w, height: h } = canvas;
-  g.clearRect(0, 0, w, h);
-  g.fillStyle = "rgba(16,18,23,0.94)";
-  g.strokeStyle = color;
-  g.lineWidth = 6;
-  g.beginPath();
-  g.roundRect(5, 5, w - 10, h - 10, (h - 10) / 2);
-  g.fill();
-  g.stroke();
-  g.fillStyle = color;
-  g.font = `600 ${Math.round(h * 0.42)}px system-ui, sans-serif`;
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText(text, w / 2, h / 2 + 2, w - 70);
-}
-function drawNote(canvas, text, color) {
-  const g = canvas.getContext("2d");
-  const w = canvas.width;
-  const size = 34;
-  g.font = `400 ${size}px system-ui, sans-serif`;
-  const lines = [];
-  let line = "";
-  for (const word of text.split(/\s+/)) {
-    const next = line ? `${line} ${word}` : word;
-    if (g.measureText(next).width <= w - 48 || !line) line = next;
-    else {
-      lines.push(line);
-      line = word;
-    }
-  }
-  if (line) lines.push(line);
-  lines.length = Math.min(lines.length, 4);
-  const h = 32 + lines.length * (size + 8);
-  canvas.height = h;
-  g.fillStyle = "rgba(10,12,18,0.82)";
-  g.beginPath();
-  g.roundRect(0, 0, w, h, 20);
-  g.fill();
-  g.font = `400 ${size}px system-ui, sans-serif`;
-  g.fillStyle = color;
-  g.textBaseline = "top";
-  lines.forEach((l, i) => g.fillText(l, 24, 18 + i * (size + 8)));
-  return h / w;
-}
-function createWorldMenu(opts) {
-  const color = opts.textColor ?? "#f2f3f6";
-  const group = new THREE.Group();
-  group.name = "world-menu";
-  group.visible = false;
-  const rowGeo = new THREE.PlaneGeometry(ROW_W, ROW_H);
-  const makeRow = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 768;
-    canvas.height = Math.round(768 * ROW_H / ROW_W);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const mesh = new THREE.Mesh(rowGeo, new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false }));
-    mesh.renderOrder = 20;
-    group.add(mesh);
-    return { mesh, canvas, texture, text: "" };
-  };
-  const write = (row, text) => {
-    if (row.text === text) return;
-    row.text = text;
-    drawPill(row.canvas, text, color);
-    row.texture.needsUpdate = true;
-  };
-  const opener = makeRow();
-  write(opener, "Menu");
-  opener.mesh.scale.setScalar(0.62);
-  const closer = makeRow();
-  write(closer, "Close");
-  const rows = opts.items.map(() => makeRow());
-  const noteCanvas = document.createElement("canvas");
-  noteCanvas.width = 768;
-  const noteTexture = new THREE.CanvasTexture(noteCanvas);
-  noteTexture.colorSpace = THREE.SRGBColorSpace;
-  const note = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: noteTexture, transparent: true, depthTest: false }));
-  note.renderOrder = 20;
-  group.add(note);
-  let noteText = "";
-  let open = false;
-  let placed = false;
-  let settling = false;
-  let aimed = null;
-  let sinceRead = 1;
-  let shown = [];
-  const head = new THREE.Vector3();
-  const facing = new THREE.Vector3();
-  const want = new THREE.Vector3();
-  const layout = () => {
-    opener.mesh.visible = !open;
-    closer.mesh.visible = open;
-    note.visible = false;
-    for (const r of rows) r.mesh.visible = false;
-    if (!open) {
-      opener.mesh.position.set(0, 0, 0);
-      shown = [opener.mesh];
-      return;
-    }
-    const showing = [];
-    opts.items.forEach((item, i) => {
-      if (item.hidden?.()) return;
-      const row = rows[i];
-      write(row, typeof item.label === "function" ? item.label() : item.label);
-      row.mesh.visible = true;
-      showing.push(row);
-    });
-    showing.push(closer);
-    const text = opts.note?.().trim() ?? "";
-    let noteH = 0;
-    if (text) {
-      if (text !== noteText) {
-        noteText = text;
-        const ratio = drawNote(noteCanvas, text, color);
-        noteTexture.needsUpdate = true;
-        note.scale.set(ROW_W * 1.25, ROW_W * 1.25 * ratio, 1);
-      }
-      noteH = note.scale.y + GAP;
-      note.visible = true;
-    }
-    const total = noteH + showing.length * ROW_H + (showing.length - 1) * GAP;
-    let y = total / 2;
-    if (text) {
-      note.position.set(0, y - note.scale.y / 2, 0);
-      y -= noteH;
-    }
-    for (const row of showing) {
-      row.mesh.position.set(0, y - ROW_H / 2, 0);
-      y -= ROW_H + GAP;
-    }
-    shown = showing.map((r) => r.mesh);
-  };
-  const place = () => {
-    const flat = Math.hypot(facing.x, facing.z) || 1;
-    const reach = open ? 1 : 0.75;
-    want.set(head.x + facing.x / flat * reach, Math.max(0.4, head.y - (open ? 0.22 : 0.52)), head.z + facing.z / flat * reach);
-  };
-  const face = () => {
-    group.rotation.y = Math.atan2(head.x - group.position.x, head.z - group.position.z);
-  };
-  const menu = {
-    group,
-    get open() {
-      return open;
-    },
-    setOpen(next) {
-      if (open === next) return;
-      open = next;
-      placed = false;
-      sinceRead = 0;
-      layout();
-    },
-    pick(raycaster) {
-      if (!group.visible) return null;
-      const hit = raycaster.intersectObjects(shown, false)[0];
-      return hit?.object ?? null;
-    },
-    aim(button) {
-      aimed = button;
-    },
-    press(button) {
-      if (button === opener.mesh) return menu.setOpen(true);
-      if (button === closer.mesh) return menu.setOpen(false);
-      const i = rows.findIndex((r) => r.mesh === button);
-      const item = opts.items[i];
-      if (!item) return;
-      void Promise.resolve(item.act()).catch(() => {
-      }).finally(() => {
-        sinceRead = 1;
-      });
-    },
-    update(dt, camera, showing) {
-      if (!showing) {
-        if (group.visible) {
-          group.visible = false;
-          open = false;
-          placed = false;
-          layout();
-        }
-        return;
-      }
-      camera.getWorldPosition(head);
-      camera.getWorldDirection(facing);
-      place();
-      if (!placed) {
-        group.position.copy(want);
-        placed = true;
-        settling = false;
-        layout();
-      } else if (open) {
-        if (Math.hypot(head.x - group.position.x, head.z - group.position.z) > 2.5) menu.setOpen(false);
-      } else {
-        if (group.position.distanceTo(want) > 0.6) settling = true;
-        if (settling) {
-          group.position.lerp(want, Math.min(1, dt * 6));
-          if (group.position.distanceTo(want) < 0.02) settling = false;
-        }
-      }
-      face();
-      group.visible = true;
-      if (open && (sinceRead += dt) > 0.3) {
-        sinceRead = 0;
-        layout();
-      }
-      for (const mesh of shown) {
-        const base = mesh === opener.mesh ? 0.62 : 1;
-        mesh.scale.setScalar(base * (mesh === aimed ? 1.08 : 1));
-      }
-    }
-  };
-  const labelOf = (mesh) => [opener, closer, ...rows].find((r) => r.mesh === mesh)?.text ?? "";
-  menu.describe = () => ({ showing: group.visible, open, buttons: shown.map(labelOf), note: open && note.visible ? noteText : "" });
-  menu.pressLabelled = (label) => {
-    const mesh = shown.find((m) => labelOf(m) === label);
-    if (!mesh) return false;
-    menu.press(mesh);
-    return true;
-  };
-  layout();
-  return menu;
-}
 function turnVisitor(rig, camera, degrees) {
   const head = camera.getWorldPosition(new THREE.Vector3());
   const a = THREE.MathUtils.degToRad(degrees);
@@ -2627,6 +2402,437 @@ function turnVisitor(rig, camera, degrees) {
   rig.position.x = head.x + dx * Math.cos(a) + dz * Math.sin(a);
   rig.position.z = head.z - dx * Math.sin(a) + dz * Math.cos(a);
   rig.rotation.y += a;
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/console.ts
+import * as THREE2 from "three";
+var W = 1024;
+var H = 640;
+var FLOAT_W = 0.84;
+var WRIST_W = 0.36;
+var ASPECT = H / W;
+function strokeIcon(g, name, x, y, size) {
+  if (!name) return;
+  g.save();
+  g.translate(x, y);
+  g.scale(size / 24, size / 24);
+  g.lineWidth = 1.7;
+  g.lineCap = "round";
+  g.lineJoin = "round";
+  g.stroke(new Path2D(ICONS[name]));
+  g.restore();
+}
+function fit(g, text, max) {
+  if (g.measureText(text).width <= max) return text;
+  let t = text;
+  while (t.length > 1 && g.measureText(`${t}\u2026`).width > max) t = t.slice(0, -1);
+  return `${t.trimEnd()}\u2026`;
+}
+function wrap(g, text, max, lines) {
+  const out = [];
+  let line = "";
+  for (const word of text.split(/\s+/)) {
+    const next = line ? `${line} ${word}` : word;
+    if (g.measureText(next).width <= max || !line) line = next;
+    else {
+      out.push(line);
+      line = word;
+    }
+  }
+  if (line) out.push(line);
+  if (out.length > lines) {
+    out.length = lines;
+    out[lines - 1] = fit(g, `${out[lines - 1]} \u2026`, max);
+  }
+  return out;
+}
+var SANS = 'system-ui, "Segoe UI", Roboto, sans-serif';
+var MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+function holoMaterial(map) {
+  return new THREE2.ShaderMaterial({
+    transparent: true,
+    depthTest: false,
+    side: THREE2.DoubleSide,
+    uniforms: { map: { value: map }, uOpen: { value: 1 }, uTime: { value: 0 }, uAccent: { value: new THREE2.Color() }, uLines: { value: 1 } },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `uniform sampler2D map; uniform float uOpen; uniform float uTime; uniform vec3 uAccent; uniform float uLines; varying vec2 vUv;
+      void main(){
+        if (vUv.y > uOpen) discard;
+        vec4 c = texture2D(map, vUv);
+        float lines = 1.0 - uLines * 0.05 * (0.5 + 0.5 * sin(vUv.y * 420.0 - uTime * 1.2));
+        float lead = (1.0 - step(0.999, uOpen)) * smoothstep(0.03, 0.0, uOpen - vUv.y);
+        gl_FragColor = vec4(c.rgb * lines + uAccent * lead, max(c.a, lead * 0.9));
+        #include <colorspace_fragment>
+      }`
+  });
+}
+function createConsole(controls, opts) {
+  const group = new THREE2.Group();
+  group.name = "nswp-console";
+  group.visible = false;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const g = canvas.getContext("2d");
+  const texture = new THREE2.CanvasTexture(canvas);
+  texture.colorSpace = THREE2.SRGBColorSpace;
+  texture.anisotropy = 4;
+  const material = holoMaterial(texture);
+  const panel = new THREE2.Mesh(new THREE2.PlaneGeometry(1, ASPECT), material);
+  panel.renderOrder = 30;
+  panel.visible = false;
+  group.add(panel);
+  const openerCanvas = document.createElement("canvas");
+  openerCanvas.width = 256;
+  openerCanvas.height = 300;
+  const openerTexture = new THREE2.CanvasTexture(openerCanvas);
+  openerTexture.colorSpace = THREE2.SRGBColorSpace;
+  const opener = new THREE2.Mesh(new THREE2.PlaneGeometry(0.15, 0.15 * 300 / 256), new THREE2.MeshBasicMaterial({ map: openerTexture, transparent: true, depthTest: false }));
+  opener.renderOrder = 30;
+  group.add(opener);
+  let open = false;
+  let mount = "floating";
+  let section = "";
+  let aimed = null;
+  let regions = [];
+  let painted = "";
+  let unfold = 1;
+  let clock = 0;
+  let sinceRead = 0;
+  let placed = false;
+  let settling = false;
+  let wristFor = 0;
+  let wristAway = 0;
+  let noteNow = "";
+  const paintOpener = (hot) => {
+    const t = controls.theme;
+    const c = openerCanvas.getContext("2d");
+    const w = openerCanvas.width;
+    const h = openerCanvas.height;
+    c.clearRect(0, 0, w, h);
+    c.beginPath();
+    c.moveTo(28, h - 44);
+    c.lineTo(28, 128);
+    c.arc(w / 2, 128, w / 2 - 28, Math.PI, 0);
+    c.lineTo(w - 28, h - 44);
+    c.closePath();
+    c.fillStyle = hot ? `rgba(${rgb(t.accent)}, 0.34)` : `rgba(${rgb(t.glass)}, 0.82)`;
+    c.fill();
+    c.lineWidth = 6;
+    c.strokeStyle = t.accent;
+    c.stroke();
+    c.fillStyle = hot ? t.accent : t.ink;
+    c.fillRect(14, h - 34, w - 28, 8);
+    c.strokeStyle = hot ? t.accent : t.ink;
+    strokeIcon(c, "menu", w / 2 - 44, 60, 88);
+    c.fillStyle = t.ink;
+    c.font = `600 40px ${SANS}`;
+    c.textAlign = "center";
+    c.fillText("Menu", w / 2, 208);
+    openerTexture.needsUpdate = true;
+  };
+  const paint = () => {
+    const view = controls.view();
+    const t = view.theme;
+    if (!view.sections.some((s) => s.id === section)) section = view.sections[0]?.id ?? "";
+    const signature = JSON.stringify([view.title, view.address, view.sections, section, aimed, t]);
+    if (signature === painted) return;
+    painted = signature;
+    const A = rgb(t.accent);
+    const I = rgb(t.ink);
+    const k = Math.min(1.2, t.scale);
+    regions = [];
+    g.clearRect(0, 0, W, H);
+    g.beginPath();
+    g.roundRect(4, 4, W - 8, H - 8, [56, 56, 18, 18]);
+    g.fillStyle = `rgba(${rgb(t.glass)}, 0.86)`;
+    g.fill();
+    g.lineWidth = 3;
+    g.strokeStyle = `rgba(${A}, 0.55)`;
+    g.stroke();
+    const top = g.createLinearGradient(80, 0, W - 80, 0);
+    top.addColorStop(0, `rgba(${A}, 0)`);
+    top.addColorStop(0.5, `rgba(${A}, 1)`);
+    top.addColorStop(1, `rgba(${A}, 0)`);
+    g.fillStyle = top;
+    g.fillRect(80, 4, W - 160, 4);
+    const mark = g.createLinearGradient(0, 30, 0, 96);
+    mark.addColorStop(0, `rgba(${A}, 0.95)`);
+    mark.addColorStop(1, `rgba(${A}, 0.25)`);
+    g.fillStyle = mark;
+    g.beginPath();
+    g.roundRect(40, 30, 44, 60, [22, 22, 4, 4]);
+    g.fill();
+    g.fillStyle = t.ink;
+    g.fillRect(32, 94, 60, 4);
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
+    g.font = `650 ${Math.round(38 * k)}px ${SANS}`;
+    g.fillText(fit(g, view.title, W - 300), 112, 62);
+    g.font = `400 ${Math.round(24 * k)}px ${MONO}`;
+    g.fillStyle = `rgba(${I}, 0.66)`;
+    g.fillText(fit(g, view.address, W - 300), 112, 96);
+    const button = (r, draw) => {
+      regions.push(r);
+      draw(aimed === r.id);
+    };
+    button({ id: "close", x: W - 150, y: 26, w: 116, h: 72, label: "Close" }, (hot) => {
+      g.beginPath();
+      g.roundRect(W - 150, 26, 116, 72, 16);
+      g.fillStyle = hot ? `rgba(${I}, 0.18)` : `rgba(${I}, 0.05)`;
+      g.fill();
+      g.lineWidth = 2;
+      g.strokeStyle = `rgba(${I}, ${hot ? 0.9 : 0.3})`;
+      g.stroke();
+      g.strokeStyle = t.ink;
+      strokeIcon(g, "exit", W - 150 + 38, 26 + 16, 40);
+    });
+    g.fillStyle = `rgba(${A}, 0.22)`;
+    g.fillRect(28, 122, W - 56, 2);
+    const tabH = Math.min(88, (H - 150) / Math.max(view.sections.length, 1));
+    view.sections.forEach((s, i) => {
+      const y = 134 + i * tabH;
+      const on = s.id === section;
+      button({ id: `tab:${s.id}`, x: 24, y, w: 236, h: tabH - 8, label: s.label }, (hot) => {
+        if (on || hot) {
+          g.beginPath();
+          g.roundRect(24, y, 236, tabH - 8, [6, 18, 18, 6]);
+          g.fillStyle = `rgba(${A}, ${on ? 0.16 : 0.08})`;
+          g.fill();
+        }
+        if (on) {
+          g.fillStyle = t.accent;
+          g.fillRect(24, y, 5, tabH - 8);
+        }
+        g.strokeStyle = g.fillStyle = on ? t.accent : hot ? t.ink : `rgba(${I}, 0.72)`;
+        strokeIcon(g, s.icon, 44, y + (tabH - 8) / 2 - 18, 36);
+        g.font = `${on ? 650 : 500} ${Math.round(30 * k)}px ${SANS}`;
+        g.textBaseline = "middle";
+        g.fillText(fit(g, s.label, 150), 96, y + (tabH - 8) / 2 + 2);
+        g.textBaseline = "alphabetic";
+      });
+    });
+    const current = view.sections.find((s) => s.id === section);
+    const items = current?.items ?? [];
+    noteNow = current?.note ?? "";
+    g.font = `400 ${Math.round(24 * k)}px ${SANS}`;
+    const noteLines = noteNow ? wrap(g, noteNow, W - 330, 3) : [];
+    const noteH = noteLines.length ? noteLines.length * 32 + 20 : 0;
+    const left = 284;
+    const areaW = W - left - 30;
+    const cols = items.length > 8 ? 3 : 2;
+    const rowsN = Math.max(1, Math.ceil(items.length / cols));
+    const cellW = (areaW - (cols - 1) * 14) / cols;
+    const cellH = Math.min(96, (H - 150 - noteH - (rowsN - 1) * 12) / rowsN);
+    items.forEach((item, i) => {
+      const x = left + i % cols * (cellW + 14);
+      const y = 138 + Math.floor(i / cols) * (cellH + 12);
+      const tone = item.tone === "warn" ? rgb(t.warn) : A;
+      button({ id: `act:${item.id}`, x, y, w: cellW, h: cellH, label: item.label }, (hot) => {
+        g.beginPath();
+        g.roundRect(x, y, cellW, cellH, [18, 18, 6, 6]);
+        g.fillStyle = hot ? `rgba(${tone}, 0.3)` : item.tone === "primary" || item.on ? `rgba(${tone}, 0.16)` : `rgba(${I}, 0.05)`;
+        g.fill();
+        g.lineWidth = hot ? 4 : 2;
+        g.strokeStyle = hot || item.on ? `rgba(${tone}, 1)` : `rgba(${tone}, 0.4)`;
+        g.stroke();
+        g.fillStyle = item.on ? `rgb(${tone})` : `rgba(${I}, 0.22)`;
+        g.fillRect(x + 14, y + cellH - 7, cellW - 28, 3);
+        g.strokeStyle = g.fillStyle = item.tone === "warn" ? t.warn : item.on ? t.accent : t.ink;
+        const iconSize = Math.min(40, cellH - 30);
+        if (item.kind === "swatch") {
+          const ink = g.fillStyle;
+          g.fillStyle = item.color;
+          g.beginPath();
+          g.roundRect(x + 20, y + (cellH - iconSize) / 2 - 4, iconSize * 0.78, iconSize, [iconSize * 0.39, iconSize * 0.39, 4, 4]);
+          g.fill();
+          g.fillStyle = ink;
+        } else strokeIcon(g, item.icon, x + 18, y + (cellH - iconSize) / 2 - 2, iconSize);
+        const size = Math.round((cols === 3 ? 23 : 28) * k);
+        g.font = `600 ${size}px ${SANS}`;
+        g.textBaseline = "middle";
+        const words = wrap(g, item.label, cellW - iconSize - 44, cellH > 70 ? 2 : 1);
+        words.forEach((line, n) => g.fillText(line, x + iconSize + 30, y + cellH / 2 - 2 + (n - (words.length - 1) / 2) * (size + 3)));
+        g.textBaseline = "alphabetic";
+      });
+    });
+    if (noteLines.length) {
+      const y = H - noteH - 14;
+      g.fillStyle = `rgba(${A}, 0.7)`;
+      g.fillRect(left, y, 3, noteH - 8);
+      g.font = `400 ${Math.round(24 * k)}px ${SANS}`;
+      g.fillStyle = `rgba(${I}, 0.82)`;
+      noteLines.forEach((line, i) => g.fillText(line, left + 16, y + 24 + i * 32));
+    }
+    texture.needsUpdate = true;
+    material.uniforms.uAccent.value.set(t.accent);
+    material.uniforms.uLines.value = t.motion ? 1 : 0;
+  };
+  const grips = [0, 1].map((i) => {
+    const grip = opts.renderer.xr.getControllerGrip(i);
+    const info = { grip, hand: "" };
+    grip.addEventListener("connected", ((e) => {
+      info.hand = e.data?.handedness ?? "";
+    }));
+    grip.addEventListener("disconnected", (() => {
+      info.hand = "";
+    }));
+    opts.rig.add(grip);
+    return info;
+  });
+  const head = new THREE2.Vector3();
+  const facing = new THREE2.Vector3();
+  const want = new THREE2.Vector3();
+  const hand = new THREE2.Vector3();
+  const toHand = new THREE2.Vector3();
+  const setOpen = (next, where = "floating") => {
+    if (open === next && mount === where) return;
+    open = next;
+    mount = where;
+    placed = false;
+    aimed = null;
+    unfold = controls.theme.motion && next ? 0 : 1;
+    panel.visible = next;
+    opener.visible = !next;
+    if (next) {
+      painted = "";
+      paint();
+    }
+  };
+  const stop = controls.subscribe(() => {
+    painted = "";
+    paintOpener(aimed === "open");
+  });
+  void stop;
+  paintOpener(false);
+  const con = {
+    group,
+    get open() {
+      return open;
+    },
+    setOpen: (next) => setOpen(next, "floating"),
+    pick(raycaster) {
+      if (!group.visible) return null;
+      if (!open) return raycaster.intersectObject(opener, false).length ? "open" : null;
+      const hit = raycaster.intersectObject(panel, false)[0];
+      if (!hit?.uv) return null;
+      const x = hit.uv.x * W;
+      const y = (1 - hit.uv.y) * H;
+      return regions.find((r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h)?.id ?? "pane";
+    },
+    aim(hit) {
+      const next = hit === "pane" ? null : hit;
+      if (next === aimed) return;
+      aimed = next;
+      if (open) paint();
+      else paintOpener(aimed === "open");
+    },
+    press(hit) {
+      if (hit === "open") return setOpen(true, "floating");
+      if (hit === "close") return setOpen(false, mount);
+      if (hit.startsWith("tab:")) {
+        section = hit.slice(4);
+        paint();
+        return;
+      }
+      if (hit.startsWith("act:")) {
+        controls.run(hit.slice(4));
+        sinceRead = 1;
+      }
+    },
+    update(dt, camera, presenting) {
+      if (!presenting) {
+        if (group.visible) {
+          group.visible = false;
+          setOpen(false);
+        }
+        return;
+      }
+      clock += dt;
+      camera.getWorldPosition(head);
+      camera.getWorldDirection(facing);
+      const t = controls.theme;
+      const tracked = t.wrist === "off" ? void 0 : grips.find((x) => x.hand === t.wrist && x.grip.visible);
+      if (tracked) {
+        tracked.grip.getWorldPosition(hand);
+        toHand.copy(hand).sub(head);
+        const far = toHand.length();
+        const inView = toHand.normalize().dot(facing);
+        if (far < 0.48 && inView > 0.88) {
+          wristFor += dt;
+          wristAway = 0;
+        } else if (far > 0.6 || inView < 0.72) {
+          wristAway += dt;
+          wristFor = 0;
+        }
+        if (!open && wristFor > 0.35) setOpen(true, "wrist");
+        if (open && mount === "wrist" && wristAway > 0.4) setOpen(false, "wrist");
+      } else if (open && mount === "wrist") setOpen(false, "wrist");
+      const flat = Math.hypot(facing.x, facing.z) || 1;
+      if (open && mount === "wrist" && tracked) {
+        want.set(hand.x, hand.y + 0.16, hand.z);
+        if (!placed) group.position.copy(want);
+        else group.position.lerp(want, Math.min(1, dt * 14));
+        placed = true;
+        panel.scale.setScalar(WRIST_W);
+        group.lookAt(head);
+      } else {
+        const reach = open ? 1.05 : 0.75;
+        want.set(head.x + facing.x / flat * reach, Math.max(0.4, head.y - (open ? 0.18 : 0.52)), head.z + facing.z / flat * reach);
+        if (!placed) {
+          group.position.copy(want);
+          placed = true;
+          settling = false;
+        } else if (open) {
+          if (Math.hypot(head.x - group.position.x, head.z - group.position.z) > 2.6) setOpen(false);
+        } else {
+          if (group.position.distanceTo(want) > 0.6) settling = true;
+          if (settling) {
+            group.position.lerp(want, Math.min(1, dt * 6));
+            if (group.position.distanceTo(want) < 0.02) settling = false;
+          }
+        }
+        panel.scale.setScalar(FLOAT_W);
+        group.rotation.set(0, Math.atan2(head.x - group.position.x, head.z - group.position.z), 0);
+      }
+      group.visible = true;
+      if (open) {
+        unfold = Math.min(1, unfold + dt * 4.5);
+        material.uniforms.uOpen.value = unfold;
+        material.uniforms.uTime.value = t.motion ? clock : 0;
+        if ((sinceRead += dt) > 0.3) {
+          sinceRead = 0;
+          paint();
+        }
+      } else opener.scale.setScalar(aimed === "open" ? 1.1 : 1);
+    },
+    describe() {
+      const view = controls.view();
+      const current = view.sections.find((s) => s.id === section) ?? view.sections[0];
+      return {
+        showing: group.visible,
+        open,
+        mount,
+        section: open ? current?.id ?? "" : "",
+        sections: open ? view.sections.map((s) => s.label) : [],
+        buttons: open ? current?.items.map((i) => i.label) ?? [] : ["Menu"],
+        note: open ? current?.note ?? "" : ""
+      };
+    },
+    pressLabelled(label) {
+      if (!open) {
+        if (label !== "Menu") return false;
+        con.press("open");
+        return true;
+      }
+      paint();
+      const region = regions.find((r) => r.label === label);
+      if (!region) return false;
+      con.press(region.id);
+      return true;
+    }
+  };
+  return con;
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
@@ -2651,16 +2857,16 @@ function textSprite(text, color, width) {
     g.font = i === 0 ? "bold 56px system-ui, sans-serif" : "44px system-ui, sans-serif";
     g.fillText(line, 40, 32 + i * 72, canvas.width - 80);
   });
-  const tex = new THREE2.CanvasTexture(canvas);
-  tex.colorSpace = THREE2.SRGBColorSpace;
-  const sprite = new THREE2.Sprite(new THREE2.SpriteMaterial({ map: tex, depthWrite: false }));
+  const tex = new THREE3.CanvasTexture(canvas);
+  tex.colorSpace = THREE3.SRGBColorSpace;
+  const sprite = new THREE3.Sprite(new THREE3.SpriteMaterial({ map: tex, depthWrite: false }));
   sprite.scale.set(width, width * canvas.height / canvas.width, 1);
   return sprite;
 }
 function createPresence(d) {
   const labelColor = d.labelColor ?? "#ffffff";
   const changed = () => d.onChange?.();
-  const listener = new THREE2.AudioListener();
+  const listener = new THREE3.AudioListener();
   d.camera.add(listener);
   const avatars = /* @__PURE__ */ new Map();
   const pendingStreams = /* @__PURE__ */ new Map();
@@ -2670,20 +2876,20 @@ function createPresence(d) {
   let micTrack = null;
   let offsetApplied = false;
   const makeAvatar = (member) => {
-    const color = new THREE2.Color(member.color);
-    const root = new THREE2.Group();
+    const color = new THREE3.Color(member.color);
+    const root = new THREE3.Group();
     root.visible = false;
-    const head = new THREE2.Group();
-    const skull = new THREE2.Mesh(new THREE2.SphereGeometry(0.13, 24, 16), new THREE2.MeshStandardMaterial({ color, roughness: 0.5 }));
-    const visor = new THREE2.Mesh(new THREE2.BoxGeometry(0.2, 0.07, 0.06), new THREE2.MeshStandardMaterial({ color: 1119256, roughness: 0.2, metalness: 0.6 }));
+    const head = new THREE3.Group();
+    const skull = new THREE3.Mesh(new THREE3.SphereGeometry(0.13, 24, 16), new THREE3.MeshStandardMaterial({ color, roughness: 0.5 }));
+    const visor = new THREE3.Mesh(new THREE3.BoxGeometry(0.2, 0.07, 0.06), new THREE3.MeshStandardMaterial({ color: 1119256, roughness: 0.2, metalness: 0.6 }));
     visor.position.set(0, 0.02, -0.1);
     const label = textSprite(member.name, labelColor, 0.5);
     label.position.set(0, 0.3, 0);
     head.add(skull, visor, label);
-    const torso = new THREE2.Mesh(new THREE2.CylinderGeometry(0.1, 0.17, 0.5, 16), new THREE2.MeshStandardMaterial({ color, roughness: 0.8, transparent: true, opacity: 0.85 }));
-    const handGeo = new THREE2.SphereGeometry(0.045, 12, 8);
-    const handMat = new THREE2.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3 });
-    const hands = [new THREE2.Mesh(handGeo, handMat), new THREE2.Mesh(handGeo, handMat)];
+    const torso = new THREE3.Mesh(new THREE3.CylinderGeometry(0.1, 0.17, 0.5, 16), new THREE3.MeshStandardMaterial({ color, roughness: 0.8, transparent: true, opacity: 0.85 }));
+    const handGeo = new THREE3.SphereGeometry(0.045, 12, 8);
+    const handMat = new THREE3.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3 });
+    const hands = [new THREE3.Mesh(handGeo, handMat), new THREE3.Mesh(handGeo, handMat)];
     hands.forEach((h) => h.visible = false);
     root.add(head, torso, ...hands);
     d.scene.add(root);
@@ -2701,7 +2907,7 @@ function createPresence(d) {
     el.srcObject = stream;
     void el.play().catch(() => {
     });
-    const pa = new THREE2.PositionalAudio(listener);
+    const pa = new THREE3.PositionalAudio(listener);
     pa.setMediaStreamSource(stream);
     pa.setRefDistance(1.5);
     pa.setRolloffFactor(1.2);
@@ -2721,8 +2927,8 @@ function createPresence(d) {
     if (a.element) a.element.srcObject = null;
     d.scene.remove(a.root);
   };
-  const v = new THREE2.Vector3();
-  const q = new THREE2.Quaternion();
+  const v = new THREE3.Vector3();
+  const q = new THREE3.Quaternion();
   const worldTransform = (o) => {
     o.getWorldPosition(v);
     o.getWorldQuaternion(q);
@@ -2797,9 +3003,9 @@ function createPresence(d) {
     sendTimer = setInterval(() => s.sendPose(ownPose()), SEND_EVERY_MS);
     changed();
   };
-  const tp = new THREE2.Vector3();
-  const tq = new THREE2.Quaternion();
-  const euler = new THREE2.Euler();
+  const tp = new THREE3.Vector3();
+  const tq = new THREE3.Quaternion();
+  const euler = new THREE3.Euler();
   const apply = (o, t, k) => {
     o.position.lerp(tp.set(...t.position), k);
     o.quaternion.slerp(tq.set(...t.quaternion), k);
@@ -2837,7 +3043,7 @@ function createPresence(d) {
       d.camera.getWorldPosition(v);
       for (const a of avatars.values()) {
         if (!a.target) continue;
-        const near = THREE2.MathUtils.clamp((a.head.position.distanceTo(v) - FADE_END) / (FADE_START - FADE_END), 0, 1);
+        const near = THREE3.MathUtils.clamp((a.head.position.distanceTo(v) - FADE_END) / (FADE_START - FADE_END), 0, 1);
         for (const m of a.materials) m.material.opacity = m.opacity * near;
         const snap = a.placed ? k : 1;
         apply(a.head, a.target.head, snap);
@@ -2889,75 +3095,6 @@ function roomNameFromHash(hash) {
   }
   return null;
 }
-function attachRoomControls(presence, c) {
-  const useTone = new URLSearchParams(c.search ?? location.search).get("mic") === "tone";
-  let invited = roomNameFromHash(location.hash);
-  let note = "";
-  const refresh = () => {
-    const s = presence.session;
-    c.onState?.(
-      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn } : null
-    );
-    c.roomButton.textContent = s ? "Leave the room" : "Join the room";
-    c.micButton.hidden = !s;
-    c.inviteButton.hidden = !s;
-    c.micButton.textContent = presence.micOn ? "Turn microphone off" : "Turn microphone on";
-    c.inviteButton.textContent = presence.roomName ? "Copy invite link" : "Make a private room";
-    if (!s) return;
-    const others = s.members.length;
-    const who = s.status === "no-relays" ? "can't reach any relay" : others === 0 ? "nobody else here yet" : others === 1 ? "1 other person here" : `${others} other people here`;
-    c.status.textContent = `${presence.roomName ? "Private room" : "Open room"}: ${who}.${note ? ` ${note}` : ""}`;
-  };
-  c.roomButton.addEventListener("click", () => {
-    if (presence.session) {
-      presence.leave();
-      note = "";
-      refresh();
-      c.status.textContent = "You left the room.";
-      return;
-    }
-    c.roomButton.disabled = true;
-    presence.join(invited).then(refresh).catch((err) => {
-      c.status.textContent = `Couldn't join: ${err instanceof Error ? err.message : String(err)}`;
-    }).finally(() => c.roomButton.disabled = false);
-  });
-  c.micButton.addEventListener("click", async () => {
-    if (!presence.session) return;
-    if (presence.micOn) {
-      await presence.setMicrophone(null);
-      note = "";
-    } else {
-      try {
-        const track = useTone ? presence.testTone() : (await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })).getAudioTracks()[0];
-        await presence.setMicrophone(track);
-        note = "Your microphone is on.";
-      } catch {
-        note = "The microphone is blocked or unavailable.";
-      }
-    }
-    refresh();
-  });
-  c.inviteButton.addEventListener("click", async () => {
-    if (!presence.session) return;
-    if (!presence.roomName) {
-      const bytes = crypto.getRandomValues(new Uint8Array(9));
-      const code = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_");
-      history.replaceState(history.state, "", `${location.pathname}${location.search}#room=${code}`);
-      invited = code;
-      await presence.join(code);
-    }
-    try {
-      await navigator.clipboard.writeText(location.href);
-      note = "Invite link copied. Anyone with it can join.";
-    } catch {
-      note = "Copy this page's address to invite someone.";
-    }
-    refresh();
-  });
-  if (invited) c.status.textContent = "You were invited to a private room. Joining shows your IP address to the others in it.";
-  refresh();
-  return { refresh };
-}
 async function capturePanorama(renderer, scene, position, opts = {}) {
   const width = Math.min(4096, Math.max(256, Math.round(opts.width ?? 2048)));
   const height = width / 2;
@@ -2966,11 +3103,11 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   const previousTarget = renderer.getRenderTarget();
   const autoClearWas = renderer.autoClear;
   const fog = scene.fog;
-  const faceTarget = new THREE2.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE2.HalfFloatType });
-  const flatTarget = new THREE2.WebGLRenderTarget(width, height);
-  flatTarget.texture.colorSpace = THREE2.SRGBColorSpace;
-  const material = new THREE2.ShaderMaterial({
-    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE2.Vector3() }, up: { value: new THREE2.Vector3() }, right: { value: new THREE2.Vector3() } },
+  const faceTarget = new THREE3.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE3.HalfFloatType });
+  const flatTarget = new THREE3.WebGLRenderTarget(width, height);
+  flatTarget.texture.colorSpace = THREE3.SRGBColorSpace;
+  const material = new THREE3.ShaderMaterial({
+    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE3.Vector3() }, up: { value: new THREE3.Vector3() }, right: { value: new THREE3.Vector3() } },
     vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
     fragmentShader: `uniform sampler2D face; uniform vec3 forward; uniform vec3 up; uniform vec3 right; varying vec2 vUv;
       void main(){
@@ -2987,19 +3124,19 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
     depthTest: false,
     depthWrite: false
   });
-  const quad = new THREE2.Mesh(new THREE2.PlaneGeometry(2, 2), material);
-  const quadScene = new THREE2.Scene();
+  const quad = new THREE3.Mesh(new THREE3.PlaneGeometry(2, 2), material);
+  const quadScene = new THREE3.Scene();
   quadScene.add(quad);
-  const quadCamera = new THREE2.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const faceCamera = new THREE2.PerspectiveCamera(90, 1, 0.05, 200);
+  const quadCamera = new THREE3.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const faceCamera = new THREE3.PerspectiveCamera(90, 1, 0.05, 200);
   faceCamera.position.copy(position);
   const views = [
-    [new THREE2.Vector3(0, 0, -1), new THREE2.Vector3(0, 1, 0)],
-    [new THREE2.Vector3(1, 0, 0), new THREE2.Vector3(0, 1, 0)],
-    [new THREE2.Vector3(0, 0, 1), new THREE2.Vector3(0, 1, 0)],
-    [new THREE2.Vector3(-1, 0, 0), new THREE2.Vector3(0, 1, 0)],
-    [new THREE2.Vector3(0, 1, 0), new THREE2.Vector3(0, 0, 1)],
-    [new THREE2.Vector3(0, -1, 0), new THREE2.Vector3(0, 0, -1)]
+    [new THREE3.Vector3(0, 0, -1), new THREE3.Vector3(0, 1, 0)],
+    [new THREE3.Vector3(1, 0, 0), new THREE3.Vector3(0, 1, 0)],
+    [new THREE3.Vector3(0, 0, 1), new THREE3.Vector3(0, 1, 0)],
+    [new THREE3.Vector3(-1, 0, 0), new THREE3.Vector3(0, 1, 0)],
+    [new THREE3.Vector3(0, 1, 0), new THREE3.Vector3(0, 0, 1)],
+    [new THREE3.Vector3(0, -1, 0), new THREE3.Vector3(0, 0, -1)]
   ];
   try {
     for (const o of hidden) o.visible = false;
@@ -3046,24 +3183,24 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   }
 }
 function panoramaTexture(image) {
-  const texture = new THREE2.Texture(image);
-  texture.colorSpace = THREE2.SRGBColorSpace;
-  texture.wrapS = THREE2.RepeatWrapping;
+  const texture = new THREE3.Texture(image);
+  texture.colorSpace = THREE3.SRGBColorSpace;
+  texture.wrapS = THREE3.RepeatWrapping;
   texture.generateMipmaps = false;
-  texture.minFilter = THREE2.LinearFilter;
-  texture.magFilter = THREE2.LinearFilter;
+  texture.minFilter = THREE3.LinearFilter;
+  texture.magFilter = THREE3.LinearFilter;
   texture.needsUpdate = true;
   return texture;
 }
 function createPortalWindow(geometry, pano, opts = {}) {
   const reach = opts.reach ?? 1.5;
-  const material = new THREE2.ShaderMaterial({
+  const material = new THREE3.ShaderMaterial({
     uniforms: {
       pano: { value: pano },
       mask: { value: opts.mask ?? null },
       useMask: { value: opts.mask ? 1 : 0 },
-      toLocal: { value: new THREE2.Matrix3() },
-      center: { value: new THREE2.Vector3() },
+      toLocal: { value: new THREE3.Matrix3() },
+      center: { value: new THREE3.Vector3() },
       reach: { value: Number.isFinite(reach) ? reach : 0 }
     },
     vertexShader: `varying vec3 vWorld; varying vec2 vUv;
@@ -3083,10 +3220,10 @@ function createPortalWindow(geometry, pano, opts = {}) {
         gl_FragColor = vec4(texture2D(pano, vec2(lon / 6.283185307179586 + 0.5, lat / 3.141592653589793 + 0.5)).rgb, 1.0);
         #include <colorspace_fragment>
       }`,
-    side: THREE2.DoubleSide
+    side: THREE3.DoubleSide
   });
-  const mesh = new THREE2.Mesh(geometry, material);
-  const rotation = new THREE2.Matrix4();
+  const mesh = new THREE3.Mesh(geometry, material);
+  const rotation = new THREE3.Matrix4();
   mesh.onBeforeRender = () => {
     rotation.extractRotation(mesh.matrixWorld);
     material.uniforms.toLocal.value.setFromMatrix4(rotation).invert();
@@ -3094,15 +3231,157 @@ function createPortalWindow(geometry, pano, opts = {}) {
   };
   return mesh;
 }
+function addRoomControls(controls, presence, opts = {}) {
+  const useTone = new URLSearchParams(opts.search ?? location.search).get("mic") === "tone";
+  let invited = roomNameFromHash(location.hash);
+  let busy = false;
+  let last = invited ? "You were invited to a private room. Joining shows your IP address to the others in it." : "Joining lets you see and hear others here. It shows your IP address to them.";
+  const tell = (text) => {
+    last = text;
+    controls.say(text);
+  };
+  const status = () => {
+    const s = presence.session;
+    if (!s) return last;
+    const others = s.members.length;
+    const who = s.status === "no-relays" ? "can't reach any relay" : others === 0 ? "nobody else here yet" : others === 1 ? "1 other person here" : `${others} other people here`;
+    return `${presence.roomName ? "Private room" : "Open room"}: ${who}.${presence.micOn ? " Your microphone is on." : ""}`;
+  };
+  const refresh = () => {
+    const s = presence.session;
+    opts.onState?.(
+      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn } : null
+    );
+    controls.addSection({ id: "room", label: "Room", icon: "room", note: status });
+  };
+  controls.add(
+    {
+      id: "room-join",
+      section: "room",
+      hotbar: true,
+      icon: () => presence.session ? "leave" : "room",
+      label: () => presence.session ? "Leave the room" : "Join the room",
+      short: () => presence.session ? "Leave" : "Join",
+      on: () => !!presence.session,
+      hidden: () => busy,
+      act: async () => {
+        if (presence.session) {
+          presence.leave();
+          tell("You left the room.");
+          return refresh();
+        }
+        busy = true;
+        try {
+          await presence.join(invited);
+        } catch (err) {
+          tell(`Couldn't join: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+          busy = false;
+          refresh();
+        }
+      }
+    },
+    {
+      id: "room-mic",
+      section: "room",
+      hotbar: true,
+      icon: () => presence.micOn ? "mic" : "micOff",
+      label: () => presence.micOn ? "Turn microphone off" : "Turn microphone on",
+      short: "Mic",
+      on: () => presence.micOn,
+      hidden: () => !presence.session,
+      act: async () => {
+        if (presence.micOn) await presence.setMicrophone(null);
+        else {
+          try {
+            const track = useTone ? presence.testTone() : (await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })).getAudioTracks()[0];
+            await presence.setMicrophone(track);
+          } catch {
+            tell("The microphone is blocked or unavailable.");
+          }
+        }
+        refresh();
+      }
+    },
+    {
+      id: "room-invite",
+      section: "room",
+      icon: "link",
+      label: () => presence.roomName ? "Copy invite link" : "Make a private room",
+      hidden: () => !presence.session,
+      act: async () => {
+        if (!presence.roomName) {
+          const bytes = crypto.getRandomValues(new Uint8Array(9));
+          const code = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_");
+          history.replaceState(history.state, "", `${location.pathname}${location.search}#room=${code}`);
+          invited = code;
+          await presence.join(code);
+        }
+        try {
+          await navigator.clipboard.writeText(location.href);
+          tell("Invite link copied. Anyone with it can join.");
+        } catch {
+          tell("Copy this page's address to invite someone.");
+        }
+        refresh();
+      }
+    }
+  );
+  refresh();
+  return { refresh };
+}
+async function addViewControls(controls, d) {
+  const xr = navigator.xr;
+  let supported = false;
+  try {
+    supported = xr ? await xr.isSessionSupported("immersive-vr") : false;
+  } catch {
+  }
+  const presenting = () => d.renderer.xr.isPresenting;
+  d.renderer.xr.addEventListener("sessionstart", () => d.hud?.setHidden(true));
+  d.renderer.xr.addEventListener("sessionend", () => d.hud?.setHidden(false));
+  controls.add(
+    {
+      id: "vr",
+      section: "view",
+      icon: "vr",
+      tone: "primary",
+      hotbar: true,
+      hidden: () => !supported,
+      label: () => presenting() ? "Leave VR" : "Enter VR",
+      short: "VR",
+      act: async () => {
+        if (presenting()) return void await d.renderer.xr.getSession()?.end();
+        try {
+          const session = await xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "hand-tracking"] });
+          await d.renderer.xr.setSession(session);
+          d.onState?.("presenting");
+          session.addEventListener("end", () => d.onState?.("ended"));
+        } catch (err) {
+          d.onState?.(`error: ${err instanceof Error ? err.message : String(err)}`);
+          controls.say("Couldn't start VR on this device.");
+        }
+      }
+    },
+    { id: "turn", section: "view", icon: "turn", label: "Turn around", act: () => turnVisitor(d.rig, d.camera, 180) }
+  );
+  controls.addSection({
+    id: "view",
+    label: "View",
+    icon: "vr",
+    note: supported ? "In a headset, raise your wrist or select the small Menu button low in front of you to reach these controls." : "This device can't enter VR. Everything here works without it."
+  });
+  return supported;
+}
 
 export {
-  menuItemFor,
-  createWorldMenu,
   turnVisitor,
+  createConsole,
   textSprite,
   createPresence,
-  attachRoomControls,
   capturePanorama,
   panoramaTexture,
-  createPortalWindow
+  createPortalWindow,
+  addRoomControls,
+  addViewControls
 };
