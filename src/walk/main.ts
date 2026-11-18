@@ -16,9 +16,10 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
-import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
+import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
+import { ARRIVED_JOINED } from "../shared/travel.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -337,7 +338,7 @@ async function start(): Promise<void> {
   void readSignedIn().then((who) => {
     const home = homeOf(loadHome(), who?.pubkey);
     if (!home) return;
-    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(`/go/${renderer.xr.isPresenting ? "#xr=1" : ""}`) });
+    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, ...travelling() })) });
   });
   try {
     // Said once, when they were meant to arrive at their home and didn't.
@@ -642,7 +643,8 @@ async function start(): Promise<void> {
     } catch {
       /* already ended */
     }
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive }));
+    // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, ...travelling() }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -671,9 +673,11 @@ async function start(): Promise<void> {
     let dz = spot.z - headNow.z;
     const far = Math.hypot(dx, dz);
     if (far < 0.3) return null;
-    if (far > 5) {
-      dx *= 5 / far;
-      dz *= 5 / far;
+    // A jump of up to five metres in a headset. On a flat screen, a few steps: a tap is a walk there.
+    const most = renderer.xr.isPresenting ? 5 : TAP_REACH;
+    if (far > most) {
+      dx *= most / far;
+      dz *= most / far;
     }
     spot.set(headNow.x + dx, 0, headNow.z + dz);
     const out = Math.hypot(spot.x, spot.z);
@@ -681,13 +685,28 @@ async function start(): Promise<void> {
     if (out > limit) spot.multiplyScalar(limit / out);
     return spot;
   };
+  // On a flat screen a tap is a walk at the keys' pace (the kit's stroll), not a jump.
+  const stroll = createStroll({
+    where: () => {
+      camera.getWorldPosition(headNow);
+      return [headNow.x, headNow.z];
+    },
+    canStand: (x, z) => Math.hypot(x, z) <= RADIUS + 1.5,
+    move: (dx, dz) => {
+      rig.position.x += dx;
+      rig.position.z += dz;
+    },
+    speed: 2.2,
+  });
   const stepToFloor = () => {
     const to = floorSpot();
     if (!to) return;
+    state.steps = ((state.steps as number | undefined) ?? 0) + 1;
+    // Unless the visitor is in a headset, where a slide turns stomachs, or has asked for less motion.
+    if (!renderer.xr.isPresenting && controls.theme.motion) return stroll.to(to.x, to.z);
     camera.getWorldPosition(headNow);
     rig.position.x += to.x - headNow.x;
     rig.position.z += to.z - headNow.z;
-    state.steps = ((state.steps as number | undefined) ?? 0) + 1;
   };
   const reticle = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.28, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false }));
   reticle.rotation.x = -Math.PI / 2;
@@ -850,6 +869,8 @@ async function start(): Promise<void> {
 
   // ------------------------------------------------------- presence
   let refreshRoom = () => {};
+  // Whether the visitor is in the room here, and heard: it goes with them through a door.
+  let travelling = (): { joined: boolean; mic: boolean } => ({ joined: false, mic: false });
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
   const myLook = loadLook();
   const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), onChange: () => refreshRoom() });
@@ -865,7 +886,16 @@ async function start(): Promise<void> {
     scene.add(mirror.group, sign);
     state.mirror = mirror.look;
   }
-  ({ refresh: refreshRoom } = addRoomControls(controls, presence, { onState: (s) => (state.room = s) }));
+  // Brought here by the Airlock from a world where they were in the room: it says so once, on this site only.
+  let arrived: { joined?: boolean; mic?: boolean } | null = null;
+  try {
+    const note = sessionStorage.getItem(ARRIVED_JOINED);
+    sessionStorage.removeItem(ARRIVED_JOINED);
+    if (note) arrived = { joined: true, mic: note === "mic" };
+  } catch {
+    /* storage unavailable: they are asked, as before */
+  }
+  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived }));
 
   // -------------------------------------------------------- walking
   const keys = new Set<string>();
@@ -879,6 +909,7 @@ async function start(): Promise<void> {
     const forward = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) - (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
     const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
     if (!forward && !strafe) return;
+    stroll.stop(); // the keys take over from a walk a tap began
     stepVec.set(strafe, 0, -forward).normalize().multiplyScalar(2.2 * dt).applyAxisAngle(THREE.Object3D.DEFAULT_UP, rig.rotation.y);
     rig.position.add(stepVec);
     const limit = RADIUS + 1.5;
@@ -1075,6 +1106,7 @@ async function start(): Promise<void> {
       if (through) void visit(through);
     } else {
       walk(dt);
+      stroll.update(dt);
       raycaster.setFromCamera(ndc, camera);
       pointed = under();
       const through = walkedThrough();

@@ -41,6 +41,7 @@ import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
+import { ARRIVED_JOINED, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const SELF = `${location.origin}${location.pathname}`;
@@ -202,7 +203,7 @@ function entryFromFragment(): string | undefined {
  * it. But it is looked at first, quickly. A home that doesn't answer, or whose site no longer admits their key or
  * says it can be a home, is not gone to: they start in BitPortal's room, and are told why. Returns whether it went.
  */
-async function goHome(home: HomeChoice, fromHeadset: boolean): Promise<boolean> {
+async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: true; mic?: true } = {}): Promise<boolean> {
   const sorry = (why: string) => {
     try {
       sessionStorage.setItem("bitportal:home-note", why);
@@ -220,7 +221,7 @@ async function goHome(home: HomeChoice, fromHeadset: boolean): Promise<boolean> 
   if (!entry.capabilities.includes(HOME_CAPABILITY)) return sorry(`${host} no longer says it can be a home, so you are in BitPortal's room.`);
   // They arrive as they last chose to go anywhere, short of signing: with their look, or plain.
   const mine = goMode() === "plain" ? null : loadLook();
-  location.replace(buildArrivalUrl(home.url, { airlock: SELF, home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}) }));
+  location.replace(buildArrivalUrl(home.url, { airlock: SELF, home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry }));
   return true;
 }
 
@@ -237,13 +238,23 @@ async function render(): Promise<void> {
       const fromHeadset = way.immersive;
       // Someone whose home is a world of their own is taken there. Asked for their doors (a home offers that),
       // or with no home of their own, they go to BitPortal's own place, as everyone does.
+      // In the room where they came from: they stay joined at home too. Nothing is asked on the way home, so a
+      // microphone goes along only when they have already said theirs may.
+      const carry = carriedOn(way, { stay: true, mic: micMayTravel() });
       const theirs = way.doors ? null : homeOf(loadHome(), (await readSignedIn())?.pubkey);
-      if (theirs && (await goHome(theirs, fromHeadset))) return;
+      if (theirs && (await goHome(theirs, fromHeadset, carry))) return;
       // Back to the start they left from: the room if they walked out of it or asked for their doors, the list
       // otherwise. The room is told they are coming back, so they arrive in the chamber they left a world in.
       const toRoom = way.doors || !!theirs || readLeft()?.from === "walk";
       const home = new URL(toRoom ? "/walk/" : "/", location.origin);
       if (toRoom) home.hash = fromHeadset ? "back&xr=1" : "back";
+      if (toRoom && carry.joined) {
+        try {
+          sessionStorage.setItem(ARRIVED_JOINED, carry.mic ? "mic" : "joined");
+        } catch {
+          /* the room asks, as before */
+        }
+      }
       location.replace(home.href);
       return;
     }
@@ -392,6 +403,24 @@ async function render(): Promise<void> {
   );
   card.append(remember);
 
+  // The link says they were in the room where they came from. It is a link's word, so it is shown, and theirs to
+  // change: stay among people at the other end or not, and whether their microphone stays on. The second is off
+  // until they have said it may be, once, and is remembered here.
+  let stayBox: HTMLInputElement | null = null;
+  let micBox: HTMLInputElement | null = null;
+  if (req.joined && a.nswpAware) {
+    stayBox = el("input", { type: "checkbox", id: "stay-joined", checked: "" }) as HTMLInputElement;
+    const staying = el("div", { class: "remember staying", id: "staying" }, el("div", {}, stayBox, el("label", { for: "stay-joined" }, "Stay in the room there, as you were here", el("span", { class: "muted" }, " (others there will see you)"))));
+    if (req.mic) {
+      micBox = el("input", { type: "checkbox", id: "stay-mic", ...(micMayTravel() ? { checked: "" } : {}) }) as HTMLInputElement;
+      staying.append(el("div", {}, micBox, el("label", { for: "stay-mic" }, "Keep my microphone on between worlds", el("span", { class: "muted" }, " (others there will hear you as you arrive)"))));
+      stayBox.addEventListener("change", () => {
+        micBox!.disabled = !stayBox!.checked;
+      });
+    }
+    card.append(staying);
+  }
+
   // Test aid for people without a headset; only the reference worlds understand ?xr=emulate.
   const isReferenceWorld = !!w && w.topics.includes("nswp") && w.topics.includes("reference");
   if (isReferenceWorld) {
@@ -455,9 +484,12 @@ async function render(): Promise<void> {
         return;
       }
     }
+    // Whether a microphone may travel is the visitor's standing choice: kept as they left it on this screen.
+    if (micBox && stayBox?.checked) setMicMayTravel(micBox.checked);
+    const carry = carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked });
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
-    location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}) }));
+    location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry }));
   };
   go.addEventListener("click", () => void leave());
   card.append(el("div", { class: "actions" }, backButton(), go));
