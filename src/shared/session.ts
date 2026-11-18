@@ -5,7 +5,7 @@
  *
  * The signer is NIP-07 shaped. Its results are checked here before use.
  */
-import { isHex64, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { cleanName, isHex64, queryRelays, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
 
 export interface Signer {
   getPublicKey(): Promise<string>;
@@ -108,6 +108,34 @@ export async function quietSigner(expected: string): Promise<{ signer: Signer; c
   } catch {
     headless?.destroy();
     return null;
+  }
+}
+
+/** The name in a profile event's content: `display_name`, else `name`, tidied. "" when there is none. */
+export function nameFromProfile(content: string): string {
+  try {
+    const meta = JSON.parse(content) as { display_name?: unknown; displayName?: unknown; name?: unknown };
+    for (const v of [meta.display_name, meta.displayName, meta.name]) {
+      if (typeof v === "string" && cleanName(v)) return cleanName(v);
+    }
+  } catch {
+    /* not a profile */
+  }
+  return "";
+}
+
+/**
+ * The name someone gave themselves in their public profile (kind 0), from the
+ * visitor's own relays. Only ever asked about the visitor themselves. "" when
+ * they have none, or no relay answers in time.
+ */
+export async function profileName(pubkey: string, relays: string[], timeoutMs = 2500): Promise<string> {
+  try {
+    const res = await queryRelays(relays, { kinds: [0], authors: [pubkey], limit: 4 }, timeoutMs);
+    const newest = res.events.filter((e) => e.kind === 0 && e.pubkey === pubkey && verifyEvent(e)).sort((a, b) => b.created_at - a.created_at)[0];
+    return newest ? nameFromProfile(newest.content) : "";
+  } catch {
+    return "";
   }
 }
 
