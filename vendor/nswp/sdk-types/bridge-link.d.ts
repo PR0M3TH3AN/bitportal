@@ -24,9 +24,12 @@ export type BridgeStatus =
     code: string;
 } | {
     at: "connecting";
-} | {
+}
+/** `speech` says whether that computer will turn what is said into text. */
+ | {
     at: "open";
     name: string;
+    speech: boolean;
 }
 /** The program ended. */
  | {
@@ -60,6 +63,13 @@ export interface BridgeLink {
     /** Keys typed. Nothing is sent until the terminal is open. */
     send(bytes: string | Uint8Array): void;
     resize(cols: number, rows: number): void;
+    /**
+     * Send what a microphone heard (16-bit samples, 16,000 a second, one
+     * channel) to the computer, and get the words back. It goes over this
+     * connection and nowhere else. Rejects, with words for the visitor, where
+     * the computer doesn't listen or couldn't make it out.
+     */
+    transcribe(pcm: Int16Array, lang: string): Promise<string>;
     close(): void;
 }
 export declare function openBridgeLink(o: BridgeLinkOptions): BridgeLink;

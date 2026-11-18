@@ -5,10 +5,11 @@ import {
 import {
   LiveKeys,
   TextEntry,
+  createVoice,
   keyAt,
   placeKeys,
   placeLiveKeys
-} from "./shared-HRTYAXW7.js";
+} from "./shared-HAGFA4R3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE12 from "three";
@@ -435,8 +436,8 @@ function buildHead(b, look, main, accent, omit) {
 }
 function buildBody(b, look, main, accent, omit, proven = false) {
   const k = look.build === "slight" ? 0.86 : look.build === "broad" ? 1.2 : 1;
-  const cloth = (row, rows, side, sides, turn = 0) => {
-    const a = (side + 0.5) / sides * Math.PI * 2 + turn;
+  const cloth = (row, rows, side, sides, turn2 = 0) => {
+    const a = (side + 0.5) / sides * Math.PI * 2 + turn2;
     switch (look.pattern) {
       case "halves":
         return Math.cos(a) > 0 ? accent : main;
@@ -450,7 +451,7 @@ function buildBody(b, look, main, accent, omit, proven = false) {
         return main;
     }
   };
-  const turned = (profile, sides, band, turn = 0) => b.lathe(profile, [0, 0, 0], sides, (row, side) => row === 0 ? { glow: 0.4 } : row === band ? { glow: 0.75 } : { color: cloth(row, profile.length - 1, side, sides, turn), shade: 0.9 + row % 2 * 0.18 }, { turn });
+  const turned = (profile, sides, band, turn2 = 0) => b.lathe(profile, [0, 0, 0], sides, (row, side) => row === 0 ? { glow: 0.4 } : row === band ? { glow: 0.75 } : { color: cloth(row, profile.length - 1, side, sides, turn2), shade: 0.9 + row % 2 * 0.18 }, { turn: turn2 });
   let chest;
   switch (look.body) {
     case "coat":
@@ -4042,6 +4043,20 @@ import * as THREE9 from "three";
 import * as THREE7 from "three";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panel-store.ts
+var PANEL_LOOKS = [
+  { name: "Solid", opacity: 1, dark: 1 },
+  { name: "Dark parts see-through", opacity: 1, dark: 0.4 },
+  { name: "Dark parts clear", opacity: 1, dark: 0.08 },
+  { name: "All of it faint", opacity: 0.6, dark: 0.35 }
+];
+function cleanLook(input) {
+  const l = input && typeof input === "object" ? input : {};
+  return { opacity: finite(l.opacity) ? clamp(l.opacity, 0.15, 1) : 1, dark: finite(l.dark) ? clamp(l.dark, 0, 1) : 1 };
+}
+function nextLook(now) {
+  const at = PANEL_LOOKS.findIndex((l) => Math.abs(l.opacity - now.opacity) < 0.01 && Math.abs(l.dark - now.dark) < 0.01);
+  return PANEL_LOOKS[(at + 1) % PANEL_LOOKS.length];
+}
 var PANEL_LIMITS = {
   count: 24,
   titleChars: 80,
@@ -4098,10 +4113,32 @@ function cleanRecords(input) {
     const source = cleanSource(item.source);
     const place = cleanPlace(item.place);
     if (!source || !place || "src" in source && source.src.startsWith("blob:")) continue;
-    out.push({ id: item.id, source, place });
+    const look = item.look ? cleanLook(item.look) : null;
+    const pin = cleanPin(item.pin);
+    out.push({ id: item.id, source, place, ...look && (look.opacity < 1 || look.dark < 1) ? { look } : {}, ...pin ? { pin } : {} });
     if (out.length === PANEL_LIMITS.count) break;
   }
   return out;
+}
+function cleanPin(input) {
+  if (!Array.isArray(input) || input.length !== 3 || !input.every(finite)) return null;
+  const z = clamp(input[2], -6, -0.25);
+  return [clamp(input[0], -4, 4), clamp(input[1], -2.5, 2.5), z];
+}
+var turn = (from, to) => ((to - from) % 360 + 540) % 360 - 180;
+function tagAlong(now, head, dt, o = {}) {
+  const ease = Math.min(1, dt * 5);
+  const off = turn(now.yaw, head.yaw);
+  const turning = Math.abs(off) > (o.turn ?? 38) || now.turning && Math.abs(off) > 3;
+  const [dx, dy, dz] = [head.position[0] - now.position[0], head.position[1] - now.position[1], head.position[2] - now.position[2]];
+  const far = Math.hypot(dx, dy, dz);
+  const moving = far > (o.reach ?? 0.4) || now.moving && far > 0.03;
+  return {
+    yaw: turning ? ((now.yaw + off * ease) % 360 + 360) % 360 : now.yaw,
+    position: moving ? [now.position[0] + dx * ease, now.position[1] + dy * ease, now.position[2] + dz * ease] : now.position,
+    turning,
+    moving
+  };
 }
 function facing(at, head) {
   const [dx, dy, dz] = [head[0] - at[0], head[1] - at[1], head[2] - at[2]];
@@ -4194,9 +4231,16 @@ function createKeyboard(o) {
   let stale = true;
   let field = null;
   let live = null;
+  const voice = o.voice ?? createVoice();
+  let notice = "";
+  const say = (message) => {
+    notice = message;
+    stale = true;
+  };
   const systemOffered = () => !!o.session?.()?.isSystemKeyboardSupported;
   const lay = () => {
-    keys = live ? placeLiveKeys(live.keys.layer) : placeKeys(entry.layer, { multiline: entry.multiline, system: systemOffered() });
+    const mic = !!voice.source;
+    keys = live ? placeLiveKeys(live.keys.layer, { mic }) : placeKeys(entry.layer, { multiline: entry.multiline, system: systemOffered(), mic });
     stale = true;
   };
   const paint = () => {
@@ -4210,9 +4254,9 @@ function createKeyboard(o) {
     g.textBaseline = "top";
     g.fillStyle = accent;
     g.font = "bold 30px system-ui, sans-serif";
-    if (live) g.fillText(live.keys.ctrl ? `${title}. Ctrl is on for the next key.` : title, 36, top + 22, W2 - 72);
+    if (live) g.fillText(notice || (live.keys.ctrl ? `${title}. Ctrl is on for the next key.` : title), 36, top + 22, W2 - 72);
     else {
-      g.fillText(title, 36, 24, W2 - 72);
+      g.fillText(notice || title, 36, 24, W2 - 72);
       g.fillStyle = ink;
       g.font = "40px system-ui, sans-serif";
       const lines = wrapText(`${entry.value}\u258F`, W2 - 72, (s) => g.measureText(s).width, 400);
@@ -4221,7 +4265,7 @@ function createKeyboard(o) {
     for (const k of keys) {
       const [x, y, w, h] = [k.x * W2, SHOW + k.y * KEYS, k.width * W2, k.height * KEYS];
       const shift = live ? live.keys.shift : entry.shift;
-      const on = aimed === k.id || k.kind === "shift" && shift !== "off" || k.kind === "ctrl" && !!live?.keys.ctrl;
+      const on = aimed === k.id || k.kind === "shift" && shift !== "off" || k.kind === "ctrl" && !!live?.keys.ctrl || k.kind === "mic" && voice.state !== "idle";
       g.fillStyle = on ? accent : k.kind === "char" || k.kind === "space" ? "#162231" : k.kind === "done" ? "#24384c" : "#0e1722";
       g.beginPath();
       g.roundRect(x, y, w, h, 16);
@@ -4241,6 +4285,8 @@ function createKeyboard(o) {
   };
   const finish = (value) => {
     if (!done) return;
+    voice.cancel();
+    notice = "";
     const resolve = done;
     done = null;
     group.visible = false;
@@ -4291,6 +4337,7 @@ function createKeyboard(o) {
     document.body.append(field);
     field.focus();
   };
+  const unheard = voice.subscribe(() => done || live ? lay() : void 0);
   const at = new THREE7.Vector3();
   const facing2 = new THREE7.Vector3();
   const local = new THREE7.Vector3();
@@ -4310,6 +4357,8 @@ function createKeyboard(o) {
     const was = live;
     live = null;
     aimed = null;
+    voice.cancel();
+    notice = "";
     if (!done) group.visible = false;
     was.o.onClose?.();
   };
@@ -4367,12 +4416,24 @@ function createKeyboard(o) {
       if (live) {
         const what2 = live.keys.press(hit.slice(3), keys);
         if (what2 && "close" in what2) return closeLive();
+        const to = live.o;
+        if (what2 && "mic" in what2) voice.toggle({ onText: (text) => to.onKey(`${text} `), say });
         lay();
-        if (what2) live.o.onKey(what2.send);
+        if (what2 && "send" in what2) live.o.onKey(what2.send);
         return;
       }
       if (!done) return;
       const what = entry.press(hit.slice(3), keys);
+      if (what === "mic") {
+        const into = entry;
+        voice.toggle({
+          onText(text) {
+            into.type(into.value && !/\s$/.test(into.value) ? ` ${text}` : text);
+            stale = true;
+          },
+          say
+        });
+      }
       if (what === "done") return finish(entry.value);
       if (what === "cancel") return finish(null);
       if (what === "system") useSystem();
@@ -4387,13 +4448,15 @@ function createKeyboard(o) {
       group.updateMatrixWorld(true);
       return board.localToWorld(local.clone());
     },
-    info: () => ({ open: !!done || !!live, live: !!live, title, value: live ? "" : entry.value, layer: live ? live.keys.layer : entry.layer, shift: live ? live.keys.shift : entry.shift, ctrl: !!live?.keys.ctrl, keys: keys.map((k) => k.id) }),
+    voice,
+    info: () => ({ voice: voice.state, notice, open: !!done || !!live, live: !!live, title, value: live ? "" : entry.value, layer: live ? live.keys.layer : entry.layer, shift: live ? live.keys.shift : entry.shift, ctrl: !!live?.keys.ctrl, keys: keys.map((k) => k.id) }),
     update() {
       if ((done || live) && stale) paint();
     },
     dispose() {
       finish(null);
       closeLive();
+      unheard();
       o.scene.remove(group);
       board.geometry.dispose();
       board.material.dispose();
@@ -4754,6 +4817,23 @@ function glyphTexture(glyph, ink) {
         g.lineTo(64, 90);
       }
       g.stroke();
+    } else if (glyph === "glass") {
+      g.lineWidth = 8;
+      g.strokeRect(38, 38, 52, 52);
+      g.beginPath();
+      g.moveTo(38, 90);
+      g.lineTo(90, 38);
+      g.lineTo(90, 90);
+      g.closePath();
+      g.fill();
+    } else if (glyph === "pin") {
+      g.lineWidth = 9;
+      g.arc(64, 50, 17, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      g.moveTo(64, 62);
+      g.lineTo(64, 98);
+      g.stroke();
     } else if (glyph === "play") {
       g.moveTo(48, 36);
       g.lineTo(92, 64);
@@ -4773,7 +4853,7 @@ function barTexture(title, ink) {
     g.fillStyle = ink;
     g.textBaseline = "middle";
     g.font = "bold 42px system-ui, sans-serif";
-    g.fillText(title, 96, h / 2 + 2, w - 96 - 290);
+    g.fillText(title, 96, h / 2 + 2, w - 96 - 440);
   });
 }
 function createPanels(o) {
@@ -4803,7 +4883,10 @@ function createPanels(o) {
     o.onChange?.();
     if (!o.keep) return;
     try {
-      localStorage.setItem(o.keep, JSON.stringify([...live.values()].flatMap((p) => p.record ? [{ ...p.record, place: p.place() }] : [])));
+      localStorage.setItem(
+        o.keep,
+        JSON.stringify([...live.values()].flatMap((p) => p.record ? [{ id: p.record.id, source: p.record.source, place: p.place(), ...p.seeThrough.opacity < 1 || p.seeThrough.dark < 1 ? { look: p.seeThrough } : {}, ...p.pinAt ? { pin: p.pinAt } : {} }] : []))
+      );
     } catch {
     }
   };
@@ -4841,7 +4924,7 @@ function createPanels(o) {
       frame.position.set(0, (BAR + GAP) / 2, -0.014);
     }
     let x = 0.5 - BUTTON / 2 - 0.012;
-    for (const name of ["close", "larger", "smaller"]) {
+    for (const name of ["close", "larger", "smaller", "glass", "pin"]) {
       p.buttons.get(name)?.position.set(x, top, 4e-3);
       x -= BUTTON + 0.014;
     }
@@ -4858,6 +4941,49 @@ function createPanels(o) {
       p.width = Math.min(PANEL_LIMITS.maxWidth, Math.max(PANEL_LIMITS.minWidth, place.width));
       layout(p);
     }
+  };
+  const applyLook = (p) => {
+    const material = p.body.material;
+    const solid = p.seeThrough.opacity >= 1 && p.seeThrough.dark >= 1;
+    material.opacity = p.seeThrough.opacity;
+    material.transparent = !solid;
+    material.depthWrite = solid;
+    p.dark.value = p.seeThrough.dark;
+    p.body.renderOrder = solid ? 0 : 2;
+    const frame = p.group.getObjectByName("frame");
+    if (frame) frame.visible = solid;
+    material.needsUpdate = true;
+  };
+  const seeThroughDark = (material, dark) => {
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.nswpDark = dark;
+      shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nuniform float nswpDark;").replace("#include <map_fragment>", "#include <map_fragment>\n	diffuseColor.a *= mix(nswpDark, 1.0, smoothstep(0.03, 0.45, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114))));");
+    };
+    material.customProgramCacheKey = () => "nswp-panel-body";
+  };
+  const presenting = () => !!o.session?.();
+  let follow = null;
+  const anchorAt = new THREE9.Vector3();
+  const anchorTurn = new THREE9.Quaternion();
+  const offset = new THREE9.Vector3();
+  const UP = new THREE9.Vector3(0, 1, 0);
+  const anchor = (dt) => {
+    o.camera.getWorldPosition(anchorAt);
+    if (!presenting()) {
+      o.camera.getWorldQuaternion(anchorTurn);
+      follow = null;
+      return;
+    }
+    o.camera.getWorldDirection(at);
+    const head2 = { position: anchorAt.toArray(), yaw: Math.atan2(-at.x, -at.z) / DEG };
+    follow = follow ? tagAlong(follow, head2, dt) : { ...head2, turning: false, moving: false };
+    anchorAt.set(...follow.position);
+    anchorTurn.setFromAxisAngle(UP, follow.yaw * DEG);
+  };
+  const pinFrom = (p) => {
+    anchor(0);
+    offset.copy(p.group.position).sub(anchorAt).applyQuaternion(anchorTurn.clone().invert());
+    return cleanPin(offset.toArray());
   };
   const turnToFace = (p) => {
     const f = facing(p.group.position.toArray(), headV3());
@@ -4908,6 +5034,10 @@ function createPanels(o) {
     button("close", "close");
     button("larger", "larger");
     button("smaller", "smaller");
+    button("glass", "glass");
+    button("pin", "pin");
+    const dark = { value: 1 };
+    seeThroughDark(body.material, dark);
     if (source.kind === "video") button("play", "play");
     group.add(frame, body, bar);
     root.add(group);
@@ -4924,6 +5054,25 @@ function createPanels(o) {
       width: source.kind === "note" ? 0.8 : 1.1,
       ready: false,
       held: false,
+      seeThrough: cleanLook(opts.look),
+      dark,
+      pinAt: null,
+      get look() {
+        return { ...p.seeThrough };
+      },
+      setLook(look) {
+        p.seeThrough = cleanLook({ ...p.seeThrough, ...look });
+        applyLook(p);
+        save();
+      },
+      get pin() {
+        return p.pinAt ? [...p.pinAt] : null;
+      },
+      setPinned(on) {
+        p.pinAt = on ? pinFrom(p) : null;
+        lit(p);
+        save();
+      },
       place() {
         const e = new THREE9.Euler().setFromQuaternion(group.quaternion, "YXZ");
         const round = (n) => Math.round(n * 1e3) / 1e3;
@@ -4944,6 +5093,7 @@ function createPanels(o) {
       p.aspect = Math.min(4, Math.max(0.25, aspect));
       p.ready = true;
       layout(p);
+      applyLook(p);
     };
     if (source.kind === "note") {
       const drawn = noteTexture(source, ink);
@@ -5008,10 +5158,14 @@ function createPanels(o) {
           group.add(bar);
           layout(p);
           turnToFace(p);
+          if (p.pinAt) p.pinAt = pinFrom(p);
           save();
         }
       });
     }
+    applyLook(p);
+    p.pinAt = opts.pin ? cleanPin(opts.pin) : null;
+    lit(p);
     if (opts.keep !== false && source.kind !== "custom" && !("src" in source && source.src.startsWith("blob:"))) p.record = { id, source, place: p.place() };
     save();
     return p;
@@ -5025,7 +5179,7 @@ function createPanels(o) {
     }
     for (const r of kept) {
       const place = cleanPlace(r.place);
-      if (place) open(r.source, { id: r.id, place });
+      if (place) open(r.source, { id: r.id, place, ...r.look ? { look: r.look } : {}, ...r.pin ? { pin: r.pin } : {} });
     }
   })();
   const targets = () => [...live.values()].flatMap((p) => [p.body, ...p.held ? [] : [p.bar], ...p.buttons.values()]);
@@ -5040,8 +5194,9 @@ function createPanels(o) {
   const tint = (hit, on) => {
     const found = hit ? find(hit) : null;
     const mesh = found?.[0].buttons.get(found[1]);
-    if (mesh) mesh.material.color.copy(on ? accent : new THREE9.Color(16777215));
+    if (mesh) mesh.material.color.copy(on || found[1] === "pin" && found[0].pinAt ? accent : new THREE9.Color(16777215));
   };
+  const lit = (p) => p.buttons.get("pin").material.color.copy(p.pinAt ? accent : new THREE9.Color(16777215));
   const api = {
     open,
     async openFile(file) {
@@ -5086,7 +5241,12 @@ function createPanels(o) {
       if (!found) return;
       const [p, part] = found;
       if (part === "close") return p.close();
-      if (part === "larger" || part === "smaller") return p.moveTo({ width: p.width * (part === "larger" ? 1.25 : 0.8) });
+      if (part === "larger" || part === "smaller") {
+        p.moveTo({ width: p.width * (part === "larger" ? 1.25 : 0.8) });
+        return;
+      }
+      if (part === "glass") return p.setLook(nextLook(p.seeThrough));
+      if (part === "pin") return p.setPinned(!p.pinAt);
       if (part === "body" && p.source.kind === "custom") return p.source.onPress?.(pointed?.name === hit ? pointed.x : 0.5, pointed?.name === hit ? pointed.y : 0.5);
       if ((part === "play" || part === "body") && p.video) void (p.video.paused ? p.video.play().catch(() => {
       }) : Promise.resolve(p.video.pause()));
@@ -5111,14 +5271,24 @@ function createPanels(o) {
         return true;
       }
       const moved = drag.moved;
+      if (moved && drag.p.pinAt) drag.p.pinAt = pinFrom(drag.p);
       drag = null;
       if (moved) save();
       return moved;
     },
-    update(t) {
+    update(t, dt = 1 / 60) {
       metal.tick(t);
       keyboard.update(t);
       library.update();
+      if ([...live.values()].some((p) => p.pinAt)) {
+        anchor(dt);
+        for (const p of live.values()) {
+          if (!p.pinAt || p.held || drag?.p === p) continue;
+          offset.set(...p.pinAt).applyQuaternion(anchorTurn).add(anchorAt);
+          p.group.position.copy(offset);
+          turnToFace(p);
+        }
+      }
       for (const p of live.values()) {
         if (!p.held) continue;
         p.bar.getWorldPosition(at);
@@ -5135,7 +5305,9 @@ function createPanels(o) {
       place: p.place(),
       playing: p.video ? !p.video.paused : null,
       held: p.held,
-      ready: p.ready
+      ready: p.ready,
+      look: { ...p.seeThrough },
+      pinned: !!p.pinAt
     })),
     dispose() {
       for (const p of live.values()) {
@@ -5264,6 +5436,58 @@ function addPanelControls(controls, panels, o) {
       }
     }
   );
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/stay.ts
+var finite2 = (n) => typeof n === "number" && Number.isFinite(n);
+function cleanStood(input, now, maxAgeSec = 12 * 3600) {
+  if (!input || typeof input !== "object") return null;
+  const s = input;
+  if (!finite2(s.x) || !finite2(s.z) || !finite2(s.yaw) || !finite2(s.at)) return null;
+  if (Math.abs(s.x) > 1e4 || Math.abs(s.z) > 1e4) return null;
+  if (s.at > now + 60 || now - s.at > maxAgeSec) return null;
+  return { x: s.x, z: s.z, yaw: (s.yaw % 360 + 360) % 360, headset: s.headset === true, at: s.at };
+}
+function wasRefreshed() {
+  try {
+    const nav = performance.getEntriesByType("navigation")[0];
+    return nav?.type === "reload";
+  } catch {
+    return false;
+  }
+}
+function createStay(o = {}) {
+  const now = o.now ?? (() => Math.floor(Date.now() / 1e3));
+  let storage = null;
+  try {
+    storage = o.storage === void 0 ? sessionStorage : o.storage;
+  } catch {
+  }
+  const key = `nswp:stood:${o.name ?? (typeof location === "undefined" ? "" : location.pathname)}`;
+  let before = null;
+  if (o.refreshed ?? wasRefreshed()) {
+    try {
+      before = cleanStood(JSON.parse(storage?.getItem(key) ?? "null"), now());
+    } catch {
+    }
+  }
+  return {
+    before,
+    keep(s) {
+      const stood = cleanStood({ ...s, at: now() }, now());
+      if (!stood) return;
+      try {
+        storage?.setItem(key, JSON.stringify(stood));
+      } catch {
+      }
+    },
+    clear() {
+      try {
+        storage?.removeItem(key);
+      } catch {
+      }
+    }
+  };
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/chamber.ts
@@ -6412,12 +6636,15 @@ export {
   readPad,
   DEFAULT_COMFORT,
   createXrInput,
+  PANEL_LOOKS,
   PANEL_LIMITS,
   LIBRARY_LIMITS,
   createKeyboard,
   createLibrary,
   createPanels,
   addPanelControls,
+  wasRefreshed,
+  createStay,
   createChamber,
   createCrossing,
   takePicture,

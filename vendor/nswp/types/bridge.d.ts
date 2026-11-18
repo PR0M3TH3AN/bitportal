@@ -18,6 +18,12 @@ export declare const BRIDGE_LIMITS: {
     readonly frameBytes: 65536;
     readonly nameChars: 80;
     readonly whyChars: 200;
+    /** Speech is sent as 16-bit samples, one channel, at this many a second. */
+    readonly speechRate: 16000;
+    /** The longest anyone may speak in one go, in seconds. */
+    readonly speechSeconds: 90;
+    /** The most text one go may come back as. */
+    readonly speechChars: 2000;
 };
 /** Where a Bridge listens on relays. */
 export declare function bridgeTopic(bridge: string): string;
@@ -104,6 +110,7 @@ export type BridgeControl = {
 } | {
     t: "ready";
     name: string;
+    speech: boolean;
 } | {
     t: "exit";
     code: number;
@@ -115,3 +122,28 @@ export declare function cleanSize(cols: unknown, rows: unknown): {
 } | null;
 /** Read a text frame from the channel. Returns null for anything that isn't one of the few things either side says. */
 export declare function parseBridgeControl(text: string): BridgeControl | null;
+/**
+ * What is said on the second channel, `speech`: the page sends what a
+ * microphone heard, and the computer sends back the words. Sound goes one
+ * way as binary frames between a `begin` and an `end`.
+ */
+export type SpeechControl = {
+    t: "begin";
+    lang: string;
+} | {
+    t: "end";
+} | {
+    t: "cancel";
+}
+/** The words. Never a line break: speaking types, and never presses Enter. */
+ | {
+    t: "text";
+    text: string;
+} | {
+    t: "sorry";
+    why: string;
+};
+/** Words as they may be typed: one line, nothing hidden, nothing that is a key rather than a letter. */
+export declare function cleanSpeechText(text: string): string;
+/** Read a text frame from the speech channel, from either end. Null for anything else. */
+export declare function parseSpeechControl(text: string): SpeechControl | null;

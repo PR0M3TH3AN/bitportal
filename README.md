@@ -90,6 +90,16 @@ lobby or a world would need to agree with it on is in
   Buttons along the panel's foot look back through what has scrolled away,
   make the letters larger or smaller, and copy what is on the screen. Up to
   four terminals can be open on a computer at once.
+- **Speak instead of typing.** A terminal has a Speak button, and the
+  keyboard drawn in a headset has a Speak key. If your computer's Bridge was
+  started with `--voice`, your computer turns what you say into text itself
+  and your voice goes nowhere else. Without that, your browser's own speech
+  recognition is used if it has one, and you are told first if it would send
+  your voice to the browser's maker. What you say is typed; Enter is yours.
+- **Panels that come along, and a room that stays put.** Any panel can be
+  made see-through (dark parts more than light, so a terminal can be letters
+  in the air) and pinned in your view. Refreshing the page puts you back
+  where you stood, with your terminals where they hung.
   Which computers you have added is kept in this browser and sent nowhere.
   A terminal can do anything you can do on that computer, so add only a
   computer you started the Bridge on yourself. No world can see or reach

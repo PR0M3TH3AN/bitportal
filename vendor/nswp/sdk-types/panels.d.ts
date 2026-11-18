@@ -28,8 +28,9 @@ import type { XrInput } from "./input.js";
 import { type Keyboard } from "./keyboard.js";
 import { type Library } from "./library.js";
 import type { Controls } from "./ui/model.js";
-import { type PanelPlace, type PanelSource } from "./panel-store.js";
-export type { PanelPlace, PanelRecord, PanelSource } from "./panel-store.js";
+import { type PanelLook, type PanelPlace, type PanelSource, type V3 } from "./panel-store.js";
+export type { PanelLook, PanelPlace, PanelRecord, PanelSource } from "./panel-store.js";
+export { PANEL_LOOKS } from "./panel-store.js";
 /**
  * What a panel can show. `custom` is a texture of the page's own, for
  * something the kit doesn't draw: it is not kept. It may ask to hear a press
@@ -64,6 +65,18 @@ export interface Panel {
     readonly source: PanelContent;
     place(): PanelPlace;
     moveTo(place: Partial<PanelPlace>): void;
+    /** How see-through it is. */
+    readonly look: PanelLook;
+    setLook(look: Partial<PanelLook>): void;
+    /**
+     * Whether it is pinned in the visitor's view: it comes with them, and stays
+     * where they put it in front of them. On a flat screen it keeps its place on
+     * the screen. In a headset it stays put while they look about and comes
+     * round when they turn or move well away, because a thing glued to the eyes
+     * is tiring. `pin` is where: metres right, up and ahead (ahead is negative).
+     */
+    readonly pin: V3 | null;
+    setPinned(on: boolean): void;
     close(): void;
 }
 export interface PanelInfo {
@@ -76,6 +89,8 @@ export interface PanelInfo {
     held: boolean;
     /** Whether what it shows has loaded. */
     ready: boolean;
+    look: PanelLook;
+    pinned: boolean;
 }
 export interface Panels {
     /** Hang a panel. Without a place, it goes a comfortable reach in front of the visitor, facing them. */
@@ -83,6 +98,8 @@ export interface Panels {
         id?: string;
         place?: Partial<PanelPlace>;
         keep?: boolean;
+        look?: Partial<PanelLook>;
+        pin?: V3 | null;
     }): Panel;
     /** Hang a file the visitor chose from their own device: a picture or a video. It goes into their library, and is kept in this browser. */
     openFile(file: Blob & {

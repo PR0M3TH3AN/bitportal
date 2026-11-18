@@ -18,7 +18,7 @@
  *   signer, their panels or this list.
  */
 import { DEFAULT_RELAYS, encodeNpub, finalizeEvent, getPublicKey, shortNpub, type EventTemplate, type NostrEvent } from "@nswp/core";
-import type { Panels } from "nswp-sdk/three";
+import { wasRefreshed, type Panels } from "nswp-sdk/three";
 import type { Controls } from "nswp-sdk/ui";
 import type { TerminalPanel } from "nswp-sdk/terminal";
 import { addComputer, computersOf, loadComputers, pairingRequest, removeComputer, storeComputers, type Computer, type PairingRequest } from "../shared/computers.js";
@@ -38,8 +38,14 @@ export interface ComputersOptions {
 export interface Computers {
   /** Act on a pairing link, if the address is one. Returns true if it was. */
   fromAddress(hash: string): boolean;
-  /** For tests: stand in a throwaway identity, made in this page, and return its public key. Nothing in an address can do this. */
-  useTestIdentity(): string;
+  /**
+   * For tests: stand in a throwaway identity, made in this page, and return
+   * its public key. Nothing in an address can do this. A test that refreshes
+   * the page hands back the key it was given, to be the same visitor again.
+   */
+  useTestIdentity(secretKey?: Uint8Array): string;
+  /** Bring back the terminals that were open before a refresh, one at a time. Done by itself when the page comes up; here for a test. */
+  restore(): Promise<void>;
   list(): Computer[];
   /** The open terminals, oldest first. */
   terminals(): TerminalPanel[];
@@ -48,6 +54,16 @@ export interface Computers {
 /** How many terminals may be open on one computer at once: as many as its Bridge keeps. */
 export const TERMINALS_EACH = 4;
 const LETTERS = "bitportal:terminal-letters";
+/** Which terminals are open, and how each hangs: for this tab only, so that a refresh brings them back as they were. */
+const OPEN = "bitportal:terminals-open";
+
+interface Hung {
+  pubkey: string;
+  place: unknown;
+  look: unknown;
+  pin: unknown;
+  cols: number;
+}
 
 /** How many letters across the visitor last chose, on a flat screen and in a headset. Kept in this browser. */
 function lettersKept(): { flat?: number; headset?: number } {
@@ -103,6 +119,7 @@ export function addComputers(o: ComputersOptions): Computers {
       el("p", { className: "detail-host", textContent: `npm run bridge -- --owner ${me}` }),
       el("p", { textContent: "It prints a link. Open the link in this browser to add the computer here." }),
       el("p", { className: "why", textContent: "A terminal can do anything you can do on that computer. The Bridge asks there, on its own screen, before each one opens." }),
+      el("p", { className: "why", textContent: "Add --tmux for terminals that carry on when this page is closed or refreshed, and --voice to speak instead of typing: your computer turns what you say into text itself, and your voice goes nowhere else." }),
       ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: "You aren't signed in on this browser. Sign in on the front page first: the computer needs to know whose it is." })]),
       el("div", { className: "actions" }, el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
     );
@@ -147,13 +164,28 @@ export function addComputers(o: ComputersOptions): Computers {
 
   const signer = async (owner: string): Promise<{ signer: Signer; close(): void } | null> => (test ? { signer: test.signer, close: () => {} } : quietSigner(owner));
 
-  const openTerminal = async (c: Computer) => {
+  /** Note how each open terminal hangs. Kept for this tab, and only so a refresh can put them back. */
+  const noteOpen = () => {
+    try {
+      const hung: Hung[] = open.map(({ pubkey, term }) => ({ pubkey, place: term.panel.place(), look: term.panel.look, pin: term.panel.pin, cols: term.size.cols }));
+      sessionStorage.setItem(OPEN, JSON.stringify(hung));
+    } catch {
+      /* not kept: after a refresh they are opened by hand */
+    }
+  };
+  addEventListener("pagehide", noteOpen);
+
+  const openTerminal = async (c: Computer, as?: Hung): Promise<TerminalPanel | null> => {
     const panels = o.panels();
-    if (!panels) return;
-    if (open.filter((t) => t.pubkey === c.pubkey).length >= TERMINALS_EACH) return controls.say(`${TERMINALS_EACH} terminals are open on ${c.name}. Put one away first.`);
-    if ((await identify()) !== c.owner) return controls.say("Sign in on the front page first, as the key this computer answers.");
+    const no = (why: string) => {
+      controls.say(why);
+      return null;
+    };
+    if (!panels) return null;
+    if (open.filter((t) => t.pubkey === c.pubkey).length >= TERMINALS_EACH) return no(`${TERMINALS_EACH} terminals are open on ${c.name}. Put one away first.`);
+    if ((await identify()) !== c.owner) return no("Sign in on the front page first, as the key this computer answers.");
     const quiet = await signer(c.owner);
-    if (!quiet) return controls.say("Your sign-in is locked. Unlock it on the front page, then try again.");
+    if (!quiet) return no("Your sign-in is locked. Unlock it on the front page, then try again.");
     try {
       // The terminal's code is fetched now, the first time one is opened, and not before.
       const { openTerminalPanel } = await import("nswp-sdk/terminal");
@@ -166,7 +198,11 @@ export function addComputers(o: ComputersOptions): Computers {
         relays: [...new Set([...c.relays, ...(c.relays.length ? [] : [...DEFAULT_RELAYS, ...o.relays()])])].slice(0, 8),
         name: c.name,
         // Fewer, larger letters in a headset, where the panel is read from a step away; or what they chose last time.
-        cols: (headset ? lettersKept().headset : lettersKept().flat) ?? (headset ? 80 : 100),
+        cols: as?.cols ?? (headset ? lettersKept().headset : lettersKept().flat) ?? (headset ? 80 : 100),
+        // Back as it hung before a refresh: where, how see-through, and whether pinned in the view.
+        ...(as?.place && typeof as.place === "object" ? { place: as.place as object } : {}),
+        ...(as?.look && typeof as.look === "object" ? { look: as.look as object } : {}),
+        ...(Array.isArray(as?.pin) ? { pin: as.pin as [number, number, number] } : {}),
         onColumns(cols) {
           try {
             localStorage.setItem(LETTERS, JSON.stringify({ ...lettersKept(), [headset ? "headset" : "flat"]: cols }));
@@ -183,12 +219,47 @@ export function addComputers(o: ComputersOptions): Computers {
           const at = open.findIndex((t) => t.term === term);
           if (at >= 0) open.splice(at, 1);
           quiet.close();
+          noteOpen();
         },
       });
       open.push({ pubkey: c.pubkey, term });
+      noteOpen();
+      return term;
     } catch {
       quiet.close();
-      controls.say("The terminal couldn't be opened. Put a panel away and try again.");
+      return no("The terminal couldn't be opened. Put a panel away and try again.");
+    }
+  };
+
+  /**
+   * After a refresh, the terminals that were open come back where they hung. Each needs its own grant, and its
+   * computer asks for each unless it was told not to for a while, so they are opened one at a time.
+   */
+  const restore = async () => {
+    let hung: Hung[] = [];
+    try {
+      const kept: unknown = JSON.parse(sessionStorage.getItem(OPEN) ?? "[]");
+      if (Array.isArray(kept)) hung = (kept as Hung[]).filter((h) => h && typeof h.pubkey === "string" && typeof h.cols === "number").slice(0, TERMINALS_EACH * 2);
+    } catch {
+      return;
+    }
+    if (!hung.length || open.length) return;
+    const mine = who ? computersOf(loadComputers(), who) : [];
+    for (const h of hung) {
+      const c = mine.find((x) => x.pubkey === h.pubkey);
+      const term = c ? await openTerminal(c, h) : null;
+      if (!term) continue;
+      // Wait for this one to be let in, or turned away, before asking for the next.
+      await new Promise<void>((done) => {
+        const started = Date.now();
+        const look = setInterval(() => {
+          const at = term.status.at;
+          if (at === "open" || at === "closed" || at === "ended" || Date.now() - started > 90_000) {
+            clearInterval(look);
+            done();
+          }
+        }, 250);
+      });
     }
   };
 
@@ -219,7 +290,9 @@ export function addComputers(o: ComputersOptions): Computers {
     );
   };
   controls.add({ id: "computer-how", section: "computers", icon: "help", label: "Add a computer", short: "Add", hidden: o.presenting, act: () => void identify().then(explain) });
-  void identify().then(refresh);
+  void identify()
+    .then(refresh)
+    .then(() => (wasRefreshed() ? restore() : undefined));
 
   return {
     fromAddress(hash) {
@@ -233,8 +306,9 @@ export function addComputers(o: ComputersOptions): Computers {
       void identify().then(() => offer(ask));
       return true;
     },
-    useTestIdentity() {
-      const key = crypto.getRandomValues(new Uint8Array(32));
+    restore,
+    useTestIdentity(secretKey) {
+      const key = secretKey ?? crypto.getRandomValues(new Uint8Array(32));
       const pubkey = getPublicKey(key);
       test = { pubkey, signer: checkedSigner(pubkey, { signEvent: async (t) => finalizeEvent(t, key) }) };
       who = pubkey;

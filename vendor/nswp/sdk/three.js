@@ -2,6 +2,7 @@ import {
   DEFAULT_COMFORT,
   LIBRARY_LIMITS,
   PANEL_LIMITS,
+  PANEL_LOOKS,
   addCameraControls,
   addPanelControls,
   addRoomControls,
@@ -17,6 +18,7 @@ import {
   createPanels,
   createPortalWindow,
   createPresence,
+  createStay,
   createXrInput,
   panoramaTexture,
   readPad,
@@ -25,21 +27,31 @@ import {
   takePicture,
   takeSelfie,
   textSprite,
-  turnVisitor
-} from "./shared-RDSPER6D.js";
+  turnVisitor,
+  wasRefreshed
+} from "./shared-NL75PWBM.js";
 import "./shared-OXCAHDPV.js";
-import "./shared-HRTYAXW7.js";
+import {
+  browserVoice,
+  computerVoice,
+  createVoice,
+  recordVoice,
+  toPcm16
+} from "./shared-HAGFA4R3.js";
 import "./shared-QLSLERQ3.js";
 export {
   DEFAULT_COMFORT,
   LIBRARY_LIMITS,
   PANEL_LIMITS,
+  PANEL_LOOKS,
   addCameraControls,
   addPanelControls,
   addRoomControls,
   addViewControls,
+  browserVoice,
   canRecord,
   capturePanorama,
+  computerVoice,
   createChamber,
   createConsole,
   createCrossing,
@@ -49,13 +61,18 @@ export {
   createPanels,
   createPortalWindow,
   createPresence,
+  createStay,
+  createVoice,
   createXrInput,
   panoramaTexture,
   readPad,
   recordClip,
+  recordVoice,
   saveFile,
   takePicture,
   takeSelfie,
   textSprite,
-  turnVisitor
+  toPcm16,
+  turnVisitor,
+  wasRefreshed
 };

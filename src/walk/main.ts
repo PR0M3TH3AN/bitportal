@@ -18,7 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -886,14 +886,19 @@ async function start(): Promise<void> {
   // A link the Bridge printed asks to add a computer. It is taken off the address too, so a reload doesn't ask again.
   const pairing = computers.fromAddress(location.hash);
   if (cameBack || pairing) history.replaceState(history.state, "", location.pathname + location.search);
-  let offered = cameFromHeadset;
+  // A refresh is not an arrival. Whoever was here is put back where they stood (further down), and if the refresh
+  // ended a headset session, the way back into one is offered first, as it is to someone coming home.
+  const stay = createStay();
+  const stood = cameBack ? null : stay.before;
+  const backToHeadset = cameFromHeadset || !!stood?.headset;
+  let offered = backToHeadset;
   void addViewControls(controls, {
     renderer,
     rig,
     camera,
     hud,
     onState: (s) => (state.xr = s),
-    ...(cameFromHeadset ? { arrived: { title: "BitPortal" } } : {}),
+    ...(backToHeadset ? { arrived: { title: "BitPortal" } } : {}),
     onOffer: (showing) => (offered = showing),
   }).then((supported) => {
     if (!supported) offered = false;
@@ -987,6 +992,16 @@ async function start(): Promise<void> {
     rig.rotation.y = Math.PI;
     state.facing = "suggested";
   }
+
+  if (stood) {
+    rig.position.x = stood.x;
+    rig.position.z = stood.z;
+    rig.rotation.y = THREE.MathUtils.degToRad(stood.yaw);
+    state.facing = "as before";
+  }
+  const keepPlace = () => stay.keep({ x: rig.position.x, z: rig.position.z, yaw: THREE.MathUtils.radToDeg(rig.rotation.y), headset: renderer.xr.isPresenting });
+  addEventListener("pagehide", keepPlace);
+  setInterval(keepPlace, 1000);
 
   // A first visit gets one line on how a door is used, low in front of the
   // visitor, below the doors. It is never shown again once they have used one.

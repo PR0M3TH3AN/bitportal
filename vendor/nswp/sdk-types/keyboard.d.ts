@@ -14,6 +14,7 @@
  *   // with a ray: const hit = keyboard.pick(raycaster); keyboard.aim(hit); on select: keyboard.press(hit)
  */
 import * as THREE from "three";
+import { type Voice } from "./speech.js";
 export interface KeyboardOptions {
     scene: THREE.Scene;
     camera: THREE.Camera;
@@ -21,6 +22,8 @@ export interface KeyboardOptions {
     textColor?: string;
     /** The headset session, if there is one: asked whether its browser has a keyboard of its own to offer. */
     session?: () => XRSession | null | undefined;
+    /** What turns speech into words, where a page has its own. Left out, the keyboard makes one. */
+    voice?: Voice;
 }
 export interface AskOptions {
     /** What is being asked for, shown over the words. */
@@ -44,6 +47,12 @@ export interface Keyboard {
     readonly open: boolean;
     /** Whether it is up for a terminal: every key sent as it is pressed. */
     readonly isLive: boolean;
+    /**
+     * Speaking instead of typing. Where something can turn speech into words
+     * (the visitor's own computer, or their browser), the keyboard has a Speak
+     * key. Anything else that takes text can use the same one button.
+     */
+    readonly voice: Voice;
     /**
      * Put the keyboard up for something that takes keys as they are typed, a
      * terminal. It has Esc, Tab, Ctrl and the arrows, and stays up until it is
@@ -71,6 +80,8 @@ export interface Keyboard {
         shift: string;
         ctrl: boolean;
         keys: string[];
+        voice: string;
+        notice: string;
     };
     update(t: number): void;
     dispose(): void;

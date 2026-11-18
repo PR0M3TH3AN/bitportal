@@ -31,13 +31,19 @@ export type LiveLayer = "letters" | "symbols" | "more";
  * above them for what a terminal needs and words don't, and no Done. It
  * stays up until it is put away.
  */
-export declare function liveRows(layer: LiveLayer): Key[][];
+export declare function liveRows(layer: LiveLayer, o?: {
+    mic?: boolean;
+}): Key[][];
 /** Where every key sits, as `placeKeys` lays them. */
-export declare function placeLiveKeys(layer: LiveLayer): PlacedKey[];
+export declare function placeLiveKeys(layer: LiveLayer, o?: {
+    mic?: boolean;
+}): PlacedKey[];
 export type LivePressed = {
     send: string;
 } | {
     close: true;
+} | {
+    mic: true;
 } | null;
 /** The drawn keyboard's own state: shift, ctrl and which layer, and what each press sends. */
 export declare class LiveKeys {

@@ -10,8 +10,11 @@
  * it: with a real keyboard anywhere, and with the kit's drawn one in a
  * headset. Press anywhere else to stop typing into it.
  *
- * Along its foot are five buttons, each one press: back and forward through
- * what has scrolled away, larger and smaller letters, and copy. The panel's
+ * Along its foot are six buttons, each one press: speak, back and forward
+ * through what has scrolled away, larger and smaller letters, and copy.
+ * Speak types what is said, and never presses Enter. The words are worked out
+ * on the visitor's own computer where its Bridge listens, and otherwise by
+ * their browser where it can, after saying so. The panel's
  * own + and - change how large the whole panel is; these change how much
  * fits on it.
  *
@@ -20,12 +23,13 @@
  */
 import * as THREE from "three";
 import { type BridgeStatus } from "./bridge-link.js";
-import type { Panel, Panels } from "./panels.js";
+import type { Panel, PanelLook, PanelPlace, Panels } from "./panels.js";
+import type { V3 } from "./panel-store.js";
 import type { EventTemplate, NostrEvent } from "@nswp/core";
 export type { BridgeStatus } from "./bridge-link.js";
 /** How many letters fit across, from the largest letters to the smallest. */
 export declare const TERMINAL_COLUMNS: readonly [60, 80, 100, 120, 140, 160];
-export type TerminalButton = "back" | "forward" | "larger" | "smaller" | "copy";
+export type TerminalButton = "speak" | "back" | "forward" | "larger" | "smaller" | "copy";
 export interface TerminalPanelOptions {
     panels: Panels;
     /** The computer's Bridge, as 64 hex characters. */
@@ -47,6 +51,10 @@ export interface TerminalPanelOptions {
     onColumns?(cols: number): void;
     /** The panel was put away, and the connection with it. */
     onClosed?(): void;
+    /** Where to hang it, how see-through it is, and where it is pinned in the view: for a home bringing one back as it was. */
+    place?: Partial<PanelPlace>;
+    look?: Partial<PanelLook>;
+    pin?: V3 | null;
 }
 export interface TerminalPanel {
     readonly panel: Panel;
