@@ -1,4 +1,5 @@
 import {
+  CUES,
   DEFAULT_COMFORT,
   LIBRARY_LIMITS,
   PANEL_LIMITS,
@@ -8,6 +9,7 @@ import {
   addCameraControls,
   addPanelControls,
   addRoomControls,
+  addSoundControls,
   addViewControls,
   canRecord,
   capturePanorama,
@@ -20,6 +22,7 @@ import {
   createPanels,
   createPortalWindow,
   createPresence,
+  createSounds,
   createStroll,
   createXrInput,
   panoramaTexture,
@@ -31,8 +34,8 @@ import {
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-3UJG5UJ6.js";
-import "./shared-OXCAHDPV.js";
+} from "./shared-7ZQZSBBB.js";
+import "./shared-YU6PPIY6.js";
 import {
   browserVoice,
   computerVoice,
@@ -44,6 +47,7 @@ import {
 } from "./shared-U2U7QRDK.js";
 import "./shared-QLSLERQ3.js";
 export {
+  CUES,
   DEFAULT_COMFORT,
   LIBRARY_LIMITS,
   PANEL_LIMITS,
@@ -53,6 +57,7 @@ export {
   addCameraControls,
   addPanelControls,
   addRoomControls,
+  addSoundControls,
   addViewControls,
   browserVoice,
   canRecord,
@@ -67,6 +72,7 @@ export {
   createPanels,
   createPortalWindow,
   createPresence,
+  createSounds,
   createStay,
   createStroll,
   createVoice,
