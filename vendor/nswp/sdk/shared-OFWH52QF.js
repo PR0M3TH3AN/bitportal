@@ -4,7 +4,7 @@ import {
 } from "./shared-OXCAHDPV.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
-import * as THREE10 from "three";
+import * as THREE12 from "three";
 import { decodeLook as decodeLook2, encodeNpub, spawnOffset } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
@@ -927,11 +927,11 @@ var SHA2_32B = class extends HashMD {
     this.H = IV[7] | 0;
   }
   get() {
-    const { A, B, C, D, E, F, G, H: H3 } = this;
-    return [A, B, C, D, E, F, G, H3];
+    const { A, B, C, D, E, F, G, H: H4 } = this;
+    return [A, B, C, D, E, F, G, H4];
   }
   // prettier-ignore
-  set(A, B, C, D, E, F, G, H3) {
+  set(A, B, C, D, E, F, G, H4) {
     this.A = A | 0;
     this.B = B | 0;
     this.C = C | 0;
@@ -939,7 +939,7 @@ var SHA2_32B = class extends HashMD {
     this.E = E | 0;
     this.F = F | 0;
     this.G = G | 0;
-    this.H = H3 | 0;
+    this.H = H4 | 0;
   }
   _cloneInto(to) {
     (to ||= new this.constructor()).set(...this.get());
@@ -950,18 +950,18 @@ var SHA2_32B = class extends HashMD {
       SHA256_W[i] = view.getUint32(offset, false);
     for (let i = 16; i < 64; i++) {
       const W15 = SHA256_W[i - 15];
-      const W2 = SHA256_W[i - 2];
+      const W22 = SHA256_W[i - 2];
       const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
-      const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
+      const s1 = rotr(W22, 17) ^ rotr(W22, 19) ^ W22 >>> 10;
       SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
     }
-    let { A, B, C, D, E, F, G, H: H3 } = this;
+    let { A, B, C, D, E, F, G, H: H4 } = this;
     for (let i = 0; i < 64; i++) {
       const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-      const T1 = H3 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
+      const T1 = H4 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
       const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
       const T2 = sigma0 + Maj(A, B, C) | 0;
-      H3 = G;
+      H4 = G;
       G = F;
       F = E;
       E = D + T1 | 0;
@@ -977,8 +977,8 @@ var SHA2_32B = class extends HashMD {
     E = E + this.E | 0;
     F = F + this.F | 0;
     G = G + this.G | 0;
-    H3 = H3 + this.H | 0;
-    this.set(A, B, C, D, E, F, G, H3);
+    H4 = H4 + this.H | 0;
+    this.set(A, B, C, D, E, F, G, H4);
   }
   roundClean() {
     clean(SHA256_W);
@@ -1571,14 +1571,14 @@ function getMinHashLength(fieldOrder) {
   const length = getFieldBytesLength(fieldOrder);
   return length + Math.ceil(length / 2);
 }
-function mapHashToField(key, fieldOrder, isLE = false) {
-  abytes2(key);
-  const len = key.length;
+function mapHashToField(key2, fieldOrder, isLE = false) {
+  abytes2(key2);
+  const len = key2.length;
   const fieldLen = getFieldBytesLength(fieldOrder);
   const minLen = Math.max(getMinHashLength(fieldOrder), 16);
   if (len < minLen || len > 1024)
     throw new Error("expected " + minLen + "-1024 bytes of input, got " + len);
-  const num2 = isLE ? bytesToNumberLE(key) : bytesToNumberBE(key);
+  const num2 = isLE ? bytesToNumberLE(key2) : bytesToNumberBE(key2);
   const reduced = mod(num2, fieldOrder - _1n2) + _1n2;
   return isLE ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
 }
@@ -1610,9 +1610,9 @@ function normalizeZ(c, points) {
   const invertedZs = FpInvertBatch(c.Fp, points.map((p) => p.Z));
   return points.map((p, i) => c.fromAffine(p.toAffine(invertedZs[i])));
 }
-function validateW(W2, bits, min = 1) {
-  if (!Number.isSafeInteger(W2) || W2 < min || W2 > bits)
-    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W2);
+function validateW(W4, bits, min = 1) {
+  if (!Number.isSafeInteger(W4) || W4 < min || W4 > bits)
+    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W4);
 }
 function validateTableBytes(numPoints, fpBytes) {
   const bytes = numPoints * (4 * fpBytes + 128);
@@ -1659,8 +1659,8 @@ function oddMultiples(p, size) {
     t.push(t[j - 1].add(dbl));
   return t;
 }
-function wnafDigits(n, W2) {
-  const size = 2 ** W2;
+function wnafDigits(n, W4) {
+  const size = 2 ** W4;
   const half = size / 2;
   const mask = BigInt(size - 1);
   const d = [];
@@ -1677,11 +1677,11 @@ function wnafDigits(n, W2) {
   }
   return d;
 }
-function signedWindowDigits(n, W2, windows) {
-  const size = 2 ** W2;
+function signedWindowDigits(n, W4, windows) {
+  const size = 2 ** W4;
   const half = size / 2;
   const mask = BigInt(size - 1);
-  const shiftBy = BigInt(W2);
+  const shiftBy = BigInt(W4);
   const d = [];
   for (let w = 0; w < windows; w++) {
     let v = Number(n & mask);
@@ -1741,9 +1741,9 @@ var ScalarMultiplier = class {
    * @param W - window size
    * @param bits - scalar bitlength the table must cover
    */
-  buildWnafTable(point, W2, bits) {
-    const windows = Math.ceil(bits / W2) + 1;
-    const half = 2 ** (W2 - 1);
+  buildWnafTable(point, W4, bits) {
+    const windows = Math.ceil(bits / W4) + 1;
+    const half = 2 ** (W4 - 1);
     const comp = [];
     let base = point;
     for (let w = 0; w < windows; w++) {
@@ -1754,7 +1754,7 @@ var ScalarMultiplier = class {
       }
       base = comp[comp.length - 1].double();
     }
-    return { W: W2, bits, windows, comp };
+    return { W: W4, bits, windows, comp };
   }
   /**
    * Implements ec multiplication using precomputed signed fixed-window wNAF tables.
@@ -1766,9 +1766,9 @@ var ScalarMultiplier = class {
    * @returns real and fake (for const-time) points
    */
   wnafCachedCT(precomputes, n) {
-    const { W: W2, windows, comp } = precomputes;
-    const half = 2 ** (W2 - 1);
-    const digits = signedWindowDigits(n, W2, windows);
+    const { W: W4, windows, comp } = precomputes;
+    const half = 2 ** (W4 - 1);
+    const digits = signedWindowDigits(n, W4, windows);
     let p = this.ZERO;
     let f = this.BASE;
     for (let w = 0; w < windows; w++) {
@@ -1789,11 +1789,11 @@ var ScalarMultiplier = class {
   // Cache key is point identity plus (W, bits); at most two entries exist per point (public-width
   // `Fn.BITS` and blinded `Fn.BITS + BLIND_BITS`). Callers must not reuse the same point with
   // incompatible `transform(...)` layouts and expect a separate cache entry.
-  getWnafPrecomputes(W2, point, bits, transform) {
+  getWnafPrecomputes(W4, point, bits, transform) {
     let entries = this.wnafPrecomputes.get(point);
-    let comp = entries?.find((entry) => entry.W === W2 && entry.bits === bits);
+    let comp = entries?.find((entry) => entry.W === W4 && entry.bits === bits);
     if (!comp) {
-      comp = this.buildWnafTable(point, W2, bits);
+      comp = this.buildWnafTable(point, W4, bits);
       if (typeof transform === "function")
         comp = { ...comp, comp: transform(comp.comp) };
       if (!entries) {
@@ -1820,10 +1820,10 @@ var ScalarMultiplier = class {
   // ECDH peer keys) skip building a throwaway cached table in favor of a small fixed-window
   // multiply. `n` must be < 2^bits.
   runCT(point, n, bits, transform) {
-    const W2 = getWindowSize(point);
-    if (W2 === 1)
+    const W4 = getWindowSize(point);
+    if (W4 === 1)
       return this.fixedWindowCT(point, n, bits);
-    return this.wnafCachedCT(this.getWnafPrecomputes(W2, point, bits, transform), n);
+    return this.wnafCachedCT(this.getWnafPrecomputes(W4, point, bits, transform), n);
   }
   mulCT(point, scalar, transform) {
     this.validateMulInput(point, scalar);
@@ -1857,20 +1857,20 @@ var ScalarMultiplier = class {
    * (this path needs no fake accumulator — its op-count is already scalar-independent).
    */
   fixedWindowCT(point, n, bits) {
-    const W2 = FW_WINDOW;
-    const size = 1 << W2;
-    const mask = bitMask(W2);
+    const W4 = FW_WINDOW;
+    const size = 1 << W4;
+    const mask = bitMask(W4);
     const table = new Array(size);
     table[0] = this.ZERO;
     for (let i = 1; i < size; i++)
       table[i] = table[i - 1].add(point);
-    const windows = Math.ceil(bits / W2);
+    const windows = Math.ceil(bits / W4);
     let acc = this.ZERO;
     for (let window = windows - 1; window >= 0; window--) {
       if (window !== windows - 1)
-        for (let d = 0; d < W2; d++)
+        for (let d = 0; d < W4; d++)
           acc = acc.double();
-      const digit = Number(n >> BigInt(window * W2) & mask);
+      const digit = Number(n >> BigInt(window * W4) & mask);
       let sel = table[0];
       for (let i = 1; i < size; i++)
         sel = i === digit ? table[i] : sel;
@@ -1896,22 +1896,22 @@ var ScalarMultiplier = class {
     this.assertPoint(point);
     if (!isPosBig(scalar))
       throw new Error("invalid scalar");
-    const W2 = getWindowSize(point);
-    if (W2 === 1 || scalar >= this.Point.Fn.ORDER)
+    const W4 = getWindowSize(point);
+    if (W4 === 1 || scalar >= this.Point.Fn.ORDER)
       return mulAddUnsafe(this.Point, [point], [scalar], true);
-    const precomputes = this.getWnafPrecomputes(W2, point, this.bits, transform);
+    const precomputes = this.getWnafPrecomputes(W4, point, this.bits, transform);
     return this.wnafCachedCT(precomputes, scalar).p;
   }
   // Remembers the window size used for precomputed wNAF multiplication of the given point
   // and drops any previously built tables. Usually only the base point is precomputed.
   // W=1 resets the point to the un-precomputed (table-less) paths.
   // W is additionally capped so tables stay under ~2 GiB ({@link TABLE_BYTES_MAX}).
-  setWindowSize(point, W2) {
+  setWindowSize(point, W4) {
     this.assertPoint(point);
-    validateW(W2, this.bits);
-    const windows = Math.ceil((this.bits + BLIND_BITS) / W2) + 1;
-    validateTableBytes(windows * 2 ** (W2 - 1), this.Point.Fp.BYTES);
-    pointWindowSizes.set(point, W2);
+    validateW(W4, this.bits);
+    const windows = Math.ceil((this.bits + BLIND_BITS) / W4) + 1;
+    validateTableBytes(windows * 2 ** (W4 - 1), this.Point.Fp.BYTES);
+    pointWindowSizes.set(point, W4);
     this.wnafPrecomputes.delete(point);
   }
   // True when a window size is set: tables themselves are built lazily on first multiply.
@@ -2691,7 +2691,7 @@ var RoomSession = class {
   constructor(opts = {}) {
     const world = opts.world ?? `${location.origin}${location.pathname}`;
     this.origin = new URL(world).origin;
-    let key = schnorr.utils.randomSecretKey();
+    let key2 = schnorr.utils.randomSecretKey();
     let proven = null;
     if (opts.identity) {
       try {
@@ -2699,7 +2699,7 @@ var RoomSession = class {
         const checked = verifyRoomPass(opts.identity.pass, { origin: this.origin, session: getPublicKey(named) });
         const text = JSON.stringify(opts.identity.pass);
         if (checked.ok && text.length <= PASS_LIMITS.chars) {
-          key = named;
+          key2 = named;
           proven = checked.value;
           this.pass = text;
           this.passUntil = checked.value.expiresAt;
@@ -2707,7 +2707,7 @@ var RoomSession = class {
       } catch {
       }
     }
-    this.key = key;
+    this.key = key2;
     const pubkey = getPublicKey(this.key);
     const mine = opts.look ? decodeLook(opts.look) : null;
     this.look = mine?.ok ? opts.look : null;
@@ -4029,7 +4029,105 @@ function createXrInput(opts) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
+import * as THREE9 from "three";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keyboard.ts
 import * as THREE7 from "three";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keys.ts
+var chars = (row) => [...row].map((c) => ({ id: c, label: c, kind: "char", w: 1 }));
+var key = (id, label, kind, w) => ({ id, label, kind, w });
+function keyRows(layer, o = {}) {
+  const bottom = [key("layer", layer === "letters" ? "123" : "ABC", "layer", 1.5), ...chars(","), key("space", "space", "space", 4.5), ...chars("."), key("enter", o.multiline ? "new line" : "done", "enter", 2)];
+  const actions = [key("cancel", "Cancel", "cancel", 3), ...o.system ? [key("system", "Headset's keyboard", "system", 4)] : [], key("done", "Done", "done", 3)];
+  if (layer === "letters") return [chars("qwertyuiop"), chars("asdfghjkl"), [key("shift", "shift", "shift", 1.5), ...chars("zxcvbnm"), key("back", "delete", "back", 1.5)], bottom, actions];
+  return [chars("1234567890"), chars("-/:;()!?@"), [...chars(`'"_&#+=*`), key("back", "delete", "back", 2)], bottom, actions];
+}
+function placeKeys(layer, o = {}) {
+  const rows = keyRows(layer, o);
+  const gap = 0.012;
+  const height = 1 / rows.length;
+  return rows.flatMap((row, r) => {
+    const total = row.reduce((sum, k) => sum + k.w, 0);
+    const spread = r === rows.length - 1;
+    const unit = spread ? 1 / total : 1 / 10;
+    let x = spread ? 0 : (1 - total * unit) / 2;
+    return row.map((k) => {
+      const placed = { ...k, x: x + gap / 2, y: r * height + gap / 2, width: k.w * unit - gap, height: height - gap };
+      x += k.w * unit;
+      return placed;
+    });
+  });
+}
+function keyAt(keys, x, y) {
+  return keys.find((k) => x >= k.x && x <= k.x + k.width && y >= k.y && y <= k.y + k.height) ?? null;
+}
+var TextEntry = class {
+  value;
+  shift;
+  layer = "letters";
+  multiline;
+  maxLength;
+  constructor(o = {}) {
+    this.multiline = o.multiline ?? false;
+    this.maxLength = o.maxLength ?? 2e3;
+    this.value = [...o.value ?? ""].slice(0, this.maxLength).join("");
+    this.shift = this.startsSentence() ? "once" : "off";
+  }
+  /** Whether the next letter begins a sentence, and so is a capital unless the visitor says otherwise. */
+  startsSentence() {
+    return /(^|[.!?]\s|\n)$/.test(this.value);
+  }
+  /** Add text as it is: from a real keyboard, or pasted. */
+  type(text) {
+    const clean2 = this.multiline ? text.replace(/\r/g, "") : text.replace(/[\r\n]+/g, " ");
+    this.value = [...this.value + clean2].slice(0, this.maxLength).join("");
+    if (this.shift !== "lock") this.shift = this.startsSentence() ? "once" : "off";
+  }
+  erase() {
+    this.value = [...this.value].slice(0, -1).join("");
+    if (this.shift !== "lock") this.shift = this.startsSentence() ? "once" : "off";
+  }
+  /** What a key shows now: a letter as a capital while shift is on. */
+  label(k) {
+    return k.kind === "char" && this.shift !== "off" ? k.label.toUpperCase() : k.label;
+  }
+  /** Press a key by its id. Returns what happened: still typing, finished, given up, or asked for the headset's own keyboard. */
+  press(id, keys = keyRows(this.layer, { multiline: this.multiline, system: true }).flat()) {
+    const k = keys.find((x) => x.id === id);
+    if (!k) return "typing";
+    switch (k.kind) {
+      case "char": {
+        const was = this.shift;
+        this.type(was === "off" ? k.id : k.id.toUpperCase());
+        if (was === "once") this.shift = this.startsSentence() ? "once" : "off";
+        return "typing";
+      }
+      case "space":
+        this.type(" ");
+        return "typing";
+      case "back":
+        this.erase();
+        return "typing";
+      case "shift":
+        this.shift = this.shift === "off" ? "once" : this.shift === "once" ? "lock" : "off";
+        return "typing";
+      case "layer":
+        this.layer = this.layer === "letters" ? "symbols" : "letters";
+        return "typing";
+      case "enter":
+        if (!this.multiline) return "done";
+        this.type("\n");
+        return "typing";
+      case "done":
+        return "done";
+      case "cancel":
+        return "cancel";
+      case "system":
+        return "system";
+    }
+  }
+};
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panel-store.ts
 var PANEL_LIMITS = {
@@ -4135,12 +4233,221 @@ function wrapText(text, width, measure, maxLines = 40) {
   }
   return out;
 }
+var LIBRARY_LIMITS = { count: 60, thumbChars: 6e4 };
+function cleanLibrary(input) {
+  if (!Array.isArray(input)) return [];
+  const out = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((x) => x.id === item.id)) continue;
+    if (item.kind !== "picture" && item.kind !== "video") continue;
+    const thumb = typeof item.thumb === "string" && item.thumb.length <= LIBRARY_LIMITS.thumbChars && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(item.thumb) ? item.thumb : "";
+    out.push({ id: item.id, kind: item.kind, title: tidy(item.title, PANEL_LIMITS.titleChars), bytes: finite(item.bytes) && item.bytes >= 0 ? item.bytes : 0, addedAt: finite(item.addedAt) ? item.addedAt : 0, thumb });
+  }
+  return out.sort((a, b) => b.addedAt - a.addedAt).slice(0, LIBRARY_LIMITS.count);
+}
+function libraryPage(items, page, perPage) {
+  const pages = Math.max(1, Math.ceil(items.length / perPage));
+  const at = Math.min(pages - 1, Math.max(0, Math.floor(page)));
+  return { items: items.slice(at * perPage, (at + 1) * perPage), page: at, pages };
+}
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
-var BAR = 0.085;
-var GAP = 0.012;
-var BUTTON = 0.062;
-var DEG = Math.PI / 180;
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keyboard.ts
+var W2 = 1024;
+var SHOW = 300;
+var KEYS = 520;
+var WIDTH = 0.8;
+function createKeyboard(o) {
+  const accent = `#${new THREE7.Color(o.accent ?? 16758364).getHexString()}`;
+  const ink = o.textColor ?? "#eef5fb";
+  const canvas = document.createElement("canvas");
+  canvas.width = W2;
+  canvas.height = SHOW + KEYS;
+  const g = canvas.getContext("2d");
+  const texture = new THREE7.CanvasTexture(canvas);
+  texture.colorSpace = THREE7.SRGBColorSpace;
+  texture.anisotropy = 8;
+  const board = new THREE7.Mesh(new THREE7.PlaneGeometry(WIDTH, WIDTH * canvas.height / W2), new THREE7.MeshBasicMaterial({ map: texture, toneMapped: false, transparent: true }));
+  board.name = "keyboard";
+  const group = new THREE7.Group();
+  group.name = "keyboard";
+  group.add(board);
+  group.visible = false;
+  o.scene.add(group);
+  let entry = new TextEntry();
+  let title = "";
+  let keys = [];
+  let aimed = null;
+  let done = null;
+  let stale = true;
+  let field = null;
+  const systemOffered = () => !!o.session?.()?.isSystemKeyboardSupported;
+  const lay = () => {
+    keys = placeKeys(entry.layer, { multiline: entry.multiline, system: systemOffered() });
+    stale = true;
+  };
+  const paint = () => {
+    stale = false;
+    g.clearRect(0, 0, W2, canvas.height);
+    g.fillStyle = "rgba(10, 16, 24, 0.94)";
+    g.beginPath();
+    g.roundRect(0, 0, W2, SHOW - 16, 26);
+    g.fill();
+    g.textBaseline = "top";
+    g.fillStyle = accent;
+    g.font = "bold 30px system-ui, sans-serif";
+    g.fillText(title, 36, 24, W2 - 72);
+    g.fillStyle = ink;
+    g.font = "40px system-ui, sans-serif";
+    const lines = wrapText(`${entry.value}\u258F`, W2 - 72, (s) => g.measureText(s).width, 400);
+    lines.slice(-4).forEach((line, i) => g.fillText(line, 36, 76 + i * 50));
+    for (const k of keys) {
+      const [x, y, w, h] = [k.x * W2, SHOW + k.y * KEYS, k.width * W2, k.height * KEYS];
+      const on = aimed === k.id || k.kind === "shift" && entry.shift !== "off";
+      g.fillStyle = on ? accent : k.kind === "char" || k.kind === "space" ? "#162231" : k.kind === "done" ? "#24384c" : "#0e1722";
+      g.beginPath();
+      g.roundRect(x, y, w, h, 16);
+      g.fill();
+      if (k.kind === "shift" && entry.shift === "lock") {
+        g.fillStyle = "#04070b";
+        g.fillRect(x + w / 2 - 22, y + h - 16, 44, 5);
+      }
+      g.fillStyle = on ? "#04070b" : ink;
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.font = k.kind === "char" ? "44px system-ui, sans-serif" : "bold 28px system-ui, sans-serif";
+      g.fillText(entry.label(k), x + w / 2, y + h / 2 + 2, w - 12);
+      g.textAlign = "left";
+    }
+    texture.needsUpdate = true;
+  };
+  const finish = (value) => {
+    if (!done) return;
+    const resolve = done;
+    done = null;
+    group.visible = false;
+    aimed = null;
+    field?.remove();
+    field = null;
+    removeEventListener("keydown", onKey, true);
+    removeEventListener("paste", onPaste, true);
+    resolve(value);
+  };
+  const onKey = (e) => {
+    if (e.target === field) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    let handled = true;
+    if (e.key === "Escape") finish(null);
+    else if (e.key === "Backspace") entry.erase();
+    else if (e.key === "Enter") {
+      if (entry.multiline && !e.shiftKey) entry.type("\n");
+      else finish(entry.value);
+    } else if (e.key.length === 1 || [...e.key].length === 1) entry.type(e.key);
+    else handled = e.key.length > 1 && !/^F\d+$/.test(e.key);
+    if (handled) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+    stale = true;
+  };
+  const onPaste = (e) => {
+    if (e.target === field) return;
+    const text = e.clipboardData?.getData("text/plain");
+    if (!text) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    entry.type(text);
+    stale = true;
+  };
+  const useSystem = () => {
+    if (field) return;
+    field = document.createElement("textarea");
+    Object.assign(field.style, { position: "fixed", left: "0", bottom: "0", width: "1px", height: "1px", opacity: "0" });
+    field.maxLength = entry.maxLength;
+    field.value = entry.value;
+    field.addEventListener("input", () => {
+      entry.value = "";
+      entry.type(field.value);
+      stale = true;
+    });
+    document.body.append(field);
+    field.focus();
+  };
+  const at = new THREE7.Vector3();
+  const facing2 = new THREE7.Vector3();
+  const local = new THREE7.Vector3();
+  const api = {
+    group,
+    get open() {
+      return !!done;
+    },
+    ask(a) {
+      if (done) finish(null);
+      entry = new TextEntry({ ...a.value !== void 0 ? { value: a.value } : {}, ...a.multiline !== void 0 ? { multiline: a.multiline } : {}, ...a.maxLength !== void 0 ? { maxLength: a.maxLength } : {} });
+      title = a.title;
+      lay();
+      o.camera.getWorldPosition(at);
+      o.camera.getWorldDirection(facing2);
+      facing2.y = 0;
+      if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
+      facing2.normalize();
+      group.position.set(at.x + facing2.x * 0.68, Math.max(0.5, at.y - 0.4), at.z + facing2.z * 0.68);
+      group.rotation.set(-32 * (Math.PI / 180), Math.atan2(-facing2.x, -facing2.z), 0, "YXZ");
+      group.visible = true;
+      addEventListener("keydown", onKey, true);
+      addEventListener("paste", onPaste, true);
+      return new Promise((resolve) => {
+        done = resolve;
+      });
+    },
+    cancel: () => finish(null),
+    pick(raycaster) {
+      if (!done) return null;
+      const hit = raycaster.intersectObject(board, false)[0];
+      if (!hit?.uv) return null;
+      const y = (1 - hit.uv.y) * canvas.height;
+      const k = y >= SHOW ? keyAt(keys, hit.uv.x, (y - SHOW) / KEYS) : null;
+      return `kb:${k?.id ?? ""}`;
+    },
+    aim(hit) {
+      const id = hit?.startsWith("kb:") ? hit.slice(3) || null : null;
+      if (id === aimed) return;
+      aimed = id;
+      stale = true;
+    },
+    press(hit) {
+      if (!done || !hit.startsWith("kb:") || hit.length === 3) return;
+      const what = entry.press(hit.slice(3), keys);
+      if (what === "done") return finish(entry.value);
+      if (what === "cancel") return finish(null);
+      if (what === "system") useSystem();
+      lay();
+    },
+    pointOf(hit) {
+      const k = hit.startsWith("kb:") ? keys.find((x) => x.id === hit.slice(3)) : null;
+      if (!k || !done) return null;
+      const height = WIDTH * canvas.height / W2;
+      const v = (SHOW + (k.y + k.height / 2) * KEYS) / canvas.height;
+      local.set((k.x + k.width / 2 - 0.5) * WIDTH, (0.5 - v) * height, 0);
+      group.updateMatrixWorld(true);
+      return board.localToWorld(local.clone());
+    },
+    info: () => ({ open: !!done, title, value: entry.value, layer: entry.layer, shift: entry.shift, keys: keys.map((k) => k.id) }),
+    update() {
+      if (done && stale) paint();
+    },
+    dispose() {
+      finish(null);
+      o.scene.remove(group);
+      board.geometry.dispose();
+      board.material.dispose();
+      texture.dispose();
+    }
+  };
+  return api;
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/library.ts
+import * as THREE8 from "three";
 var DB = "nswp-panels";
 function files() {
   return new Promise((resolve, reject) => {
@@ -4162,32 +4469,308 @@ async function fileStore(mode, run) {
     return void 0;
   }
 }
+async function thumbnail(file, kind) {
+  const draw = (source, w, h) => {
+    if (!w || !h) return "";
+    const canvas = document.createElement("canvas");
+    canvas.width = 240;
+    canvas.height = Math.max(1, Math.round(240 * h / w));
+    canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL("image/jpeg", 0.7);
+    return data.length <= LIBRARY_LIMITS.thumbChars ? data : "";
+  };
+  try {
+    if (kind === "picture") {
+      const bitmap = await createImageBitmap(file);
+      const data = draw(bitmap, bitmap.width, bitmap.height);
+      bitmap.close();
+      return data;
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "auto";
+      video.src = url;
+      await new Promise((resolve, reject) => {
+        video.addEventListener("loadeddata", () => resolve(), { once: true });
+        video.addEventListener("error", () => reject(new Error("unreadable")), { once: true });
+        setTimeout(() => reject(new Error("slow")), 4e3);
+      });
+      return draw(video, video.videoWidth, video.videoHeight);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch {
+    return "";
+  }
+}
+var W3 = 1024;
+var H2 = 768;
+var COLS = 4;
+var ROWS = 2;
+var TOP = 96;
+var FOOT = 104;
+var WIDTH2 = 1.1;
+function createLibrary(o) {
+  const accent = `#${new THREE8.Color(o.accent ?? 16758364).getHexString()}`;
+  const ink = o.textColor ?? "#eef5fb";
+  let items = [];
+  if (o.keep) {
+    try {
+      items = cleanLibrary(JSON.parse(localStorage.getItem(`${o.keep}:library`) ?? "[]"));
+    } catch {
+    }
+  }
+  const save = () => {
+    stale = true;
+    o.onChange?.();
+    if (!o.keep) return;
+    try {
+      localStorage.setItem(`${o.keep}:library`, JSON.stringify(items));
+    } catch {
+    }
+  };
+  const canvas = document.createElement("canvas");
+  canvas.width = W3;
+  canvas.height = H2;
+  const g = canvas.getContext("2d");
+  const texture = new THREE8.CanvasTexture(canvas);
+  texture.colorSpace = THREE8.SRGBColorSpace;
+  texture.anisotropy = 8;
+  const board = new THREE8.Mesh(new THREE8.PlaneGeometry(WIDTH2, WIDTH2 * H2 / W3), new THREE8.MeshBasicMaterial({ map: texture, toneMapped: false }));
+  board.name = "library";
+  const group = new THREE8.Group();
+  group.name = "library";
+  group.add(board);
+  group.visible = false;
+  o.scene.add(group);
+  let page = 0;
+  let removing = false;
+  let aimed = null;
+  let stale = true;
+  let regions = [];
+  const thumbs = /* @__PURE__ */ new Map();
+  const thumbOf = (item) => {
+    if (!item.thumb) return null;
+    let image = thumbs.get(item.id);
+    if (!image) {
+      image = new Image();
+      image.onload = () => stale = true;
+      image.src = item.thumb;
+      thumbs.set(item.id, image);
+    }
+    return image.complete && image.naturalWidth ? image : null;
+  };
+  const paint = () => {
+    stale = false;
+    regions = [];
+    const shown = libraryPage(items, page, COLS * ROWS);
+    page = shown.page;
+    g.fillStyle = "#0a1018";
+    g.fillRect(0, 0, W3, H2);
+    g.fillStyle = "#101a26";
+    g.fillRect(0, 0, W3, TOP);
+    g.fillStyle = ink;
+    g.textBaseline = "middle";
+    g.textAlign = "left";
+    g.font = "bold 40px system-ui, sans-serif";
+    g.fillText(removing ? "Select one to remove it" : "Your pictures and video", 36, TOP / 2 + 2, W3 - 200);
+    const button = (id, label, x, y, w, h, on = false) => {
+      regions.push({ id, x, y, w, h });
+      const lit = aimed === id || on;
+      g.fillStyle = lit ? accent : "#162231";
+      g.beginPath();
+      g.roundRect(x, y, w, h, 16);
+      g.fill();
+      g.fillStyle = lit ? "#04070b" : ink;
+      g.textAlign = "center";
+      g.font = "bold 30px system-ui, sans-serif";
+      g.fillText(label, x + w / 2, y + h / 2 + 2, w - 16);
+      g.textAlign = "left";
+    };
+    button("close", "Close", W3 - 164, 18, 140, TOP - 36);
+    if (shown.items.length === 0) {
+      g.fillStyle = ink;
+      g.globalAlpha = 0.8;
+      g.font = "34px system-ui, sans-serif";
+      g.textAlign = "center";
+      g.fillText("Nothing here yet.", W3 / 2, H2 / 2 - 40);
+      g.fillText("Hang a picture or video on a flat screen,", W3 / 2, H2 / 2 + 10);
+      g.fillText("or take a picture with the camera.", W3 / 2, H2 / 2 + 56);
+      g.textAlign = "left";
+      g.globalAlpha = 1;
+    }
+    const cellW = (W3 - 48) / COLS;
+    const cellH = (H2 - TOP - FOOT - 24) / ROWS;
+    shown.items.forEach((item, i) => {
+      const [x, y] = [24 + i % COLS * cellW + 10, TOP + 12 + Math.floor(i / COLS) * cellH + 8];
+      const [w, h] = [cellW - 20, cellH - 16];
+      const id = `item:${item.id}`;
+      regions.push({ id, x, y, w, h });
+      g.fillStyle = aimed === id ? accent : "#162231";
+      g.beginPath();
+      g.roundRect(x, y, w, h, 14);
+      g.fill();
+      const image = thumbOf(item);
+      const [px, py, pw, ph] = [x + 8, y + 8, w - 16, h - 60];
+      g.fillStyle = "#05090e";
+      g.fillRect(px, py, pw, ph);
+      if (image) {
+        const scale = Math.min(pw / image.naturalWidth, ph / image.naturalHeight);
+        const [dw, dh] = [image.naturalWidth * scale, image.naturalHeight * scale];
+        g.drawImage(image, px + (pw - dw) / 2, py + (ph - dh) / 2, dw, dh);
+      }
+      if (item.kind === "video") {
+        g.fillStyle = "rgba(4, 7, 11, 0.7)";
+        g.beginPath();
+        g.arc(px + pw / 2, py + ph / 2, 30, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = ink;
+        g.beginPath();
+        g.moveTo(px + pw / 2 - 10, py + ph / 2 - 15);
+        g.lineTo(px + pw / 2 + 16, py + ph / 2);
+        g.lineTo(px + pw / 2 - 10, py + ph / 2 + 15);
+        g.fill();
+      }
+      g.fillStyle = aimed === id ? "#04070b" : ink;
+      g.font = "26px system-ui, sans-serif";
+      g.fillText(item.title || (item.kind === "video" ? "A video" : "A picture"), x + 12, y + h - 26, w - 24);
+    });
+    const fy = H2 - FOOT + 14;
+    if (shown.pages > 1) {
+      button("prev", "Earlier", 24, fy, 170, FOOT - 28);
+      button("next", "Later", 206, fy, 170, FOOT - 28);
+      g.fillStyle = ink;
+      g.font = "28px system-ui, sans-serif";
+      g.fillText(`${shown.page + 1} of ${shown.pages}`, 400, fy + (FOOT - 28) / 2 + 2);
+    }
+    if (items.length) button("removing", removing ? "Stop removing" : "Remove one", W3 - 300, fy, 276, FOOT - 28, removing);
+    texture.needsUpdate = true;
+  };
+  const at = new THREE8.Vector3();
+  const facing2 = new THREE8.Vector3();
+  const api = {
+    group,
+    list: () => items,
+    async add(file, name = "") {
+      const kind = file.type.startsWith("image/") ? "picture" : file.type.startsWith("video/") ? "video" : null;
+      if (!kind || file.size > PANEL_LIMITS.fileBytes || items.length >= LIBRARY_LIMITS.count) return null;
+      const id = newId();
+      if (await fileStore("readwrite", (s) => s.put(file, id)) === void 0) return null;
+      const item = { id, kind, title: name.replace(/\.[a-z0-9]+$/i, "").slice(0, PANEL_LIMITS.titleChars), bytes: file.size, addedAt: Math.floor(Date.now() / 1e3), thumb: await thumbnail(file, kind) };
+      items = cleanLibrary([item, ...items]);
+      save();
+      return items.find((x) => x.id === id) ?? null;
+    },
+    async remove(id) {
+      if (!items.some((x) => x.id === id)) return;
+      items = items.filter((x) => x.id !== id);
+      thumbs.delete(id);
+      await fileStore("readwrite", (s) => s.delete(id));
+      save();
+    },
+    get showing() {
+      return group.visible;
+    },
+    set showing(v) {
+      if (v === group.visible) return;
+      group.visible = v;
+      removing = false;
+      aimed = null;
+      stale = true;
+      if (v) {
+        o.camera.getWorldPosition(at);
+        o.camera.getWorldDirection(facing2);
+        facing2.y = 0;
+        if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
+        facing2.normalize();
+        group.position.set(at.x + facing2.x * 1.15, Math.max(0.8, at.y - 0.05), at.z + facing2.z * 1.15);
+        group.rotation.set(0, Math.atan2(-facing2.x, -facing2.z), 0);
+      }
+      o.onChange?.();
+    },
+    pick(raycaster) {
+      if (!group.visible) return null;
+      const hit = raycaster.intersectObject(board, false)[0];
+      if (!hit?.uv) return null;
+      const [x, y] = [hit.uv.x * W3, (1 - hit.uv.y) * H2];
+      const r = regions.find((q) => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h);
+      return `lib:${r?.id ?? ""}`;
+    },
+    aim(hit) {
+      const id = hit?.startsWith("lib:") ? hit.slice(4) || null : null;
+      if (id === aimed) return;
+      aimed = id;
+      stale = true;
+    },
+    press(hit) {
+      if (!group.visible || !hit.startsWith("lib:")) return;
+      const id = hit.slice(4);
+      if (id === "close") api.showing = false;
+      else if (id === "prev") page--;
+      else if (id === "next") page++;
+      else if (id === "removing") removing = !removing;
+      else if (id.startsWith("item:")) {
+        const item = items.find((x) => x.id === id.slice(5));
+        if (item && removing) void api.remove(item.id);
+        else if (item) o.onChoose(item);
+      }
+      stale = true;
+    },
+    pointOf(hit) {
+      const r = hit.startsWith("lib:") ? regions.find((q) => q.id === hit.slice(4)) : null;
+      if (!r || !group.visible) return null;
+      const height = WIDTH2 * H2 / W3;
+      group.updateMatrixWorld(true);
+      return board.localToWorld(new THREE8.Vector3(((r.x + r.w / 2) / W3 - 0.5) * WIDTH2, (0.5 - (r.y + r.h / 2) / H2) * height, 0));
+    },
+    info: () => ({ showing: group.visible, page, pages: libraryPage(items, page, COLS * ROWS).pages, removing, cells: regions.map((r) => r.id) }),
+    update() {
+      if (group.visible && stale) paint();
+    },
+    dispose() {
+      o.scene.remove(group);
+      board.geometry.dispose();
+      board.material.dispose();
+      texture.dispose();
+    }
+  };
+  return api;
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
+var BAR = 0.085;
+var GAP = 0.012;
+var BUTTON = 0.062;
+var DEG = Math.PI / 180;
 function canvasTexture(width, height, draw) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   draw(canvas.getContext("2d"), width, height);
-  const texture = new THREE7.CanvasTexture(canvas);
-  texture.colorSpace = THREE7.SRGBColorSpace;
+  const texture = new THREE9.CanvasTexture(canvas);
+  texture.colorSpace = THREE9.SRGBColorSpace;
   texture.anisotropy = 8;
   return texture;
 }
 function noteTexture(source, ink) {
-  const W2 = 1024;
+  const W4 = 1024;
   const pad = 56;
   const measure = document.createElement("canvas").getContext("2d");
   measure.font = "40px system-ui, sans-serif";
-  const lines = wrapText(source.text, W2 - pad * 2, (s) => measure.measureText(s).width);
-  const H3 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
-  const texture = canvasTexture(W2, H3, (g) => {
+  const lines = wrapText(source.text, W4 - pad * 2, (s) => measure.measureText(s).width);
+  const H4 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
+  const texture = canvasTexture(W4, H4, (g) => {
     g.fillStyle = "#0a1018";
-    g.fillRect(0, 0, W2, H3);
+    g.fillRect(0, 0, W4, H4);
     g.fillStyle = ink;
     g.textBaseline = "top";
     g.font = "40px system-ui, sans-serif";
     lines.forEach((line, i) => g.fillText(line, pad, pad + i * 56));
   });
-  return { texture, aspect: W2 / H3 };
+  return { texture, aspect: W4 / H4 };
 }
 function glyphTexture(glyph, ink) {
   return canvasTexture(128, 128, (g) => {
@@ -4237,9 +4820,9 @@ function barTexture(title, ink) {
   });
 }
 function createPanels(o) {
-  const accent = new THREE7.Color(o.accent ?? 16758364);
+  const accent = new THREE9.Color(o.accent ?? 16758364);
   const ink = o.textColor ?? "#eef5fb";
-  const root = new THREE7.Group();
+  const root = new THREE9.Group();
   root.name = "panels";
   o.scene.add(root);
   const live = /* @__PURE__ */ new Map();
@@ -4248,13 +4831,13 @@ function createPanels(o) {
   const glyph = (g) => glyphs.get(g) ?? (glyphs.set(g, glyphTexture(g, ink)), glyphs.get(g));
   const frameShape = (() => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE7.Color(1186340);
+    b.tone = new THREE9.Color(1186340);
     b.light = accent.clone();
     b.box([1, 1, 0.022], [0, 0, 0], { bevel: 8e-3 });
     return b.geometry();
   })();
-  const head = new THREE7.Vector3();
-  const at = new THREE7.Vector3();
+  const head = new THREE9.Vector3();
+  const at = new THREE9.Vector3();
   const headV3 = () => {
     o.camera.getWorldPosition(head);
     return [head.x, head.y, head.z];
@@ -4267,6 +4850,25 @@ function createPanels(o) {
     } catch {
     }
   };
+  const keyboard = createKeyboard({ scene: o.scene, camera: o.camera, accent, textColor: ink, ...o.session ? { session: o.session } : {} });
+  const library = createLibrary({
+    scene: o.scene,
+    camera: o.camera,
+    accent,
+    textColor: ink,
+    ...o.keep ? { keep: o.keep } : {},
+    onChoose: (item) => {
+      try {
+        open({ kind: item.kind, title: item.title, src: `kept:${item.id}` });
+      } catch {
+      }
+    },
+    onChange: () => {
+      const have = new Set(library.list().map((x) => `kept:${x.id}`));
+      for (const p of [...live.values()]) if (p.source.kind !== "custom" && "src" in p.source && p.source.src.startsWith("kept:") && !have.has(p.source.src)) p.close();
+      o.onChange?.();
+    }
+  });
   const layout = (p) => {
     const h = 1 / p.aspect;
     p.body.scale.set(1, h, 1);
@@ -4310,8 +4912,6 @@ function createPanels(o) {
     p.video?.pause();
     if (p.video) p.video.src = "";
     if (p.blobUrl) URL.revokeObjectURL(p.blobUrl);
-    const src = p.record && "src" in p.record.source ? p.record.source.src : "";
-    if (src.startsWith("kept:")) void fileStore("readwrite", (s) => s.delete(src.slice(5)));
     root.remove(p.group);
     p.bar.removeFromParent();
     for (const mesh of [p.body, p.bar]) {
@@ -4323,20 +4923,20 @@ function createPanels(o) {
     for (const b of p.buttons.values()) b.material.dispose();
     save();
   };
-  const flat = (texture, w = 1, h = 1) => new THREE7.Mesh(new THREE7.PlaneGeometry(w, h), new THREE7.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
+  const flat = (texture, w = 1, h = 1) => new THREE9.Mesh(new THREE9.PlaneGeometry(w, h), new THREE9.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
   const open = (content, opts = {}) => {
     const source = content.kind === "custom" ? content : cleanSource(content);
     if (!source) throw new Error("nswp-sdk: a panel needs something to show (a note with words, or a picture or video with an address).");
     if (live.size >= PANEL_LIMITS.count && !(opts.id && live.has(opts.id))) throw new Error(`nswp-sdk: ${PANEL_LIMITS.count} panels are open. Put one away first.`);
     const id = opts.id ?? newId();
     live.get(id)?.close();
-    const group = new THREE7.Group();
+    const group = new THREE9.Group();
     group.name = `panel:${id}`;
     const body = flat(null);
     body.name = `${id}:body`;
     const bar = flat(barTexture(source.title || (source.kind === "note" ? "Note" : source.kind === "picture" ? "Picture" : source.kind === "video" ? "Video" : ""), ink), 1, BAR);
     bar.name = `${id}:bar`;
-    const frame = new THREE7.Mesh(frameShape, metal);
+    const frame = new THREE9.Mesh(frameShape, metal);
     frame.name = "frame";
     frame.raycast = () => {
     };
@@ -4367,7 +4967,7 @@ function createPanels(o) {
       ready: false,
       held: false,
       place() {
-        const e = new THREE7.Euler().setFromQuaternion(group.quaternion, "YXZ");
+        const e = new THREE9.Euler().setFromQuaternion(group.quaternion, "YXZ");
         const round = (n) => Math.round(n * 1e3) / 1e3;
         return { position: group.position.toArray().map(round), yaw: round((e.y / DEG % 360 + 360) % 360), pitch: round(e.x / DEG), width: round(p.width) };
       },
@@ -4396,15 +4996,16 @@ function createPanels(o) {
         let src = source.src;
         if (src.startsWith("kept:")) {
           const blob = await fileStore("readonly", (s) => s.get(src.slice(5)));
-          if (!blob || !live.has(id)) return;
+          if (!blob) return void (live.has(id) && p.close());
+          if (!live.has(id)) return;
           src = p.blobUrl = URL.createObjectURL(blob);
         }
         if (source.kind === "picture") {
           const image = new Image();
           image.onload = () => {
             if (!live.has(id)) return;
-            const texture = new THREE7.Texture(image);
-            texture.colorSpace = THREE7.SRGBColorSpace;
+            const texture = new THREE9.Texture(image);
+            texture.colorSpace = THREE9.SRGBColorSpace;
             texture.needsUpdate = true;
             show(texture, image.naturalWidth / Math.max(1, image.naturalHeight));
           };
@@ -4417,8 +5018,8 @@ function createPanels(o) {
           p.video = video;
           video.addEventListener("loadedmetadata", () => {
             if (!live.has(id) || !video.videoWidth) return;
-            const texture = new THREE7.VideoTexture(video);
-            texture.colorSpace = THREE7.SRGBColorSpace;
+            const texture = new THREE9.VideoTexture(video);
+            texture.colorSpace = THREE9.SRGBColorSpace;
             show(texture, video.videoWidth / video.videoHeight);
           });
           const mark = () => {
@@ -4480,18 +5081,20 @@ function createPanels(o) {
   const tint = (hit, on) => {
     const found = hit ? find(hit) : null;
     const mesh = found?.[0].buttons.get(found[1]);
-    if (mesh) mesh.material.color.copy(on ? accent : new THREE7.Color(16777215));
+    if (mesh) mesh.material.color.copy(on ? accent : new THREE9.Color(16777215));
   };
   const api = {
     open,
     async openFile(file) {
       const kind = file.type.startsWith("image/") ? "picture" : file.type.startsWith("video/") ? "video" : null;
       if (!kind || file.size > PANEL_LIMITS.fileBytes) return null;
-      const name = newId();
-      const stored = await fileStore("readwrite", (s) => s.put(file, name)) !== void 0;
-      const title = (file.name ?? "").replace(/\.[a-z0-9]+$/i, "");
-      return stored ? open({ kind, title, src: `kept:${name}` }) : open({ kind, title, src: URL.createObjectURL(file) }, { keep: false });
+      const item = await library.add(file, file.name ?? "");
+      if (item) return open({ kind, title: item.title, src: `kept:${item.id}` });
+      return open({ kind, title: (file.name ?? "").replace(/\.[a-z0-9]+$/i, ""), src: URL.createObjectURL(file) }, { keep: false });
     },
+    keyboard,
+    library,
+    pointOf: (hit) => hit.startsWith("kb:") ? keyboard.pointOf(hit) : hit.startsWith("lib:") ? library.pointOf(hit) : null,
     list: () => [...live.values()],
     get visible() {
       return root.visible;
@@ -4502,17 +5105,23 @@ function createPanels(o) {
       o.onChange?.();
     },
     pick(raycaster) {
+      const above = keyboard.pick(raycaster) ?? library.pick(raycaster);
+      if (above) return above;
       if (!root.visible) return null;
       const hit = raycaster.intersectObjects(targets(), false)[0];
       return hit ? hit.object.name : null;
     },
     aim(hit) {
+      keyboard.aim(hit);
+      library.aim(hit);
       if (hit === aimed) return;
       tint(aimed, false);
       aimed = hit;
       tint(aimed, true);
     },
     press(hit) {
+      if (hit.startsWith("kb:")) return keyboard.press(hit);
+      if (hit.startsWith("lib:")) return library.press(hit);
       const found = find(hit);
       if (!found) return;
       const [p, part] = found;
@@ -4523,6 +5132,7 @@ function createPanels(o) {
     },
     pointer(phase, raycaster) {
       if (phase === "down") {
+        if (keyboard.pick(raycaster) ?? library.pick(raycaster)) return false;
         const hit = root.visible ? raycaster.intersectObjects(targets(), false)[0] : void 0;
         const found = hit ? find(hit.object.name) : null;
         if (!found || found[1] !== "bar") return false;
@@ -4546,6 +5156,8 @@ function createPanels(o) {
     },
     update(t) {
       metal.tick(t);
+      keyboard.update(t);
+      library.update();
       for (const p of live.values()) {
         if (!p.held) continue;
         p.bar.getWorldPosition(at);
@@ -4571,6 +5183,8 @@ function createPanels(o) {
         if (p.blobUrl) URL.revokeObjectURL(p.blobUrl);
       }
       live.clear();
+      keyboard.dispose();
+      library.dispose();
       o.scene.remove(root);
       frameShape.dispose();
       metal.dispose();
@@ -4622,11 +5236,11 @@ function askForNote(done) {
   text.focus();
 }
 function addPanelControls(controls, panels, o) {
-  const note = () => o.presenting() ? "Take a panel by its bar to move it. Write notes and hang pictures on a flat screen: a headset has no keyboard or files to offer." : `Notes, pictures and video in frames you can hang anywhere. Drag one by its bar.${o.kept ? " They are kept in this browser and are here next visit." : ""} A panel can't show another website.`;
+  const note = () => o.presenting() ? "Take a panel by its bar to move it. Write a note on the keyboard, or hang something from your pictures and video." : `Notes, pictures and video in frames you can hang anywhere. Drag one by its bar.${o.kept ? " They are kept in this browser and are here next visit." : ""} A panel can't show another website.`;
   controls.addSection({ id: "panels", label: "Panels", icon: "panel", note });
-  const full = (act) => {
+  const hang = (source) => {
     try {
-      act();
+      panels.open(source);
     } catch (err) {
       controls.say(err instanceof Error && /Put one away/.test(err.message) ? `${PANEL_LIMITS.count} panels are open. Put one away first.` : "That couldn't be hung.");
     }
@@ -4652,12 +5266,30 @@ function addPanelControls(controls, panels, o) {
       icon: "note",
       label: "Write a note",
       short: "Note",
-      hidden: o.presenting,
-      act: () => askForNote((n) => {
-        if (n) full(() => void panels.open({ kind: "note", ...n }));
-      })
+      act: () => {
+        if (o.presenting()) {
+          void panels.keyboard.ask({ title: "A note. Done hangs it in front of you.", multiline: true, maxLength: PANEL_LIMITS.noteChars }).then((text) => {
+            if (text?.trim()) hang({ kind: "note", title: "", text });
+          });
+        } else
+          askForNote((n) => {
+            if (n) hang({ kind: "note", ...n });
+          });
+      }
     },
-    { id: "panel-file", section: "panels", icon: "panel", label: "Hang a picture or video", short: "Hang", hidden: o.presenting, act: () => picker.click() },
+    {
+      id: "panel-library",
+      section: "panels",
+      icon: "panel",
+      on: () => panels.library.showing,
+      label: () => panels.library.showing ? "Put your pictures and video away" : "Your pictures and video",
+      short: "Yours",
+      act: () => {
+        panels.library.showing = !panels.library.showing;
+      }
+    },
+    // The device's own files: the browser shows those itself, as a flat window, so this is offered outside a headset.
+    { id: "panel-file", section: "panels", icon: "panel", label: "Hang a picture or video from this device", short: "Hang", hidden: o.presenting, act: () => picker.click() },
     {
       id: "panel-hide",
       section: "panels",
@@ -4674,9 +5306,9 @@ function addPanelControls(controls, panels, o) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/chamber.ts
-import * as THREE8 from "three";
+import * as THREE10 from "three";
 var R = 1.8;
-var H2 = 2.8;
+var H3 = 2.8;
 var BAYS = 10;
 var DOOR_W = 1.04;
 var DOOR_H = 2.2;
@@ -4697,16 +5329,16 @@ function signTexture(lines, color) {
     const y = rows.length === 1 ? 192 : rows.length === 2 ? 138 + i * 118 : 92 + i * 100;
     g.fillText(line, 512, y, 944);
   });
-  const texture = new THREE8.CanvasTexture(canvas);
-  texture.colorSpace = THREE8.SRGBColorSpace;
+  const texture = new THREE10.CanvasTexture(canvas);
+  texture.colorSpace = THREE10.SRGBColorSpace;
   return texture;
 }
 function createChamber(accent, opts = {}) {
-  const light = new THREE8.Color(accent);
+  const light = new THREE10.Color(accent);
   const metal = createAlloy(light, { gloss: 0.5, speed: 0.9 });
   const builder = () => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE8.Color(1317668);
+    b.tone = new THREE10.Color(1317668);
     b.light = light.clone();
     return b;
   };
@@ -4718,13 +5350,13 @@ function createChamber(accent, opts = {}) {
   const wallShape = builder();
   for (let i = 1; i < BAYS; i++) {
     const a = i * 2 * Math.PI / BAYS;
-    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE8.MathUtils.radToDeg(a));
-    wallShape.box([bay, H2, 0.12], [0, H2 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
-    for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H2 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
+    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE10.MathUtils.radToDeg(a));
+    wallShape.box([bay, H3, 0.12], [0, H3 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
+    for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H3 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
   }
   wallShape.at([0, 0, -reach]);
-  for (const side of [-1, 1]) wallShape.box([(bay - DOOR_W) / 2, H2, 0.16], [side * (bay + DOOR_W) / 4, H2 / 2, 0], { bevel: 0.02 });
-  wallShape.box([DOOR_W, H2 - DOOR_H, 0.16], [0, DOOR_H + (H2 - DOOR_H) / 2, 0], { bevel: 0.02 });
+  for (const side of [-1, 1]) wallShape.box([(bay - DOOR_W) / 2, H3, 0.16], [side * (bay + DOOR_W) / 4, H3 / 2, 0], { bevel: 0.02 });
+  wallShape.box([DOOR_W, H3 - DOOR_H, 0.16], [0, DOOR_H + (H3 - DOOR_H) / 2, 0], { bevel: 0.02 });
   wallShape.line([-DOOR_W / 2, DOOR_H - 0.012, 0.082], [DOOR_W / 2, DOOR_H - 0.012, 0.082], 0.024, [0, 0, 1]);
   const walls = wallShape.build(metal);
   const lidShape = builder();
@@ -4738,11 +5370,11 @@ function createChamber(accent, opts = {}) {
     leaf.position.set(side * DOOR_W / 2, 0, -reach);
     return leaf;
   });
-  const sign = new THREE8.Mesh(new THREE8.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE8.MeshBasicMaterial({ transparent: true }));
-  sign.position.set(0, DOOR_H + (H2 - DOOR_H) / 2, -reach + 0.085);
-  const rising = new THREE8.Group();
+  const sign = new THREE10.Mesh(new THREE10.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE10.MeshBasicMaterial({ transparent: true }));
+  sign.position.set(0, DOOR_H + (H3 - DOOR_H) / 2, -reach + 0.085);
+  const rising = new THREE10.Group();
   rising.add(walls, ...leaves, sign);
-  const group = new THREE8.Group();
+  const group = new THREE10.Group();
   group.add(floor, rising, lid);
   let door = 0;
   let presence = 1;
@@ -4752,7 +5384,7 @@ function createChamber(accent, opts = {}) {
     rising.visible = presence > 2e-3;
     floor.scale.setScalar(Math.max(1e-3, Math.min(1, presence * 1.6)));
     floor.visible = presence > 2e-3;
-    lid.position.y = H2 + (1 - up) * 3.5;
+    lid.position.y = H3 + (1 - up) * 3.5;
     lid.visible = presence > 0.5;
     const open = door * door * (3 - 2 * door);
     for (const leaf of leaves) leaf.scale.x = Math.max(0.02, 1 - open);
@@ -4805,8 +5437,8 @@ function createCrossing(o) {
   let hold;
   let shut = null;
   const moves = () => o.motion?.() ?? true;
-  const at = new THREE8.Vector3();
-  const facing2 = new THREE8.Vector3();
+  const at = new THREE10.Vector3();
+  const facing2 = new THREE10.Vector3();
   const place = () => {
     chamber?.dispose();
     const made = createChamber(o.accent, o.textColor ? { textColor: o.textColor } : {});
@@ -4892,16 +5524,16 @@ function createCrossing(o) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/camera.ts
-import * as THREE9 from "three";
+import * as THREE11 from "three";
 async function takePicture(renderer, scene, camera, opts = {}) {
   const width = Math.round(opts.width ?? 1920);
   const height = Math.round(opts.height ?? 1080);
   const hidden = (opts.hide ?? []).filter((o) => o.visible);
   const xrWasEnabled = renderer.xr.enabled;
   const previousTarget = renderer.getRenderTarget();
-  const target = new THREE9.WebGLRenderTarget(width, height, { samples: 4 });
-  target.texture.colorSpace = THREE9.SRGBColorSpace;
-  const eye = new THREE9.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
+  const target = new THREE11.WebGLRenderTarget(width, height, { samples: 4 });
+  target.texture.colorSpace = THREE11.SRGBColorSpace;
+  const eye = new THREE11.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
   camera.updateWorldMatrix(true, false);
   camera.matrixWorld.decompose(eye.position, eye.quaternion, eye.scale);
   eye.updateMatrixWorld(true);
@@ -4932,17 +5564,17 @@ async function takePicture(renderer, scene, camera, opts = {}) {
 }
 async function takeSelfie(renderer, scene, head, look, opts = {}) {
   head.updateWorldMatrix(true, false);
-  const at = new THREE9.Vector3();
-  const facing2 = new THREE9.Quaternion();
-  head.matrixWorld.decompose(at, facing2, new THREE9.Vector3());
-  const ahead = new THREE9.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
+  const at = new THREE11.Vector3();
+  const facing2 = new THREE11.Quaternion();
+  head.matrixWorld.decompose(at, facing2, new THREE11.Vector3());
+  const ahead = new THREE11.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
   if (ahead.lengthSq() < 1e-6) ahead.set(0, 0, -1);
   ahead.normalize();
   const figure = createFigure(look);
   figure.group.position.copy(at);
   figure.group.rotation.y = Math.atan2(-ahead.x, -ahead.z);
   scene.add(figure.group);
-  const eye = new THREE9.PerspectiveCamera(58, 1, 0.05, head.far);
+  const eye = new THREE11.PerspectiveCamera(58, 1, 0.05, head.far);
   eye.position.copy(at).addScaledVector(ahead, opts.reach ?? 1.7);
   eye.position.y = at.y + 0.08;
   eye.lookAt(at.x, at.y - 0.22, at.z);
@@ -5011,6 +5643,7 @@ function addCameraControls(controls, d) {
   let latest = null;
   const keep = (capture) => {
     latest = capture;
+    d.onCapture?.(capture);
     if (presenting()) {
       kept.push(capture);
       tell(`Kept. Save ${kept.length === 1 ? "it" : `all ${kept.length}`} from the Camera menu when you leave VR.`);
@@ -5105,16 +5738,16 @@ function textSprite(text, color, width) {
     g.font = i === 0 ? "bold 56px system-ui, sans-serif" : "44px system-ui, sans-serif";
     g.fillText(line, 40, 32 + i * 72, canvas.width - 80);
   });
-  const tex = new THREE10.CanvasTexture(canvas);
-  tex.colorSpace = THREE10.SRGBColorSpace;
-  const sprite = new THREE10.Sprite(new THREE10.SpriteMaterial({ map: tex, depthWrite: false }));
+  const tex = new THREE12.CanvasTexture(canvas);
+  tex.colorSpace = THREE12.SRGBColorSpace;
+  const sprite = new THREE12.Sprite(new THREE12.SpriteMaterial({ map: tex, depthWrite: false }));
   sprite.scale.set(width, width * canvas.height / canvas.width, 1);
   return sprite;
 }
 function createPresence(d) {
   const labelColor = d.labelColor ?? "#ffffff";
   const changed = () => d.onChange?.();
-  const listener = new THREE10.AudioListener();
+  const listener = new THREE12.AudioListener();
   d.camera.add(listener);
   const avatars = /* @__PURE__ */ new Map();
   const pendingStreams = /* @__PURE__ */ new Map();
@@ -5136,9 +5769,9 @@ function createPresence(d) {
       fade.addColorStop(1, "rgba(255,255,255,0)");
       g.fillStyle = fade;
       g.fillRect(0, 0, 64, 64);
-      dot = new THREE10.CanvasTexture(canvas);
+      dot = new THREE12.CanvasTexture(canvas);
     }
-    return new THREE10.Sprite(new THREE10.SpriteMaterial({ map: dot, color, transparent: true, depthWrite: false }));
+    return new THREE12.Sprite(new THREE12.SpriteMaterial({ map: dot, color, transparent: true, depthWrite: false }));
   };
   const showRecording = (a, on) => {
     if (on && !a.light) {
@@ -5183,7 +5816,7 @@ function createPresence(d) {
     });
   };
   const makeAvatar = (member) => {
-    const root = new THREE10.Group();
+    const root = new THREE12.Group();
     root.visible = false;
     const label = textSprite(member.name, labelColor, 0.5);
     label.position.set(0, 0.42, 0);
@@ -5199,7 +5832,7 @@ function createPresence(d) {
     el.srcObject = stream;
     void el.play().catch(() => {
     });
-    const pa = new THREE10.PositionalAudio(listener);
+    const pa = new THREE12.PositionalAudio(listener);
     pa.setMediaStreamSource(stream);
     pa.setRefDistance(1.5);
     pa.setRolloffFactor(1.2);
@@ -5220,8 +5853,8 @@ function createPresence(d) {
     d.scene.remove(a.root);
     a.figure.dispose();
   };
-  const v = new THREE10.Vector3();
-  const q = new THREE10.Quaternion();
+  const v = new THREE12.Vector3();
+  const q = new THREE12.Quaternion();
   const worldTransform = (o) => {
     o.getWorldPosition(v);
     o.getWorldQuaternion(q);
@@ -5252,7 +5885,7 @@ function createPresence(d) {
     sendTimer = void 0;
     session?.leave();
     session = null;
-    for (const key of [...avatars.keys()]) removeAvatar(key);
+    for (const key2 of [...avatars.keys()]) removeAvatar(key2);
     pendingStreams.clear();
     changed();
   };
@@ -5321,9 +5954,9 @@ function createPresence(d) {
     sendTimer = setInterval(() => s.sendPose(ownPose()), SEND_EVERY_MS);
     changed();
   };
-  const tp = new THREE10.Vector3();
-  const tq = new THREE10.Quaternion();
-  const euler = new THREE10.Euler();
+  const tp = new THREE12.Vector3();
+  const tq = new THREE12.Quaternion();
+  const euler = new THREE12.Euler();
   const apply = (o, t, k) => {
     o.position.lerp(tp.set(...t.position), k);
     o.quaternion.slerp(tq.set(...t.quaternion), k);
@@ -5385,7 +6018,7 @@ function createPresence(d) {
       d.camera.getWorldPosition(v);
       for (const a of avatars.values()) {
         if (!a.target) continue;
-        const near = THREE10.MathUtils.clamp((a.head.position.distanceTo(v) - FADE_END) / (FADE_START - FADE_END), 0, 1);
+        const near = THREE12.MathUtils.clamp((a.head.position.distanceTo(v) - FADE_END) / (FADE_START - FADE_END), 0, 1);
         for (const m of a.materials) m.material.opacity = m.opacity * near;
         a.materials[0].material.tick?.(performance.now() / 1e3);
         if (a.beam?.visible && performance.now() > (a.beamUntil ?? 0)) a.beam.visible = false;
@@ -5450,11 +6083,11 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   const previousTarget = renderer.getRenderTarget();
   const autoClearWas = renderer.autoClear;
   const fog = scene.fog;
-  const faceTarget = new THREE10.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE10.HalfFloatType });
-  const flatTarget = new THREE10.WebGLRenderTarget(width, height);
-  flatTarget.texture.colorSpace = THREE10.SRGBColorSpace;
-  const material = new THREE10.ShaderMaterial({
-    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE10.Vector3() }, up: { value: new THREE10.Vector3() }, right: { value: new THREE10.Vector3() } },
+  const faceTarget = new THREE12.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE12.HalfFloatType });
+  const flatTarget = new THREE12.WebGLRenderTarget(width, height);
+  flatTarget.texture.colorSpace = THREE12.SRGBColorSpace;
+  const material = new THREE12.ShaderMaterial({
+    uniforms: { face: { value: faceTarget.texture }, forward: { value: new THREE12.Vector3() }, up: { value: new THREE12.Vector3() }, right: { value: new THREE12.Vector3() } },
     vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
     fragmentShader: `uniform sampler2D face; uniform vec3 forward; uniform vec3 up; uniform vec3 right; varying vec2 vUv;
       void main(){
@@ -5471,19 +6104,19 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
     depthTest: false,
     depthWrite: false
   });
-  const quad = new THREE10.Mesh(new THREE10.PlaneGeometry(2, 2), material);
-  const quadScene = new THREE10.Scene();
+  const quad = new THREE12.Mesh(new THREE12.PlaneGeometry(2, 2), material);
+  const quadScene = new THREE12.Scene();
   quadScene.add(quad);
-  const quadCamera = new THREE10.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const faceCamera = new THREE10.PerspectiveCamera(90, 1, 0.05, 700);
+  const quadCamera = new THREE12.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const faceCamera = new THREE12.PerspectiveCamera(90, 1, 0.05, 700);
   faceCamera.position.copy(position);
   const views = [
-    [new THREE10.Vector3(0, 0, -1), new THREE10.Vector3(0, 1, 0)],
-    [new THREE10.Vector3(1, 0, 0), new THREE10.Vector3(0, 1, 0)],
-    [new THREE10.Vector3(0, 0, 1), new THREE10.Vector3(0, 1, 0)],
-    [new THREE10.Vector3(-1, 0, 0), new THREE10.Vector3(0, 1, 0)],
-    [new THREE10.Vector3(0, 1, 0), new THREE10.Vector3(0, 0, 1)],
-    [new THREE10.Vector3(0, -1, 0), new THREE10.Vector3(0, 0, -1)]
+    [new THREE12.Vector3(0, 0, -1), new THREE12.Vector3(0, 1, 0)],
+    [new THREE12.Vector3(1, 0, 0), new THREE12.Vector3(0, 1, 0)],
+    [new THREE12.Vector3(0, 0, 1), new THREE12.Vector3(0, 1, 0)],
+    [new THREE12.Vector3(-1, 0, 0), new THREE12.Vector3(0, 1, 0)],
+    [new THREE12.Vector3(0, 1, 0), new THREE12.Vector3(0, 0, 1)],
+    [new THREE12.Vector3(0, -1, 0), new THREE12.Vector3(0, 0, -1)]
   ];
   try {
     for (const o of hidden) o.visible = false;
@@ -5530,24 +6163,24 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   }
 }
 function panoramaTexture(image) {
-  const texture = new THREE10.Texture(image);
-  texture.colorSpace = THREE10.SRGBColorSpace;
-  texture.wrapS = THREE10.RepeatWrapping;
+  const texture = new THREE12.Texture(image);
+  texture.colorSpace = THREE12.SRGBColorSpace;
+  texture.wrapS = THREE12.RepeatWrapping;
   texture.generateMipmaps = false;
-  texture.minFilter = THREE10.LinearFilter;
-  texture.magFilter = THREE10.LinearFilter;
+  texture.minFilter = THREE12.LinearFilter;
+  texture.magFilter = THREE12.LinearFilter;
   texture.needsUpdate = true;
   return texture;
 }
 function createPortalWindow(geometry, pano, opts = {}) {
   const reach = opts.reach ?? 1.5;
-  const material = new THREE10.ShaderMaterial({
+  const material = new THREE12.ShaderMaterial({
     uniforms: {
       pano: { value: pano },
       mask: { value: opts.mask ?? null },
       useMask: { value: opts.mask ? 1 : 0 },
-      toLocal: { value: new THREE10.Matrix3() },
-      center: { value: new THREE10.Vector3() },
+      toLocal: { value: new THREE12.Matrix3() },
+      center: { value: new THREE12.Vector3() },
       reach: { value: Number.isFinite(reach) ? reach : 0 }
     },
     vertexShader: `varying vec3 vWorld; varying vec2 vUv;
@@ -5567,10 +6200,10 @@ function createPortalWindow(geometry, pano, opts = {}) {
         gl_FragColor = vec4(texture2D(pano, vec2(lon / 6.283185307179586 + 0.5, lat / 3.141592653589793 + 0.5)).rgb, 1.0);
         #include <colorspace_fragment>
       }`,
-    side: THREE10.DoubleSide
+    side: THREE12.DoubleSide
   });
-  const mesh = new THREE10.Mesh(geometry, material);
-  const rotation = new THREE10.Matrix4();
+  const mesh = new THREE12.Mesh(geometry, material);
+  const rotation = new THREE12.Matrix4();
   mesh.onBeforeRender = () => {
     rotation.extractRotation(mesh.matrixWorld);
     material.uniforms.toLocal.value.setFromMatrix4(rotation).invert();
@@ -5819,6 +6452,9 @@ export {
   DEFAULT_COMFORT,
   createXrInput,
   PANEL_LIMITS,
+  LIBRARY_LIMITS,
+  createKeyboard,
+  createLibrary,
   createPanels,
   addPanelControls,
   createChamber,

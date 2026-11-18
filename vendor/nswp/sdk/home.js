@@ -4,7 +4,7 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-SKJJBY5H.js";
+} from "./shared-OFWH52QF.js";
 import "./shared-OXCAHDPV.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts

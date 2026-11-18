@@ -72,3 +72,26 @@ export declare function inFront(head: V3, yawDegrees: number, already?: number, 
 export declare function newId(random?: () => number): string;
 /** Break a note into lines no wider than `width` units, where `measure` says how wide some text is. */
 export declare function wrapText(text: string, width: number, measure: (s: string) => number, maxLines?: number): string[];
+/** One file of the visitor's own, kept in this browser: a picture or a video they hung or took. */
+export interface LibraryItem {
+    id: string;
+    kind: "picture" | "video";
+    title: string;
+    bytes: number;
+    /** Seconds since 1970. */
+    addedAt: number;
+    /** A small picture of it, as a data address, or "" when none could be made. */
+    thumb: string;
+}
+export declare const LIBRARY_LIMITS: {
+    readonly count: 60;
+    readonly thumbChars: 60000;
+};
+/** Read the list of kept files back from storage, dropping anything that isn't what it claims to be. Newest first. */
+export declare function cleanLibrary(input: unknown): LibraryItem[];
+/** Which items are on a page of the board, and how many pages there are. */
+export declare function libraryPage<T>(items: T[], page: number, perPage: number): {
+    items: T[];
+    page: number;
+    pages: number;
+};

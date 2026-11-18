@@ -682,8 +682,9 @@ async function start(): Promise<void> {
   };
   hooks.thing = (name) => {
     const object = scene.getObjectByName(name);
-    if (!object) return null;
-    const world = object.getWorldPosition(new THREE.Vector3());
+    // A key of the keyboard or a cell of the library has no object of its own: the kit says where it is.
+    const world = object ? object.getWorldPosition(new THREE.Vector3()) : (panels?.pointOf(name) ?? null);
+    if (!world) return null;
     return { world: world.toArray().map((n) => Math.round(n * 1000) / 1000), local: rig.worldToLocal(world.clone()).toArray() };
   };
   hooks.where = () => {
@@ -696,6 +697,9 @@ async function start(): Promise<void> {
   let panels: Panels | null = null;
   /** What the current ray points at: a door, or one of the room's buttons. */
   const under = (): Clickable | null => {
+    // While the keyboard is up it is in front of everything, the console's own button included.
+    const key = panels?.keyboard.pick(raycaster);
+    if (key) return { mesh: null, onPanel: key, say: "", act: () => panels!.press(key) };
     const button = xrConsole.pick(raycaster);
     if (button) return { mesh: null, onConsole: button, say: "", act: () => xrConsole.press(button) };
     // A panel hangs in front of whatever is behind it, a door included.
@@ -804,7 +808,7 @@ async function start(): Promise<void> {
   hooks.input = () => xrInput.info();
   // The visitor's panels are theirs: kept in this browser, with any file they hang, and sent nowhere. They are
   // not published, and nobody else in the room sees them.
-  panels = createPanels({ scene, camera, accent: ACCENT, textColor: INK, input: xrInput, keep: "bitportal:panels" });
+  panels = createPanels({ scene, camera, accent: ACCENT, textColor: INK, input: xrInput, keep: "bitportal:panels", session: () => renderer.xr.getSession() });
   addPanelControls(controls, panels, { presenting: () => renderer.xr.isPresenting, kept: true });
   hooks.panels = panels;
 
@@ -940,6 +944,8 @@ async function start(): Promise<void> {
     recording: (on) => presence.setRecording(on),
     hide: () => [xrConsole.group, reticle, ...(toast ? [toast] : [])],
     name: "BitPortal room",
+    // Whatever is taken here goes into the visitor's library, so it can be hung without leaving the headset.
+    onCapture: (capture) => void panels?.library.add(capture.blob, capture.name),
   });
   hooks.teleport = (x, z) => {
     rig.position.x = x - camera.position.x;
@@ -986,12 +992,17 @@ async function start(): Promise<void> {
   const accent = new THREE.Color(ACCENT);
   const started = performance.now();
   let lastT = 0;
+  let wasBusy = false;
   renderer.setAnimationLoop(() => {
     const t = (performance.now() - started) / 1000;
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
     xrInput.update(dt);
     panels!.update(t, dt);
+    // The keyboard and the library's board come up where the console is: it steps aside for them.
+    const busy = panels!.keyboard.open || panels!.library.showing;
+    if (busy && !wasBusy) xrConsole.setOpen(false);
+    wasBusy = busy;
     crossing.update(t, dt);
     presence.update(dt);
     let pointed: Clickable | null = null;
@@ -1049,6 +1060,8 @@ async function start(): Promise<void> {
     xrConsole.aim(pointed?.onConsole ?? null);
     panels!.aim(pointed?.onPanel ?? null);
     xrConsole.update(dt, camera, renderer.xr.isPresenting);
+    // The console's own button sits where the keyboard comes up, and shows through it: away while typing.
+    if (panels!.keyboard.open) xrConsole.group.visible = false;
     furniture.update(t, dt);
     mirror?.tick(t);
     renderer.render(scene, camera);
