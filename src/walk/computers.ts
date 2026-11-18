@@ -320,6 +320,7 @@ export function addComputers(o: ComputersOptions): Computers {
     const command = el("p", { className: "detail-host", textContent: "npm run bridge -- --world <its address>" });
     const problem = el("p", { className: "verify verify-warn", hidden: true });
     address.oninput = () => {
+      problem.hidden = true; // what was wrong with the last address says nothing about this one
       const url = cleanWorldUrl(address.value);
       command.textContent = `npm run bridge -- --tmux --voice --world ${url ? new URL(url).origin : "<its address>"}`;
     };
