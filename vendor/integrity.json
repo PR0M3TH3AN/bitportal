@@ -94,20 +94,20 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "249cc9ef62e7f60aea9a5fcec215d23de8fbaf04",
+        "commit": "1a4aa0ea0989d341ef2a1cb0ad1dba1fbb9f0fee",
         "remote": "https://github.com/PR0M3TH3AN/bitlogin.git"
       },
       "files": {
         "LICENSE": "23e1f76916d6a20d0e370fc6ac6288b3e68f4a2c426db6b7389260f2c5ab9396",
         "bitlogin-headless.js": "e1e128d76fe064b3c974feb3c6c740b7d2b64dd81bdea6790621fee659f5bb0b",
         "bitlogin-session.js": "fc7484a7e6897a3d2cbaefaaebb6a667ce7d3eefdfb868673b41b1be8e2eacd5",
-        "bitlogin-shared--RKqtVS5.js": "2a5d6ad9e3452cc3ee546f30f93d54b9de9461e4e56d4814f8c2717fa6b7fa02",
-        "bitlogin-shared-B-lZFF_w.js": "34d249fb478becec06f238f5ae4fe49d8543c3615735dbf366ace77d6730a6f1",
-        "bitlogin-shared-BfVp4BYH.js": "bcbe914ce9e7593820a99d9d4d7c63f977014b5f4e425cd0931f9336865b4470",
+        "bitlogin-shared-DDWBXFUP.js": "201f59c529207c90e5e3d1a88ed5c80ef3e8520bd89f4c54259f819fb72d90f0",
+        "bitlogin-shared-G7ILG8hf.js": "02885d4cbf303997cdaaf631085fef17cf01d0db1203f9929394f7f5f05d2553",
         "bitlogin-shared-NDrH7ipp.js": "5152be316041d365744b1348401d85ae3ba6983fc9b4bf9d116532515533ff96",
-        "bitlogin.js": "169c913508074b3496709e93d6fea553984f10576bb583d6a81ce22539d427eb",
-        "cryptoWorker.js": "712242f4f71d18c7f9c53d457340f83604d3f4e8588ae7cb34797a159c1bfd64",
-        "integrity.json": "99e138a3fd5c0bfbb29821515a39a2fed24ea6ca372075ce057ccaa10fef9c38"
+        "bitlogin-shared-_kgj0aQT.js": "040349fe61b6d6e1641057207d154bba367758dfe73398537ab63013e7b5916a",
+        "bitlogin.js": "372fd0512235f0baaf70782bc1e00e96bbb397d1a6d0035b836ec6574b41759c",
+        "cryptoWorker.js": "0bf8b1145d9f72c618a4f764516782bb6ae222a93955b2f9932a0f7cfb6bf9bc",
+        "integrity.json": "f7298407a47a86e0cd48b809972b3b86fb49727aec8a2683993849fcd1ddc460"
       }
     },
     "bitblocks-fonts": {
