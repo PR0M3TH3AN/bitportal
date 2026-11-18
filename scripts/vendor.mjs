@@ -78,6 +78,8 @@ const packages = {};
   // Core and three stay external so BitPortal's own build supplies one of each.
   execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
   execFileSync(tsc, ["-p", join(repo, "packages/sdk"), "--noEmit", "false", "--emitDeclarationOnly", "--declaration", "--rootDir", join(repo, "packages/sdk/src"), "--outDir", join(out, "sdk-types")], { stdio: "inherit" });
+  // Its licence, and the notices for the libraries built into these files, travel with them.
+  for (const name of ["LICENSE", "THIRD-PARTY-NOTICES.md"]) cpSync(join(repo, name), join(out, name));
   const version = JSON.parse(readFileSync(join(repo, "packages/core/package.json"), "utf8")).version;
   packages["@nswp/core"] = { path: "vendor/nswp", version, license: "MIT", source: src, files: hashDir(out) };
 }
@@ -130,6 +132,11 @@ const packages = {};
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
   for (const f of ["UbuntuSans-var.woff2", "UbuntuSansMono-var.woff2"]) cpSync(join(repo, "assets", "fonts", f), join(out, f));
+  // The Ubuntu Font Licence asks for its text to go wherever the fonts go.
+  writeFileSync(
+    join(out, "LICENCE.txt"),
+    `Ubuntu Sans and Ubuntu Sans Mono, in WOFF2 form.\nCopyright Canonical Ltd. https://design.ubuntu.com/font\nLicensed under the Ubuntu Font Licence 1.0, which follows.\n\n${readFileSync(join(root, "scripts", "licences", "ubuntu-font-licence-1.0.txt"), "utf8")}`,
+  );
   packages["bitblocks-fonts"] = { path: "public/fonts", license: "Ubuntu Font Licence 1.0", source: src, files: hashDir(out) };
 }
 

@@ -178,4 +178,5 @@ NSWP spec's roadmap (§20).
 
 ## License
 
-MIT. Vendored packages keep their own licenses.
+MIT. Vendored packages and the fonts keep their own licences:
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) lists them.
