@@ -60,6 +60,14 @@ lobby or a world would need to agree with it on is in
   ask.
 - **Opening a door** checks, at that moment, whether the world's site vouches
   for the key that announced it ("Verified").
+- **Going by name.** Signed in, you can go to a verified world as yourself:
+  the Airlock makes a throwaway key for the trip and has your own signer sign
+  a pass saying it speaks for you there for four hours
+  ([NSWP-10](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/10-identity.md)).
+  The world never gets your key. People in a room there see your name, and
+  your mark with a frame round it. It is a choice on every trip, never the
+  first one offered, and the Airlock never asks you to sign in: if your
+  session can't sign just then, it says so and you choose again.
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
   the verification result, comfort notes, and a button to continue. Worlds
   send visitors back here when they take a portal.
@@ -211,7 +219,8 @@ npm run build && npm run deploy
 
 ## Not built yet
 
-Entering a world under your identity, shelves from the people you follow
+Going by name in BitPortal's own room (it works in worlds), profile pages,
+a feed, messages and notifications, shelves from the people you follow
 (it waits for names and profiles), making a list from inside BitPortal, search
 beyond what the page already holds, trust labels (BitGate) and paid entry
 (BitUnlock). Rooms are a first cut:

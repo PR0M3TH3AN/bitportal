@@ -83,6 +83,34 @@ export function watchBitLogin(el: HTMLElement, onChange: (session: Session | nul
   for (const name of ["bitlogin-logout", "bitlogin:logout"]) el.addEventListener(name, onLogout);
 }
 
+/**
+ * A signer for someone already signed in, with nothing shown: BitLogin's
+ * headless module restores the session this browser already holds. It can't
+ * sign anyone in, which is the point. A page in the middle of a crossing must
+ * never ask for a sign-in (NSWP spec §6.3, §12.3), so when there is no
+ * unlocked session for `expected` this returns null and the caller carries on
+ * without a signature.
+ */
+export async function quietSigner(expected: string): Promise<{ signer: Signer; close(): void } | null> {
+  type Headless = { restore(): Promise<{ pubkey: string } | null>; signEvent(e: EventTemplate): Promise<unknown>; destroy(): void };
+  let headless: Headless | null = null;
+  try {
+    const url = "/vendor/bitlogin/bitlogin-headless.js";
+    const mod = (await import(/* @vite-ignore */ url)) as { createHeadlessSigner(): Promise<Headless> };
+    headless = await mod.createHeadlessSigner();
+    const who = await headless.restore();
+    if (!who || who.pubkey !== expected) {
+      headless.destroy();
+      return null;
+    }
+    const held = headless;
+    return { signer: checkedSigner(expected, held), close: () => held.destroy() };
+  } catch {
+    headless?.destroy();
+    return null;
+  }
+}
+
 export function shortKey(pubkey: string): string {
   return `${pubkey.slice(0, 8)}…${pubkey.slice(-4)}`;
 }

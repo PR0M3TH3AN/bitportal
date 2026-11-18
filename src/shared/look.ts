@@ -97,6 +97,30 @@ export function setGoesPlain(plain: boolean): void {
   }
 }
 
+/** How a visitor goes through a door: by name, as a guest wearing their look, or with nothing of theirs. */
+export type GoMode = "name" | "look" | "plain";
+const MODE = "bitportal:go-as";
+
+/** What the visitor last chose. Never "name" until they have chosen it themselves. */
+export function goMode(): GoMode {
+  try {
+    const kept = localStorage.getItem(MODE);
+    if (kept === "name" || kept === "look" || kept === "plain") return kept;
+  } catch {
+    /* fall through */
+  }
+  return goesPlain() ? "plain" : "look";
+}
+
+export function setGoMode(mode: GoMode): void {
+  setGoesPlain(mode === "plain");
+  try {
+    localStorage.setItem(MODE, mode);
+  } catch {
+    /* the choice lasts for this trip only */
+  }
+}
+
 /** Pick every part and colour by chance, keeping the seed (and so the mark). */
 export function surprise(kept: KeptLook, random: () => number = Math.random): KeptLook {
   const choices: Record<string, string> = {};

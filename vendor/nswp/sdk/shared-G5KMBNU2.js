@@ -5,7 +5,7 @@ import {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE7 from "three";
-import { decodeLook as decodeLook2, spawnOffset } from "@nswp/core";
+import { decodeLook as decodeLook2, encodeNpub, spawnOffset } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
 import * as THREE3 from "three";
@@ -426,7 +426,7 @@ function buildHead(b, look, main, accent, omit) {
       break;
   }
 }
-function buildBody(b, look, main, accent, omit) {
+function buildBody(b, look, main, accent, omit, proven = false) {
   const k = look.build === "slight" ? 0.86 : look.build === "broad" ? 1.2 : 1;
   const cloth = (row, rows, side, sides, turn = 0) => {
     const a = (side + 0.5) / sides * Math.PI * 2 + turn;
@@ -485,6 +485,14 @@ function buildBody(b, look, main, accent, omit) {
     const pitch = cell * 1.14;
     const wide = pitch * 5 + cell * 0.7;
     b.box([wide, wide, 0.02], [x, y, z - facing * 8e-3], { color: DARK, bevel: 6e-3 });
+    if (proven) {
+      const [half, band, zz] = [wide / 2 + cell * 0.55, cell * 0.38, z + facing * 25e-4];
+      const bar = (x0, y0, x1, y1) => b.quad([x + x0, y + y0, zz], [x + x1, y + y0, zz], [x + x1, y + y1, zz], [x + x0, y + y1, zz], { glow: 1 }, [0, 0, facing]);
+      bar(-half, half - band, half, half);
+      bar(-half, -half, half, -half + band);
+      bar(-half, -half + band, -half + band, half - band);
+      bar(half - band, -half + band, half, half - band);
+    }
     markGrid(look.mark).forEach(
       (row, r) => row.forEach((on, c) => {
         if (!on) return;
@@ -496,7 +504,7 @@ function buildBody(b, look, main, accent, omit) {
   plate(0, 0.04, chest + 0.012, 0.026, 1);
   plate(-chest * 0.42, 0.105, -(chest + 4e-3), 95e-4, -1);
 }
-function createFigure(look, style = {}) {
+function createFigure(look, style = {}, facts = {}) {
   const wearing = typeof look === "string" ? generatedLook(look) : look;
   const omit = new Set(style.omit ?? []);
   let [main, accent, light] = [new THREE3.Color(wearing.color), new THREE3.Color(wearing.accent), new THREE3.Color(wearing.light)];
@@ -515,7 +523,7 @@ function createFigure(look, style = {}) {
   const headShape = builder();
   buildHead(headShape, wearing, cloth, trim, omit);
   const bodyShape = builder();
-  buildBody(bodyShape, wearing, cloth, trim, omit);
+  buildBody(bodyShape, wearing, cloth, trim, omit, facts.proven === true);
   const handShape = builder();
   handShape.lathe([[5e-4, -0.06], [0.04, 0], [5e-4, 0.06]], [0, 0, 0], 4, () => ({ glow: 0.75 }));
   const metal = style.material ? style.material(light, wearing) : createAlloy(light, { gloss: wearing.finish === "matte" ? 0.25 : wearing.finish === "gloss" ? 0.85 : 0.7, sheen: wearing.finish === "sheen" ? 0.45 : 0 });
@@ -2623,8 +2631,13 @@ import {
   roomTopic,
   shouldInitiate,
   unpackPose,
+  claimsKey,
   decodeLook,
-  generatedLook as generatedLook2
+  generatedLook as generatedLook2,
+  markFor,
+  PASS_LIMITS,
+  shortNpub,
+  verifyRoomPass
 } from "@nswp/core";
 var DEFAULT_ICE = [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }];
 var HELLO_EVERY_MS = 2e4;
@@ -2632,6 +2645,17 @@ var RECORDING_HOLD_MS = 6e3;
 var CONNECT_TIMEOUT_MS = 25e3;
 var SILENT_TIMEOUT_MS = 8e3;
 var GATHER_TIMEOUT_MS = 2500;
+var hexToBytes3 = (hex) => {
+  if (!/^[0-9a-f]{64}$/.test(hex)) throw new Error("not a key");
+  return Uint8Array.from(hex.match(/../g).map((b) => parseInt(b, 16)));
+};
+function seenLook(member, said) {
+  const look = said?.look ?? generatedLook2(member.pubkey);
+  if (member.identity) return { ...look, mark: markFor(member.identity) };
+  if (said && claimsKey(said.seed)) return { ...look, mark: markFor(member.pubkey) };
+  return look;
+}
+var PASS_TRIES = 4;
 var RoomSession = class {
   self;
   name;
@@ -2649,23 +2673,49 @@ var RoomSession = class {
     leave: /* @__PURE__ */ new Set(),
     pose: /* @__PURE__ */ new Set(),
     look: /* @__PURE__ */ new Set(),
+    identity: /* @__PURE__ */ new Set(),
     recording: /* @__PURE__ */ new Set(),
     audio: /* @__PURE__ */ new Set(),
     status: /* @__PURE__ */ new Set()
   };
   look;
+  /** The world's origin: the only place a pass shown here may have been made for. */
+  origin;
+  /** This visitor's own pass, as it is said to the others, and when it stops. */
+  pass = null;
+  passUntil = 0;
   recordingTimer;
   mic = null;
   timers = [];
   closed = false;
   constructor(opts = {}) {
-    this.key = schnorr.utils.randomSecretKey();
+    const world = opts.world ?? `${location.origin}${location.pathname}`;
+    this.origin = new URL(world).origin;
+    let key = schnorr.utils.randomSecretKey();
+    let proven = null;
+    if (opts.identity) {
+      try {
+        const named = hexToBytes3(opts.identity.sessionKey);
+        const checked = verifyRoomPass(opts.identity.pass, { origin: this.origin, session: getPublicKey(named) });
+        const text = JSON.stringify(opts.identity.pass);
+        if (checked.ok && text.length <= PASS_LIMITS.chars) {
+          key = named;
+          proven = checked.value;
+          this.pass = text;
+          this.passUntil = checked.value.expiresAt;
+        }
+      } catch {
+      }
+    }
+    this.key = key;
     const pubkey = getPublicKey(this.key);
     const mine = opts.look ? decodeLook(opts.look) : null;
     this.look = mine?.ok ? opts.look : null;
-    this.self = { pubkey, guest: true, name: guestName(pubkey), color: guestColor(pubkey), look: mine?.ok ? mine.value.look : generatedLook2(pubkey), recording: false };
+    this.self = { pubkey, guest: true, name: guestName(pubkey), color: guestColor(pubkey), look: generatedLook2(pubkey), recording: false };
+    if (proven) Object.assign(this.self, { guest: false, identity: proven.pubkey, name: proven.name || shortNpub(proven.pubkey) });
+    this.self.look = seenLook(this.self, mine?.ok ? mine.value : void 0);
     this.name = (opts.name ?? "lobby").slice(0, ROOM_LIMITS.maxNameChars);
-    this.topic = roomTopic(opts.world ?? `${location.origin}${location.pathname}`, this.name);
+    this.topic = roomTopic(world, this.name);
     this.relays = opts.relays ?? DEFAULT_RELAYS;
     this.maxMembers = opts.maxMembers ?? ROOM_LIMITS.defaultMaxMembers;
     this.iceServers = opts.iceServers ?? DEFAULT_ICE;
@@ -2790,6 +2840,7 @@ var RoomSession = class {
     const peer = {
       member: { pubkey, guest: true, name: guestName(pubkey), color: guestColor(pubkey), look: generatedLook2(pubkey), recording: false },
       pc,
+      refused: 0,
       open: false,
       lastSeen: Date.now(),
       startedAt: Date.now()
@@ -2812,7 +2863,7 @@ var RoomSession = class {
       peer.open = true;
       peer.lastSeen = Date.now();
       this.emit("member", peer.member);
-      this.sayLook(ch);
+      this.introduce(ch);
     };
     ch.onmessage = (e) => {
       if (e.data === "rec:1" || e.data === "rec:0") {
@@ -2821,11 +2872,13 @@ var RoomSession = class {
         return;
       }
       if (typeof e.data === "string") {
-        const said = e.data.startsWith("look:") ? decodeLook(e.data.slice(5)) : null;
-        if (said?.ok && JSON.stringify(said.value.look) !== JSON.stringify(peer.member.look)) {
-          peer.member.look = said.value.look;
-          this.emit("look", peer.member, said.value.look);
-        }
+        if (e.data.startsWith("look:")) {
+          const said = decodeLook(e.data.slice(5));
+          if (said.ok) {
+            peer.said = said.value;
+            this.redraw(peer);
+          }
+        } else if (e.data.startsWith("id:")) this.checkPass(peer, e.data.slice(3));
         return;
       }
       if (!(e.data instanceof ArrayBuffer)) return;
@@ -2838,18 +2891,71 @@ var RoomSession = class {
       if (this.peers.get(peer.member.pubkey) === peer) this.drop(peer.member.pubkey, peer.open);
     };
   }
+  /** Draw a member again if what is known about them changes how they look. */
+  redraw(peer) {
+    const look = seenLook(peer.member, peer.said);
+    if (JSON.stringify(look) === JSON.stringify(peer.member.look)) return;
+    peer.member.look = look;
+    this.emit("look", peer.member, look);
+  }
   /**
-   * Tell one member how you look. The channel drops what it can't deliver at
-   * once, so it is said a few times over the first seconds.
+   * A member has shown a pass. It counts only if it checks out for this site
+   * and names the session key they are speaking with, which they have already
+   * proved they hold: the handshake was signed with it.
    */
-  sayLook(ch) {
-    if (!this.look) return;
-    const text = `look:${this.look}`;
+  checkPass(peer, text) {
+    if (text === peer.shown || text.length > PASS_LIMITS.chars || peer.refused >= PASS_TRIES) return;
+    peer.shown = text;
+    let event;
+    try {
+      event = JSON.parse(text);
+    } catch {
+      peer.refused++;
+      return;
+    }
+    const checked = verifyRoomPass(event, { origin: this.origin, session: peer.member.pubkey });
+    if (!checked.ok) {
+      peer.refused++;
+      return;
+    }
+    peer.passUntil = checked.value.expiresAt;
+    Object.assign(peer.member, { guest: false, identity: checked.value.pubkey, name: checked.value.name || shortNpub(checked.value.pubkey) });
+    this.emit("identity", peer.member);
+    this.redraw(peer);
+  }
+  /** A pass that has run out leaves a guest behind. */
+  expire(now) {
+    for (const peer of this.peers.values()) {
+      if (!peer.passUntil || now < peer.passUntil) continue;
+      delete peer.passUntil;
+      delete peer.shown;
+      delete peer.member.identity;
+      Object.assign(peer.member, { guest: true, name: guestName(peer.member.pubkey) });
+      this.emit("identity", peer.member);
+      this.redraw(peer);
+    }
+    if (this.pass && now >= this.passUntil) {
+      this.pass = null;
+      delete this.self.identity;
+      Object.assign(this.self, { guest: true, name: guestName(this.self.pubkey) });
+      const mine = this.look ? decodeLook(this.look) : null;
+      this.self.look = seenLook(this.self, mine?.ok ? mine.value : void 0);
+      this.emit("identity", this.self);
+    }
+  }
+  /**
+   * Tell one member how you look and, if you came by name, who you are. The
+   * channel drops what it can't deliver at once, so each is said a few times
+   * over the first seconds.
+   */
+  introduce(ch) {
+    if (!this.look && !this.pass) return;
     let left = 4;
     const say = () => {
       if (this.closed || ch.readyState !== "open") return;
       try {
-        ch.send(text);
+        if (this.look) ch.send(`look:${this.look}`);
+        if (this.pass) ch.send(`id:${this.pass}`);
       } catch {
       }
       if (--left > 0) setTimeout(say, 1500);
@@ -2942,6 +3048,7 @@ var RoomSession = class {
       if (!peer.open && now - peer.startedAt > CONNECT_TIMEOUT_MS) this.drop(pubkey, false);
       else if (peer.open && now - peer.lastSeen > SILENT_TIMEOUT_MS) this.drop(pubkey, true);
     }
+    this.expire(Math.floor(now / 1e3));
   }
   /** Send your pose to everyone. Call 10–20 times a second, from a timer rather than the render loop. */
   sendPose(pose) {
@@ -3710,7 +3817,7 @@ function createPresence(d) {
   };
   const dress = (a, look) => {
     const was = a.figure;
-    const figure = createFigure(look, d.figureStyle);
+    const figure = createFigure(look, d.figureStyle, { proven: !a.member.guest });
     figure.head.position.copy(was?.head.position ?? figure.head.position);
     figure.head.quaternion.copy(was?.head.quaternion ?? figure.head.quaternion);
     figure.head.add(a.label);
@@ -3743,7 +3850,7 @@ function createPresence(d) {
     const root = new THREE7.Group();
     root.visible = false;
     const label = textSprite(member.name, labelColor, 0.5);
-    label.position.set(0, 0.3, 0);
+    label.position.set(0, 0.42, 0);
     d.scene.add(root);
     const a = { member, root, label, target: null, placed: false };
     dress(a, member.look);
@@ -3818,7 +3925,8 @@ function createPresence(d) {
     roomName = name;
     void listener.context.resume();
     const look = typeof d.look === "function" ? d.look() : d.look;
-    const s = await room.join({ ...name ? { name } : {}, ...look ? { look } : {} });
+    const identity = typeof d.identity === "function" ? d.identity() : d.identity;
+    const s = await room.join({ ...name ? { name } : {}, ...look ? { look } : {}, ...identity ? { identity } : {} });
     session = s;
     if (!offsetApplied) {
       const off = spawnOffset(s.self.pubkey);
@@ -3835,6 +3943,19 @@ function createPresence(d) {
     s.on("look", (m, look2) => {
       const a = avatars.get(m.pubkey);
       if (a) dress(a, look2);
+      changed();
+    });
+    s.on("identity", (m) => {
+      const a = avatars.get(m.pubkey);
+      if (a) {
+        const label = textSprite(m.name, labelColor, 0.5);
+        label.position.copy(a.label.position);
+        a.label.removeFromParent();
+        a.label.material.map?.dispose();
+        a.label.material.dispose();
+        a.label = label;
+        dress(a, m.look);
+      }
       changed();
     });
     s.on("member", (m) => {
@@ -3965,7 +4086,9 @@ function createPresence(d) {
           head: a.target?.head.position.map((n) => Math.round(n * 100) / 100) ?? null,
           hands: [!!a.target?.left, !!a.target?.right],
           audioLevel: Math.round(level * 1e3) / 1e3,
-          look: a.member.look
+          look: a.member.look,
+          guest: a.member.guest,
+          identity: a.member.identity ?? null
         };
       });
     }
@@ -4133,7 +4256,8 @@ function addRoomControls(controls, presence, opts = {}) {
     if (!s) return last;
     const others = s.members.length;
     const who = s.status === "no-relays" ? "can't reach any relay" : others === 0 ? "nobody else here yet" : others === 1 ? "1 other person here" : `${others} other people here`;
-    return `${presence.roomName ? "Private room" : "Open room"}: ${who}.${presence.micOn ? " Your microphone is on." : ""}`;
+    const as = s.self.guest ? "" : ` You are here as ${s.self.name}.`;
+    return `${presence.roomName ? "Private room" : "Open room"}: ${who}.${as}${presence.micOn ? " Your microphone is on." : ""}`;
   };
   const refresh = () => {
     const s = presence.session;
@@ -4164,7 +4288,7 @@ function addRoomControls(controls, presence, opts = {}) {
         label: () => m.recording ? `${m.name}, recording` : m.name,
         act: () => {
           presence.pointOut(m.pubkey);
-          controls.say(`${m.name} is under the column of light.`);
+          controls.say(m.identity ? `${m.name} is under the column of light. Their key: ${encodeNpub(m.identity)}` : `${m.name} is under the column of light. A guest: nobody has vouched for who they are.`);
         }
       })
     );

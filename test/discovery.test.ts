@@ -202,3 +202,44 @@ describe("finding a world on the page", () => {
     expect(commonTopics(worlds, 1)).toEqual(["quiet"]);
   });
 });
+
+// ------------------------------------------------------------------ identity
+import { verifyRoomPass, PASS_LIMITS } from "@nswp/core";
+import { issuePass } from "../src/shared/pass.js";
+import { checkedSigner } from "../src/shared/session.js";
+
+describe("issuing a pass (NSWP-10)", () => {
+  const signer = checkedSigner(alice, { signEvent: async (t) => finalizeEvent(t, ALICE) });
+  const SITE = "https://grove.example";
+
+  it("makes a throwaway key and a pass a world will believe, and gives away nothing else", async () => {
+    const { pass, sessionKey } = await issuePass(signer, { origin: `${SITE}/somewhere`, name: "  Alice \n" }, { now: T });
+    expect(pass.pubkey).toBe(alice);
+    expect(sessionKey).toMatch(/^[0-9a-f]{64}$/);
+    const session = getPublicKey(Uint8Array.from(sessionKey.match(/../g)!.map((b) => parseInt(b, 16))));
+    const read = verifyRoomPass(pass, { origin: SITE, session, now: T + 30 });
+    expect(read.ok && read.value).toMatchObject({ pubkey: alice, name: "Alice", expiresAt: T + PASS_LIMITS.defaultTtlSec });
+    // Good at that site and nowhere else, and not for anyone else's session key.
+    expect(verifyRoomPass(pass, { origin: "https://other.example", session, now: T + 30 }).ok).toBe(false);
+    expect(verifyRoomPass(pass, { origin: SITE, session: bob, now: T + 30 }).ok).toBe(false);
+    expect(JSON.stringify(pass)).not.toContain(sessionKey);
+  });
+
+  it("uses a new key every trip", async () => {
+    const a = await issuePass(signer, { origin: SITE }, { now: T });
+    const b = await issuePass(signer, { origin: SITE }, { now: T });
+    expect(a.sessionKey).not.toBe(b.sessionKey);
+    expect(a.pass.tags.some((t) => t[0] === "name")).toBe(false);
+  });
+
+  it("refuses to hand over a pass the signer tampered with or signed as someone else", async () => {
+    const asBob = checkedSigner(alice, { signEvent: async (t) => finalizeEvent(t, BOB) });
+    await expect(issuePass(asBob, { origin: SITE }, { now: T })).rejects.toMatchObject({ code: "wrong_identity" });
+    const meddling = checkedSigner(alice, { signEvent: async (t) => finalizeEvent({ ...t, tags: t.tags.map((x) => (x[0] === "nswp:origin" ? ["nswp:origin", "https://evil.example"] : x)) }, ALICE) });
+    await expect(issuePass(meddling, { origin: SITE }, { now: T })).rejects.toMatchObject({ code: "event_altered" });
+  });
+
+  it("never lets the session key be the identity key", async () => {
+    await expect(issuePass(signer, { origin: SITE }, { now: T, random: (b) => b.set(ALICE) })).rejects.toMatchObject({ code: "no_session_key" });
+  });
+});
