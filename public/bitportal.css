@@ -444,3 +444,13 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
   .look-view { position: static; }
   .look-stage { aspect-ratio: 5 / 4; }
 }
+
+/* ---------- settings: is this world fit to be a home ---------- */
+.home-checks { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.home-checks li { padding: 8px 12px 8px 34px; position: relative; background: var(--bitportal-paper); border-left: 2px solid var(--bitportal-muted); font-size: 0.92rem; }
+.home-checks li::before { position: absolute; left: 11px; font-weight: 700; }
+.home-checks li.ok { border-color: var(--bitportal-ok); }
+.home-checks li.ok::before { content: "\2713"; color: var(--bitportal-ok); }
+.home-checks li.no { border-color: var(--bitportal-warn); color: var(--bitportal-warn); background: var(--bitportal-warn-ground); }
+.home-checks li.no::before { content: "\2717"; }
+.home-checks li.maybe::before { content: "\2013"; color: var(--bitportal-muted); }

@@ -25,6 +25,8 @@ import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
+import { homeOf, loadHome } from "../shared/home.js";
+import { readSignedIn } from "../shared/session.js";
 import { createJumpList } from "../shared/jump.js";
 import { addComputers, type Computers } from "./computers.js";
 import { plateMarks } from "../shared/plate.js";
@@ -328,6 +330,23 @@ async function start(): Promise<void> {
     { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
     { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => location.assign("/") },
   );
+  // Someone whose home is a world of their own keeps their doors here, and goes home from here. Nothing is asked
+  // of them on the way: the Airlock looks at their home first, and brings them back here if it doesn't answer.
+  void readSignedIn().then((who) => {
+    const home = homeOf(loadHome(), who?.pubkey);
+    if (!home) return;
+    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(`/go/${renderer.xr.isPresenting ? "#xr=1" : ""}`) });
+  });
+  try {
+    // Said once, when they were meant to arrive at their home and didn't.
+    const note = sessionStorage.getItem("bitportal:home-note");
+    if (note) {
+      sessionStorage.removeItem("bitportal:home-note");
+      setTimeout(() => controls.say(note), 1200);
+    }
+  } catch {
+    /* nothing to say */
+  }
   controls.addSection({
     id: "help",
     label: "Help",

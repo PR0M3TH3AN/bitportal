@@ -96,6 +96,15 @@ lobby or a world would need to agree with it on is in
   and your voice goes nowhere else. Without that, your browser's own speech
   recognition is used if it has one, and you are told first if it would send
   your voice to the browser's maker. What you say is typed; Enter is yours.
+- **A home of your own.** If you have built a world, you can start there
+  in place of BitPortal's room: Settings → **Where you start**. BitPortal
+  checks that the world is yours both ways (you announced it with your key,
+  and its site admits your key), that it is on an `https` address, and that
+  it says it can be a home. After that, going home from anywhere takes you
+  there with nothing asked, and **Your doors** in your home brings you to
+  BitPortal's room, where your saved doors, your sign-in and your computers
+  stay. If your home doesn't answer, you start in BitPortal's room and are
+  told why.
 - **Your terminals in a world you are building.** Under Your computers,
   name a world as yours (its address, typed by you), start your Bridge with
   `--world` and that address, and **Go to** it from your room. Your terminals
@@ -256,6 +265,10 @@ npm run vendor:check   # vendored files still match integrity.json
 
 ```bash
 npm run vendor         # re-vendor from clean sibling checkouts
+```
+
+```bash
+npm run vendor -- --only nswp   # one of them (nswp, bitfeed, bitlogin, fonts), leaving the others as recorded
 ```
 
 BitLogin is different from the others in one way: it is served as its own
