@@ -45,10 +45,19 @@ export interface BridgeLinkOptions {
     /** The Bridge's public key, as 64 hex characters. */
     bridge: string;
     relays: string[];
-    /** The owner's signer. It is asked for one thing: the grant. */
-    sign(template: EventTemplate): Promise<NostrEvent>;
+    /** The owner's signer, in their home. It is asked for one thing: the grant. */
+    sign?(template: EventTemplate): Promise<NostrEvent>;
     /** The owner's public key, so a grant signed by anyone else is never sent. */
-    owner: string;
+    owner?: string;
+    /**
+     * Or, in a world the owner is building: the world grant their home signed
+     * for this world, and the throwaway key it names. There is no signer in a
+     * world, and this is used as it is for every connection until it expires.
+     */
+    held?: {
+        grant: NostrEvent;
+        sessionKey: Uint8Array;
+    };
     cols: number;
     rows: number;
     onStatus(status: BridgeStatus): void;

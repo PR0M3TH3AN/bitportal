@@ -27,6 +27,7 @@ import type { Panel, PanelLook, PanelPlace, Panels } from "./panels.js";
 import type { V3 } from "./panel-store.js";
 import type { EventTemplate, NostrEvent } from "@nswp/core";
 export type { BridgeStatus } from "./bridge-link.js";
+export { addBroughtTerminals, type BroughtTerminals, type BroughtTerminalsOptions } from "./bring-terminals.js";
 /** How many letters fit across, from the largest letters to the smallest. */
 export declare const TERMINAL_COLUMNS: readonly [60, 80, 100, 120, 140, 160];
 export type TerminalButton = "speak" | "back" | "forward" | "larger" | "smaller" | "copy";
@@ -34,9 +35,14 @@ export interface TerminalPanelOptions {
     panels: Panels;
     /** The computer's Bridge, as 64 hex characters. */
     bridge: string;
-    /** The owner's public key and signer. The signer is asked for one grant per connection. */
-    owner: string;
-    sign(template: EventTemplate): Promise<NostrEvent>;
+    /** In the owner's home: their public key and signer. The signer is asked for one grant per connection. */
+    owner?: string;
+    sign?(template: EventTemplate): Promise<NostrEvent>;
+    /** In a world the owner is building: the world grant their home signed, and the throwaway key it names (`takeBrought`). */
+    held?: {
+        grant: NostrEvent;
+        sessionKey: Uint8Array;
+    };
     relays: string[];
     /** What the owner calls this computer, for the panel's bar. */
     name?: string;

@@ -9,7 +9,7 @@ import {
   keyAt,
   placeKeys,
   placeLiveKeys
-} from "./shared-HAGFA4R3.js";
+} from "./shared-U2U7QRDK.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE12 from "three";
@@ -4957,7 +4957,7 @@ function createPanels(o) {
   const seeThroughDark = (material, dark) => {
     material.onBeforeCompile = (shader) => {
       shader.uniforms.nswpDark = dark;
-      shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nuniform float nswpDark;").replace("#include <map_fragment>", "#include <map_fragment>\n	diffuseColor.a *= mix(nswpDark, 1.0, smoothstep(0.03, 0.45, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114))));");
+      shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nuniform float nswpDark;").replace("#include <map_fragment>", "#include <map_fragment>\n	diffuseColor.a *= mix(nswpDark, 1.0, smoothstep(0.02, 0.2, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114))));");
     };
     material.customProgramCacheKey = () => "nswp-panel-body";
   };
@@ -5436,58 +5436,6 @@ function addPanelControls(controls, panels, o) {
       }
     }
   );
-}
-
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/stay.ts
-var finite2 = (n) => typeof n === "number" && Number.isFinite(n);
-function cleanStood(input, now, maxAgeSec = 12 * 3600) {
-  if (!input || typeof input !== "object") return null;
-  const s = input;
-  if (!finite2(s.x) || !finite2(s.z) || !finite2(s.yaw) || !finite2(s.at)) return null;
-  if (Math.abs(s.x) > 1e4 || Math.abs(s.z) > 1e4) return null;
-  if (s.at > now + 60 || now - s.at > maxAgeSec) return null;
-  return { x: s.x, z: s.z, yaw: (s.yaw % 360 + 360) % 360, headset: s.headset === true, at: s.at };
-}
-function wasRefreshed() {
-  try {
-    const nav = performance.getEntriesByType("navigation")[0];
-    return nav?.type === "reload";
-  } catch {
-    return false;
-  }
-}
-function createStay(o = {}) {
-  const now = o.now ?? (() => Math.floor(Date.now() / 1e3));
-  let storage = null;
-  try {
-    storage = o.storage === void 0 ? sessionStorage : o.storage;
-  } catch {
-  }
-  const key = `nswp:stood:${o.name ?? (typeof location === "undefined" ? "" : location.pathname)}`;
-  let before = null;
-  if (o.refreshed ?? wasRefreshed()) {
-    try {
-      before = cleanStood(JSON.parse(storage?.getItem(key) ?? "null"), now());
-    } catch {
-    }
-  }
-  return {
-    before,
-    keep(s) {
-      const stood = cleanStood({ ...s, at: now() }, now());
-      if (!stood) return;
-      try {
-        storage?.setItem(key, JSON.stringify(stood));
-      } catch {
-      }
-    },
-    clear() {
-      try {
-        storage?.removeItem(key);
-      } catch {
-      }
-    }
-  };
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/chamber.ts
@@ -6643,8 +6591,6 @@ export {
   createLibrary,
   createPanels,
   addPanelControls,
-  wasRefreshed,
-  createStay,
   createChamber,
   createCrossing,
   takePicture,

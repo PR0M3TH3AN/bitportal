@@ -96,6 +96,13 @@ lobby or a world would need to agree with it on is in
   and your voice goes nowhere else. Without that, your browser's own speech
   recognition is used if it has one, and you are told first if it would send
   your voice to the browser's maker. What you say is typed; Enter is yours.
+- **Your terminals in a world you are building.** Under Your computers,
+  name a world as yours (its address, typed by you), start your Bridge with
+  `--world` and that address, and **Go to** it from your room. Your terminals
+  come with you, and only you see them there. That world's own page draws
+  them, so its code can read and type into your shell: name only worlds you
+  write yourself. No other world is ever handed anything of the kind, and
+  the computer still asks before each terminal opens.
 - **Panels that come along, and a room that stays put.** Any panel can be
   made see-through (dark parts more than light, so a terminal can be letters
   in the air) and pinned in your view. Refreshing the page puts you back

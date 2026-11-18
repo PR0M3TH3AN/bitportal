@@ -17,11 +17,12 @@
  * - None of it is offered to a world. A world is never given the visitor's
  *   signer, their panels or this list.
  */
-import { DEFAULT_RELAYS, encodeNpub, finalizeEvent, getPublicKey, shortNpub, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { buildWorldGrant, DEFAULT_RELAYS, encodeNpub, finalizeEvent, getPublicKey, packBrought, shortNpub, verifyWorldGrant, type EventTemplate, type NostrEvent } from "@nswp/core";
 import { wasRefreshed, type Panels } from "nswp-sdk/three";
 import type { Controls } from "nswp-sdk/ui";
 import type { TerminalPanel } from "nswp-sdk/terminal";
 import { addComputer, computersOf, loadComputers, pairingRequest, removeComputer, storeComputers, type Computer, type PairingRequest } from "../shared/computers.js";
+import { addMyWorld, cleanWorldUrl, loadMyWorlds, myWorldsOf, removeMyWorld, storeMyWorlds, type MyWorld } from "../shared/my-worlds.js";
 import { checkedSigner, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
 
 const GUIDE = "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/browser/bridge.md";
@@ -47,6 +48,14 @@ export interface Computers {
   /** Bring back the terminals that were open before a refresh, one at a time. Done by itself when the page comes up; here for a test. */
   restore(): Promise<void>;
   list(): Computer[];
+  /** The worlds this visitor is building and brings their terminals to. */
+  worlds(): MyWorld[];
+  /**
+   * Go to one of them, with leave for it to open terminals on the visitor's
+   * computer. Resolves with the address gone to, or null if it couldn't be
+   * done. `stay` makes the address without going, for a test to read.
+   */
+  bringTo(origin: string, stay?: boolean): Promise<string | null>;
   /** The open terminals, oldest first. */
   terminals(): TerminalPanel[];
 }
@@ -263,11 +272,124 @@ export function addComputers(o: ComputersOptions): Computers {
     }
   };
 
+  // ----------------------------------------------------- a world of the visitor's own
+  /**
+   * Go to a world the visitor is building, handing it leave to open terminals on their computer. This is the one
+   * place a world is given anything of the kind, so it is done for worlds on the visitor's own list and no others,
+   * with a grant made for that world's address alone, signed now and good for some hours.
+   */
+  const bringTo = async (origin: string, stay = false): Promise<string | null> => {
+    const no = (why: string) => {
+      controls.say(why);
+      return null;
+    };
+    const owner = await identify();
+    const world = owner ? myWorldsOf(loadMyWorlds(), owner).find((w) => w.origin === origin) : undefined;
+    const computer = world && owner ? computersOf(loadComputers(), owner).find((c) => c.pubkey === world.computer) : undefined;
+    if (!owner || !world) return no("That isn't one of the worlds you are building.");
+    if (!computer) return no("The computer for that world has been forgotten. Name the world again.");
+    const quiet = await signer(owner);
+    if (!quiet) return no("Your sign-in is locked. Unlock it on the front page, then try again.");
+    try {
+      const secret = crypto.getRandomValues(new Uint8Array(32));
+      const session = getPublicKey(secret);
+      const grant = await quiet.signer.signEvent(buildWorldGrant({ session, bridge: computer.pubkey, world: world.origin }));
+      // Checked the way the computer will check it, before it leaves this page.
+      if (!verifyWorldGrant(grant, { owner, bridge: computer.pubkey, session, worlds: [world.origin] }).ok) return no("The permission that was signed wouldn't be believed, so it wasn't used.");
+      const brought = packBrought({ grant, sessionKey: [...secret].map((b) => b.toString(16).padStart(2, "0")).join(""), bridge: computer.pubkey, name: computer.name, relays: computer.relays, immersive: o.presenting() });
+      // After the #, which no server is sent. The world takes it out of its address at once.
+      const to = `${world.url}#nswp-bring=${brought}`;
+      if (!stay) location.assign(to);
+      return to;
+    } catch {
+      return no("Your key didn't sign it. Check you are still signed in.");
+    } finally {
+      quiet.close();
+    }
+  };
+
+  /** Name a world as one the visitor is building. Only here, only on a flat screen, only by their own typing and pressing. */
+  const nameWorld = () => {
+    if (!who) return explain();
+    const owner = who;
+    const mine = computersOf(loadComputers(), owner);
+    if (!mine.length) return explain();
+    const address = el("input", { type: "url", id: "world-address", placeholder: "http://127.0.0.1:5173 or https://my-world.example" });
+    const name = el("input", { type: "text", id: "world-name", maxLength: 32, placeholder: "What you call it" });
+    const pick = el("select", { id: "world-computer" }, ...mine.map((c) => el("option", { value: c.pubkey, textContent: c.name })));
+    const command = el("p", { className: "detail-host", textContent: "npm run bridge -- --world <its address>" });
+    const problem = el("p", { className: "verify verify-warn", hidden: true });
+    address.oninput = () => {
+      const url = cleanWorldUrl(address.value);
+      command.textContent = `npm run bridge -- --tmux --voice --world ${url ? new URL(url).origin : "<its address>"}`;
+    };
+    const keep = el("button", { className: "button primary", type: "button", textContent: "This world is mine" });
+    keep.onclick = () => {
+      const url = cleanWorldUrl(address.value);
+      if (!url) {
+        problem.hidden = false;
+        problem.textContent = "That isn't an address a world of yours could have. It must be https, or on this computer (http://127.0.0.1 or http://localhost).";
+        return;
+      }
+      const next = addMyWorld(loadMyWorlds(), { url, name: name.value, computer: pick.value, owner, addedAt: Math.floor(Date.now() / 1000) });
+      if (!next) {
+        problem.hidden = false;
+        problem.textContent = "You have as many as are kept. Forget one first.";
+        return;
+      }
+      storeMyWorlds(next);
+      dialog.close();
+      refresh();
+      controls.say("Named. Go there from Your computers.");
+    };
+    sheet(
+      el("h2", { textContent: "A world you are building" }),
+      el("p", { className: "lede", textContent: "Bring your terminals into a world whose code is yours, so you can work on it from inside it. Only you will see them there." }),
+      el("p", {
+        className: "verify verify-warn",
+        textContent:
+          "That world's own page will draw the terminal, so its code can read what you type and type for you. Name only a world you write yourself. If its site, or anything it loads, were ever tampered with, this is a way to a shell on your computer.",
+      }),
+      el("label", { htmlFor: "world-address", textContent: "Its address" }),
+      address,
+      el("label", { htmlFor: "world-name", textContent: "A name for it" }),
+      name,
+      ...(mine.length > 1 ? [el("label", { htmlFor: "world-computer", textContent: "Which computer's terminals" }), pick] : []),
+      el("p", { textContent: "Your computer has to be told as well. Start its Bridge naming the world, and it will let that world's page ask:" }),
+      command,
+      el("p", { className: "why", textContent: "It still asks at the computer before each terminal opens there, and says which world is asking. What the world is handed lasts eight hours and works nowhere else." }),
+      problem,
+      el("div", { className: "actions" }, closeButton("Not now"), keep),
+    );
+  };
+
   /** One action to open each computer's terminal, and one to forget it. Rebuilt whenever the list or the visitor changes. */
   const refresh = () => {
     for (const id of shown) controls.remove(id);
     const mine = who ? computersOf(loadComputers(), who) : [];
-    shown = mine.flatMap((c) => [`terminal-${c.pubkey.slice(0, 12)}`, `forget-${c.pubkey.slice(0, 12)}`]);
+    const worlds = who && mine.length ? myWorldsOf(loadMyWorlds(), who) : [];
+    const slug = (origin: string) => origin.replace(/[^a-z0-9]+/gi, "-").slice(0, 40);
+    shown = [...mine.flatMap((c) => [`terminal-${c.pubkey.slice(0, 12)}`, `forget-${c.pubkey.slice(0, 12)}`]), ...worlds.flatMap((w) => [`bring-${slug(w.origin)}`, `unname-${slug(w.origin)}`]), "world-name"];
+    controls.add(
+      ...worlds.flatMap((w) => [
+        { id: `bring-${slug(w.origin)}`, section: "computers", icon: "door" as const, label: `Go to ${w.name}, with your terminals`, short: "Build", act: () => void bringTo(w.origin) },
+        {
+          id: `unname-${slug(w.origin)}`,
+          section: "computers",
+          icon: "exit" as const,
+          label: `${w.name} is no longer one of yours`,
+          short: "Forget",
+          hidden: o.presenting,
+          act: () => {
+            storeMyWorlds(removeMyWorld(loadMyWorlds(), w.origin, w.owner));
+            refresh();
+            controls.say(`${w.name} is forgotten here. Start your Bridge without it too.`);
+          },
+        },
+      ]),
+      // Named where the whole warning can be read, and where its address can be typed.
+      ...(mine.length ? [{ id: "world-name", section: "computers", icon: "door" as const, label: "A world you are building", short: "World", hidden: o.presenting, act: () => void identify().then(nameWorld) }] : []),
+    );
     controls.add(
       ...mine.flatMap((c) => [
         { id: `terminal-${c.pubkey.slice(0, 12)}`, section: "computers", icon: "panel" as const, label: `A terminal on ${c.name}`, short: "Terminal", act: () => void openTerminal(c) }, // each press opens another, up to a few
@@ -316,6 +438,8 @@ export function addComputers(o: ComputersOptions): Computers {
       return pubkey;
     },
     list: () => (who ? computersOf(loadComputers(), who) : []),
+    worlds: () => (who ? myWorldsOf(loadMyWorlds(), who) : []),
+    bringTo,
     terminals: () => open.map((t) => t.term),
   };
 }

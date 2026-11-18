@@ -18,7 +18,6 @@ import {
   createPanels,
   createPortalWindow,
   createPresence,
-  createStay,
   createXrInput,
   panoramaTexture,
   readPad,
@@ -27,17 +26,18 @@ import {
   takePicture,
   takeSelfie,
   textSprite,
-  turnVisitor,
-  wasRefreshed
-} from "./shared-NL75PWBM.js";
+  turnVisitor
+} from "./shared-ZXPW5TNU.js";
 import "./shared-OXCAHDPV.js";
 import {
   browserVoice,
   computerVoice,
+  createStay,
   createVoice,
   recordVoice,
-  toPcm16
-} from "./shared-HAGFA4R3.js";
+  toPcm16,
+  wasRefreshed
+} from "./shared-U2U7QRDK.js";
 import "./shared-QLSLERQ3.js";
 export {
   DEFAULT_COMFORT,
