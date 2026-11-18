@@ -17,13 +17,13 @@
  */
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
-import { createHome } from "nswp-sdk/home";
+import { createHome, type Alloy } from "nswp-sdk/home";
 import { addRoomControls, addViewControls, createConsole, createPortalWindow, createPresence, panoramaTexture, textSprite, type XrConsole } from "nswp-sdk/three";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
-import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, flatViewTexture, frameTexture, viewTexture } from "../shared/door3d.js";
+import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
 import { createJumpList } from "../shared/jump.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
@@ -44,6 +44,8 @@ interface Door {
   group: THREE.Group;
   view: THREE.Mesh;
   frame: THREE.Mesh;
+  /** The frame's own metal: it brightens when the door is pointed at. */
+  metal: Alloy;
   info: THREE.Sprite;
   hover: number;
 }
@@ -138,6 +140,9 @@ function plateTexture(entry: Entry, device: Device): THREE.CanvasTexture {
   }));
   return canvasTexture(W, H, (g) => {
     g.textBaseline = "top";
+    // The plate hangs in front of a lit skyline: a dark edge round every letter keeps it readable.
+    g.shadowColor = "rgba(2, 4, 7, 0.95)";
+    g.shadowBlur = 16;
     g.fillStyle = INK;
     g.font = '700 76px "Ubuntu Sans V", system-ui, sans-serif';
     let y = 8;
@@ -320,10 +325,9 @@ async function start(): Promise<void> {
   const suggestedAt = new Map<string, number>();
   // ?wall=2 shows two doors a wall: a test aid for what happens when a wall is full.
   const perWall = Math.max(1, Math.min(WALL_DOORS, Number(params.get("wall")) || WALL_DOORS));
-  const frameMap = frameTexture();
   const archMask = archMaskTexture();
   const pillMaps = { save: pillTexture("Save"), remove: pillTexture("Remove"), back: pillTexture("Put it back"), list: pillTexture("See the list") };
-  const shared = new Set<THREE.Texture>([frameMap, archMask, ...Object.values(pillMaps)]);
+  const shared = new Set<THREE.Texture>([archMask, ...Object.values(pillMaps)]);
   const doorGeo = new THREE.PlaneGeometry(DOOR_W, DOOR_H);
   const plateH = PLATE_W * (420 / 1024);
   const plateGeo = new THREE.PlaneGeometry(PLATE_W, plateH);
@@ -331,7 +335,8 @@ async function start(): Promise<void> {
   // a metre wide, and stands clear of the door it belongs to.
   const pillGeo = new THREE.PlaneGeometry(1.0, 0.3);
   const widePillGeo = pillGeo;
-  const sillGeo = new THREE.BoxGeometry(DOOR_W + 0.1, 0.06, 0.24);
+  /** Frames standing where no door is yet: they are still, and their light is low. */
+  const emptyMetals: Alloy[] = [];
   // Your wall is ahead of where a visitor first stands; the suggested wall is behind.
   const walls: Record<Wall, THREE.Group> = { yours: new THREE.Group(), suggested: new THREE.Group() };
   walls.suggested.rotation.y = Math.PI;
@@ -390,23 +395,20 @@ async function start(): Promise<void> {
     place(group, slot);
     const view = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: viewTexture(entry.id), transparent: true, alphaTest: 0.5 }));
     view.position.y = DOOR_H / 2;
-    const frame = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: frameMap, transparent: true, color: 0xffffff }));
-    frame.position.set(0, DOOR_H / 2, 0.01);
-    const sill = new THREE.Mesh(sillGeo, new THREE.MeshBasicMaterial({ color: 0xf2f3f6 }));
-    sill.position.set(0, 0.03, 0.05);
+    const { frame, metal } = doorFrame(ACCENT);
     const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device), transparent: true }));
-    plate.position.set(0, DOOR_H + 0.52 + plateH / 2, 0);
+    plate.position.set(0, DOOR_H + 0.74 + plateH / 2, 0);
     // The door's one button, in a row of its own between the arch and the plate.
     const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save);
-    button.position.set(0, DOOR_H + 0.28, 0.03);
+    button.position.set(0, DOOR_H + 0.52, 0.03);
     // Large and well in front of the door: readable from the middle of the room.
     const info = textSprite(infoLines(entry, why, vr), INK, 2.6);
     info.position.set(0, 1.25, 2.2);
     info.visible = false;
     info.renderOrder = 2;
-    group.add(view, frame, sill, plate, button, info);
+    group.add(view, frame, plate, button, info);
     walls[wall].add(group);
-    const door: Door = { entry, why, wall, group, view, frame, info, hover: 0 };
+    const door: Door = { entry, why, wall, group, view, frame, metal, info, hover: 0 };
     clickables.push({ mesh: view, door, say: "", act: () => void visit(door) });
     clickables.push({
       mesh: button,
@@ -421,8 +423,8 @@ async function start(): Promise<void> {
   const makeEmpty = (slot: number, text: string, button?: { map: THREE.Texture; say: string; act: () => void }) => {
     const group = new THREE.Group();
     place(group, slot);
-    const frame = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: frameMap, transparent: true, color: 0x5b6270 }));
-    frame.position.y = DOOR_H / 2;
+    const { frame, metal } = doorFrame(new THREE.Color(ACCENT).multiplyScalar(0.3), { still: true });
+    emptyMetals.push(metal);
     const label = textSprite(text, "#aab0bd", 1.3);
     label.position.set(0, 1.25, 0.05);
     group.add(frame, label);
@@ -853,7 +855,6 @@ async function start(): Promise<void> {
   // --------------------------------------------------------- frames
 
   const accent = new THREE.Color(ACCENT);
-  const white = new THREE.Color(0xffffff);
   const started = performance.now();
   let lastT = 0;
   renderer.setAnimationLoop(() => {
@@ -901,7 +902,8 @@ async function start(): Promise<void> {
       // A door answers to being pointed at; its button answers on its own.
       const onDoor = pointed?.door === d && pointed.mesh === d.view;
       d.hover += ((onDoor ? 1 : 0) - d.hover) * Math.min(1, dt * 12);
-      (d.frame.material as THREE.MeshBasicMaterial).color.copy(white).lerp(accent, d.hover);
+      d.metal.tick(t);
+      d.metal.aim(d.hover);
       d.info.visible = d.hover > 0.5;
       d.view.position.z = -0.12 * d.hover; // the door swings in a little
     }
