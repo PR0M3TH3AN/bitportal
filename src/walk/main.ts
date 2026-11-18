@@ -18,7 +18,7 @@
 import * as THREE from "three";
 import { buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addRoomControls, addViewControls, createConsole, createFigure, createPortalWindow, createPresence, panoramaTexture, textSprite, type Figure, type XrConsole } from "nswp-sdk/three";
+import { addCameraControls, addRoomControls, addViewControls, createConsole, createFigure, createPortalWindow, createPresence, panoramaTexture, textSprite, type Figure, type XrConsole } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -76,6 +76,8 @@ interface TestHooks {
   where(): [number, number];
   /** Everything a visitor can do in the room. */
   controls?: Controls;
+  /** The visitor's camera: what it has taken. */
+  camera?: unknown;
   /** The console shown in a headset. */
   console?: XrConsole;
   /** Point the mouse ray at a door, as if hovering it. */
@@ -830,6 +832,16 @@ async function start(): Promise<void> {
     if (d) void visit(d);
   };
   hooks.roomInfo = () => presence.info();
+  // The visitor's camera: a picture, a selfie, a short clip, saved to their own device.
+  hooks.camera = addCameraControls(controls, {
+    renderer,
+    scene,
+    camera,
+    look: () => presence.selfLook(),
+    recording: (on) => presence.setRecording(on),
+    hide: () => [xrConsole.group, reticle, ...(toast ? [toast] : [])],
+    name: "BitPortal room",
+  });
   hooks.teleport = (x, z) => {
     rig.position.x = x - camera.position.x;
     rig.position.z = z - camera.position.z;
