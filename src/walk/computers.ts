@@ -1,0 +1,217 @@
+/**
+ * The visitor's own computers, in their room: add one from the link its
+ * Bridge prints, and open a terminal on it in a panel (NSWP's
+ * browser/bridge.md).
+ *
+ * A terminal runs commands on the visitor's computer, so this is the most
+ * careful part of the room:
+ *
+ * - A computer is added only on a flat screen, where its whole key can be
+ *   read, and only by the visitor pressing the button. A link can ask; it
+ *   can't add.
+ * - Each terminal needs a grant signed by the visitor's key. The signer is
+ *   BitLogin's headless one, which restores a session and can't start one;
+ *   it is asked for a grant and nothing else.
+ * - The Bridge asks at the computer before it opens anything. This page can't
+ *   answer for the visitor.
+ * - None of it is offered to a world. A world is never given the visitor's
+ *   signer, their panels or this list.
+ */
+import { DEFAULT_RELAYS, encodeNpub, finalizeEvent, getPublicKey, shortNpub, type EventTemplate, type NostrEvent } from "@nswp/core";
+import type { Panels } from "nswp-sdk/three";
+import type { Controls } from "nswp-sdk/ui";
+import type { TerminalPanel } from "nswp-sdk/terminal";
+import { addComputer, computersOf, loadComputers, pairingRequest, removeComputer, storeComputers, type Computer, type PairingRequest } from "../shared/computers.js";
+import { checkedSigner, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
+
+const GUIDE = "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/browser/bridge.md";
+
+export interface ComputersOptions {
+  controls: Controls;
+  panels: () => Panels | undefined;
+  presenting: () => boolean;
+  /** The visitor's own relays, tried as well as the usual ones. */
+  relays: () => string[];
+  accent: number;
+}
+
+export interface Computers {
+  /** Act on a pairing link, if the address is one. Returns true if it was. */
+  fromAddress(hash: string): boolean;
+  /** For tests: stand in a throwaway identity, made in this page, and return its public key. Nothing in an address can do this. */
+  useTestIdentity(): string;
+  list(): Computer[];
+  /** The open terminals, by their Bridge's key. */
+  terminals(): Map<string, TerminalPanel>;
+}
+
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+};
+
+export function addComputers(o: ComputersOptions): Computers {
+  const { controls } = o;
+  const dialog = document.getElementById("pair") as HTMLDialogElement;
+  const open = new Map<string, TerminalPanel>();
+  let test: { pubkey: string; signer: Signer } | null = null;
+  let who: string | null = null;
+  let shown: string[] = [];
+
+  controls.addSection({
+    id: "computers",
+    label: "Your computers",
+    icon: "panel",
+    note: () => (o.presenting() ? "Open a terminal on a computer of yours. It asks at that computer before it opens." : "A terminal on your own computer, in a panel here. The computer answers your key and nobody else's, and asks there before it opens."),
+  });
+
+  /** Who is signed in, from BitLogin's public record. Nothing is asked of them. */
+  const identify = async (): Promise<string | null> => {
+    who = test ? test.pubkey : ((await readSignedIn())?.pubkey ?? null);
+    return who;
+  };
+
+  const sheet = (...content: (Node | string)[]) => {
+    dialog.replaceChildren(...content);
+    if (!dialog.open) dialog.showModal();
+  };
+  const closeButton = (label: string) => el("button", { className: "button", type: "button", textContent: label, onclick: () => dialog.close() });
+
+  const explain = () => {
+    const me = who ? encodeNpub(who) : "npub1…";
+    sheet(
+      el("h2", { textContent: "A terminal on your own computer" }),
+      el("p", { className: "lede", textContent: "Run a small program, the Bridge, on a computer of yours. It answers your key and nobody else's, and you can open a terminal on it from a panel in this room: in a headset, or here." }),
+      el("p", { textContent: "From a copy of the NSWP repository on that computer:" }),
+      el("p", { className: "detail-host", textContent: `npm run bridge -- --owner ${me}` }),
+      el("p", { textContent: "It prints a link. Open the link in this browser to add the computer here." }),
+      el("p", { className: "why", textContent: "A terminal can do anything you can do on that computer. The Bridge asks there, on its own screen, before each one opens." }),
+      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: "You aren't signed in on this browser. Sign in on the front page first: the computer needs to know whose it is." })]),
+      el("div", { className: "actions" }, el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
+    );
+  };
+
+  const offer = (ask: PairingRequest) => {
+    if (!who) {
+      return sheet(
+        el("h2", { textContent: "Sign in first" }),
+        el("p", { className: "lede", textContent: "This link adds a computer to your home. A computer answers one key, so this browser needs to know which is yours." }),
+        el("p", { textContent: "Sign in on the front page, then open the link again." }),
+        el("div", { className: "actions" }, el("a", { className: "button primary", href: "/", textContent: "Go to the front page" }), closeButton("Not now")),
+      );
+    }
+    const owner = who;
+    const known = computersOf(loadComputers(), owner).find((c) => c.pubkey === ask.pubkey);
+    const name = el("input", { type: "text", id: "pair-name", maxLength: 32, value: known?.name ?? "My computer" });
+    const add = el("button", { className: "button primary", type: "button", textContent: known ? "Keep it, with this name" : "Add this computer" });
+    add.onclick = () => {
+      const next = addComputer(loadComputers(), { pubkey: ask.pubkey, owner, name: name.value, relays: ask.relays, addedAt: Math.floor(Date.now() / 1000) });
+      if (!next) {
+        add.disabled = true;
+        add.textContent = "You have as many as are kept. Forget one first.";
+        return;
+      }
+      storeComputers(next);
+      dialog.close();
+      refresh();
+      controls.say("Added. It is under Your computers.");
+    };
+    sheet(
+      el("h2", { textContent: known ? "This computer is already in your home" : "Add this computer to your home?" }),
+      el("p", { className: "detail-host", textContent: encodeNpub(ask.pubkey) }),
+      el("p", { className: "verify verify-warn", textContent: "Only add a computer you started the Bridge on yourself. This should be the key it printed, letter for letter. A terminal on someone else's computer would show them everything you typed into it." }),
+      el("p", { textContent: `It will answer ${shortNpub(owner)}, the key signed in here, and nobody else. Each time you open a terminal it asks at the computer first, and shows a code that should match the one on the panel.` }),
+      ...(ask.relays.length ? [el("p", { className: "why", textContent: `It listens at ${ask.relays.map((r) => new URL(r).host).join(", ")}.` })] : []),
+      el("label", { htmlFor: "pair-name", textContent: "What do you call it?" }),
+      name,
+      el("div", { className: "actions" }, closeButton("Not now"), add),
+    );
+  };
+
+  const signer = async (owner: string): Promise<{ signer: Signer; close(): void } | null> => (test ? { signer: test.signer, close: () => {} } : quietSigner(owner));
+
+  const openTerminal = async (c: Computer) => {
+    const panels = o.panels();
+    if (!panels) return;
+    if (open.has(c.pubkey)) return controls.say(`The terminal on ${c.name} is already open.`);
+    if ((await identify()) !== c.owner) return controls.say("Sign in on the front page first, as the key this computer answers.");
+    const quiet = await signer(c.owner);
+    if (!quiet) return controls.say("Your sign-in is locked. Unlock it on the front page, then try again.");
+    try {
+      // The terminal's code is fetched now, the first time one is opened, and not before.
+      const { openTerminalPanel } = await import("nswp-sdk/terminal");
+      const term = openTerminalPanel({
+        panels,
+        bridge: c.pubkey,
+        owner: c.owner,
+        sign: (template: EventTemplate): Promise<NostrEvent> => quiet.signer.signEvent(template),
+        relays: [...new Set([...c.relays, ...(c.relays.length ? [] : [...DEFAULT_RELAYS, ...o.relays()])])].slice(0, 8),
+        name: c.name,
+        // Fewer, larger letters in a headset, where the panel is read from a step away.
+        ...(o.presenting() ? { cols: 80, rows: 24 } : {}),
+        accent: o.accent,
+        presenting: o.presenting,
+        onStatus(status) {
+          if (status.at === "asking") controls.say(`Say yes at ${c.name}. The code is ${status.code}.`);
+        },
+        onClosed() {
+          open.delete(c.pubkey);
+          quiet.close();
+        },
+      });
+      open.set(c.pubkey, term);
+    } catch {
+      quiet.close();
+      controls.say("The terminal couldn't be opened. Put a panel away and try again.");
+    }
+  };
+
+  /** One action to open each computer's terminal, and one to forget it. Rebuilt whenever the list or the visitor changes. */
+  const refresh = () => {
+    for (const id of shown) controls.remove(id);
+    const mine = who ? computersOf(loadComputers(), who) : [];
+    shown = mine.flatMap((c) => [`terminal-${c.pubkey.slice(0, 12)}`, `forget-${c.pubkey.slice(0, 12)}`]);
+    controls.add(
+      ...mine.flatMap((c) => [
+        { id: `terminal-${c.pubkey.slice(0, 12)}`, section: "computers", icon: "panel" as const, label: `A terminal on ${c.name}`, short: "Terminal", act: () => void openTerminal(c) },
+        // Forgetting is done where the whole of what is forgotten can be read.
+        {
+          id: `forget-${c.pubkey.slice(0, 12)}`,
+          section: "computers",
+          icon: "exit" as const,
+          label: `Forget ${c.name}`,
+          short: "Forget",
+          hidden: o.presenting,
+          act: () => {
+            open.get(c.pubkey)?.close();
+            storeComputers(removeComputer(loadComputers(), c.pubkey, c.owner));
+            refresh();
+            controls.say(`${c.name} is forgotten here. Stop the Bridge on it too.`);
+          },
+        },
+      ]),
+    );
+  };
+  controls.add({ id: "computer-how", section: "computers", icon: "help", label: "Add a computer", short: "Add", hidden: o.presenting, act: () => void identify().then(explain) });
+  void identify().then(refresh);
+
+  return {
+    fromAddress(hash) {
+      const ask = pairingRequest(hash);
+      if (!ask) return false;
+      void identify().then(() => offer(ask));
+      return true;
+    },
+    useTestIdentity() {
+      const key = crypto.getRandomValues(new Uint8Array(32));
+      const pubkey = getPublicKey(key);
+      test = { pubkey, signer: checkedSigner(pubkey, { signEvent: async (t) => finalizeEvent(t, key) }) };
+      who = pubkey;
+      refresh();
+      return pubkey;
+    },
+    list: () => (who ? computersOf(loadComputers(), who) : []),
+    terminals: () => open,
+  };
+}

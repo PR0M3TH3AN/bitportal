@@ -30,12 +30,19 @@ import { type Library } from "./library.js";
 import type { Controls } from "./ui/model.js";
 import { type PanelPlace, type PanelSource } from "./panel-store.js";
 export type { PanelPlace, PanelRecord, PanelSource } from "./panel-store.js";
-/** What a panel can show. `custom` is a texture of the page's own, for something the kit doesn't draw: it is not kept. */
+/**
+ * What a panel can show. `custom` is a texture of the page's own, for
+ * something the kit doesn't draw: it is not kept. It may ask to hear a press
+ * on its picture (with where, each from 0 to 1, y downwards), and that it was
+ * put away.
+ */
 export type PanelContent = PanelSource | {
     kind: "custom";
     title: string;
     texture: THREE.Texture;
     aspect: number;
+    onPress?: (x: number, y: number) => void;
+    onClose?: () => void;
 };
 export interface PanelsOptions {
     scene: THREE.Scene;

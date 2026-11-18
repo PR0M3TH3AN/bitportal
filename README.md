@@ -80,6 +80,17 @@ lobby or a world would need to agree with it on is in
   and video**: everything you have hung, and every picture you take with the
   camera. The headset's own files are the browser's to show, so adding a new
   file from the device is done on a flat screen.
+- **A terminal on your own computer.** Run a small program, the Bridge
+  ([what it is and what it trusts](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/browser/bridge.md)),
+  on a computer of yours, and open the link it prints. The room then offers
+  **A terminal on** that computer, in a panel: type with a real keyboard, or
+  in a headset on the drawn one, which has Esc, Tab, Ctrl and the arrows.
+  The computer answers your key and nobody else's, and asks on its own
+  screen, with a code that matches the panel's, before a terminal opens.
+  Which computers you have added is kept in this browser and sent nowhere.
+  A terminal can do anything you can do on that computer, so add only a
+  computer you started the Bridge on yourself. No world can see or reach
+  any of this.
 - **Crossing costs as little as a browser allows.** Leaving the room, its
   walls rise round you into a small chamber; you arrive in a world standing
   in the same chamber, and its doors open when the world is ready. From a
@@ -117,6 +128,9 @@ lobby or a world would need to agree with it on is in
 - Saved doors and the room's layout stay in this browser. The room draws only
   built-in furniture from a layout: no pictures and nothing else that would
   contact another site.
+- The computers you add for a terminal are kept in this browser. What you
+  type into a terminal goes straight to your computer, sealed; relays carry
+  only the sealed notes the two use to find each other.
 - No analytics, and no server-side code.
 
 ## The starter set
@@ -212,7 +226,7 @@ file hashes in `vendor/integrity.json` (BitBlocks convention D7):
 |---|---|---|
 | `@nswp/core` | the NSWP repo | `vendor/nswp/` |
 | BitFeed standalone | the BitFeed repo | `vendor/bitfeed/` |
-| `nswp-sdk/three` (avatars, voice, rooms, the headset console), `nswp-sdk/home` (the room's furniture) and `nswp-sdk/ui` (the HUD) | the NSWP repo | `vendor/nswp/` |
+| `nswp-sdk/three` (avatars, voice, rooms, the headset console), `nswp-sdk/home` (the room's furniture), `nswp-sdk/ui` (the HUD) and `nswp-sdk/terminal` (the terminal panel, fetched only when one is opened) | the NSWP repo | `vendor/nswp/` |
 | BitLogin widget | the bitlogin repo's `release/` folder | `public/vendor/bitlogin/` |
 | Ubuntu Sans fonts | the bitblocks repo | `public/fonts/` |
 

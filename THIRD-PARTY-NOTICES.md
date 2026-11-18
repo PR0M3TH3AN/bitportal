@@ -21,6 +21,7 @@ their short notices left in place:
 | @scure/base | NSWP, BitLogin | Paul Miller |
 | @scure/bip39 | BitLogin | Patricio Palladino, Paul Miller |
 | tldts, with the [Public Suffix List](https://publicsuffix.org/) (MPL 2.0) inside it | NSWP | Rémi Berson; Mozilla Foundation |
+| [xterm.js](https://github.com/xtermjs/xterm.js) (`@xterm/headless`) | NSWP's terminal panel | The xterm.js authors |
 
 A build (`npm run build`) also writes the notices of everything it bundled
 next to the scripts in `dist/`.

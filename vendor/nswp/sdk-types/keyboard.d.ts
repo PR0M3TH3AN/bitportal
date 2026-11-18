@@ -30,10 +30,27 @@ export interface AskOptions {
     multiline?: boolean;
     maxLength?: number;
 }
+export interface LiveOptions {
+    /** What the keys go to, shown over them. */
+    title: string;
+    /** Each press, as it happens: the bytes a terminal takes. */
+    onKey(bytes: string): void;
+    /** The visitor put it away, or something else took the keyboard. */
+    onClose?(): void;
+}
 export interface Keyboard {
     readonly group: THREE.Group;
     /** Whether it is up. */
     readonly open: boolean;
+    /** Whether it is up for a terminal: every key sent as it is pressed. */
+    readonly isLive: boolean;
+    /**
+     * Put the keyboard up for something that takes keys as they are typed, a
+     * terminal. It has Esc, Tab, Ctrl and the arrows, and stays up until it is
+     * put away. A real keyboard is the caller's to listen to.
+     */
+    live(o: LiveOptions): void;
+    closeLive(): void;
     /** Put the keyboard up in front of the visitor and wait. Resolves with what they wrote, or null if they gave up. */
     ask(o: AskOptions): Promise<string | null>;
     /** Put it away, as if they gave up. */
@@ -47,10 +64,12 @@ export interface Keyboard {
     /** What is written so far, and which keys are showing. */
     info(): {
         open: boolean;
+        live: boolean;
         title: string;
         value: string;
         layer: string;
         shift: string;
+        ctrl: boolean;
         keys: string[];
     };
     update(t: number): void;

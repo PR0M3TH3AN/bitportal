@@ -26,6 +26,7 @@ import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../s
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
 import { createJumpList } from "../shared/jump.js";
+import { addComputers, type Computers } from "./computers.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 import { loadRoom } from "../shared/room.js";
@@ -99,6 +100,7 @@ interface TestHooks {
   roomInfo(): unknown;
   teleport(x: number, z: number): void;
   device?: unknown;
+  computers?: Computers;
 }
 declare global {
   interface Window {
@@ -811,6 +813,9 @@ async function start(): Promise<void> {
   panels = createPanels({ scene, camera, accent: ACCENT, textColor: INK, input: xrInput, keep: "bitportal:panels", session: () => renderer.xr.getSession() });
   addPanelControls(controls, panels, { presenting: () => renderer.xr.isPresenting, kept: true });
   hooks.panels = panels;
+  // The visitor's own computers: a terminal on one, in a panel. Theirs alone, and never offered to a world.
+  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT });
+  hooks.computers = computers;
 
   // ------------------------------------------------------- presence
   let refreshRoom = () => {};
@@ -869,7 +874,9 @@ async function start(): Promise<void> {
   const back = location.hash.replace(/^#/, "").split("&");
   const cameBack = back.includes("back");
   const cameFromHeadset = cameBack && back.includes("xr=1");
-  if (cameBack) history.replaceState(history.state, "", location.pathname + location.search);
+  // A link the Bridge printed asks to add a computer. It is taken off the address too, so a reload doesn't ask again.
+  const pairing = computers.fromAddress(location.hash);
+  if (cameBack || pairing) history.replaceState(history.state, "", location.pathname + location.search);
   let offered = cameFromHeadset;
   void addViewControls(controls, {
     renderer,
