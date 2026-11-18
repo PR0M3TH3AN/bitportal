@@ -1,7 +1,7 @@
 import {
   createPortalWindow,
   textSprite
-} from "./shared-UP2ZOHVF.js";
+} from "./shared-OFBWQYFH.js";
 import "./shared-REPWSNOI.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
