@@ -5,7 +5,8 @@
  * own site is contacted when the visitor opens its door, never before. The
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
-import { audienceOf, buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
+import { audienceOf, buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND } from "@nswp/core";
+import { loadBlockedEverywhere, loadPendingBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere, withoutBlockedEverywhere, type BlockedEverywhere } from "../shared/blocked.js";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type ListView, type StarterBundle } from "../shared/catalog.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
@@ -731,6 +732,37 @@ function openSettings(): void {
     hashtagRows.replaceChildren(...(all.length ? all : ["None yet."]));
   };
   drawHashtags();
+  // The people they have blocked everywhere: on their own list, kept here, and handed to each world they arrive in.
+  const blockedRows = el("ul", { class: "blocked-list", id: "set-blocked" });
+  const drawBlocked = () => {
+    const list = loadBlockedEverywhere();
+    const pending = loadPendingBlocks().filter((p) => !list.some((b) => b.key === p.key));
+    const when = (at: number) => (at ? new Date(at * 1000).toLocaleDateString() : "");
+    const row = (b: BlockedEverywhere, waiting: boolean) => {
+      const undo = el("button", { class: "button", type: "button" }, waiting ? "Forget" : "Unblock");
+      undo.addEventListener("click", () => {
+        if (waiting) storePendingBlocks(loadPendingBlocks().filter((x) => x.key !== b.key));
+        else storeBlockedEverywhere(withoutBlockedEverywhere(loadBlockedEverywhere(), b.key));
+        drawBlocked();
+      });
+      const keep = el("button", { class: "button primary", type: "button" }, "Block everywhere");
+      keep.addEventListener("click", () => {
+        storeBlockedEverywhere(withBlockedEverywhere(loadBlockedEverywhere(), [b.key], b.where, b.at || undefined));
+        storePendingBlocks(loadPendingBlocks().filter((x) => x.key !== b.key));
+        drawBlocked();
+      });
+      return el(
+        "li",
+        { "data-key": b.key, ...(waiting ? { "data-waiting": "" } : {}) },
+        el("span", { class: "key", title: encodeNpub(b.key) }, shortNpub(b.key)),
+        el("span", { class: "muted small" }, ` blocked ${[b.where && `in ${b.where}`, when(b.at)].filter(Boolean).join(", ") || "on an earlier visit"}${waiting ? ", in that world only so far" : ""} `),
+        ...(waiting ? [keep, undo] : [undo]),
+      );
+    };
+    const rows = [...pending.map((b) => row(b, true)), ...list.map((b) => row(b, false))];
+    blockedRows.replaceChildren(...(rows.length ? rows : [el("li", { class: "muted" }, "Nobody.")]));
+  };
+  drawBlocked();
   // Where they start: BitPortal's room, or a world of their own that is shown to be theirs.
   const homeNow = el("p", { class: "small", id: "set-home-now" });
   const homeAddress = el("input", { type: "url", id: "set-home", placeholder: "https://my-world.example" });
@@ -795,6 +827,13 @@ function openSettings(): void {
     el("h3", {}, "Your hashtags"),
     hashtagRows,
     el("p", { class: "small" }, "Worlds say what they are about with hashtags. Pick one under the search box, or on a world's page, and choose More or Less. Worlds with a hashtag you like come first and get a shelf of their own; ones you don't sink. It orders what this copy already shows, and is kept on this device."),
+    el("h3", {}, "People you've blocked everywhere"),
+    blockedRows,
+    el(
+      "p",
+      { class: "small" },
+      "Blocking someone in a world keeps you apart in that world. When you leave it, the Airlock asks whether to block them everywhere you go: say yes, and they are on this list. It is kept in this browser. Each world you arrive in is told the keys on it, so that it can keep you apart: that is what a block that travels costs. Only people who go by a name can be on it. A guest is a new person every visit, and no list can follow one.",
+    ),
     el("h3", {}, "Where you start"),
     homeNow,
     el("label", { for: "set-home" }, "A world of your own to start in"),

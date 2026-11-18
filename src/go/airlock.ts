@@ -29,6 +29,7 @@ import {
   type Manifest,
   type Verification,
   type World,
+  shortNpub,
 } from "@nswp/core";
 
 import bundleJson from "../starter/starter-set.json";
@@ -42,6 +43,22 @@ import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
+import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
+
+/** The last world this Airlock sent the visitor to, as a host: where a block they report was most likely made. */
+const LAST_WORLD = "bitportal:last-world";
+const lastWorld = (): string => {
+  try {
+    return sessionStorage.getItem(LAST_WORLD) ?? "";
+  } catch {
+    return "";
+  }
+};
+/** The visitor's own block list, as it goes with them: nothing when it is empty. */
+const withBlocked = (): { blocked?: string[] } => {
+  const keys = blockedToCarry(loadBlockedEverywhere(), roomBlocks());
+  return keys.length ? { blocked: keys } : {};
+};
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const SELF = `${location.origin}${location.pathname}`;
@@ -203,7 +220,7 @@ function entryFromFragment(): string | undefined {
  * it. But it is looked at first, quickly. A home that doesn't answer, or whose site no longer admits their key or
  * says it can be a home, is not gone to: they start in BitPortal's room, and are told why. Returns whether it went.
  */
-async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: true; mic?: true } = {}): Promise<boolean> {
+async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: true; mic?: true; blocked?: string[] } = {}): Promise<boolean> {
   const sorry = (why: string) => {
     try {
       sessionStorage.setItem("bitportal:home-note", why);
@@ -240,7 +257,10 @@ async function render(): Promise<void> {
       // or with no home of their own, they go to BitPortal's own place, as everyone does.
       // In the room where they came from: they stay joined at home too. Nothing is asked on the way home, so a
       // microphone goes along only when they have already said theirs may.
-      const carry = carriedOn(way, { stay: true, mic: micMayTravel() });
+      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked() };
+      // Who they blocked where they came from is a link's word. Nothing is asked on the way home, so it waits:
+      // for the next door, or for Settings.
+      if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
       const theirs = way.doors ? null : homeOf(loadHome(), (await readSignedIn())?.pubkey);
       if (theirs && (await goHome(theirs, fromHeadset, carry))) return;
       // Back to the start they left from: the room if they walked out of it or asked for their doors, the list
@@ -248,7 +268,7 @@ async function render(): Promise<void> {
       const toRoom = way.doors || !!theirs || readLeft()?.from === "walk";
       const home = new URL(toRoom ? "/walk/" : "/", location.origin);
       if (toRoom) home.hash = fromHeadset ? "back&xr=1" : "back";
-      if (toRoom && carry.joined) {
+      if (toRoom && "joined" in carry && carry.joined) {
         try {
           sessionStorage.setItem(ARRIVED_JOINED, carry.mic ? "mic" : "joined");
         } catch {
@@ -298,7 +318,10 @@ async function render(): Promise<void> {
   if (req.immersive) document.body.classList.add("from-vr");
   const approvalKey = a.world?.pubkey ? `${a.origin}|${a.world.pubkey}|${a.world.d}` : null;
   const approved = readJson<Record<string, boolean>>(APPROVED, {});
-  const fastPath = verified && !!approvalKey && approved[approvalKey] === true && !a.publisherChanged && a.warnings.length === 0;
+  // People a world says the visitor blocked there, and any still waiting from a trip home. A question to answer,
+  // so this screen isn't hurried past.
+  const asking = blocksToAsk(req.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld());
+  const fastPath = verified && !!approvalKey && approved[approvalKey] === true && !a.publisherChanged && a.warnings.length === 0 && asking.length === 0;
 
   const host = el("p", { class: "host" }, el("span", { class: "prefix" }, a.hostPrefix), el("strong", {}, a.domain));
   const status = verified
@@ -408,6 +431,32 @@ async function render(): Promise<void> {
   // until they have said it may be, once, and is remembered here.
   let stayBox: HTMLInputElement | null = null;
   let micBox: HTMLInputElement | null = null;
+  // A block made in one world holds in that world. To hold everywhere it has to be on the visitor's own list,
+  // here. The link that reports it is a link, so they are shown who, and the box is theirs to tick.
+  let blockBox: HTMLInputElement | null = null;
+  if (asking.length) {
+    blockBox = el("input", { type: "checkbox", id: "block-everywhere" }) as HTMLInputElement;
+    const from = asking[0]!.where;
+    card.append(
+      el(
+        "div",
+        { class: "remember staying", id: "blocking" },
+        el(
+          "div",
+          {},
+          blockBox,
+          el(
+            "label",
+            { for: "block-everywhere" },
+            `Block ${asking.length === 1 ? "this person" : `these ${asking.length} people`} everywhere you go`,
+            el("span", { class: "muted" }, ` (you blocked them${from ? ` in ${from}` : " where you came from"})`),
+          ),
+        ),
+        el("p", { class: "small muted", id: "blocking-who" }, asking.map((b) => shortNpub(b.key)).join(", "), ". Each world you arrive in is told these keys, so it can keep you apart. Undo it in Settings."),
+      ),
+    );
+  }
+
   if (req.joined && a.nswpAware) {
     stayBox = el("input", { type: "checkbox", id: "stay-joined", checked: "" }) as HTMLInputElement;
     const staying = el("div", { class: "remember staying", id: "staying" }, el("div", {}, stayBox, el("label", { for: "stay-joined" }, "Stay in the room there, as you were here", el("span", { class: "muted" }, " (others there will see you)"))));
@@ -486,7 +535,17 @@ async function render(): Promise<void> {
     }
     // Whether a microphone may travel is the visitor's standing choice: kept as they left it on this screen.
     if (micBox && stayBox?.checked) setMicMayTravel(micBox.checked);
-    const carry = carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked });
+    // Their answer about who to block everywhere, given once: ticked, they go on the list; not, they are let go.
+    if (asking.length) {
+      if (blockBox?.checked) storeBlockedEverywhere(withBlockedEverywhere(loadBlockedEverywhere(), asking.map((b) => b.key), asking[0]!.where));
+      storePendingBlocks([]);
+    }
+    try {
+      sessionStorage.setItem(LAST_WORLD, new URL(a.origin).host);
+    } catch {
+      /* the next report says "where you came from" */
+    }
+    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry }));
