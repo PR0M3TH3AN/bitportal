@@ -212,6 +212,7 @@ copy:
 | `allowList` | `bitportal` | The name (`d`) of the operator's list: an ordinary NIP-51 list, kind 30004 |
 | `allowListOnly` | `true` | Show a world only when the operator's list or the starter set has it. No lists a visitor follows, no worlds nobody has listed |
 | `allowAdult` | `false` | Never show a world that is for adults, and never send anyone to one |
+| `sharedMusic` | `true` | Visitors in this copy's own room may share the music they are playing with people near them. `false` leaves it out |
 
 A world says who it is for with `audience` on its announcement: `kids`,
 `general` or `adult`
@@ -248,6 +249,15 @@ songs added from their device, kept in this browser, and heard by nobody
 else. Each world has its own sounds and its own copy of that menu; a
 visitor's songs don't follow them from site to site, because a browser keeps
 each site's files apart.
+
+### Music between visitors
+
+A visitor playing their own music in the room can offer it to people near
+them. Nobody hears it unless they turned on "Hear music others share". It is
+full beside the person sharing, fades with distance to nothing at twelve
+metres, and steps back while anyone is speaking. It goes from one browser to
+another and through no server. The host can leave it out of this copy's room
+with `sharedMusic: false` in `src/shared/instance.ts`.
 
 ## Sharing a screen in the room
 

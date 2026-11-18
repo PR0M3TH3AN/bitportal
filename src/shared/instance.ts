@@ -30,6 +30,12 @@ export interface InstancePolicy {
    * a content warning without saying who it is for.
    */
   allowAdult: boolean;
+  /**
+   * Whether visitors in this copy's own room may share the music they are playing with people near them. It is
+   * each visitor's choice to offer and each visitor's choice to hear; this is the host's choice to have it in
+   * their room at all. `false` leaves it out. Left out, it is allowed.
+   */
+  sharedMusic?: boolean;
 }
 
 export const INSTANCE: InstancePolicy = {
@@ -38,6 +44,7 @@ export const INSTANCE: InstancePolicy = {
   allowList: "bitportal",
   allowListOnly: true,
   allowAdult: false,
+  sharedMusic: true,
 };
 
 /** A policy with nothing switched on: every world, every list. What BitPortal did before it had one, and what tests of other things use. */
