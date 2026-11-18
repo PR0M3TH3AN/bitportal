@@ -38,7 +38,8 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "audience": "general"
     },
     {
       "d": "immersive-web-vr-session",
@@ -62,7 +63,8 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "audience": "general"
     },
     {
       "d": "threejs-roller-coaster",
@@ -86,7 +88,8 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "audience": "general"
     },
     {
       "d": "moon-rider",
@@ -106,7 +109,8 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "audience": "general"
     }
   ]
 }
