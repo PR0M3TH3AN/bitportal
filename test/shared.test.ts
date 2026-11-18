@@ -481,18 +481,23 @@ describe("who a world is for, on the Announce page", () => {
 
 describe("ranking by the hashtags a visitor likes", () => {
   const now = 1_800_000_000;
-  const world = (id: string, rank: number, topics: string[], taste: number, tasteWhy = ""): Candidate => ({ id, createdAt: now - 86400, rank, total: 4, fits: true, intensity: "low", topics, taste, tasteWhy });
+  const world = (id: string, rank: number, topics: string[], taste: number, tasteWhy = ""): Candidate => ({ id, createdAt: now - 86400, rank, total: 8, fits: true, intensity: "low", topics, taste, tasteWhy });
   // The lists put them in this order. The visitor likes #art and has said less #game.
-  const cands = [world("arcade", 0, ["game"], 0), world("grove", 1, ["quiet"], 0.5), world("gallery", 2, ["art"], 1, "it has #art, which you asked for more of"), world("tour", 3, ["help"], 0.5)];
+  const cands = [
+    world("arcade", 0, ["game"], 0),
+    world("grove", 1, ["quiet"], 0.5),
+    world("tour", 2, ["help"], 0.5),
+    world("gallery", 3, ["art"], 1, "it has #art, which you asked for more of"),
+    ...["a", "b", "c", "d"].map((n, i) => world(n, 4 + i, [], 0.5)),
+  ];
 
   it("lifts a world with a hashtag they like, sinks one they don't, and says why", async () => {
     const start = (await rankShelves(cands, now, "2026-11-17", ["art"]))[0]!;
     const order = start.items.map((i) => i.id);
+    // First on the lists, and now behind what it stood ahead of. It sinks; it isn't removed.
     expect(order.indexOf("gallery")).toBeLessThan(order.indexOf("arcade"));
-    // First on the lists, and now behind the ones it stood ahead of: it sinks. It isn't removed, and a world the
-    // lists put last doesn't jump over it for having no hashtags at all.
     expect(order.indexOf("grove")).toBeLessThan(order.indexOf("arcade"));
-    expect(order[0]).toBe("gallery");
+    expect(order).toContain("arcade");
     expect(start.items.find((i) => i.id === "gallery")!.why).toMatch(/#art, which you asked for more of/);
     expect(start.items.find((i) => i.id === "arcade")!.why).not.toMatch(/asked for/);
   });

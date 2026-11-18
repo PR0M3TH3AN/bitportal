@@ -73,11 +73,11 @@ export function shelfDefs(daySeed: string, liked: readonly string[] = []): Shelf
         seed: daySeed,
         sources: [{ provider: "bitfeed.input", lane: "all" }],
         scorers: [
-          { provider: "bitportal.curatorOrder", weight: 0.4 },
+          { provider: "bitportal.curatorOrder", weight: 0.35 },
           // What the visitor asked for more and less of. With no tastes every world scores the same here, and the
           // order is the lists' and the device's, as it was.
-          { provider: "bitportal.tastes", weight: 0.3 },
-          { provider: "bitportal.deviceFit", weight: 0.2 },
+          { provider: "bitportal.tastes", weight: 0.4 },
+          { provider: "bitportal.deviceFit", weight: 0.15 },
           { provider: "bitfeed.random", weight: 0.1 },
         ],
       },
