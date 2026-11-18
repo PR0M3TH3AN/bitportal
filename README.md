@@ -11,6 +11,12 @@ announcing a world).
 
 Live, and experimental: <https://portal.bitblocks.network/>
 
+BitPortal is one client of the protocol, not the protocol. Anything a second
+lobby or a world would need to agree with it on is in
+[the protocol documents](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/tree/main/protocol), not here: start with
+[how worlds are found](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/08-lists.md) for how a world gets a door, and
+[what a world owes a visitor](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/09-what-a-world-owes.md) to build one.
+
 ## What it does
 
 - **The lobby** (`/`) opens with the room itself, live, at the top of the
