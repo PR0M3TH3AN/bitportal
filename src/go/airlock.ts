@@ -9,6 +9,9 @@
  * Adapted from the NSWP reference Airlock (MIT).
  */
 import {
+  wayWithoutDestination,
+  HOME_CAPABILITY,
+  normalizeUrl,
   buildArrivalUrl,
   checkDestination,
   fragmentSaysImmersive,
@@ -30,6 +33,7 @@ import {
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalog.js";
 import { placeKind } from "../shared/plate.js";
+import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
 import { readLeft } from "../shared/saved.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
 import { issuePass } from "../shared/pass.js";
@@ -191,6 +195,33 @@ function entryFromFragment(): string | undefined {
   return parseAirlockFragment(location.hash)?.entryPoint;
 }
 
+/**
+ * Take a visitor to the world they chose as their home (NSWP-07). Nothing is asked: it is theirs, and they chose
+ * it. But it is looked at first, quickly. A home that doesn't answer, or whose site no longer admits their key or
+ * says it can be a home, is not gone to: they start in BitPortal's room, and are told why. Returns whether it went.
+ */
+async function goHome(home: HomeChoice, fromHeadset: boolean): Promise<boolean> {
+  const sorry = (why: string) => {
+    try {
+      sessionStorage.setItem("bitportal:home-note", why);
+    } catch {
+      /* they arrive in the room without being told why */
+    }
+    return false;
+  };
+  const host = new URL(home.url).host;
+  const m = await fetchManifest(home.url, fetch, 3500);
+  if (!m.manifest) return sorry(`Your home at ${host} didn't answer, so you are in BitPortal's room.`);
+  const entry = m.manifest.worlds[home.d];
+  const stillTheirs = !!m.manifest.publishers[home.owner]?.worlds.includes(home.d) && !!entry && normalizeUrl(entry.entry.url) === normalizeUrl(home.url);
+  if (!stillTheirs) return sorry(`${host} no longer says it is yours, so you are in BitPortal's room. Choose your home again in Settings.`);
+  if (!entry.capabilities.includes(HOME_CAPABILITY)) return sorry(`${host} no longer says it can be a home, so you are in BitPortal's room.`);
+  // They arrive as they last chose to go anywhere, short of signing: with their look, or plain.
+  const mine = goMode() === "plain" ? null : loadLook();
+  location.replace(buildArrivalUrl(home.url, { airlock: SELF, home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}) }));
+  return true;
+}
+
 async function render(): Promise<void> {
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
@@ -199,11 +230,16 @@ async function render(): Promise<void> {
     // Nothing is being crossed into, so there is nothing to confirm. A fragment
     // that is present but unreadable still gets the explanation below.
     // A world may add that the visitor left a headset session to come home (xr=1). It is still the way home.
-    const fromHeadset = fragmentSaysImmersive(location.hash);
-    if (location.hash.length <= 1 || location.hash === "#xr=1") {
-      // Back to the start they left from: the room if they walked out of it, the list otherwise. The room is
-      // told they are coming back, so they arrive in the chamber they left a world in.
-      const toRoom = readLeft()?.from === "walk";
+    const way = wayWithoutDestination(location.hash);
+    if (way) {
+      const fromHeadset = way.immersive;
+      // Someone whose home is a world of their own is taken there. Asked for their doors (a home offers that),
+      // or with no home of their own, they go to BitPortal's own place, as everyone does.
+      const theirs = way.doors ? null : homeOf(loadHome(), (await readSignedIn())?.pubkey);
+      if (theirs && (await goHome(theirs, fromHeadset))) return;
+      // Back to the start they left from: the room if they walked out of it or asked for their doors, the list
+      // otherwise. The room is told they are coming back, so they arrive in the chamber they left a world in.
+      const toRoom = way.doors || !!theirs || readLeft()?.from === "walk";
       const home = new URL(toRoom ? "/walk/" : "/", location.origin);
       if (toRoom) home.hash = fromHeadset ? "back&xr=1" : "back";
       location.replace(home.href);

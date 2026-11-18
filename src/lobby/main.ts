@@ -18,6 +18,7 @@ import { attachJumpList } from "../shared/jump.js";
 import { saveRoomText, storedRoomText } from "../shared/room.js";
 import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, savedUrls, storeSaved, type SavedPlace } from "../shared/saved.js";
 import { readSignedIn } from "../shared/session.js";
+import { checkHome, homeOf, loadHome, storeHome, type HomeChoice } from "../shared/home.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
 import { cachedVerification, verifyWorld, type VerificationResult } from "../shared/verify.js";
@@ -575,6 +576,47 @@ function openSettings(): void {
     dialog.close();
     openLists();
   });
+  // Where they start: BitPortal's room, or a world of their own that is shown to be theirs.
+  const homeNow = el("p", { class: "small", id: "set-home-now" });
+  const homeAddress = el("input", { type: "url", id: "set-home", placeholder: "https://my-world.example" });
+  const homeChecks = el("ul", { class: "home-checks", id: "set-home-checks", role: "status" });
+  const homeCheck = el("button", { class: "button", type: "button", id: "set-home-check" }, "Check this world");
+  const homeUse = el("button", { class: "button primary", type: "button", id: "set-home-use", hidden: "" }, "Start here");
+  const homeLeave = el("button", { class: "link", type: "button", id: "set-home-leave" }, "Start in BitPortal's room again");
+  let found: HomeChoice | undefined;
+  const showHome = async () => {
+    const who = await readSignedIn();
+    const home = homeOf(loadHome(), who?.pubkey);
+    homeNow.replaceChildren(home ? `You start at ${home.title || "your world"}, ${new URL(home.url).host}. Your doors are still here. ` : "You start in BitPortal's room. ", ...(home ? [homeLeave] : []));
+  };
+  homeLeave.addEventListener("click", () => {
+    storeHome(null);
+    void showHome();
+  });
+  homeAddress.addEventListener("input", () => {
+    // What was found out about one address says nothing about another.
+    found = undefined;
+    homeUse.hidden = true;
+    homeChecks.replaceChildren();
+  });
+  homeCheck.addEventListener("click", async () => {
+    homeCheck.disabled = true;
+    homeChecks.replaceChildren(el("li", {}, "Looking at it…"));
+    const who = await readSignedIn();
+    const report = await checkHome(homeAddress.value, who?.pubkey ?? null, { relays: settings.relays });
+    homeChecks.replaceChildren(...report.checks.map((c) => el("li", { class: c.ok ? "ok" : c.must ? "no" : "maybe" }, c.text)));
+    found = report.choice;
+    homeUse.hidden = !report.fit;
+    homeCheck.disabled = false;
+  });
+  homeUse.addEventListener("click", () => {
+    if (!found) return;
+    storeHome(found);
+    homeUse.hidden = true;
+    homeChecks.replaceChildren(el("li", { class: "ok" }, "Chosen. Going home, from anywhere, now leads there."));
+    void showHome();
+  });
+  void showHome();
   const save = el("button", { class: "button primary", type: "submit" }, "Save settings");
   const cancel = el("button", { class: "button", type: "button" }, "Cancel");
   cancel.addEventListener("click", () => dialog.close());
@@ -595,6 +637,13 @@ function openSettings(): void {
     roomBox,
     el("p", { class: "small" }, "This is the same home.json a world made from the NSWP world template uses. The room takes its colours, plants, lamps, benches, tables, plinths and notes. It doesn't draw pictures or portals: your doors are the wall in front of you. Kept on this device."),
     roomNote,
+    el("h3", {}, "Where you start"),
+    homeNow,
+    el("label", { for: "set-home" }, "A world of your own to start in"),
+    homeAddress,
+    el("p", { class: "small" }, "It has to be shown to be yours: announced with your key, at a site that admits your key, and saying it can be a home. Your doors, your sign-in and your computers stay here in BitPortal, and your home has a way to them. If your home ever doesn't answer, you start in BitPortal's room."),
+    homeChecks,
+    el("div", { class: "actions" }, homeCheck, homeUse),
     el("div", { class: "actions" }, cancel, save),
   );
   form.addEventListener("submit", (e) => {
