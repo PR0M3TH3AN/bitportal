@@ -4,6 +4,7 @@
  * the same in both.
  */
 import * as THREE from "three";
+import { archFrameGeometry, createAlloy, type Alloy } from "nswp-sdk/home";
 import { doorArt } from "./door.js";
 
 export const DOOR_W = 1.5;
@@ -94,14 +95,12 @@ export function flatViewTexture(image: HTMLImageElement): THREE.CanvasTexture {
   });
 }
 
-export function frameTexture(): THREE.CanvasTexture {
-  const W = 500;
-  const H = 700;
-  return canvasTexture(W, H, (g) => {
-    archPath(g, W, H, 7);
-    g.lineWidth = 12;
-    g.strokeStyle = "#ffffff";
-    g.stroke();
-  });
+/**
+ * A door's frame: the standard doorway's modelled arch (nswp-sdk/home), in a
+ * metal of its own so it can answer on its own to being pointed at. The shape
+ * is shared by every door; the metal is one small material each.
+ */
+export function doorFrame(accent: THREE.ColorRepresentation, options: { still?: boolean } = {}): { frame: THREE.Mesh; metal: Alloy } {
+  const metal = createAlloy(accent, { gloss: 0.75, speed: options.still ? 0 : 1 });
+  return { frame: new THREE.Mesh(archFrameGeometry(), metal), metal };
 }
-

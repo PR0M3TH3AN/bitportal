@@ -11,10 +11,10 @@
  * it the page is whole: the list is the same doors.
  */
 import * as THREE from "three";
-import { createEnvironment } from "nswp-sdk/home";
+import { createEnvironment, type Alloy } from "nswp-sdk/home";
 import { createPortalWindow, panoramaTexture } from "nswp-sdk/three";
 import type { Entry } from "../shared/catalog.js";
-import { archMaskTexture, DOOR_H, DOOR_W, flatViewTexture, frameTexture, viewTexture } from "../shared/door3d.js";
+import { archMaskTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 
 export interface Hero {
@@ -38,6 +38,7 @@ interface HeroDoor {
   group: THREE.Group;
   view: THREE.Mesh;
   frame: THREE.Mesh;
+  metal: Alloy;
   hover: number;
 }
 
@@ -64,10 +65,8 @@ export function mountHero(stage: HTMLElement, opts: HeroOptions): Hero | null {
   camera.position.set(0, 1.6, 0);
   scene.add(rig);
 
-  const frameMap = frameTexture();
   const archMask = archMaskTexture();
   const doorGeo = new THREE.PlaneGeometry(DOOR_W, DOOR_H);
-  const sillGeo = new THREE.BoxGeometry(DOOR_W + 0.1, 0.06, 0.24);
   const wall = new THREE.Group();
   scene.add(wall);
   let doors: HeroDoor[] = [];
@@ -102,7 +101,7 @@ export function mountHero(stage: HTMLElement, opts: HeroOptions): Hero | null {
     wall.traverse((o) => {
       const m = (o as THREE.Mesh).material as (THREE.Material & { map?: THREE.Texture | null }) | undefined;
       if (!m || Array.isArray(m)) return;
-      if (m.map && m.map !== frameMap && m.map !== archMask) m.map.dispose();
+      if (m.map && m.map !== archMask) m.map.dispose();
       m.dispose();
     });
     wall.clear();
@@ -115,13 +114,10 @@ export function mountHero(stage: HTMLElement, opts: HeroOptions): Hero | null {
       group.rotation.y = -theta;
       const view = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: viewTexture(entry.id), transparent: true, alphaTest: 0.5 }));
       view.position.y = DOOR_H / 2;
-      const frame = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: frameMap, transparent: true, color: 0xffffff }));
-      frame.position.set(0, DOOR_H / 2, 0.01);
-      const sill = new THREE.Mesh(sillGeo, new THREE.MeshBasicMaterial({ color: 0xf2f3f6 }));
-      sill.position.set(0, 0.03, 0.05);
-      group.add(view, frame, sill);
+      const { frame, metal } = doorFrame(opts.accent);
+      group.add(view, frame);
       wall.add(group);
-      return { entry, group, view, frame, hover: 0 };
+      return { entry, group, view, frame, metal, hover: 0 };
     });
     for (const d of doors) void attachPreview(d);
     dirty = true;
@@ -192,7 +188,6 @@ export function mountHero(stage: HTMLElement, opts: HeroOptions): Hero | null {
     dirty = true;
   }).observe(stage);
   const accent = new THREE.Color(opts.accent);
-  const white = new THREE.Color(0xffffff);
   const started = performance.now();
   let last = 0;
   let entering = 0; // 0 until Walk in is pressed, then seconds into the move
@@ -216,7 +211,8 @@ export function mountHero(stage: HTMLElement, opts: HeroOptions): Hero | null {
     }
     for (const d of doors) {
       d.hover += ((d === pointed ? 1 : 0) - d.hover) * (moving ? Math.min(1, dt * 12) : 1);
-      (d.frame.material as THREE.MeshBasicMaterial).color.copy(white).lerp(accent, d.hover);
+      d.metal.tick(t);
+      d.metal.aim(d.hover);
       d.view.position.z = -0.12 * d.hover;
       if (d.hover > 0.01 && d.hover < 0.99) dirty = true;
     }
