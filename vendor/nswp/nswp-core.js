@@ -2791,6 +2791,15 @@ var HEX128 = /^[0-9a-f]{128}$/;
 function isHex64(v) {
   return typeof v === "string" && HEX64.test(v);
 }
+function isPublicKey(v) {
+  if (!isHex64(v)) return false;
+  try {
+    schnorr.utils.lift_x(BigInt(`0x${v}`));
+    return true;
+  } catch {
+    return false;
+  }
+}
 function nowSeconds() {
   return Math.floor(Date.now() / 1e3);
 }
@@ -3288,7 +3297,11 @@ function encodeNpub(pubkey) {
 }
 function decodeNpub(s) {
   const text = s.trim();
-  if (/^[0-9a-f]{64}$/i.test(text)) return text.toLowerCase();
+  const real = (hex) => {
+    if (!isPublicKey(hex)) throw new NswpError("npub_invalid", "not a public key: no key has that value");
+    return hex;
+  };
+  if (/^[0-9a-f]{64}$/i.test(text)) return real(text.toLowerCase());
   let decoded;
   try {
     decoded = bech32.decode(text, BECH32_LIMIT);
@@ -3297,7 +3310,7 @@ function decodeNpub(s) {
   }
   const bytes = bech32.fromWords(decoded.words);
   if (decoded.prefix !== "npub" || bytes.length !== 32) throw new NswpError("npub_invalid", "not a public key: expected npub1\u2026 or 64 hex characters");
-  return bytesToHex(Uint8Array.from(bytes));
+  return real(bytesToHex(Uint8Array.from(bytes)));
 }
 function shortNpub(pubkey) {
   const npub = encodeNpub(pubkey);
@@ -6180,6 +6193,7 @@ export {
   isHex64,
   isHttpsUrl,
   isPlainObject,
+  isPublicKey,
   isWssUrl,
   latestAddressable,
   lookFromTags,

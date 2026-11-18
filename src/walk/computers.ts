@@ -224,7 +224,12 @@ export function addComputers(o: ComputersOptions): Computers {
   return {
     fromAddress(hash) {
       const ask = pairingRequest(hash);
-      if (!ask) return false;
+      if (!ask) {
+        // A link that set out to name a computer and didn't: say so, where silence would look like nothing happened.
+        if (!/(^|[#&])bridge=/.test(hash)) return false;
+        controls.say("That link doesn't name a computer. Copy the whole link its Bridge printed.");
+        return true;
+      }
       void identify().then(() => offer(ask));
       return true;
     },
