@@ -242,13 +242,15 @@ they see and never loosen what the host decided.
 
 ## Moving in the room
 
-On a desk there are two ways. The one a visitor gets first: click where you
-want to stand, drag to look round, or walk with W A S D. And game controls,
-turned on in the menu under Moving, for people who play games: the mouse
-looks, W A S D walk, Shift runs, F or a click uses the door or button in the
-middle of the view, and Escape brings up the menu. Fullscreen is in the menu
-under View. The choice is kept in this browser and goes with the visitor
-into the worlds they visit.
+There are two ways to move, called the same thing at a desk and in a
+headset: casual and intense. Casual is what a visitor gets. At a desk that
+is: click where you want to stand, drag to look round, or walk with W A S D.
+Intense, chosen in the menu under Moving, is for people who play games: the
+mouse looks, W A S D walk, Shift runs, F or a click uses the door or button
+in the middle of the view, and Escape brings up the menu. In a headset,
+casual is stepping and intense is walking and turning smoothly. Each device
+keeps its own choice. Fullscreen is in the menu under View. The choice is
+kept in this browser and goes with the visitor into the worlds they visit.
 
 ## Sound
 

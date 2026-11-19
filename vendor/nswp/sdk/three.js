@@ -1,6 +1,8 @@
 import {
+  CASUAL_COMFORT,
   CUES,
   DEFAULT_COMFORT,
+  INTENSE_COMFORT,
   LIBRARY_LIMITS,
   LOOK_SPEED,
   PANEL_LIMITS,
@@ -30,6 +32,7 @@ import {
   createStroll,
   createXrInput,
   heldKey,
+  isIntense,
   lookAfter,
   panoramaTexture,
   reachOf,
@@ -41,7 +44,7 @@ import {
   takeSelfie,
   textSprite,
   turnVisitor
-} from "./shared-YG66EJHC.js";
+} from "./shared-USGEH6JD.js";
 import "./shared-YU6PPIY6.js";
 import {
   browserVoice,
@@ -54,8 +57,10 @@ import {
 } from "./shared-U2U7QRDK.js";
 import "./shared-QLSLERQ3.js";
 export {
+  CASUAL_COMFORT,
   CUES,
   DEFAULT_COMFORT,
+  INTENSE_COMFORT,
   LIBRARY_LIMITS,
   LOOK_SPEED,
   PANEL_LIMITS,
@@ -89,6 +94,7 @@ export {
   createVoice,
   createXrInput,
   heldKey,
+  isIntense,
   lookAfter,
   panoramaTexture,
   reachOf,
