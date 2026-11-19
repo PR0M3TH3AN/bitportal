@@ -39,7 +39,6 @@ import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalo
 import { placeKind } from "../shared/plate.js";
 import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
-import { readLeft } from "../shared/saved.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
@@ -272,19 +271,20 @@ async function render(): Promise<void> {
       if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
       const theirs = way.doors ? null : homeOf(loadHome(), (await readSignedIn())?.pubkey);
       if (theirs && (await goHome(theirs, fromHeadset, carry))) return;
-      // Back to the start they left from: the room if they walked out of it or asked for their doors, the list
-      // otherwise. The room is told they are coming back, so they arrive in the chamber they left a world in.
-      const toRoom = way.doors || !!theirs || readLeft()?.from === "walk";
-      const home = new URL(toRoom ? "/walk/" : "/", location.origin);
-      if (toRoom) home.hash = fromHeadset ? "back&xr=1" : "back";
-      if (toRoom && way.moving === "intense") {
+      // Home is the room, whichever way they left: by one of its doors, from the list, or by a link from somewhere
+      // else. They are coming from a world, on foot or in a headset, and a page of text is no place to land from
+      // one. The list is one press away in the room. The room is told they are coming back, so they arrive in the
+      // chamber they left a world in.
+      const home = new URL("/walk/", location.origin);
+      home.hash = fromHeadset ? "back&xr=1" : "back";
+      if (way.moving === "intense") {
         try {
           sessionStorage.setItem(ARRIVED_MOVING, fromHeadset ? "headset" : "desk");
         } catch {
           /* they turn it on themselves */
         }
       }
-      if (toRoom && "joined" in carry && carry.joined) {
+      if ("joined" in carry && carry.joined) {
         try {
           sessionStorage.setItem(ARRIVED_JOINED, carry.mic ? "mic" : "joined");
         } catch {
