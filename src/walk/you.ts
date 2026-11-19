@@ -17,7 +17,7 @@
  *   it as it checks any door.
  */
 import { LOOK_COLORS, LOOK_PARTS, type LookColor, type LookPart } from "@nswp/core";
-import type { Controls } from "nswp-sdk/ui";
+import type { Controls, UiCard } from "nswp-sdk/ui";
 import { colourName, forgetLook, LOOK_TITLES, lookOf, lookWord, newSeed, stepLook, storeLook, surprise, type KeptLook } from "../shared/look.js";
 import { INSTANCE } from "../shared/instance.js";
 import type { WhoDoor } from "../shared/who.js";
@@ -46,6 +46,11 @@ export interface YouOptions {
   /** Their look has changed, or been forgotten: draw it. */
   onLook(kept: KeptLook | null): void;
   signedInAs(): string;
+  /**
+   * Who they are signed in as, as the card every world shows at the head of You: their picture, name and key
+   * (the kit's `UiCard`). Null for a guest, or someone going about as one.
+   */
+  card?(): UiCard | null;
 }
 
 export interface You {
@@ -61,6 +66,8 @@ export function addYou(o: YouOptions): You {
     id: "you",
     label: "You",
     icon: "you",
+    // The same card as in every world, so who they are looks the same wherever they stand.
+    card: () => o.card?.() ?? null,
     note: () => `Who you are and how you look are kept here, by ${location.host}. Your look is the same in every world you go to.${atWorlds()}${o.door ? ` When you are done, Back takes you to ${o.door.host || "the world you came from"}.` : ""}`,
   });
   controls.add(

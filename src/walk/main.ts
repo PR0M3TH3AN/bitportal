@@ -16,7 +16,7 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
-import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, queryRelays, WORLD_KIND } from "@nswp/core";
+import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, queryRelays, WORLD_KIND } from "@nswp/core";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
@@ -375,6 +375,8 @@ async function start(): Promise<void> {
   // Who they are and how they look are reached from here (you.ts, added further down, once there is a room to
   // do them in). This is who the room knows is signed in, from BitLogin's public record.
   let signedInAs = "";
+  /** Whose key that is, once known. */
+  let signedInKey: string | null = null;
   // Who they are in their own room: signed in is signed in here too (NSWP-10). A pass for this site is signed the
   // way the Airlock signs one for a world, with the name and picture from their own profile, so the people they
   // share the room with see who they are. Not for someone who has said to go about as a guest.
@@ -397,7 +399,10 @@ async function start(): Promise<void> {
   };
   void readSignedIn().then(async (who) => {
     // By the name they chose for themselves: never a string of hex.
-    const sayWho = () => (signedInAs = who ? profileOf(who.pubkey)?.name || who.name || label(who.pubkey) : "");
+    const sayWho = () => {
+      signedInKey = who?.pubkey ?? null;
+      signedInAs = who ? profileOf(who.pubkey)?.name || who.name || label(who.pubkey) : "";
+    };
     sayWho();
     // Settings kept with their profile: fetched behind the room, which has already started from this browser's own.
     startSync();
@@ -1157,6 +1162,12 @@ async function start(): Promise<void> {
       showMirror();
     },
     signedInAs: () => signedInAs,
+    // Their own profile, as this browser read it from their signed kind 0: the card a world shows them, here too.
+    card: () => {
+      if (!signedInKey || goesAsGuest()) return null;
+      const mine = profileOf(signedInKey);
+      return { title: signedInAs || shortNpub(signedInKey), tag: "Signed in", proven: true, sub: shortNpub(signedInKey), copy: encodeNpub(signedInKey), text: mine?.about ?? "", picture: mine?.picture ?? "", color: "", now: [] };
+    },
   });
   hooks.you = you;
   state.whoDoor = whoDoor?.host ?? null;
