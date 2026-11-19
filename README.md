@@ -221,6 +221,45 @@ room's menu leads to it ("You", then "Sign in, or stay anonymous"), and it
 leads back to the room. From inside VR the session is ended to show the
 page, and the way back takes you into VR again.
 
+## Your settings, on your other devices
+
+Everything BitPortal knows about you is kept in the browser you are using.
+That is fast, works with no network, and means nothing about you is anywhere
+else. It also means a second device starts from nothing.
+
+So, signed in, you can turn on **Keep my settings with my profile** in
+Settings. It is off until you do. Then one note is kept on your relays,
+sealed with your own key (NIP-44) so that nobody else can open it, relays
+included. It is ordinary Nostr application data (NIP-78, kind 30078), named
+`bitportal/settings`.
+
+- **The browser's copy is still the one that is used.** A page starts from
+  it at once, as before. The note is fetched behind it, and whichever of the
+  two changed a setting last is kept, a section at a time. The first time a
+  browser meets your profile, it takes what the profile has.
+- **What is in it:** your volumes, the size of your text and whether things
+  move, how you move at a desk and in a headset, your saved doors (which
+  doors and where, not their announcements), the lists you follow, your
+  hashtags, your home, your look, your room, the Airlock's switch, and who
+  you have blocked.
+- **What never is:** where you have been and which sites you have checked,
+  so a new device is shown the Airlock once; whether your microphone may
+  travel and whether you hear other people's music, which are said on each
+  device; going by name as a habit; your computers and the worlds you are
+  building; and your own music, which is files.
+- **A world never reads it.** It couldn't open it, and a world asking relays
+  about its visitors would be a way to follow them. A world is told your
+  settings the way it always is: by BitPortal, as you arrive.
+- **What a relay can see:** that your key keeps a BitPortal settings note,
+  and when it last changed. Nothing in it.
+- **Taking it back:** "Take my settings off the relays, and stop" replaces
+  the note with an empty one. A relay may keep the old one for a while; it
+  still can't read it.
+- A guest's settings stay in the browser. There is no key to seal them with.
+
+It needs BitLogin unlocked in the browser, since BitLogin does the sealing
+and BitPortal never holds your key.
+
 ## Privacy rules it follows
 
 - Drawing the lobby contacts Nostr relays only. A world's own site is contacted
@@ -234,6 +273,9 @@ page, and the way back takes you into VR again.
 - Destinations travel in the URL fragment, which servers never see.
 - A site that hasn't adopted NSWP gets a plain visit, with nothing added to
   its address.
+- Everything BitPortal knows about you stays in this browser, unless you
+  turn on "Keep my settings with my profile" (below). Then one copy is kept
+  on your relays, sealed so that only your own key can open it.
 - Saved doors and the room's layout stay in this browser. The room draws only
   built-in furniture from a layout: no pictures and nothing else that would
   contact another site.

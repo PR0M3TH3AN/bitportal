@@ -5,6 +5,7 @@
  * own site is contacted when the visitor opens its door, never before. The
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
+import { forgetSync, setSyncOn, startSync, syncState, testing as syncTesting } from "../shared/sync-run.js";
 import { audienceOf, buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND } from "@nswp/core";
 import { loadBlockedEverywhere, loadPendingBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere, withoutBlockedEverywhere, type BlockedEverywhere } from "../shared/blocked.js";
 import bundleJson from "../starter/starter-set.json";
@@ -709,6 +710,45 @@ function openSettings(): void {
   rankBox.checked = settings.ranking;
   const airlockBox = el("input", { type: "checkbox", id: "set-airlock" });
   airlockBox.checked = settings.airlock === "known";
+  // Keeping settings with the visitor's profile, sealed, so they follow them to another device (sync.ts). Off until
+  // they turn it on. It acts when pressed, not when the sheet is saved: it is a thing done, not a preference noted.
+  const syncBox = el("input", { type: "checkbox", id: "set-sync" }) as HTMLInputElement;
+  syncBox.checked = syncState().on;
+  const syncStatus = el("p", { class: "small", id: "sync-status", role: "status" });
+  const syncForget = el("button", { class: "link", type: "button", id: "sync-forget" }, "Take my settings off the relays, and stop");
+  const when = (ms: number) => (ms ? new Date(ms).toLocaleString() : "not yet");
+  const saySync = (words?: string) => {
+    const state = syncState();
+    syncForget.hidden = !state.on;
+    syncStatus.textContent = words ?? (state.on ? `On. Last kept in step ${when(state.syncedAt)}.` : "Off. Everything stays in this browser.");
+  };
+  saySync();
+  const signedInNow = () => !!signedIn || syncTesting();
+  syncBox.addEventListener("change", () => {
+    if (syncBox.checked && !signedInNow()) {
+      syncBox.checked = false;
+      return saySync("Sign in first: your settings are kept with a profile, sealed with its key. A guest's stay in this browser.");
+    }
+    const round = setSyncOn(syncBox.checked);
+    if (!round) return saySync();
+    saySync("Sealing your settings and looking for a copy on your relays.");
+    void round.then((out) => {
+      if (out.why === "locked") {
+        syncBox.checked = false;
+        setSyncOn(false);
+        return saySync("Your profile is locked in this browser, so nothing could be sealed. Unlock it under Your identity and turn this on again.");
+      }
+      if (out.why === "unreadable") return saySync("On, but your relays couldn't be reached or the copy there couldn't be opened just now. Nothing was changed. It is tried again each time a page opens.");
+      saySync(out.took.length ? `On. Settings from your profile arrived (${out.took.join(", ")}). Reload to use them.` : out.sent ? "On. Your settings are kept with your profile now." : undefined);
+    });
+  });
+  syncForget.addEventListener("click", () => {
+    saySync("Asking your relays to replace the copy with an empty one.");
+    void forgetSync().then((done) => {
+      syncBox.checked = syncState().on;
+      saySync(done ? "Off. The copy on your relays was replaced with an empty one. A relay may still hold the old one for a while: none of them can read it." : "That couldn't be done just now. Your profile may be locked, or no relay answered.");
+    });
+  });
   const relays = el("textarea", { id: "set-relays", rows: "4", spellcheck: "false" });
   relays.value = settings.relays.join("\n");
   const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3df2a0"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
@@ -822,6 +862,20 @@ function openSettings(): void {
       { class: "small" },
       "The Airlock always stops you the first time you go somewhere, and shows you the real address. With this on, it doesn't stop you again for a place you have already been, as long as the site still proves it is who it says, it is on this copy's list, nothing about it has changed, and nothing needs an answer. You are still shown where you are going, with a Stop button. Off, it stops at every door.",
     ),
+    el("h3", {}, "Your settings, on your other devices"),
+    el("label", { class: "check", for: "set-sync" }, syncBox, " Keep my settings with my profile, sealed, so they follow me to other devices"),
+    el(
+      "p",
+      { class: "small" },
+      "Off, everything stays in this browser, as it always has. On, a copy is kept on your relays in one note that only your own key can open: your volumes, the size of your text, how you move, your saved doors, the lists you follow, your hashtags, your home, your look, your room and who you have blocked. A world never reads it. This browser's own copy is still the one that is used, so nothing waits on a relay.",
+    ),
+    el(
+      "p",
+      { class: "small" },
+      "Never kept there: where you have been and which sites you have checked (a new device is shown the Airlock once), whether your microphone may travel, your computers, the worlds you are building, and your own music. A relay can see that you use BitPortal and when you last changed something, and nothing else.",
+    ),
+    syncStatus,
+    syncForget,
     el("h3", {}, "Ranking"),
     el("label", { class: "check", for: "set-ranking" }, rankBox, " Rank shelves with BitFeed and say why each world is there"),
     el("p", { class: "small" }, "Off shows one list in date order, with no ranking code loaded."),
@@ -1156,8 +1210,21 @@ async function start(): Promise<void> {
   void startHero();
   draw(); // the bundled set, at once
   // Who is signed in, read from BitLogin's small public record (no widget loaded here).
+  // Settings kept with the visitor's profile: this page has already started from what the browser keeps. If the
+  // profile had something newer, it is in the browser now; a visitor who hasn't touched anything yet is shown it at
+  // once, and anyone else is told, and it is used from their next page.
+  let touched = false;
+  for (const type of ["pointerdown", "keydown"] as const) addEventListener(type, () => (touched = true), { once: true, capture: true });
+  addEventListener("bitportal:synced", (e) => {
+    const took = ((e as CustomEvent).detail as { took?: string[] } | undefined)?.took ?? [];
+    if (!took.length) return;
+    if (!touched && performance.now() < 15000) return location.reload();
+    const note = el("p", { class: "small sync-note", role: "status" }, "Settings from your profile have arrived. ", el("a", { href: location.pathname }, "Use them now"), ", or carry on: they are used from your next page.");
+    document.querySelector("main")?.prepend(note);
+  });
   void readSignedIn().then((who) => {
     signedIn = who;
+    startSync();
     if (!who) return;
     const link = $("account-link");
     link.textContent = who.name ?? shortKey(who.pubkey);

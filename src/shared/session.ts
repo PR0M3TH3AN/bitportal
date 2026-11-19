@@ -111,6 +111,38 @@ export async function quietSigner(expected: string): Promise<{ signer: Signer; c
   }
 }
 
+/**
+ * The same, for sealing as well as signing: what keeping a visitor's settings with their profile needs
+ * (sync.ts). BitLogin's headless module seals to the visitor's own key inside its worker; this page never sees
+ * the key. Null when there is no unlocked session for `expected`, as above.
+ */
+export async function quietVault(expected: string): Promise<{ pubkey: string; sign(t: EventTemplate): Promise<NostrEvent>; seal(text: string): Promise<string>; open(sealed: string): Promise<string>; close(): void } | null> {
+  type Headless = { restore(): Promise<{ pubkey: string } | null>; signEvent(e: EventTemplate): Promise<unknown>; nip44Encrypt?(peer: string, text: string): Promise<string>; nip44Decrypt?(peer: string, payload: string): Promise<string>; destroy(): void };
+  let headless: Headless | null = null;
+  try {
+    const url = "/vendor/bitlogin/bitlogin-headless.js";
+    const mod = (await import(/* @vite-ignore */ url)) as { createHeadlessSigner(): Promise<Headless> };
+    headless = await mod.createHeadlessSigner();
+    const who = await headless.restore();
+    if (!who || who.pubkey !== expected || typeof headless.nip44Encrypt !== "function" || typeof headless.nip44Decrypt !== "function") {
+      headless.destroy();
+      return null;
+    }
+    const held = headless;
+    const signer = checkedSigner(expected, held);
+    return {
+      pubkey: expected,
+      sign: (t) => signer.signEvent(t),
+      seal: (text) => held.nip44Encrypt!(expected, text),
+      open: (sealed) => held.nip44Decrypt!(expected, sealed),
+      close: () => held.destroy(),
+    };
+  } catch {
+    headless?.destroy();
+    return null;
+  }
+}
+
 /** The name in a profile event's content: `display_name`, else `name`, tidied. "" when there is none. */
 export function nameFromProfile(content: string): string {
   try {
