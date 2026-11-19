@@ -155,6 +155,12 @@ One line always says what goes with you ("Going as a guest, with nothing of
 yours, staying in the room"), with Change beside it. A question that has to
 be answered, such as whether to block someone everywhere, stays in front.
 
+The address is on one line, whole, sized to fit. It is never cut short.
+
+A screen you had filled is the first thing looked for when you arrive
+anywhere, the room included, and it is filled again at your first press of
+any kind. A browser won't fill the screen with no press at all.
+
 ### Only seen when there is something to see
 
 The first time you go anywhere, the Airlock stops you and shows the real

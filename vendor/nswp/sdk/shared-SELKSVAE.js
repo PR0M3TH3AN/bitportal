@@ -4147,28 +4147,36 @@ function createConsole(controls, opts) {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
 var resumed = false;
-function resumeFullscreen(presenting) {
+var waiting = false;
+function resumeFullscreen(presenting = () => false) {
   if (resumed || typeof document === "undefined") return;
   resumed = true;
   reportSettings("screen", () => ({ full: !!document.fullscreenElement || waiting }));
-  let waiting = arrivedSettings().full === true && document.fullscreenEnabled && !document.fullscreenElement;
+  waiting = arrivedSettings().full === true && document.fullscreenEnabled && !document.fullscreenElement;
   if (!waiting) return;
+  const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
   const stop = () => {
     waiting = false;
-    removeEventListener("keydown", onPress, true);
-    removeEventListener("pointerup", onPress, true);
+    for (const type of presses) removeEventListener(type, onPress, true);
+    document.removeEventListener("fullscreenchange", onChange);
+  };
+  const onChange = () => {
+    if (document.fullscreenElement) stop();
   };
   const onPress = (e) => {
-    if (e.code === "Escape" || presenting()) return;
-    stop();
-    if (!document.fullscreenElement) void document.documentElement.requestFullscreen().catch(() => {
+    if (e.code === "Escape" || presenting() || document.fullscreenElement) return;
+    void document.documentElement.requestFullscreen().then(stop, () => {
     });
   };
-  addEventListener("keydown", onPress, true);
-  addEventListener("pointerup", onPress, true);
+  for (const type of presses) addEventListener(type, onPress, true);
+  document.addEventListener("fullscreenchange", onChange);
 }
+var fullscreenWaiting = () => waiting;
 function fullscreenAction(controls, presenting) {
   resumeFullscreen(presenting);
+  setTimeout(() => {
+    if (waiting && !presenting()) controls.say("Press any key, or click, to fill the screen again.");
+  }, 600);
   return {
     id: "fullscreen",
     section: "view",
@@ -9024,6 +9032,8 @@ export {
   CUES,
   turnVisitor,
   createConsole,
+  resumeFullscreen,
+  fullscreenWaiting,
   WALK_SPEED,
   RUN,
   DOUBLE_TAP,

@@ -46,6 +46,7 @@ import {
   deviceForms,
   dotsBetween,
   formFor,
+  fullscreenWaiting,
   heldKey,
   isIntense,
   lookAfter,
@@ -53,6 +54,7 @@ import {
   reachOf,
   readPad,
   recordClip,
+  resumeFullscreen,
   saveFile,
   startingForm,
   strideOf,
@@ -62,7 +64,7 @@ import {
   turnVisitor,
   usedForm,
   viewScale
-} from "./shared-I7NRTT73.js";
+} from "./shared-SELKSVAE.js";
 import {
   arriveWith,
   arrivedSettings,
@@ -134,6 +136,7 @@ export {
   deviceForms,
   dotsBetween,
   formFor,
+  fullscreenWaiting,
   heldKey,
   isIntense,
   lookAfter,
@@ -143,6 +146,7 @@ export {
   recordClip,
   recordVoice,
   reportSettings,
+  resumeFullscreen,
   saveFile,
   startingForm,
   strideOf,
