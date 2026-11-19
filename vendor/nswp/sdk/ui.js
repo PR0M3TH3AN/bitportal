@@ -1,6 +1,8 @@
 import {
   DEFAULT_THEME,
   ICONS,
+  PICTURES_KEY,
+  PICTURE_LIMITS,
   SUMMON_HOLD,
   SUMMON_KEY,
   SUMMON_SLOP,
@@ -9,12 +11,16 @@ import {
   cleanTheme,
   createHeldButton,
   createHoldWatch,
+  loadPicture,
   loadVisitorTheme,
+  onPicturesChange,
   reportSettings,
   resolveTheme,
   rgb,
-  saveVisitorTheme
-} from "./shared-H5L32T46.js";
+  saveVisitorTheme,
+  setShowsPictures,
+  showsPictures
+} from "./shared-V7CEZIAV.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
@@ -568,6 +574,9 @@ function mountHud(controls, opts = {}) {
     setTimeout(() => line.remove(), 4200);
   });
   const stop = controls.subscribe(draw);
+  const stopAsking = controls.onSignal((name) => {
+    if (name.startsWith("show:") && !host.hidden) setOpen(true, name.slice(5));
+  });
   const tick = setInterval(draw, 400);
   host.classList.add("arriving");
   setTimeout(() => host.classList.remove("arriving"), 1200);
@@ -595,6 +604,7 @@ function mountHud(controls, opts = {}) {
     remove() {
       clearInterval(tick);
       stop();
+      stopAsking();
       stopSay();
       removeEventListener("keydown", onKey);
       removeEventListener("keydown", onSummonKey, listening);
@@ -608,6 +618,8 @@ function mountHud(controls, opts = {}) {
 export {
   DEFAULT_THEME,
   ICONS,
+  PICTURES_KEY,
+  PICTURE_LIMITS,
   SUMMON_HOLD,
   SUMMON_KEY,
   SUMMON_SLOP,
@@ -616,6 +628,10 @@ export {
   createControls,
   createHeldButton,
   createHoldWatch,
+  loadPicture,
   mountHud,
-  resolveTheme
+  onPicturesChange,
+  resolveTheme,
+  setShowsPictures,
+  showsPictures
 };
