@@ -261,6 +261,15 @@ you were tapping, for a mouse and keys if you were at a desk, and offered the
 way back into your headset if you left one. The Airlock passes that on, and
 goes by how you pressed its own button when it can see that.
 
+Every door this copy shows is on a list inside the room: "List", in the row
+of controls, hangs it in front of you. It shows six doors at a time, with
+Earlier and Later for the rest and Find to look for one by its name, its
+address or what it is. Pressing a door on it is choosing that door, as if it
+were on the wall. It works the same with a click, a tap or a headset's
+trigger, so nobody leaves the room to read a list. The front page is still
+there for what needs a page (signing in, settings, announcing a world), from
+the menu under Travel.
+
 Moving the intense way, you are moving that way the moment you arrive
 anywhere: the mouse looks at once, with nothing to click first. Walking into
 a door goes straight through it; choosing a door from across the room brings
