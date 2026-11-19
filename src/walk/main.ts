@@ -649,10 +649,16 @@ async function start(): Promise<void> {
   const keptInSight: THREE.Object3D[] = [rig];
   const crossing = createCrossing({ scene, camera, accent: ACCENT, textColor: INK, motion: () => controls.theme.motion, keep: keptInSight });
   hooks.crossing = () => crossing.state;
-  const visit = async (door: Door) => {
+  /**
+   * Through a door. Chosen from where they stand (a click, a trigger, the list), the crossing's room comes up round
+   * them first, with where the door leads over it. Walked into, there is nothing to bring up: they are already going
+   * through it, so they go. Either way the Airlock is next, and it is what checks.
+   */
+  const visit = async (door: Door, how: "chosen" | "walked" = "chosen") => {
     if (leaving) return;
     leaving = true;
     state.leaving = door.entry.id;
+    state.left = how;
     rememberLeft({ id: door.entry.id, from: "walk" });
     try {
       localStorage.setItem(USED_A_DOOR, "1"); // they know how a door works now
@@ -663,7 +669,7 @@ async function start(): Promise<void> {
     // The walls come up, with where this door leads over them. The Airlock is next, and it is what checks.
     const to = hostParts(w.url);
     sounds.play("cross");
-    await crossing.leave({ title: w.title, address: `${to.prefix}${to.domain}` });
+    if (how === "chosen") await crossing.leave({ title: w.title, address: `${to.prefix}${to.domain}` });
     document.body.classList.add("leaving");
     const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: door.entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
     // Left from a headset: say so, and the world at the other end offers the way back into one first.
@@ -1210,7 +1216,7 @@ async function start(): Promise<void> {
         }
       }
       const through = walkedThrough();
-      if (through) void visit(through);
+      if (through) void visit(through, "walked");
     } else {
       // Game controls have the visitor's movement when they are on, and aim from the middle of the view.
       if (fps!.update(dt)) ndc.set(0, 0);
@@ -1221,10 +1227,11 @@ async function start(): Promise<void> {
       raycaster.setFromCamera(ndc, camera);
       pointed = under();
       const through = walkedThrough();
-      if (through) void visit(through);
+      if (through) void visit(through, "walked");
     }
     if (aimed) pointed = clickables.find((c) => c.door?.entry.id === aimed && c.mesh === c.door.view) ?? pointed;
-    renderer.domElement.style.cursor = pointed ? "pointer" : "grab";
+    // Moving the intense way, the pointer's picture is the kit's to hide: the middle of the view is what points.
+    if (renderer.xr.isPresenting || !fps!.enabled) renderer.domElement.style.cursor = pointed ? "pointer" : "grab";
     const hovered = pointed?.door ?? null;
     const key = pointed ? `${hovered?.entry.id ?? ""}|${pointed.say}` : null;
     if (key !== state.pointed) {

@@ -59,7 +59,7 @@ import {
   turnVisitor,
   usedForm,
   viewScale
-} from "./shared-JUKUZZOO.js";
+} from "./shared-CNWSRPKO.js";
 import "./shared-YO5CGGKR.js";
 import {
   browserVoice,
