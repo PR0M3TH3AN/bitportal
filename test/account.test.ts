@@ -39,7 +39,7 @@ describe("saying when signing in can't work", () => {
 
 describe("coming to sign in from the window a world opened", () => {
   it("leads back to that window, and nowhere a link could name", () => {
-    expect(wayBack("?back=connect")).toMatchObject({ href: "/connect/", label: "Back to what the world asked" });
+    expect(wayBack("?back=connect")).toMatchObject({ href: "/connect/", label: "Back to what the site asked" });
     // Anything else in the link changes nothing: the way back is one of BitPortal's own fixed places.
     expect(wayBack("?back=connect&to=https://evil.example/").href).toBe("/connect/");
     expect(wayBack("?back=https://evil.example/").href).toBe("/");

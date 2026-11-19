@@ -32,7 +32,7 @@ export function wayBack(search: string, door: WhoDoor | null = null): WayBack {
     return { href: q.get("xr") === "1" ? "/walk/#back&xr=1" : "/walk/#back", label: "Back to your room", guest: "Back to your room, as a guest" };
   }
   // Come from the sign-in window a world opened (src/connect/main.ts): back to it, in this same window.
-  if (back === "connect") return { href: "/connect/", label: "Back to what the world asked", guest: "Go back without signing in" };
+  if (back === "connect") return { href: "/connect/", label: "Back to what the site asked", guest: "Go back without signing in" };
   if (back === "history") return { href: null, label: "Back to where you were", guest: "Go back, as a guest" };
   if (back === "door" && door) {
     const where = door.host || "where you were";

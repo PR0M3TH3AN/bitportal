@@ -59,11 +59,11 @@ const call = () => {
 const show = () => {
   if (!found) return;
   if (!who) {
-    status("A world is asking to sign notes as you.");
+    status("A site is asking to sign notes as you.");
     $("signin").hidden = false;
     return;
   }
-  status("A world is asking to sign notes as you. Check the address.");
+  status("A site is asking to sign notes as you. Check the address.");
   $("world").textContent = found.world;
   $("who").textContent = who.name;
   $("who-key").textContent = who.name === shortNpub(who.pubkey) ? "" : ` (${shortNpub(who.pubkey)})`;
@@ -84,11 +84,11 @@ addEventListener("message", (e) => {
   }
   if (msg.t === "done" && found && e.source === found.frame) {
     if (msg.ok) {
-      status("Done. That world can sign notes as you until you leave it.");
+      status("Done. That site can sign notes as you until you leave it.");
       $("ask").hidden = true;
       setTimeout(leave, 700);
     } else {
-      status("That didn't work, and nothing was handed over. Close this window and try again from the world.");
+      status("That didn't work, and nothing was handed over. Close this window and try again from the site that opened it.");
       $("ask").hidden = true;
     }
   }
@@ -127,7 +127,7 @@ $("deny").addEventListener("click", leave);
 $("deny-2").addEventListener("click", leave);
 
 void (async () => {
-  if (!window.opener) return status("This window is opened by a world, from its menu: You, then Sign in to sign notes. There is nothing to do here on its own.");
+  if (!window.opener) return status("This window is opened by a world or a site, when you ask it to sign in. There is nothing to do here on its own.");
   if (testKey) who = { pubkey: getPublicKey(testKey), name: "Test visitor" };
   else {
     const signed = await readSignedIn();
@@ -138,7 +138,7 @@ void (async () => {
   const again = setInterval(call, 350);
   setTimeout(() => {
     clearInterval(again);
-    if (!found && !finished) status("No BitPortal signer was found in the page that opened this window, so there is nothing to allow. If a world sent you here, it may not support signing, or your browser kept the two apart.");
+    if (!found && !finished) status("No BitPortal signer was found in the page that opened this window, so there is nothing to allow. If a site sent you here, it may not support signing, or your browser kept the two apart.");
   }, 6000);
   if (found) show();
 })();
