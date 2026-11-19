@@ -89,7 +89,7 @@ import {
   watchFov,
   worldSigner,
   youCard
-} from "./shared-NIFXJJMN.js";
+} from "./shared-UWQ6VXMD.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
