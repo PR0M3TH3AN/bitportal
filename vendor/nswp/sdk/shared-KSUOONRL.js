@@ -4389,6 +4389,7 @@ import {
   decodeArrival,
   doorFor,
   fromLocal,
+  KIT_VERSION,
   localMap,
   parseManifest,
   stripArrivalParam,
@@ -4422,6 +4423,10 @@ var arrival = {
    */
   read() {
     if (cached) return cached;
+    try {
+      document.documentElement.dataset.nswpKit = KIT_VERSION;
+    } catch {
+    }
     void localMap();
     const raw = arrivalParam(location.hash);
     if (!raw) {
