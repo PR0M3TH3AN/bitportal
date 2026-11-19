@@ -17,7 +17,7 @@
  */
 import * as THREE from "three";
 import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
-import { ARRIVED_FPS, ARRIVED_JOINED } from "../shared/travel.js";
+import { ARRIVED_JOINED, ARRIVED_MOVING } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
 import { addCameraControls, addPanelControls, addRoomControls, createFps, type Fps, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
@@ -332,6 +332,9 @@ async function start(): Promise<void> {
   const hud = mountHud(controls);
   hooks.controls = controls;
   hooks.hud = hud;
+  // Which of the two ways the visitor is moving, on the device they are using. Worked out further down.
+  let movingNow = (): "intense" | "casual" => "casual";
+  const movingFlag = (): { moving?: "intense" } => (movingNow() === "intense" ? { moving: "intense" } : {});
   // Sound in the room: the kit's cues, a quiet music of the room's own, and the visitor's own songs. The volumes
   // are the visitor's, kept in this browser. A world's sounds stop at its own door: here they are BitPortal's.
   const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal",
@@ -357,7 +360,7 @@ async function start(): Promise<void> {
   void readSignedIn().then((who) => {
     const home = homeOf(loadHome(), who?.pubkey);
     if (!home) return;
-    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic, fps: !!fps?.enabled })) });
+    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic, ...movingFlag() })) });
   });
   try {
     // Said once, when they were meant to arrive at their home and didn't.
@@ -664,7 +667,7 @@ async function start(): Promise<void> {
       /* already ended */
     }
     // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, fps: !!fps?.enabled }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...movingFlag() }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -810,13 +813,16 @@ async function start(): Promise<void> {
   // clicks and drags below stand down. Arriving from a world where they were on, they are on here.
   let fps: Fps | null = null;
   const gameControls = () => !!fps?.enabled && !renderer.xr.isPresenting;
-  let arrivedWithGameControls = false;
+  // They came back from a world where they were moving the intense way: the same here, on that device.
+  let arrivedMoving: string | null = null;
   try {
-    arrivedWithGameControls = sessionStorage.getItem(ARRIVED_FPS) === "1";
-    sessionStorage.removeItem(ARRIVED_FPS);
+    arrivedMoving = sessionStorage.getItem(ARRIVED_MOVING);
+    sessionStorage.removeItem(ARRIVED_MOVING);
   } catch {
-    /* they turn it on themselves */
+    /* they choose it themselves */
   }
+  /** Which of the two ways the visitor is moving now, on the device they are using: it goes with them through a door. */
+  movingNow = () => ((renderer.xr.isPresenting ? xrInput.intense : fps?.enabled) ? "intense" : "casual");
   fps = createFps({
     dom: renderer.domElement,
     camera,
@@ -833,7 +839,7 @@ async function start(): Promise<void> {
     },
     onBlocked: () => sounds.bump(),
     speed: 2.2,
-    arrived: arrivedWithGameControls,
+    arrived: arrivedMoving === "desk",
     keep: "bitportal:fps",
   });
   hooks.fps = fps;
@@ -899,6 +905,7 @@ async function start(): Promise<void> {
   const xrInput: XrInput = createXrInput({
     renderer,
     scene,
+    arrivedIntense: arrivedMoving === "headset",
     rig,
     camera,
     controls,

@@ -4161,6 +4161,9 @@ function readPad(pad) {
   return { stick, from, trigger: value(0), squeeze: value(1), primary: !!button(4)?.pressed, secondary: !!button(5)?.pressed };
 }
 var DEFAULT_COMFORT = { move: "steps", turn: "steps", turnStep: 30, narrow: true, moveHand: "left" };
+var CASUAL_COMFORT = { move: "steps", turn: "steps", narrow: true };
+var INTENSE_COMFORT = { move: "smooth", turn: "smooth", narrow: false };
+var isIntense = (comfort) => comfort.move === "smooth" && comfort.turn === "smooth";
 function cleanComfort(input) {
   const out = {};
   if (!input || typeof input !== "object") return out;
@@ -4454,6 +4457,7 @@ function createXrInput(opts) {
     comfort = { ...comfort, ...cleanComfort(patch) };
     if (keep) saveComfort(comfort);
   };
+  if (opts.arrivedIntense && !isIntense(comfort)) setComfort(INTENSE_COMFORT, true);
   if (opts.controls) {
     const controls = opts.controls;
     let headset = false;
@@ -4470,6 +4474,24 @@ function createXrInput(opts) {
       controls.addSection({ id: "moving", label: "Moving", icon: "step", note });
     };
     controls.add(
+      {
+        // One switch for the two ways of moving in a headset. The settings under it are what it sets, and can
+        // each be changed afterwards.
+        id: "move-style",
+        section: "moving",
+        icon: "motion",
+        hidden,
+        on: () => isIntense(comfort),
+        label: () => isIntense(comfort) ? "Headset controls: intense" : "Headset controls: casual",
+        short: "Style",
+        act: () => {
+          const intense = !isIntense(comfort);
+          change(intense ? INTENSE_COMFORT : CASUAL_COMFORT);
+          controls.say(
+            intense ? "Intense: one stick walks, the other turns, smoothly, with the whole view. If it makes you feel unwell, go back to casual." : "Casual: point at the floor to step there, and turn a notch at a time. The comfortable way."
+          );
+        }
+      },
       { id: "move-mode", section: "moving", icon: "step", hidden, on: () => comfort.move === "smooth", label: () => comfort.move === "steps" ? "Moving in steps. Walk smoothly instead" : "Walking smoothly. Move in steps instead", short: "Walk", act: () => change({ move: comfort.move === "steps" ? "smooth" : "steps" }) },
       {
         id: "turn-mode",
@@ -4553,6 +4575,9 @@ function createXrInput(opts) {
   return {
     get comfort() {
       return comfort;
+    },
+    get intense() {
+      return isIntense(comfort);
     },
     setComfort,
     update,
@@ -6208,11 +6233,11 @@ function createFps(o) {
     on: () => enabled,
     // No mouse, no mouse look. And not in a headset, where it has no meaning.
     hidden: () => !hasMouse || o.presenting(),
-    label: () => enabled ? "Game controls (FPS): on" : "Game controls (FPS): off",
+    label: () => enabled ? "Desk controls: intense" : "Desk controls: casual",
     act: () => {
       setEnabled(!enabled);
       o.controls.say(
-        enabled ? "Game controls are on. Click the view to look round with the mouse. W, A, S, D walk, Shift runs, F uses what is in front of you, and Escape brings up this menu." : "Game controls are off. Click where you want to stand, and drag to look round."
+        enabled ? "Intense: click the view to look round with the mouse. W, A, S, D walk, Shift runs, F uses what is in front of you, and Escape brings up this menu." : "Casual: click where you want to stand, and drag to look round."
       );
     }
   });
@@ -8558,6 +8583,9 @@ export {
   createConsole,
   readPad,
   DEFAULT_COMFORT,
+  CASUAL_COMFORT,
+  INTENSE_COMFORT,
+  isIntense,
   createXrInput,
   PANEL_LOOKS,
   PANEL_LIMITS,
