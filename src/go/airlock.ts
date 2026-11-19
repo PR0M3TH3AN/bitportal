@@ -42,6 +42,7 @@ import { INSTANCE } from "../shared/instance.js";
 import { crossingFor } from "../shared/crossing.js";
 import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
+import { forgetWhoDoor, keepWhoDoor, tabStore, takeOnce, whoDoorFrom } from "../shared/who.js";
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
@@ -282,6 +283,20 @@ async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: 
 async function render(): Promise<void> {
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
+  // Asked, from inside a world, to say who they are first (who.ts). That is done on the sign-in page and nowhere
+  // else, so they are sent there with the door kept for the way back. Nothing has been checked or decided yet:
+  // the door is checked when they come back through here, like any other.
+  if (req?.who) {
+    const door = whoDoorFrom(location.hash, Date.now());
+    if (door) {
+      keepWhoDoor(door, tabStore());
+      location.replace("/account/?back=door");
+      return;
+    }
+  }
+  // What they pressed on the sign-in page for this door, if they have just come from it. Any crossing ends the offer.
+  const once = req ? takeOnce(location.hash, tabStore()) : null;
+  forgetWhoDoor(tabStore());
   if (!req) {
     // Opened with no destination: the visitor is coming home (NSWP spec §6.3).
     // Nothing is being crossed into, so there is nothing to confirm. A fragment
@@ -453,13 +468,18 @@ async function render(): Promise<void> {
   // By name is for a site that has proved it is who it says: a pass names the visitor's key for good.
   const canName = !!who && verified;
   const remembered = goMode();
-  const mode: GoMode = remembered === "name" ? (canName ? "name" : mine ? "look" : "plain") : remembered === "look" && !mine ? "plain" : remembered;
+  // Asked for on the sign-in page a moment ago, for this door: that is their choice for this trip. Otherwise, as
+  // they last went anywhere.
+  const wanted: GoMode = once === "name" ? "name" : once === "guest" ? (remembered === "plain" ? "plain" : "look") : remembered;
+  const mode: GoMode = wanted === "name" ? (canName ? "name" : mine ? "look" : "plain") : wanted === "look" && !mine ? "plain" : wanted;
+  // They asked to go by name and can't: that is something to be told, not hurried past.
+  const unmet = once === "name" && mode !== "name";
   const NOTES: Record<GoMode, string> = {
     name: "This site, and the people in any room you join there, will learn your public key, together with your IP address in a room. The pass that proves it lasts four hours and can't be taken back.",
     look: "Your look lets people here recognise you from other worlds. Nobody is told who you are.",
     plain: "Nothing of yours goes with you. You are a different figure every visit.",
   };
-  const note = el("p", { class: "small go-as-note", id: "go-as-note", role: "status" }, NOTES[mode]);
+  const note = el("p", { class: unmet ? "small go-as-note verify-warn" : "small go-as-note", id: "go-as-note", role: "status" }, unmet ? (who ? "This site hasn't proved it is the one its announcement names, so you can't go there by name. You would go as a guest." : "You aren't signed in in this browser, so you would go as a guest.") : NOTES[mode]);
   const option = (value: GoMode, text: string, enabled = true) =>
     el("label", {}, el("input", { type: "radio", name: "go-as", value, id: `go-${value}`, ...(mode === value ? { checked: "" } : {}), ...(enabled ? {} : { disabled: "" }) }), ` ${text}`);
   const chosen = (): GoMode => (document.querySelector<HTMLInputElement>('input[name="go-as"]:checked')?.value as GoMode | undefined) ?? "plain";
@@ -691,6 +711,7 @@ async function render(): Promise<void> {
     fit: fit.tone,
     setting: loadSettings().airlock,
     held,
+    unmet,
   });
   document.body.dataset.crossing = crossing;
   if (crossing === "straight") {
@@ -702,6 +723,8 @@ async function render(): Promise<void> {
       el("p", { class: "leaving" }, "Going to"),
       el("p", { class: "host" }, el("span", { class: "prefix" }, a.hostPrefix), el("strong", {}, a.domain)),
       el("p", { class: "small muted" }, `${w?.title ?? ""}. A place you have been before, and nothing about it has changed.`),
+      // Who they are going as, said where it can be seen: it is the one thing about a crossing that is theirs to change.
+      el("p", { class: "small", id: "passing-as" }, going.textContent ?? ""),
       el("div", { class: "actions" }, halt),
     );
     main.append(passing);

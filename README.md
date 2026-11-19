@@ -221,6 +221,27 @@ room's menu leads to it ("You", then "Sign in, or stay anonymous"), and it
 leads back to the room. From inside VR the session is ended to show the
 page, and the way back takes you into VR again.
 
+### Signing in from inside a world
+
+Every world's menu has the same thing under "You": "You are a guest here.
+Sign in". A world never shows a sign-in of its own, so pressing it brings
+you here, to this page, and the page offers the way back: "Back to *that
+world*, by name" once you are signed in, with what going by name tells that
+site written under it, or "Go back as a guest". Either takes you through the
+Airlock, which checks the door as it checks any other, and you arrive in the
+same world.
+
+The world asks for this with `who=1` on a door back to itself (NSWP-10). A
+link is something anyone can write, so that request only ever shows you this
+page. It signs nobody in, and nobody goes anywhere by name without pressing
+the button that says so, here. The door is kept for the tab by the Airlock:
+this page never takes a way back from its own address. If you ask to go by
+name to a site that hasn't proved it is who it says, the Airlock stops and
+tells you.
+
+Signed in, your profile takes the width of the page, and BitLogin's own
+element is scaled as one piece so its text is the size of the page's.
+
 ## Your settings, on your other devices
 
 Everything BitPortal knows about you is kept in the browser you are using.

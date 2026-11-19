@@ -17,7 +17,8 @@
  * - nothing has changed, nothing is warned about, nothing is waiting for an
  *   answer, and it suits the device they are on;
  * - they haven't said to always stop for this world, or to stop every time,
- *   or pressed Stop on the way.
+ *   or pressed Stop on the way;
+ * - nothing they asked for on the way has turned out not to be possible.
  *
  * If any one of them fails, the whole screen is shown and they are asked.
  */
@@ -46,11 +47,13 @@ export interface CrossingFacts {
   setting: "known" | "ask";
   /** They pressed Stop while the door was being checked. */
   held: boolean;
+  /** They asked for something on the way that can't be done: to go by name, to a site that can't be given a name. */
+  unmet?: boolean;
 }
 
 export function crossingFor(f: CrossingFacts): Crossing {
   const nothingToSee = f.verified && !f.publisherChanged && f.warnings === 0 && f.asking === 0 && f.fit !== "warn" && f.fit !== "bad";
-  if (!nothingToSee || f.askAlways || f.held) return "ask";
+  if (!nothingToSee || f.askAlways || f.held || f.unmet) return "ask";
   if (f.setting === "known" && f.onList && f.beenBefore) return "straight";
   // Their own tick for one world, on or off this copy's list: a moment to change their mind, then through.
   return f.approved ? "countdown" : "ask";
