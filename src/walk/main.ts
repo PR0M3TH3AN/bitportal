@@ -32,6 +32,7 @@ import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
 import { readSignedIn, shortKey } from "../shared/session.js";
+import { startSync } from "../shared/sync-run.js";
 import { createJumpList } from "../shared/jump.js";
 import { addComputers, type Computers } from "./computers.js";
 import { plateMarks } from "../shared/plate.js";
@@ -371,6 +372,12 @@ async function start(): Promise<void> {
   let signedInAs = "";
   void readSignedIn().then((who) => {
     signedInAs = who ? (who.name ?? shortKey(who.pubkey)) : "";
+    // Settings kept with their profile: fetched behind the room, which has already started from this browser's own.
+    startSync();
+  });
+  addEventListener("bitportal:synced", (e) => {
+    const took = ((e as CustomEvent).detail as { took?: string[] } | undefined)?.took ?? [];
+    if (took.length) controls.say("Settings from your profile have arrived. They are used from your next door.");
   });
   controls.add({
     id: "identity",
