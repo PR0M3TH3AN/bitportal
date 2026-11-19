@@ -228,6 +228,14 @@ panel in front of you is still the page, at this site's address, and what
 you type is typed into it. In a headset it is seen on the headset's flat
 screen, because an immersive session can't show a page.
 
+A browser gives a page its cryptography only at an `https` address, or at
+`localhost` on the same machine. At a plain `http` address on a network (a
+phone opening a development server at `http://192.168…`), BitLogin finds
+the account, can't open it, and says "Account not found or credentials
+incorrect" whatever is typed. This page says so plainly at such an address,
+before anyone types. The deployed site is `https`, so this is only ever met
+in development.
+
 ### Signed in everywhere
 
 You sign in once, here, and you are signed in wherever you go. Each world
