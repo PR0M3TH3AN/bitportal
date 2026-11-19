@@ -20,7 +20,7 @@ import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, enco
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, currentSettings, currentForm, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -75,6 +75,7 @@ interface Clickable {
 }
 
 interface TestHooks {
+  marks?: () => { ring: [number, number] | null; dot: [number, number] | null; dots: number };
   everyDoor?: DoorList;
   jump?: { jump(): boolean; readonly height: number; readonly airborne: boolean };
   /** Game controls on a desk: the mouse looks, keys walk. */
@@ -757,9 +758,12 @@ async function start(): Promise<void> {
       rig.position.x += dx;
       rig.position.z += dz;
     },
-    speed: 2.2,
     onBlocked: () => sounds.bump(),
   });
+  // Where a press would take them, where they are going and the way there: drawn for this visitor and nobody else.
+  const marks = createFloorMarks(ACCENT);
+  scene.add(marks.group);
+  hooks.marks = () => marks.info();
   const stepToFloor = () => {
     const to = floorSpot();
     if (!to) return;
@@ -810,6 +814,8 @@ async function start(): Promise<void> {
   // The visitor's own panels: notes, pictures and video they hang in their room. Set up further down.
   let panels: Panels | null = null;
   /** What the current ray points at: a door, or one of the room's buttons. */
+  const doorSpot = new THREE.Vector3();
+  const isDoor = (c: Clickable | null): boolean => !!c?.door && c.mesh === c.door.view;
   const under = (): Clickable | null => {
     // While the keyboard is up it is in front of everything, the console's own button included.
     const key = panels?.keyboard.pick(raycaster);
@@ -829,6 +835,11 @@ async function start(): Promise<void> {
         const y = hit.uv.y * DOOR_H;
         const spring = DOOR_H - DOOR_W / 2;
         if (y > spring && Math.hypot(x, y - spring) > DOOR_W / 2) continue;
+        // A door is chosen from within ten feet of it and no further (the kit's DOOR_REACH). From across the room
+        // it is not lit and a press on it is a press on the floor in front of it: nobody leaves by a stray click.
+        camera.getWorldPosition(headNow);
+        found.door.group.getWorldPosition(doorSpot);
+        if (Math.hypot(doorSpot.x - headNow.x, doorSpot.z - headNow.z) > DOOR_REACH) return null;
       }
       return found;
     }
@@ -873,14 +884,16 @@ async function start(): Promise<void> {
     onUse: () => {
       ndc.set(0, 0);
       raycaster.setFromCamera(ndc, camera);
-      under()?.act();
+      const thing = under();
+      // Moving the intense way, a door is gone through by walking into it and no other way. Its buttons still press.
+      if (thing && !isDoor(thing)) thing.act();
     },
     onBlocked: () => sounds.bump(),
-    speed: 2.2,
     arrived: arrivedMoving === "desk",
     keep: "bitportal:fps",
   });
   hooks.fps = fps;
+  renderer.domElement.addEventListener("pointerleave", () => ndc.set(2, 2));
   renderer.domElement.addEventListener("pointerdown", (e) => {
     if (gameControls()) return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -1245,6 +1258,8 @@ async function start(): Promise<void> {
     presence.setHidden(crossing.state !== "none");
     presence.update(dt);
     let pointed: Clickable | null = null;
+    let hover: [number, number] | null = null;
+    let going: readonly [number, number] | null = null;
     reticle.visible = false;
     if (renderer.xr.isPresenting) {
       for (const c of controllers) {
@@ -1270,7 +1285,16 @@ async function start(): Promise<void> {
       pointed = under();
       const through = walkedThrough();
       if (through) void visit(through, "walked");
+      // The casual way, with a pointer that hovers: a ring on the floor where a press would take them. With a finger
+      // there is nothing to hover with, so only where they are going is marked.
+      if (!fps!.enabled && !dragging && !pointed && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1 && currentForm() !== "touch") {
+        const to = floorSpot();
+        if (to) hover = [to.x, to.z];
+      }
+      going = fps!.enabled ? null : stroll.target;
     }
+    camera.getWorldPosition(headNow);
+    marks.update({ hover, from: [headNow.x, headNow.z], to: going, t });
     if (aimed) pointed = clickables.find((c) => c.door?.entry.id === aimed && c.mesh === c.door.view) ?? pointed;
     // Moving the intense way, the pointer's picture is the kit's to hide: the middle of the view is what points.
     if (renderer.xr.isPresenting || !fps!.enabled) renderer.domElement.style.cursor = pointed ? "pointer" : "grab";
@@ -1285,7 +1309,7 @@ async function start(): Promise<void> {
         const host = hostParts(w.url);
         // Beside the controls, at a size that doesn't depend on where the visitor stands: what it is, why it is
         // here, and how to go.
-        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`, [w.summary ?? "", hovered.why, fps?.enabled ? "F or click to visit" : "Click to visit"]);
+        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`, [w.summary ?? "", hovered.why, fps?.enabled ? "Walk in to visit" : "Click, or walk in, to visit"]);
       } else controls.setTarget("");
     }
     if (hint) {

@@ -3,6 +3,7 @@ import {
   CHAMBER_ORDER,
   CUES,
   DEFAULT_COMFORT,
+  DOOR_REACH,
   DOUBLE_TAP,
   DRAG_LOOK,
   INTENSE_COMFORT,
@@ -30,6 +31,7 @@ import {
   createConsole,
   createCrossing,
   createFigure,
+  createFloorMarks,
   createFps,
   createJump,
   createKeyboard,
@@ -42,6 +44,7 @@ import {
   createXrInput,
   currentForm,
   deviceForms,
+  dotsBetween,
   formFor,
   heldKey,
   isIntense,
@@ -59,7 +62,7 @@ import {
   turnVisitor,
   usedForm,
   viewScale
-} from "./shared-N24GYDPU.js";
+} from "./shared-I7NRTT73.js";
 import {
   arriveWith,
   arrivedSettings,
@@ -81,6 +84,7 @@ export {
   CHAMBER_ORDER,
   CUES,
   DEFAULT_COMFORT,
+  DOOR_REACH,
   DOUBLE_TAP,
   DRAG_LOOK,
   INTENSE_COMFORT,
@@ -112,6 +116,7 @@ export {
   createConsole,
   createCrossing,
   createFigure,
+  createFloorMarks,
   createFps,
   createJump,
   createKeyboard,
@@ -127,6 +132,7 @@ export {
   currentForm,
   currentSettings,
   deviceForms,
+  dotsBetween,
   formFor,
   heldKey,
   isIntense,

@@ -276,6 +276,13 @@ filled are the same in the next world as in the last, and are still the same
 when you come home. Nothing is set twice. A screen you had filled is filled
 again at your first key or press, since a browser only does that on a press.
 
+Moving the casual way, a ring on the floor follows your pointer and shows
+where a press would take you; once you press, a dot marks where you are
+going and a dotted line the way there. Only you see them. A door lights up,
+and can be pressed, from within ten feet of it; from further off a press on
+it walks you towards it, so a stray click across the room doesn't send you
+anywhere. Moving the intense way, you walk into a door to go through it.
+
 Moving the intense way, you are moving that way the moment you arrive
 anywhere: the mouse looks at once, with nothing to click first. Walking into
 a door goes straight through it; choosing a door from across the room brings
