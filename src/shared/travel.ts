@@ -11,6 +11,8 @@
 
 /** Session storage, this site only, read once: the Airlock telling BitPortal's own room its visitor arrives joined. */
 export const ARRIVED_JOINED = "bitportal:arrived-joined";
+/** The same, for how they move: they were using game controls (the mouse looks, keys walk) where they came from. */
+export const ARRIVED_FPS = "bitportal:arrived-fps";
 const MIC = "bitportal:travel-mic";
 
 /** Whether the visitor has said their microphone may stay on from one world to the next. Off until they say so. */
