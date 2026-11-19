@@ -42,7 +42,7 @@ import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
-import { ARRIVED_JOINED, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
+import { ARRIVED_FPS, ARRIVED_JOINED, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
 
 /** The last world this Airlock sent the visitor to, as a host: where a block they report was most likely made. */
@@ -220,7 +220,7 @@ function entryFromFragment(): string | undefined {
  * it. But it is looked at first, quickly. A home that doesn't answer, or whose site no longer admits their key or
  * says it can be a home, is not gone to: they start in BitPortal's room, and are told why. Returns whether it went.
  */
-async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: true; mic?: true; blocked?: string[] } = {}): Promise<boolean> {
+async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: true; mic?: true; blocked?: string[]; fps?: true } = {}): Promise<boolean> {
   const sorry = (why: string) => {
     try {
       sessionStorage.setItem("bitportal:home-note", why);
@@ -257,7 +257,8 @@ async function render(): Promise<void> {
       // or with no home of their own, they go to BitPortal's own place, as everyone does.
       // In the room where they came from: they stay joined at home too. Nothing is asked on the way home, so a
       // microphone goes along only when they have already said theirs may.
-      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked() };
+      // How they move goes with them too: a preference, with nothing to decide about it.
+      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.fps ? { fps: true as const } : {}) };
       // Who they blocked where they came from is a link's word. Nothing is asked on the way home, so it waits:
       // for the next door, or for Settings.
       if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
@@ -268,6 +269,13 @@ async function render(): Promise<void> {
       const toRoom = way.doors || !!theirs || readLeft()?.from === "walk";
       const home = new URL(toRoom ? "/walk/" : "/", location.origin);
       if (toRoom) home.hash = fromHeadset ? "back&xr=1" : "back";
+      if (toRoom && way.fps) {
+        try {
+          sessionStorage.setItem(ARRIVED_FPS, "1");
+        } catch {
+          /* they turn it on themselves */
+        }
+      }
       if (toRoom && "joined" in carry && carry.joined) {
         try {
           sessionStorage.setItem(ARRIVED_JOINED, carry.mic ? "mic" : "joined");
@@ -545,7 +553,7 @@ async function render(): Promise<void> {
     } catch {
       /* the next report says "where you came from" */
     }
-    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}) };
+    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.fps ? { fps: true as const } : {}) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry }));

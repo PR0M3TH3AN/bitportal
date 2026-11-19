@@ -17,10 +17,10 @@
  */
 import * as THREE from "three";
 import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
-import { ARRIVED_JOINED } from "../shared/travel.js";
+import { ARRIVED_FPS, ARRIVED_JOINED } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, createFps, type Fps, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -74,6 +74,10 @@ interface Clickable {
 }
 
 interface TestHooks {
+  /** Game controls on a desk: the mouse looks, keys walk. */
+  fps?: Fps;
+  /** The menu on a flat screen. */
+  hud?: { readonly open: boolean; setOpen(open: boolean): void };
   /** What the room sounds like: cues, its music, and the visitor's own. */
   sounds?: unknown;
   state: Record<string, unknown>;
@@ -327,6 +331,7 @@ async function start(): Promise<void> {
   const controls = createControls({ title: "Your room", address: location.host, theme: { accent: room.layout.room.accent } });
   const hud = mountHud(controls);
   hooks.controls = controls;
+  hooks.hud = hud;
   // Sound in the room: the kit's cues, a quiet music of the room's own, and the visitor's own songs. The volumes
   // are the visitor's, kept in this browser. A world's sounds stop at its own door: here they are BitPortal's.
   const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal",
@@ -352,7 +357,7 @@ async function start(): Promise<void> {
   void readSignedIn().then((who) => {
     const home = homeOf(loadHome(), who?.pubkey);
     if (!home) return;
-    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic })) });
+    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic, fps: !!fps?.enabled })) });
   });
   try {
     // Said once, when they were meant to arrive at their home and didn't.
@@ -659,7 +664,7 @@ async function start(): Promise<void> {
       /* already ended */
     }
     // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, fps: !!fps?.enabled }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -801,7 +806,39 @@ async function start(): Promise<void> {
   let moved = 0;
   // A panel taken by its bar is dragged; anything else, and the drag turns the view.
   let panelDrag = false;
+  // Game controls, for a visitor who turned them on: the mouse looks, keys walk, F uses. While they are on, the
+  // clicks and drags below stand down. Arriving from a world where they were on, they are on here.
+  let fps: Fps | null = null;
+  const gameControls = () => !!fps?.enabled && !renderer.xr.isPresenting;
+  let arrivedWithGameControls = false;
+  try {
+    arrivedWithGameControls = sessionStorage.getItem(ARRIVED_FPS) === "1";
+    sessionStorage.removeItem(ARRIVED_FPS);
+  } catch {
+    /* they turn it on themselves */
+  }
+  fps = createFps({
+    dom: renderer.domElement,
+    camera,
+    rig,
+    controls,
+    hud,
+    canStand: (x, z) => Math.hypot(x, z) <= RADIUS + 1.5,
+    presenting: () => renderer.xr.isPresenting,
+    // Use what the middle of the view points at: a door, a button, a panel.
+    onUse: () => {
+      ndc.set(0, 0);
+      raycaster.setFromCamera(ndc, camera);
+      under()?.act();
+    },
+    onBlocked: () => sounds.bump(),
+    speed: 2.2,
+    arrived: arrivedWithGameControls,
+    keep: "bitportal:fps",
+  });
+  hooks.fps = fps;
   renderer.domElement.addEventListener("pointerdown", (e) => {
+    if (gameControls()) return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     panelDrag = !renderer.xr.isPresenting && !!panels?.pointer("down", raycaster);
@@ -817,7 +854,7 @@ async function start(): Promise<void> {
       panels?.pointer("up", raycaster);
       return;
     }
-    if (moved > 6 || renderer.xr.isPresenting || e.target !== renderer.domElement) return;
+    if (moved > 6 || renderer.xr.isPresenting || gameControls() || e.target !== renderer.domElement) return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     const thing = under();
@@ -830,7 +867,7 @@ async function start(): Promise<void> {
       moved += Math.abs(e.clientX - lastX);
       lastX = e.clientX;
     }
-    ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    if (!gameControls()) ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     if (panelDrag) {
       raycaster.setFromCamera(ndc, camera);
       panels?.pointer("move", raycaster);
@@ -1134,8 +1171,12 @@ async function start(): Promise<void> {
       const through = walkedThrough();
       if (through) void visit(through);
     } else {
-      walk(dt);
-      stroll.update(dt);
+      // Game controls have the visitor's movement when they are on, and aim from the middle of the view.
+      if (fps!.update(dt)) ndc.set(0, 0);
+      else {
+        walk(dt);
+        stroll.update(dt);
+      }
       raycaster.setFromCamera(ndc, camera);
       pointed = under();
       const through = walkedThrough();

@@ -240,6 +240,16 @@ Not built: a list of what a host refuses (a strict copy has no use for one),
 a kids-only setting, and BitGate, which will let each visitor tighten what
 they see and never loosen what the host decided.
 
+## Moving in the room
+
+On a desk there are two ways. The one a visitor gets first: click where you
+want to stand, drag to look round, or walk with W A S D. And game controls,
+turned on in the menu under Moving, for people who play games: the mouse
+looks, W A S D walk, Shift runs, F or a click uses the door or button in the
+middle of the view, and Escape brings up the menu. Fullscreen is in the menu
+under View. The choice is kept in this browser and goes with the visitor
+into the worlds they visit.
+
 ## Sound
 
 The room has sound: steps, presses, doors, people coming and going, a low
