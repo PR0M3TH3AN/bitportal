@@ -25,6 +25,7 @@ import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
+import { createDoorList, type DoorList, type DoorRow } from "./door-list.js";
 import { detectTier, deviceFit, type Device } from "../shared/device.js";
 import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
 import { homeOf, loadHome } from "../shared/home.js";
@@ -74,6 +75,7 @@ interface Clickable {
 }
 
 interface TestHooks {
+  everyDoor?: DoorList;
   jump?: { jump(): boolean; readonly height: number; readonly airborne: boolean };
   /** Game controls on a desk: the mouse looks, keys walk. */
   fps?: Fps;
@@ -354,7 +356,10 @@ async function start(): Promise<void> {
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
-    { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => location.assign("/") },
+    // Every door this copy shows, on a panel in the room: nobody is sent out of the room to read a list.
+    { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => everyDoor?.open() },
+    // The front page still has what needs a page: signing in, settings, announcing a world. It can't be seen from a headset.
+    { id: "front-page", section: "travel", icon: "list", label: "The front page: sign in, settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/") },
   );
   // Someone whose home is a world of their own keeps their doors here, and goes home from here. Nothing is asked
   // of them on the way: the Airlock looks at their home first, and brings them back here if it doesn't answer.
@@ -414,6 +419,9 @@ async function start(): Promise<void> {
   scene.add(walls.yours, walls.suggested);
   let doors: Door[] = [];
   let clickables: Clickable[] = [];
+  /** Every door this copy shows, the visitor's own first: what the list in the room reads. */
+  let listed: { entry: Entry; saved: boolean }[] = [];
+  let everyDoor: DoorList | null = null;
 
   /** Stand something at a place along a wall, facing the middle of the room. */
   const place = (object: THREE.Object3D, slot: number) => {
@@ -521,7 +529,7 @@ async function start(): Promise<void> {
     b.position.set(0, 0.9, 0.05);
     group.add(label, b);
     walls[wall].add(group);
-    clickables.push({ mesh: b, say: "Leave the room for the full list of doors.", act: () => location.assign("/") });
+    clickables.push({ mesh: b, say: "Every door, as a list.", act: () => everyDoor?.open() });
   };
 
   const header = (wall: Wall, text: string) => {
@@ -585,7 +593,11 @@ async function start(): Promise<void> {
     const from = catalog.lists.length === 1 ? `Picked by ${catalog.lists[0]!.title}` : catalog.lists.length === 0 ? "You aren't showing any list" : `From the ${catalog.lists.length} lists you've chosen`;
     header("suggested", ordered.length ? `Suggested\n${from}` : catalog.lists.length === 0 ? `Suggested\n${from}` : "Suggested\nYou've saved every door on your lists");
 
+    // The list has all of them, however many fit on the walls. Each has passed what this copy shows (catalog.permits).
+    listed = [...mine.map((entry) => ({ entry, saved: true })), ...ordered.map((x) => ({ entry: x.entry, saved: false }))].filter((x) => catalog.permits(x.entry.id, x.entry.world));
+    everyDoor?.refresh();
     state.doorCount = doors.length;
+    state.listed = listed.length;
     state.yours = mine.length;
     state.suggested = ordered.length;
     state.previews = 0;
@@ -654,24 +666,27 @@ async function start(): Promise<void> {
    * them first, with where the door leads over it. Walked into, there is nothing to bring up: they are already going
    * through it, so they go. Either way the Airlock is next, and it is what checks.
    */
-  const visit = async (door: Door, how: "chosen" | "walked" = "chosen") => {
+  const visit = (door: Door, how: "chosen" | "walked" = "chosen") => visitEntry(door.entry, how);
+  /** To a world, whether its door is on a wall or only on the list. */
+  const visitEntry = async (entry: Entry, how: "chosen" | "walked" = "chosen") => {
     if (leaving) return;
     leaving = true;
-    state.leaving = door.entry.id;
+    state.leaving = entry.id;
     state.left = how;
-    rememberLeft({ id: door.entry.id, from: "walk" });
+    everyDoor?.close();
+    rememberLeft({ id: entry.id, from: "walk" });
     try {
       localStorage.setItem(USED_A_DOOR, "1"); // they know how a door works now
     } catch {
       /* storage unavailable */
     }
-    const w = door.entry.world;
+    const w = entry.world;
     // The walls come up, with where this door leads over them. The Airlock is next, and it is what checks.
     const to = hostParts(w.url);
     sounds.play("cross");
     if (how === "chosen") await crossing.leave({ title: w.title, address: `${to.prefix}${to.domain}` });
     document.body.classList.add("leaving");
-    const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: door.entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
+    const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
     // Left from a headset: say so, and the world at the other end offers the way back into one first.
     const immersive = renderer.xr.isPresenting;
     try {
@@ -938,6 +953,24 @@ async function start(): Promise<void> {
   // The visitor's panels are theirs: kept in this browser, with any file they hang, and sent nowhere. They are
   // not published, and nobody else in the room sees them.
   panels = createPanels({ scene, camera, accent: ACCENT, textColor: INK, input: xrInput, keep: "bitportal:panels", session: () => renderer.xr.getSession() });
+  // Every door, as a list, on a panel in the room (door-list.ts).
+  everyDoor = createDoorList({
+    accent: `#${ACCENT.toString(16).padStart(6, "0")}`,
+    ink: INK,
+    rows: (): DoorRow[] =>
+      listed.map(({ entry, saved: mine }) => {
+        const host = hostParts(entry.world.url);
+        return { id: entry.id, title: entry.world.title, host: `${host.prefix}${host.domain}`, summary: entry.world.summary ?? "", topics: entry.world.topics, saved: mine };
+      }),
+    hang: (texture, aspect, onPress, onClose) => panels!.open({ kind: "custom", title: "Every door", texture, aspect, onPress, onClose }, { id: "every-door", keep: false }),
+    ask: (title, value) => panels!.keyboard.ask({ title, value, maxLength: 80 }),
+    say: (text) => controls.say(text),
+    onChoose: (id) => {
+      const found = listed.find((x) => x.entry.id === id);
+      if (found) void visitEntry(found.entry, "chosen");
+    },
+  });
+  hooks.everyDoor = everyDoor;
   addPanelControls(controls, panels, { presenting: () => renderer.xr.isPresenting, kept: true });
   hooks.panels = panels;
   // The visitor's own computers: a terminal on one, in a panel. Theirs alone, and never offered to a world.
