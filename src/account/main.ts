@@ -22,7 +22,7 @@ import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
 import { goesAsGuest, setGoesAsGuest } from "../shared/look.js";
 import { chooseOnce, readWhoDoor, tabStore } from "../shared/who.js";
-import { wayBack } from "./back.js";
+import { cannotSignInHere, wayBack } from "./back.js";
 import { createBooth } from "./booth.js";
 
 declare global {
@@ -79,6 +79,16 @@ const asMyself = $<HTMLInputElement>("as-myself");
 asMyself.checked = !goesAsGuest();
 asMyself.addEventListener("change", () => setGoesAsGuest(!asMyself.checked));
 if (door) document.title = `Who you are at ${door.host || "the world you were in"} · BitPortal`;
+
+// A browser gives a page its cryptography only at an https address, or at localhost on the same machine. Anywhere
+// else (a plain http address on a home network, as when a phone opens a development server) BitLogin finds the
+// account and can't open it, and says "Account not found or credentials incorrect", whatever was typed. That
+// sends people looking for a wrong password, so it is said plainly here, before they type.
+const cannot = cannotSignInHere({ secure: window.isSecureContext, subtle: !!globalThis.crypto?.subtle, host: location.host, protocol: location.protocol });
+if (cannot) {
+  $("cannot-sign-in").textContent = cannot;
+  $("cannot-sign-in").hidden = false;
+}
 
 const who = $("who");
 const widget = $("bitlogin") as HTMLElement & { logout?: () => Promise<void> };
