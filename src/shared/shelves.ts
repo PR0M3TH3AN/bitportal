@@ -126,6 +126,10 @@ export function plainShelf(candidates: Candidate[]): Shelf {
 const REASON_TEXT: Record<string, string> = {
   recency: "it is new",
   exploration: "a little variety",
+  // A scorer with nothing to say for itself is named by the engine after itself. That is not a reason.
+  Tastes: "",
+  tastes: "",
+  "bitportal.tastes": "",
 };
 
 /** Turn the strongest reasons behind a ranking into one sentence. */
@@ -133,9 +137,9 @@ export function whySentence(rows: { label: string; contribution: number }[]): st
   const top = rows
     .filter((r) => r.contribution > 0.02)
     .sort((a, b) => b.contribution - a.contribution)
-    .slice(0, 2)
     .map((r) => REASON_TEXT[r.label] ?? r.label)
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 2);
   if (top.length === 0) return "";
   return `Here because ${top.join(" and ")}.`;
 }

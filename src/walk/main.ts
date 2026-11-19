@@ -20,7 +20,7 @@ import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, enco
 import { ARRIVED_JOINED, ARRIVED_MOVING } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, createFps, type Fps, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -471,9 +471,12 @@ async function start(): Promise<void> {
     // The door's one button, in a row of its own between the arch and the plate.
     const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save);
     button.position.set(0, DOOR_H + 0.52, 0.03);
-    // Large and well in front of the door: readable from the middle of the room.
+    // What a door says about itself, for a headset: low on the door, so the view through it stays clear, and
+    // kept the same size in the visitor's view however near they stand (it is scaled every frame). On a flat
+    // screen it isn't drawn at all: the same words are beside the controls, where they are never in the way.
     const info = textSprite(infoLines(entry, why, vr), INK, 2.6);
-    info.position.set(0, 1.25, 2.2);
+    info.position.set(0, 0.95, 0.45);
+    info.userData.natural = info.scale.clone();
     info.visible = false;
     info.renderOrder = 2;
     group.add(view, frame, plate, button, info);
@@ -640,7 +643,10 @@ async function start(): Promise<void> {
   // ------------------------------------------------------- leaving
   let leaving = false;
   // Leaving and coming back happen in the kit's chamber: the same small room at both ends of every trip.
-  const crossing = createCrossing({ scene, camera, accent: ACCENT, textColor: INK, motion: () => controls.theme.motion });
+  // The crossing's room is drawn over everything where it stands. The visitor's own hands and console are drawn
+  // over it: they are added to this as they are made.
+  const keptInSight: THREE.Object3D[] = [rig];
+  const crossing = createCrossing({ scene, camera, accent: ACCENT, textColor: INK, motion: () => controls.theme.motion, keep: keptInSight });
   hooks.crossing = () => crossing.state;
   const visit = async (door: Door) => {
     if (leaving) return;
@@ -678,6 +684,7 @@ async function start(): Promise<void> {
   // in the scene. Turn around matters most there: the other wall is behind the
   // visitor, and someone seated can't turn to face it.
   const xrConsole = createConsole(controls, { renderer, rig });
+  keptInSight.push(xrConsole.group);
   scene.add(xrConsole.group);
   hooks.console = xrConsole;
 
@@ -986,6 +993,8 @@ async function start(): Promise<void> {
 
   // Walking through a doorway counts as choosing it.
   const head = new THREE.Vector3();
+  const signAt = new THREE.Vector3();
+  const eyeAt = new THREE.Vector3();
   const local = new THREE.Vector3();
   const walkedThrough = (): Door | null => {
     camera.getWorldPosition(head);
@@ -1133,11 +1142,19 @@ async function start(): Promise<void> {
   } catch {
     /* storage unavailable: say nothing */
   }
+  // For someone who hasn't been through a door yet. In a headset it is a sign in the room, kept the same size in
+  // their view; on a flat screen it is said beside the controls, where it is never in the way of the doors.
+  let hint: THREE.Sprite | null = null;
   if (!knowsDoors) {
-    const hint = textSprite("Point at a door and select it: click, tap, pull the trigger or pinch.\nYou'll see where it leads before you go.", INK, 2.6);
+    hint = textSprite("Point at a door and select it: pull the trigger or pinch.\nYou'll see where it leads before you go.", INK, 2.6);
     hint.position.set(-Math.sin(rig.rotation.y) * 3.4, 0.62, -Math.cos(rig.rotation.y) * 3.4);
+    hint.userData.natural = hint.scale.clone();
+    hint.visible = false;
     scene.add(hint);
     state.hint = true;
+    setTimeout(() => {
+      if (!renderer.xr.isPresenting) controls.say("Point at a door and click it. You'll see where it leads before you go.");
+    }, 2500);
   }
 
   // --------------------------------------------------------- frames
@@ -1161,6 +1178,8 @@ async function start(): Promise<void> {
     if (busy && !wasBusy) xrConsole.setOpen(false);
     wasBusy = busy;
     crossing.update(t, dt);
+    // Shut in the crossing's room, nobody else is in it with the visitor, wherever they happen to be standing.
+    presence.setHidden(crossing.state !== "none");
     presence.update(dt);
     let pointed: Clickable | null = null;
     reticle.visible = false;
@@ -1200,8 +1219,14 @@ async function start(): Promise<void> {
       else if (hovered) {
         const w = hovered.entry.world;
         const host = hostParts(w.url);
-        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`);
+        // Beside the controls, at a size that doesn't depend on where the visitor stands: what it is, why it is
+        // here, and how to go.
+        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`, [w.summary ?? "", hovered.why, fps?.enabled ? "F or click to visit" : "Click to visit"]);
       } else controls.setTarget("");
+    }
+    if (hint) {
+      hint.visible = renderer.xr.isPresenting;
+      if (hint.visible) hint.scale.copy(hint.userData.natural as THREE.Vector3).multiplyScalar(viewScale(hint.getWorldPosition(signAt).distanceTo(camera.getWorldPosition(eyeAt)), { at: 3.4, least: 0.3, most: 1.3 }));
     }
     for (const d of doors) {
       // A door answers to being pointed at; its button answers on its own.
@@ -1209,7 +1234,11 @@ async function start(): Promise<void> {
       d.hover += ((onDoor ? 1 : 0) - d.hover) * Math.min(1, dt * 12);
       d.metal.tick(t);
       d.metal.aim(d.hover);
-      d.info.visible = d.hover > 0.5;
+      // The sign in the world is a headset's. It keeps its size in the view, and steps aside when the visitor
+      // is at the door itself.
+      const away = d.info.visible || onDoor ? d.info.getWorldPosition(signAt).distanceTo(camera.getWorldPosition(eyeAt)) : 0;
+      d.info.visible = d.hover > 0.5 && renderer.xr.isPresenting && away > 0.9;
+      if (d.info.visible) d.info.scale.copy(d.info.userData.natural as THREE.Vector3).multiplyScalar(viewScale(away, { at: 6, least: 0.16, most: 1.1 }));
       d.view.position.z = -0.12 * d.hover; // the door swings in a little
     }
     for (const c of clickables) if (c.mesh && c.mesh !== c.door?.view) c.mesh.scale.setScalar(c === pointed ? 1.12 : 1);

@@ -6066,6 +6066,14 @@ function createStroll(o) {
   };
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/sign.ts
+function viewScale(metres, opts) {
+  const least = opts.least ?? 0.15;
+  const most = opts.most ?? 1.5;
+  if (!(metres >= 0) || !(opts.at > 0)) return 1;
+  return Math.min(most, Math.max(least, metres / opts.at));
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/fps.ts
 var LOOK_SPEED = 22e-4;
 var PITCH_LIMIT = 85 * Math.PI / 180;
@@ -6922,6 +6930,7 @@ var H3 = 2.8;
 var BAYS = 10;
 var DOOR_W = 1.04;
 var DOOR_H = 2.2;
+var CHAMBER_ORDER = 1e4;
 function signTexture(lines, color) {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
@@ -6984,8 +6993,13 @@ function createChamber(accent, opts = {}) {
   sign.position.set(0, DOOR_H + (H3 - DOOR_H) / 2, -reach + 0.085);
   const rising = new THREE10.Group();
   rising.add(walls, ...leaves, sign);
+  const clear = new THREE10.Mesh(new THREE10.BufferGeometry().setAttribute("position", new THREE10.BufferAttribute(new Float32Array(9), 3)), new THREE10.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false }));
+  clear.frustumCulled = false;
+  clear.renderOrder = CHAMBER_ORDER;
+  clear.onBeforeRender = (renderer) => renderer.clearDepth();
+  for (const part of [floor, walls, lid, ...leaves, sign]) part.renderOrder = CHAMBER_ORDER + 1;
   const group = new THREE10.Group();
-  group.add(floor, rising, lid);
+  group.add(clear, floor, rising, lid);
   let door = 0;
   let presence = 1;
   const apply = () => {
@@ -6994,6 +7008,7 @@ function createChamber(accent, opts = {}) {
     rising.visible = presence > 2e-3;
     floor.scale.setScalar(Math.max(1e-3, Math.min(1, presence * 1.6)));
     floor.visible = presence > 2e-3;
+    clear.visible = presence > 2e-3;
     lid.position.y = H3 + (1 - up) * 3.5;
     lid.visible = presence > 0.5;
     const open = door * door * (3 - 2 * door);
@@ -7027,7 +7042,8 @@ function createChamber(accent, opts = {}) {
     },
     dispose() {
       group.removeFromParent();
-      for (const mesh of [floor, walls, lid, ...leaves]) mesh.geometry.dispose();
+      for (const mesh of [floor, walls, lid, ...leaves, clear]) mesh.geometry.dispose();
+      clear.material.dispose();
       metal.dispose();
       sign.geometry.dispose();
       sign.material.map?.dispose();
@@ -7060,9 +7076,25 @@ function createCrossing(o) {
     chamber = made;
     return made;
   };
+  const usual = /* @__PURE__ */ new Map();
+  const keepInSight = (on) => {
+    if (on) {
+      for (const root of o.keep ?? []) {
+        root.traverse((part) => {
+          if (usual.has(part)) return;
+          usual.set(part, part.renderOrder);
+          part.renderOrder = CHAMBER_ORDER + 2 + part.renderOrder;
+        });
+      }
+    } else {
+      for (const [part, order] of usual) part.renderOrder = order;
+      usual.clear();
+    }
+  };
   const enter = (next) => {
     state = next;
     since = 0;
+    keepInSight(next !== "none");
   };
   return {
     get state() {
@@ -7129,6 +7161,7 @@ function createCrossing(o) {
       chamber?.dispose();
       chamber = null;
       state = "none";
+      keepInSight(false);
     }
   };
 }
@@ -7435,6 +7468,7 @@ function createPresence(d) {
     dress(a, member.look);
     return a;
   };
+  let hiddenAll = false;
   let tuneTrack = null;
   const tunes = /* @__PURE__ */ new Map();
   const tuneMuted = /* @__PURE__ */ new Set();
@@ -7760,6 +7794,10 @@ function createPresence(d) {
     people() {
       return [...avatars.values()].map((a) => a.member);
     },
+    setHidden(hidden) {
+      hiddenAll = hidden;
+      if (hidden) for (const a of avatars.values()) a.root.visible = false;
+    },
     setVolume(volume) {
       voiceVolume = Math.min(1, Math.max(0, volume));
       for (const a of avatars.values()) a.audio?.setVolume(mutedKeys.has(a.member.pubkey) ? 0 : voiceVolume);
@@ -7854,7 +7892,7 @@ function createPresence(d) {
         const snap = a.placed ? k : 1;
         apply(a.head, a.target.head, snap);
         a.placed = true;
-        a.root.visible = true;
+        a.root.visible = !hiddenAll;
         euler.setFromQuaternion(a.head.quaternion, "YXZ");
         a.torso.position.set(a.head.position.x, a.head.position.y - 0.45, a.head.position.z);
         a.torso.rotation.set(0, euler.y, 0);
@@ -8598,6 +8636,7 @@ export {
   TAP_REACH,
   reachOf,
   createStroll,
+  viewScale,
   LOOK_SPEED,
   PITCH_LIMIT,
   SPRINT,
@@ -8607,6 +8646,7 @@ export {
   createFps,
   createSounds,
   addSoundControls,
+  CHAMBER_ORDER,
   createChamber,
   createCrossing,
   takePicture,
