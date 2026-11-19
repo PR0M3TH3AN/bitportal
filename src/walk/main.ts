@@ -1113,7 +1113,8 @@ async function start(): Promise<void> {
   // the door they left through. Otherwise their own wall if it has doors, and
   // the suggestions if it doesn't, so nobody starts by facing empty frames.
   const left = readLeft();
-  const leftDoor = left?.from === "walk" ? doors.find((d) => d.entry.id === left.id) : undefined;
+  // Whether they left by this room's door or from the list: if the room has a door to where they went, they face it.
+  const leftDoor = left ? doors.find((d) => d.entry.id === left.id) : undefined;
   if (leftDoor) {
     leftDoor.group.getWorldPosition(where);
     rig.rotation.y = Math.atan2(-where.x, -where.z);
