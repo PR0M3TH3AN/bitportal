@@ -46,6 +46,13 @@ export interface InstancePolicy {
   signer?: string;
 }
 
+/**
+ * Whether this host's Airlock sends a visitor's pass with them to a world. It doesn't where it names a sign-in
+ * address: they sign in at the world, that address's signer makes the pass, and a world learns nothing about
+ * them until they say yes there (NSWP-10, "A pass from the signer"; the owner's decision of 2026-11-19).
+ */
+export const sendsPass = (instance: Pick<InstancePolicy, "signer"> = INSTANCE): boolean => !instance.signer;
+
 export const INSTANCE: InstancePolicy = {
   // npub15jnttpymeytm80hatjqcvhhqhzrhx6gxp8pq0wn93rhnu8s9h9dsha32lx
   operators: ["a4a6b5849bc917b3befd5c81865ee0b88773690609c207ba6588ef3e1e05b95b"],

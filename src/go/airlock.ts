@@ -40,7 +40,7 @@ import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalog.js";
 import { placeKind } from "../shared/plate.js";
 import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
-import { INSTANCE } from "../shared/instance.js";
+import { INSTANCE, sendsPass } from "../shared/instance.js";
 import { crossingFor } from "../shared/crossing.js";
 import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goesAsGuest, goMode, inlineLook, loadLook, setGoesAsGuest, setGoMode, startingMode, type GoMode } from "../shared/look.js";
@@ -515,8 +515,18 @@ async function render(): Promise<void> {
     picture = mineNow?.picture ?? "";
     about = mineNow?.about ?? "";
   }
-  // By name is for a site that has proved it is who it says: a pass names the visitor's key for good.
-  const canName = !!who && verified;
+  // Where this host names a sign-in address, a visitor signs in at the world itself, in that address's window, and
+  // its signer makes the pass (NSWP-10, "A pass from the signer"). So nothing that says who they are is sent from
+  // here, and a world learns nothing until they say yes there. Elsewhere, as before: by name is for a site that has
+  // proved it is who it says, since a pass names the visitor's key for good.
+  const signsThere = !sendsPass();
+  let signInHost = "your sign-in address";
+  try {
+    if (INSTANCE.signer) signInHost = new URL(INSTANCE.signer).host;
+  } catch {
+    /* said without its name */
+  }
+  const canName = !!who && verified && !signsThere;
   const remembered = goMode();
   // Signed in is signed in everywhere (NSWP-10): to a site that has proved who it is they go by name, with nothing
   // to choose at each door, unless they have said to go as a guest. What they pressed a moment ago where they
@@ -529,7 +539,12 @@ async function render(): Promise<void> {
     look: "Your look lets people here recognise you from other worlds. Nobody is told who you are.",
     plain: "Nothing of yours goes with you. You are a different figure every visit.",
   };
-  const note = el("p", { class: unmet ? "small go-as-note verify-warn" : "small go-as-note", id: "go-as-note", role: "status" }, unmet ? (who ? "This site hasn't proved it is the one its announcement names, so you can't go there by name. You would go as a guest." : "You aren't signed in in this browser, so you would go as a guest.") : NOTES[mode]);
+  const SIGN_IN_THERE = `To be known by name there, sign in at the world itself: under You, choose Sign in, and a window from ${signInHost} asks you once. Until then nobody there is told who you are.`;
+  const note = el(
+    "p",
+    { class: unmet && !signsThere ? "small go-as-note verify-warn" : "small go-as-note", id: "go-as-note", role: "status" },
+    unmet ? (signsThere ? SIGN_IN_THERE : who ? "This site hasn't proved it is the one its announcement names, so you can't go there by name. You would go as a guest." : "You aren't signed in in this browser, so you would go as a guest.") : NOTES[mode],
+  );
   const option = (value: GoMode, text: string, enabled = true) =>
     el("label", {}, el("input", { type: "radio", name: "go-as", value, id: `go-${value}`, ...(mode === value ? { checked: "" } : {}), ...(enabled ? {} : { disabled: "" }) }), ` ${text}`);
   // Asked of the card's own body, which holds the choice whether or not the card is on the page yet: asked of the
@@ -541,21 +556,23 @@ async function render(): Promise<void> {
           "fieldset",
           { class: "identity" },
           el("legend", {}, "Go as"),
-          who ? option("name", `Yourself, by name: ${who.name ?? label(who.pubkey)}${testKey ? " (testing: a throwaway identity)" : ""}${verified ? "" : " (only for verified worlds)"}`, canName) : "",
-          mine ? option("look", who ? "A guest, wearing your look" : "Yourself, wearing your look") : "",
+          who && !signsThere ? option("name", `Yourself, by name: ${who.name ?? label(who.pubkey)}${testKey ? " (testing: a throwaway identity)" : ""}${verified ? "" : " (only for verified worlds)"}`, canName) : "",
+          mine ? option("look", who && !signsThere ? "A guest, wearing your look" : "Wearing your look") : "",
           option("plain", "Plain: nothing of yours goes with you"),
           note,
-          el("p", { class: "small" }, el("a", { href: "/look/" }, mine ? "Change your look" : "Make a look"), ...(who ? [] : [". To go by name, ", el("a", { href: "/account/?back=history" }, "sign in first"), "."])),
+          el("p", { class: "small" }, el("a", { href: "/look/" }, mine ? "Change your look" : "Make a look"), ...(who || signsThere ? [] : [". To go by name, ", el("a", { href: "/account/?back=history" }, "sign in first"), "."])),
+          signsThere ? el("p", { class: "small", id: "sign-in-there" }, SIGN_IN_THERE) : "",
         )
       : el(
           "p",
           { class: "small go-as-note" },
           a.nswpAware ? "You'll arrive plain: a different figure every visit. " : "This site hasn't adopted the protocol, so nothing about you goes with you. ",
-          ...(a.nswpAware ? [el("a", { href: "/look/" }, "Make a look"), " to be recognised from world to world, or ", el("a", { href: "/account/?back=history" }, "sign in"), " to go by name."] : []),
+          ...(a.nswpAware ? (signsThere ? [el("a", { href: "/look/" }, "Make a look"), ` to be recognised from world to world. ${SIGN_IN_THERE}`] : [el("a", { href: "/look/" }, "Make a look"), " to be recognised from world to world, or ", el("a", { href: "/account/?back=history" }, "sign in"), " to go by name."]) : []),
         );
   identity.addEventListener("change", () => {
     // Their own hand, on their own client's screen: as a guest from now on, or as themselves again.
-    if (who) setGoesAsGuest(chosen() !== "name");
+    // (Where they sign in at the world, there is no such choice here, and choosing a look says nothing of it.)
+    if (who && !signsThere) setGoesAsGuest(chosen() !== "name");
     note.textContent = NOTES[chosen()];
     note.className = "small go-as-note";
   });
@@ -733,7 +750,9 @@ async function render(): Promise<void> {
     const how = mine || who ? chosen() : "plain";
     const as = how === "name" && who ? `by name, as ${who.name ?? label(who.pubkey)}` : how === "look" ? "as a guest, wearing your look" : "as a guest, with nothing of yours";
     const room = stayBox ? (stayBox.checked ? `, staying in the room${micBox?.checked ? " with your microphone on" : ""}` : ", leaving the room you were in") : "";
-    going.textContent = `Going ${as}${room}.`;
+    // Where they sign in at the world itself, "as a guest" would read as "you aren't signed in": say what is so.
+    const there = signsThere ? (how === "look" ? "wearing your look" : "with nothing of yours") : as;
+    going.textContent = signsThere ? `Going ${there}${room}. Signing in is done there, with ${signInHost}.` : `Going ${as}${room}.`;
   };
   sayGoing();
   body.addEventListener("change", sayGoing);

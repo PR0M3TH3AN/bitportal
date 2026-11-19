@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildListEvent, buildWorldEvent, finalizeEvent, getPublicKey, type NostrEvent } from "@nswp/core";
 import bundle from "../src/starter/starter-set.json";
 import { buildCatalog, type StarterBundle } from "../src/shared/catalog.js";
-import { INSTANCE, OPEN_POLICY, type InstancePolicy } from "../src/shared/instance.js";
+import { INSTANCE, OPEN_POLICY, sendsPass, type InstancePolicy } from "../src/shared/instance.js";
 import { follow } from "../src/shared/lists.js";
 import { savedEntries } from "../src/shared/saved.js";
 
@@ -137,5 +137,24 @@ describe("where this copy's visitors sign from inside a world", () => {
     const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
     expect(build).not.toContain("frame-ancestors https:");
     expect(build).not.toMatch(/signer\/main|connect\/main/);
+  });
+});
+
+describe("who says who a visitor is, at a world (NSWP-10, A pass from the signer)", () => {
+  it("is their sign-in address, where this host names one: the Airlock sends no pass", () => {
+    expect(INSTANCE.signer).toBe("https://bitlogin.network/");
+    expect(sendsPass()).toBe(false);
+    // A host that names none vouches for its visitors at each door, as before.
+    expect(sendsPass({})).toBe(true);
+  });
+
+  it("holds in the Airlock: going by name is offered, and a pass signed, only where one is sent", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const airlock = readFileSync(new URL("../src/go/airlock.ts", import.meta.url), "utf8");
+    expect(airlock).toContain("const signsThere = !sendsPass();");
+    expect(airlock).toContain("const canName = !!who && verified && !signsThere;");
+    // The one place a pass is signed is behind that.
+    expect(airlock.match(/issuePass\(/g)).toHaveLength(1);
+    expect(airlock).toContain('if (how === "name" && who && canName) {');
   });
 });
