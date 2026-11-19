@@ -331,7 +331,7 @@ textarea:focus, input:focus { border-color: var(--bitportal-accent); }
 .card > h1:first-child { margin-top: 0; }
 .card p { margin-top: 10px; }
 .leaving { color: var(--bitportal-muted); }
-.host { margin-top: 4px; font-size: clamp(1.7rem, 7.4vw, 3.1rem); font-weight: 700; line-height: 1.08; overflow-wrap: anywhere; color: var(--bitportal-ink); }
+.host { margin-top: 4px; font-size: clamp(1.5rem, 5.6vw, 2.5rem); font-weight: 700; line-height: 1.08; overflow-wrap: anywhere; color: var(--bitportal-ink); }
 .host .prefix { color: var(--bitportal-muted); font-weight: 400; }
 .full-url { font-size: 0.82rem; color: var(--bitportal-muted); overflow-wrap: anywhere; }
 .muted { color: var(--bitportal-muted); }
@@ -368,8 +368,46 @@ body.walk { overflow: hidden; background: var(--bitportal-paper); }
 .step h2, .notes h2 { font-size: 1.3rem; font-weight: 720; }
 .step p, .notes ul { margin-top: 8px; }
 .next-steps { margin-top: 20px; display: grid; gap: 10px; justify-items: start; }
-/* BitLogin draws its own card, so this wrapper adds no frame of its own. */
-.widget-card { margin-top: 28px; padding: 0; border: 0; background: none; }
+/* ---------- who you are: BitLogin, drawn as BitPortal's own ---------- */
+/* BitLogin is its own element with its own shadow. What it lets a page set, it sets with these values: so the
+   sign-in is BitLogin's in everything it does and BitPortal's in everything it looks like. Nothing inside it is
+   reached into or replaced. */
+bitlogin-auth {
+  --bl-bg: var(--bitportal-surface);
+  --bl-fg: var(--bitportal-ink);
+  --bl-muted: var(--bitportal-muted);
+  --bl-border: var(--bitportal-line);
+  --bl-input-bg: var(--bitportal-paper);
+  --bl-accent: var(--bitportal-accent);
+  --bl-accent-fg: var(--bitportal-accent-ink);
+  --bl-accent-hover: #74f7bd;
+  --bl-danger: var(--bitportal-bad);
+  --bl-danger-bg: #2a0f14;
+  --bl-warn: var(--bitportal-warn);
+  --bl-warn-bg: var(--bitportal-warn-ground);
+  --bl-radius: 0px;
+  --bl-font-family: "Ubuntu Sans V", system-ui, sans-serif;
+  --bl-max-width: 100%;
+  display: block;
+  margin-top: 16px;
+  color-scheme: dark;
+}
+.who .choices { display: grid; gap: 18px; margin-top: 28px; align-items: start; }
+@media (min-width: 880px) { .who .choices { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); } .page.who { max-width: 1040px; } }
+.who .choice h2, .who .you h2 { font-size: 1.3rem; font-weight: 720; }
+.who .choice > p { margin-top: 8px; color: rgba(233, 243, 242, 0.86); }
+.who .choice > .button { margin-top: 18px; }
+.who .sign-in { border-top: 2px solid var(--bitportal-accent); }
+.who .you { margin-top: 28px; border-top: 2px solid var(--bitportal-accent); }
+.you-line { display: flex; align-items: center; gap: 14px; font-size: 1.35rem; }
+.you-line .key { font-size: 0.85rem; color: var(--bitportal-muted); }
+.you-mark { width: 14px; height: 30px; background: var(--bitportal-accent); border-radius: 7px 7px 0 0; box-shadow: 0 0 18px rgba(var(--bitportal-accent-rgb), 0.55); flex: none; }
+.you-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.you > .small { margin-top: 12px; }
+/* The badge: small, under the sign-in, never in the way of it. */
+.powered { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; font: 500 0.78rem var(--mono); color: var(--bitportal-muted); letter-spacing: 0.02em; }
+.powered strong { color: var(--bitportal-ink); font-weight: 650; }
+.powered-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--bitportal-accent); box-shadow: 0 0 0 3px rgba(var(--bitportal-accent-rgb), 0.18); }
 .notes { margin-top: 44px; }
 .notes ul { padding-left: 1.2em; color: var(--bitportal-muted); max-width: 64ch; }
 .notes li + li { margin-top: 6px; }
@@ -472,3 +510,26 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 .topic-disliked { opacity: 0.6; text-decoration: line-through; }
 .topic-tastes { display: inline-flex; gap: 8px; margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--bitportal-line); }
 .topic-taste[aria-pressed="true"] { background: var(--bitportal-accent); color: var(--bitportal-accent-ink); border-color: var(--bitportal-accent); }
+
+/* The Airlock, kept to what matters: where the door leads, what needs an answer, and the way through. */
+.title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 18px; }
+.title-row h1 { margin: 0; }
+.fit { margin-top: 12px; }
+.fit-ok { color: var(--bitportal-ok); }
+.fit-plain { color: rgba(233, 243, 242, 0.7); }
+.fit-warn, .fit-bad { padding: 10px 14px; border-left: 3px solid currentColor; background: rgba(255, 190, 80, 0.07); }
+.fit-warn { color: var(--bitportal-warn); }
+.fit-bad { color: var(--bitportal-bad); background: rgba(255, 110, 110, 0.08); }
+.going { margin-top: 16px; }
+.linkish { font: inherit; color: var(--bitportal-accent); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkish:focus-visible { outline: 2px solid var(--bitportal-accent); outline-offset: 3px; }
+.more { margin-top: 22px; border-top: 1px solid var(--bitportal-line); padding-top: 14px; }
+.more > summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--bitportal-accent); border-bottom: 2px solid var(--bitportal-accent); transform: rotate(-45deg); transition: transform 0.15s; }
+.more[open] > summary::before { transform: rotate(45deg); }
+.more > summary:focus-visible { outline: 2px solid var(--bitportal-accent); outline-offset: 4px; }
+.more-body { padding-top: 6px; }
+.more-body > :first-child { margin-top: 8px; }
+.from-vr .more > summary { min-height: 56px; font-size: 1.15rem; }
+@media (prefers-reduced-motion: reduce) { .more > summary::before { transition: none; } }

@@ -1,0 +1,73 @@
+{
+  "note": "What this copy found when it tried each world itself, by form: phone (a touch screen), desk (a mouse and keys), headset. Written by scripts/probe.mjs. A form left out was not confirmed either way.",
+  "worlds": {
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:tour": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:nswp-reference-world-a": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:nswp-reference-world-b": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:arcade": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:observatory": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:workshop": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:library": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:starter": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:aframe-hello-world": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:immersive-web-vr-session": {
+      "at": "2026-11-19",
+      "headset": "works"
+    },
+    "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:threejs-roller-coaster": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works",
+      "headset": "works"
+    },
+    "37300:4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0:moon-rider": {
+      "at": "2026-11-19",
+      "phone": "works",
+      "desk": "works"
+    }
+  }
+}

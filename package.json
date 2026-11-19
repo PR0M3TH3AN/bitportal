@@ -12,6 +12,7 @@
     "vendor": "node scripts/vendor.mjs",
     "vendor:check": "node scripts/vendor.mjs --check",
     "starter-set": "node scripts/make-starter-set.mjs",
+    "probe": "node scripts/probe.mjs",
     "previews": "node scripts/mirror-previews.mjs",
     "previews:check": "node scripts/mirror-previews.mjs --check",
     "deploy": "node scripts/deploy.mjs"
