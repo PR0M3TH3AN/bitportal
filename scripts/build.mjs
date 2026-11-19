@@ -101,4 +101,12 @@ writeFileSync(
     2,
   )}\n`,
 );
+// What this build carries, for anyone asking which kit the portal is on (the NSWP repo's `npm run kits`): the
+// kit's version and the commits of what was vendored. All of it is public already.
+const vendored = JSON.parse(readFileSync(join(root, "vendor/integrity.json"), "utf8")).packages;
+const kit = /KIT_VERSION = "([^"]+)"/.exec(readFileSync(join(root, "vendor/nswp/nswp-core.js"), "utf8"))?.[1] ?? null;
+writeFileSync(
+  join(out, "version.json"),
+  `${JSON.stringify({ bitportal: pkg.version, kit, nswp: vendored["@nswp/core"]?.source?.commit ?? null, bitlogin: vendored["@bitlogin/widget"]?.source?.commit ?? null }, null, 1)}\n`,
+);
 console.log(`built dist/ (BitPortal ${pkg.version})`);
