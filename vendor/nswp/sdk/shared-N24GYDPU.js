@@ -1,8 +1,10 @@
 import {
   ICONS,
+  arrivedSettings,
   createHeldButton,
+  reportSettings,
   rgb
-} from "./shared-YO5CGGKR.js";
+} from "./shared-YCC3OB6E.js";
 import {
   LiveKeys,
   TextEntry,
@@ -4144,7 +4146,29 @@ function createConsole(controls, opts) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
+var resumed = false;
+function resumeFullscreen(presenting) {
+  if (resumed || typeof document === "undefined") return;
+  resumed = true;
+  reportSettings("screen", () => ({ full: !!document.fullscreenElement || waiting }));
+  let waiting = arrivedSettings().full === true && document.fullscreenEnabled && !document.fullscreenElement;
+  if (!waiting) return;
+  const stop = () => {
+    waiting = false;
+    removeEventListener("keydown", onPress, true);
+    removeEventListener("pointerup", onPress, true);
+  };
+  const onPress = (e) => {
+    if (e.code === "Escape" || presenting()) return;
+    stop();
+    if (!document.fullscreenElement) void document.documentElement.requestFullscreen().catch(() => {
+    });
+  };
+  addEventListener("keydown", onPress, true);
+  addEventListener("pointerup", onPress, true);
+}
 function fullscreenAction(controls, presenting) {
+  resumeFullscreen(presenting);
   return {
     id: "fullscreen",
     section: "view",
@@ -4422,7 +4446,10 @@ var VIGNETTE_FRAG = `uniform float uAmount; varying float vFar; void main(){ gl_
 function createXrInput(opts) {
   const { renderer, rig, camera } = opts;
   const accent = new THREE6.Color(opts.accent ?? 16758364);
-  let comfort = loadComfort();
+  const came = arrivedSettings();
+  let comfort = { ...loadComfort(), ...came.turn !== void 0 ? { turnStep: came.turn } : {}, ...came.hand !== void 0 ? { moveHand: came.hand } : {}, ...came.narrow !== void 0 ? { narrow: came.narrow } : {} };
+  if (came.turn !== void 0 || came.hand !== void 0 || came.narrow !== void 0) saveComfort(comfort);
+  reportSettings("hands", () => ({ turn: comfort.turnStep, hand: comfort.moveHand, narrow: comfort.narrow }));
   const loco = new Locomotion();
   const listeners = [];
   const listen = (target, type, fn) => {
@@ -6553,9 +6580,12 @@ function createSounds(o = {}) {
     } catch {
     }
   };
-  let levels = cleanLevels(read(levelsKey));
+  const came = arrivedSettings().sound;
+  let levels = cleanLevels({ ...read(levelsKey), ...came });
   let songs = cleanSongs(read(songsKey));
   let disposed = false;
+  if (came) write(levelsKey, levels);
+  const stopReporting = reportSettings("sound", () => ({ sound: { off: levels.off, effects: levels.effects, music: levels.music, voices: levels.voices, hum: levels.hum } }));
   const master = ctx.createGain();
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -14;
@@ -7070,6 +7100,7 @@ function createSounds(o = {}) {
       return Math.sqrt(samples.reduce((s, x) => s + x * x, 0) / samples.length);
     },
     dispose() {
+      stopReporting();
       disposed = true;
       removeEventListener("pointerdown", onTouch, true);
       removeEventListener("keydown", onTouch, true);

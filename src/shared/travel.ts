@@ -16,6 +16,11 @@ export const ARRIVED_JOINED = "bitportal:arrived-joined";
  * device, "desk" or "headset", since the two are separate choices: intense at a desk never makes a headset slide.
  */
 export const ARRIVED_MOVING = "bitportal:arrived-moving";
+/**
+ * The settings a visitor came home with (their volumes, text size and the rest: NSWP-11, "Settings that travel"),
+ * for this tab, handed from the Airlock to the room. Preferences, already cleaned by the kit.
+ */
+export const ARRIVED_SETTINGS = "bitportal:arrived-settings";
 const MIC = "bitportal:travel-mic";
 
 /** Whether the visitor has said their microphone may stay on from one world to the next. Off until they say so. */

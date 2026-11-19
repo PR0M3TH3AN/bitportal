@@ -270,6 +270,12 @@ trigger, so nobody leaves the room to read a list. The front page is still
 there for what needs a page (signing in, settings, announcing a world), from
 the menu under Travel.
 
+What you set goes with you. Your volumes, the size of your text, whether
+things move, how your hands are set in a headset and whether your screen was
+filled are the same in the next world as in the last, and are still the same
+when you come home. Nothing is set twice. A screen you had filled is filled
+again at your first key or press, since a browser only does that on a press.
+
 Moving the intense way, you are moving that way the moment you arrive
 anywhere: the mouse looks at once, with nothing to click first. Walking into
 a door goes straight through it; choosing a door from across the room brings
