@@ -161,23 +161,28 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "eee259cd91fbe7e3e26df613b8371320db153253",
+        "commit": "ab13cad41c09835ce8baa8752d0a28fd0d4f4ed0",
         "remote": "https://github.com/PR0M3TH3AN/bitlogin.git"
       },
       "files": {
         "LICENSE": "23e1f76916d6a20d0e370fc6ac6288b3e68f4a2c426db6b7389260f2c5ab9396",
-        "bitlogin-headless.js": "ef17de7d8ef9c615e2f27a45e3f1a7c762cecd19f99dd1dde3c39226dbf2c036",
+        "bitlogin-client.js": "60f07767ed2068a0f3ecc9822f9f7b2130fc95cb4d8b4bfc6c0f0af5ebf6f3db",
+        "bitlogin-headless.js": "5ea1d499de12d8ad1cd901fd5a15c062e3d1ba393d622f0583389183d0aed94c",
         "bitlogin-session.js": "fc7484a7e6897a3d2cbaefaaebb6a667ce7d3eefdfb868673b41b1be8e2eacd5",
-        "bitlogin-shared-B2gbCFW0.js": "29f8d23d569c8ce8dc447a34ce214ad79bbdd71ce9759620f69daee7863c90c6",
-        "bitlogin-shared-DDEwyvg-.js": "72081a8870d66ce2e7dc7ffcd1e5afcd365853e2babb384e553f93fd22f6a9ef",
-        "bitlogin-shared-DDWBXFUP.js": "201f59c529207c90e5e3d1a88ed5c80ef3e8520bd89f4c54259f819fb72d90f0",
-        "bitlogin-shared-G7ILG8hf.js": "02885d4cbf303997cdaaf631085fef17cf01d0db1203f9929394f7f5f05d2553",
-        "bitlogin-shared-_kgj0aQT.js": "040349fe61b6d6e1641057207d154bba367758dfe73398537ab63013e7b5916a",
-        "bitlogin-signer.js": "18e49e14df04663b0afe30e5f2e7b7e3d5cba5a71886eadf8f5d09ef4c724dc7",
-        "bitlogin-window.js": "f27a396fce6552bfdf37b926d3f3177645981c0a112ee5e5e7fddc81cfe44061",
-        "bitlogin.js": "1f270dea2b422b6f6671f5449736470b406149ca037a7af4845ff8568b32a1ed",
-        "cryptoWorker.js": "a556dd84e2e190f9751a90739f6d16fe54ad99f7ab7793688d0952773dd10385",
-        "integrity.json": "3b399afe9f1acf7df39d030b35ed31f24b16ee52889a67f9c5778e479b7993f6"
+        "bitlogin-shared-C0qJoVBo.js": "2837109fdc444f9cddafcecb27e868a3e4f20d681cd991369793ebc464cf83e3",
+        "bitlogin-shared-C4PaJAtm.js": "a2ce6261ea254a34c6616a55847b19750e8457628c0466ed6f758524eba3ed3c",
+        "bitlogin-shared-CFVI_a8W.js": "f40b5c37db507601203b08f480360e7a8c5b66dae1c9dfb61fc03124df0b16c0",
+        "bitlogin-shared-Cm1sH5zP.js": "80943539ce3b780497c7c218bb11f5e450d433daf934c01d0ad0f211d81f0912",
+        "bitlogin-shared-Da_P-cjP.js": "d21c3dbf16cc8b91d1703e1529e4a35dba4a791758acfb7e3220e800cc8320ba",
+        "bitlogin-shared-DfKVXHi6.js": "fa93d257866a804a5495a0bc8c9d303f8b12d8e5d7a1929ab1a568e9af9f4e5a",
+        "bitlogin-shared-DgyxWBMr.js": "93d207081c08941673c6b542d1c78138d52a467c93e4d1414799c17a822f6405",
+        "bitlogin-shared-Dizfd6mN.js": "6ee522b68b9672e078f9a1cff2f45a320760896a87450e11062b230a32d5a648",
+        "bitlogin-shared-QRwXh_V6.js": "66c4229fbaf18ca90bd911dedc4b43eba72b056e25cd954c25dea85fb4bc0278",
+        "bitlogin-signer.js": "facaa06cd0618063325fb74ee3120717fd8d9ced3e27b86c7eefa1010b6da799",
+        "bitlogin-window.js": "602203bacba7d25e90f41c326606a3659bcd9fee8f6d5caf81d4821d679e177b",
+        "bitlogin.js": "f8056a43c9ac3c7da45cd72cee59676e7a3166580e8af82e2b364d5df00e6e63",
+        "cryptoWorker.js": "8c97e2400f2ca99aeabd94da1100377ca028284a8db7586d2eecfe249a5e2055",
+        "integrity.json": "0de64ea2a2ede0ff68b7c1f8f749ec225b8c27adac3ac546e37d045b22537842"
       }
     },
     "bitblocks-fonts": {
