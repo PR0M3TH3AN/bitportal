@@ -63,6 +63,7 @@ import {
   lookAfter,
   lookScale,
   onDeskChange,
+  onHereAs,
   panoramaTexture,
   prefersFullscreen,
   reachOf,
@@ -70,6 +71,7 @@ import {
   recordClip,
   resumeFullscreen,
   saveFile,
+  seekPass,
   setLookScale,
   setVisitorFov,
   signerAction,
@@ -87,7 +89,7 @@ import {
   watchFov,
   worldSigner,
   youCard
-} from "./shared-5XSMJEHD.js";
+} from "./shared-CZHBELS5.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -98,7 +100,7 @@ import {
   reportSettings,
   setShowsPictures,
   showsPictures
-} from "./shared-LSZCOD6Y.js";
+} from "./shared-D4HEPMWG.js";
 import {
   browserVoice,
   computerVoice,
@@ -183,6 +185,7 @@ export {
   lookAfter,
   lookScale,
   onDeskChange,
+  onHereAs,
   onPicturesChange,
   panoramaTexture,
   prefersFullscreen,
@@ -193,6 +196,7 @@ export {
   reportSettings,
   resumeFullscreen,
   saveFile,
+  seekPass,
   setLookScale,
   setShowsPictures,
   setVisitorFov,

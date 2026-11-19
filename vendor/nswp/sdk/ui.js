@@ -28,7 +28,7 @@ import {
   setShowsPictures,
   showsChat,
   showsPictures
-} from "./shared-LSZCOD6Y.js";
+} from "./shared-D4HEPMWG.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
@@ -587,7 +587,7 @@ function mountHud(controls, opts = {}) {
     if (c.ready && newest && newest !== chatNewest && chatState !== "open" && !c.lines[c.lines.length - 1].mine) setChatState("peek");
     chatNewest = newest;
     const showing = chatState === "open" ? dockTab : "room";
-    const now = JSON.stringify([chatState, showing, c.version, c.ready, f.version, f.ready, showing === "feed" ? Math.floor(Date.now() / 6e4) : 0]);
+    const now = JSON.stringify([chatState, showing, c.version, c.ready, f.version, f.ready, showing === "feed" ? [Math.floor(Date.now() / 6e4), f.lead] : 0]);
     if (now === chatDrawn) return;
     chatDrawn = now;
     chat.dataset.state = chatState;
@@ -608,7 +608,7 @@ function mountHud(controls, opts = {}) {
     chatField.setAttribute("aria-label", words);
     chatSend.textContent = showing === "feed" ? "Send out a post" : "Send";
     if (showing === "feed") {
-      feedLead.textContent = `Public, like a tweet: anyone can read what you send out here, as ${f.who}, and it can't be taken back.`;
+      feedLead.textContent = f.lead;
       feedSaid.textContent = f.said;
       const nowSec = Math.floor(Date.now() / 1e3);
       chatLines.replaceChildren(...f.posts.map((p) => el("li", { class: `post ${p.state}` }, p.text, el("small", {}, p.state === "sending" ? "Sending\u2026" : p.state === "failed" ? "Not sent" : ago(p.at, nowSec)))));
