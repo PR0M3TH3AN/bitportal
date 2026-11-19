@@ -261,6 +261,11 @@ you were tapping, for a mouse and keys if you were at a desk, and offered the
 way back into your headset if you left one. The Airlock passes that on, and
 goes by how you pressed its own button when it can see that.
 
+Moving the intense way, you are moving that way the moment you arrive
+anywhere: the mouse looks at once, with nothing to click first. Walking into
+a door goes straight through it; choosing a door from across the room brings
+the crossing's chamber up round you first.
+
 You can run and jump whichever way you move. At a desk, Shift runs and Space
 jumps, and two clicks on the floor run there. On a touch screen, two taps
 run, and Jump is with the controls at the bottom. In a headset, A or X
@@ -278,6 +283,10 @@ songs added from their device, kept in this browser, and heard by nobody
 else. Each world has its own sounds and its own copy of that menu; a
 visitor's songs don't follow them from site to site, because a browser keeps
 each site's files apart.
+
+The Sound part of the menu says which piece of the room's music is playing,
+by name ("Playing here: room-e. Next of 8"). Pressing it goes on to the
+next, and "Music: off" silences it.
 
 ### Music between visitors
 

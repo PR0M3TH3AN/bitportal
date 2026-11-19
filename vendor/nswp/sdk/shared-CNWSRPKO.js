@@ -3561,6 +3561,16 @@ function cleanKit(input, folder, playsOgg) {
   if (h) out.hum = h;
   return out;
 }
+function pieceName(address) {
+  let name = address;
+  try {
+    name = decodeURIComponent(new URL(address, "https://x.invalid/").pathname.split("/").pop() ?? "");
+  } catch {
+    name = address.split(/[/?#]/).filter(Boolean).pop() ?? "";
+  }
+  name = name.replace(/\.[a-z0-9]{2,5}$/i, "").replace(/[\u0000-\u001f]/g, "").trim();
+  return name.slice(0, 60) || "a piece with no name";
+}
 var STEP_LEVEL = 0.45;
 function stepShape(foot, random = Math.random) {
   const right = Math.abs(Math.trunc(foot)) % 2 === 1;
@@ -6226,9 +6236,8 @@ var DESK_KEY = "nswp:fps";
 var DESK_WORDS = {
   intense: "Desk controls: intense",
   casual: "Desk controls: casual",
-  nowIntense: "Intense: click the view to look round with the mouse. W, A, S, D walk, Shift runs, Space jumps, F uses what is in front of you, and Escape brings up this menu.",
-  nowCasual: "Casual: click where you want to stand, twice to run there, and drag to look round. W, A, S, D walk, Shift runs and Space jumps.",
-  click: "Click the view to look round. Escape brings up the menu."
+  nowIntense: "Intense: the mouse looks round. W, A, S, D walk, Shift runs, Space jumps, F uses what is in front of you, and Escape brings up this menu.",
+  nowCasual: "Casual: click where you want to stand, twice to run there, and drag to look round. W, A, S, D walk, Shift runs and Space jumps."
 };
 var hasMouse = () => startingForm() === "desk";
 function startsIntense(arrived2, key = DESK_KEY) {
@@ -6254,7 +6263,7 @@ function createFps(o) {
   let pitch = 0;
   let weLetGo = false;
   let closedAt = -1;
-  let told = false;
+  let shown = false;
   const looking = () => document.pointerLockElement === o.dom;
   const active = () => enabled && !o.presenting();
   const dot = document.createElement("div");
@@ -6275,8 +6284,9 @@ function createFps(o) {
     weLetGo = true;
     document.exitPointerLock();
   };
+  const free = (e) => !looking() && !o.hud?.open && e.target === o.dom && e.buttons === 0;
   const onMove = (e) => {
-    if (!active() || !looking()) return;
+    if (!active() || !(looking() || free(e))) return;
     const next = lookAfter(o.rig.rotation.y, pitch, e.movementX, e.movementY);
     o.rig.rotation.y = next.yaw;
     pitch = next.pitch;
@@ -6288,7 +6298,6 @@ function createFps(o) {
     else look();
   };
   const onLock = () => {
-    dot.style.display = looking() ? "block" : "none";
     if (looking()) return;
     for (const k of Object.keys(held)) held[k] = false;
     if (active() && !weLetGo && o.hud && !o.hud.open) o.hud.setOpen(true);
@@ -6308,6 +6317,7 @@ function createFps(o) {
       return;
     }
     if (o.hud?.open) return;
+    if (!looking() && !e.repeat) look();
     const which = heldKey(e.code);
     if (which) {
       held[which] = true;
@@ -6356,6 +6366,8 @@ function createFps(o) {
       pitch = 0;
       o.camera.rotation.x = 0;
       onBlur();
+      dot.style.display = "none";
+      o.dom.style.cursor = "";
     }
     onFullscreen();
   };
@@ -6384,12 +6396,19 @@ function createFps(o) {
     update(dt) {
       if (!active()) {
         if (looking()) letGo();
+        if (shown) {
+          shown = false;
+          dot.style.display = "none";
+          o.dom.style.cursor = "";
+        }
         return false;
       }
-      if (!told && !looking() && !o.hud?.open) {
-        told = true;
-        o.controls.say(DESK_WORDS.click);
+      const aiming = !o.hud?.open;
+      if (aiming !== shown) {
+        shown = aiming;
+        dot.style.display = aiming ? "block" : "none";
       }
+      o.dom.style.cursor = aiming ? "none" : "";
       if (o.hud?.open) return true;
       const [dx, dz] = strideOf(held, o.rig.rotation.y, o.speed ?? 2.4, dt);
       if (!dx && !dz) return true;
@@ -6743,6 +6762,7 @@ function createSounds(o = {}) {
     const decks = [deck(), deck()];
     let active = 0;
     let index = 0;
+    let heard = 0;
     let turning = false;
     let stopped = false;
     const curve = (rising) => Float32Array.from({ length: 32 }, (_, k) => (rising ? Math.sin : Math.cos)(k / 31 * Math.PI / 2));
@@ -6762,6 +6782,8 @@ function createSounds(o = {}) {
           from.gain.gain.setValueCurveAtTime(curve(false), t, fade);
           to.gain.gain.setValueCurveAtTime(curve(true), t, fade);
           active = 1 - active;
+          heard = index;
+          opts.onTurn?.();
           setTimeout(() => {
             from.audio.pause();
             turning = false;
@@ -6805,11 +6827,25 @@ function createSounds(o = {}) {
       /** How many times one piece has handed on to the next. For tests. */
       get index() {
         return index;
+      },
+      /** Where the piece that is heard now is kept. */
+      get now() {
+        return tracks[heard];
+      },
+      get count() {
+        return tracks.length;
+      },
+      /** Hand on to the next piece now. */
+      next() {
+        if (tracks.length < 2 || turning || stopped) return false;
+        turn2();
+        return true;
       }
     };
   };
   let kind = theme.music === null ? "none" : theme.music ? "world" : "made";
   let stopMusic = null;
+  let pieces = null;
   let stopHum = null;
   let humAddress = null;
   let musicAsked = false;
@@ -6826,15 +6862,20 @@ function createSounds(o = {}) {
       changed();
       if (theme.music === null) return;
       if (tracks) {
-        stopMusic = loopPlayer(tracks, placeMusic, {
+        const player2 = loopPlayer(tracks, placeMusic, {
           gain: 0.6,
+          onTurn: () => changed(),
           onFail: () => {
             stopMusic?.();
+            pieces = null;
             kind = "made";
             stopMusic = madeMusic();
             changed();
           }
-        }).stop;
+        });
+        pieces = player2;
+        stopMusic = player2.stop;
+        changed();
         return;
       }
       stopMusic = madeMusic();
@@ -7015,6 +7056,12 @@ function createSounds(o = {}) {
     get music() {
       return kind;
     },
+    get piece() {
+      return pieces ? { name: pieceName(pieces.now), of: pieces.count } : null;
+    },
+    nextPiece() {
+      return pieces?.next() ?? false;
+    },
     get hasHum() {
       return !!humAddress;
     },
@@ -7098,6 +7145,24 @@ function addSoundControls(controls, sounds) {
     },
     level("sound-effects", "Effects", "effects"),
     level("sound-music", "Music", "music"),
+    {
+      // What the place is playing, by name, so a visitor can say which piece they mean. Pressing goes on to the next.
+      id: "sound-piece",
+      section: "sound",
+      icon: "note",
+      hidden: () => sounds.music === "none" || sounds.music === "made" || !sounds.piece,
+      label: () => {
+        const p = sounds.piece;
+        if (!p) return "This place's music";
+        return `Playing here: ${p.name}${p.of > 1 ? `. Next of ${p.of}` : ""}`;
+      },
+      act: () => {
+        const p = sounds.piece;
+        if (!p) return;
+        if (sounds.nextPiece()) controls.say(`Going on from ${p.name} to this place's next piece.`);
+        else controls.say(`${p.name} is the only piece this place has. Music: off, above, silences it.`);
+      }
+    },
     level("sound-voices", "Voices", "voices"),
     {
       id: "sound-hum",
