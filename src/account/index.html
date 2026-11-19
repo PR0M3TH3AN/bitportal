@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="/bitportal.css">
 </head>
 <body>
+<!-- Somewhere to stand: the room's ground and sky, and the crossing's room at both ends (src/account/booth.ts). -->
+<div id="booth" class="booth-stage" aria-hidden="true"></div>
 <header class="top">
   <div class="frame top-row">
     <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
@@ -29,7 +31,8 @@
       <button id="switch" class="button" type="button">Switch profile</button>
       <button id="sign-out" class="button" type="button">Sign out</button>
     </div>
-    <p id="name-note" class="small" hidden>Going by name tells that site, and the people in any room you join there, your public key. The pass that proves it lasts four hours and can't be taken back. Your key itself never leaves this browser.</p>
+    <p class="everywhere"><label><input type="checkbox" id="as-myself"> Go to worlds as myself</label></p>
+    <p id="name-note" class="small">Signed in here is signed in everywhere: you don't sign in to worlds one by one. Each world you visit that has proved who it is is told your public key, and so are the people in any room you join there. The pass that proves it lasts four hours and can't be taken back. Your key itself never leaves this browser. Untick this to visit worlds as a guest.</p>
     <p class="small muted">Switching signs this profile out of this browser, then asks who you'd like to be. Your doors, your look and your settings stay where they are.</p>
     <p class="small"><a href="/publish/">Announce a world</a> as this profile.</p>
   </section>
@@ -60,6 +63,7 @@
     <ul>
       <li>Sign-in is BitLogin, drawn in BitPortal's colours. It is alpha software: use an identity you can afford to lose until it has had an outside audit.</li>
       <li>Your key stays in this browser. BitPortal has no account server and stores nothing about you.</li>
+      <li>You sign in once, here, and you are signed in wherever you go. A world never asks you to sign in to it.</li>
       <li>You sign in here, on this page, and nowhere else. A world's menu can bring you here and take you back, and that is all it can do: no world will ever ask for your password itself. If one does, leave. Before you type anything, check that the address above is this site's.</li>
       <li>On a phone, a computer or a headset's own screen, it is the same page with the same ways to sign in.</li>
       <li id="headset-note">From inside VR, this page opens on your headset's flat screen. When you are done, the button back to your room takes you into VR again.</li>

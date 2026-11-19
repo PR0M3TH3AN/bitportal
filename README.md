@@ -221,6 +221,42 @@ room's menu leads to it ("You", then "Sign in, or stay anonymous"), and it
 leads back to the room. From inside VR the session is ended to show the
 page, and the way back takes you into VR again.
 
+It is a place, not only a page. Behind the page is the room's own ground
+and sky, and the crossing's room is at both ends: it opens round you as you
+arrive from a world or from your room, and comes up again as you leave. The
+panel in front of you is still the page, at this site's address, and what
+you type is typed into it. In a headset it is seen on the headset's flat
+screen, because an immersive session can't show a page.
+
+### Signed in everywhere
+
+You sign in once, here, and you are signed in wherever you go. Each world
+that has proved it is the one its announcement names is told who you are as
+you arrive, with nothing to choose at each door. A world never has a sign-in
+of its own.
+
+"Go to worlds as myself" on this page is ticked until you untick it, with
+what it gives away written beside it: your public key, to each such world
+and to the people in a room there. Unticked, you stay signed in here and
+visit worlds as a guest. Choosing "a guest" at the Airlock does the same. A
+site that hasn't proved who it is is never told, and nothing on a link can
+make you signed in or send you by name.
+
+### Your look, changed in your room
+
+"Change how you look" is in the room's menu under "You", and opens "Your
+look": every colour and part, each stepping through its list, and "Surprise
+me". Your own figure stands in the room and changes as you do. It is the
+same menu on a phone, at a desk and on a headset's wrist. The page at
+`/look/` still does the same with a colour picker.
+
+Every world's menu has "Change how you look" too. It brings you here by the
+crossing's room, with the menu already open on your look, and "Back" (the
+first key) takes you to the world you came from, wearing it. A world never
+changes your look itself: a look a world could set is a mark it could follow
+you by. Your look is kept in this browser, and with your profile if you keep
+your settings there, so another device starts from it.
+
 ### Signing in from inside a world
 
 Every world's menu has the same thing under "You": "You are a guest here.

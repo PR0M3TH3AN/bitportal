@@ -45,6 +45,7 @@ import {
   currentForm,
   deviceForms,
   dotsBetween,
+  figureAction,
   formFor,
   fullscreenWaiting,
   heldKey,
@@ -68,7 +69,7 @@ import {
   turnVisitor,
   usedForm,
   viewScale
-} from "./shared-NLPVKM6K.js";
+} from "./shared-JROGPGQV.js";
 import {
   arriveWith,
   arrivedSettings,
@@ -139,6 +140,7 @@ export {
   currentSettings,
   deviceForms,
   dotsBetween,
+  figureAction,
   formFor,
   fullscreenWaiting,
   heldKey,

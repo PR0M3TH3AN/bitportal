@@ -4,29 +4,16 @@
  * choice on this device. Nothing here contacts anything.
  */
 import * as THREE from "three";
-import { generatedLook, LOOK_COLORS, LOOK_PARTS, type LookColor, type LookPart } from "@nswp/core";
+import { generatedLook, LOOK_COLORS, LOOK_PARTS, type LookPart } from "@nswp/core";
 import { createEnvironment } from "nswp-sdk/home";
 import { createFigure, type Figure } from "nswp-sdk/three";
-import { forgetLook, loadLook, lookOf, newSeed, storeLook, surprise, type KeptLook } from "../shared/look.js";
+import { forgetLook, loadLook, LOOK_TITLES, lookOf, lookWord, newSeed, storeLook, surprise, type KeptLook } from "../shared/look.js";
 
 const $ = (id: string) => document.getElementById(id)!;
 
-// What each list and choice is called on the page. The values stay the protocol's.
-const TITLES: Record<LookPart | LookColor, string> = {
-  color: "Main colour",
-  accent: "Trim",
-  light: "Light",
-  build: "Build",
-  head: "Head",
-  face: "Face",
-  accessory: "On top",
-  body: "Body",
-  shoulders: "Shoulders",
-  pattern: "Pattern",
-  finish: "Finish",
-};
-const WORDS: Record<string, string> = { none: "Nothing", split: "Two bars", dots: "Two dots", tee: "A T", plain: "Plain" };
-const word = (value: string) => WORDS[value] ?? value[0]!.toUpperCase() + value.slice(1);
+// What each list and choice is called: the same words as the room's menu uses (shared/look.ts).
+const TITLES = LOOK_TITLES;
+const word = lookWord;
 
 // Until the visitor changes something, this is only a suggestion: nothing is kept.
 let kept: KeptLook = loadLook() ?? { seed: newSeed(), choices: {} };

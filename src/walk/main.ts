@@ -16,12 +16,14 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
-import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
+import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, queryRelays, WORLD_KIND } from "@nswp/core";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
 import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
-import { inlineLook, loadLook, lookOf } from "../shared/look.js";
+import { inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
+import { readWhoDoor, tabStore } from "../shared/who.js";
+import { addYou, type You } from "./you.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
@@ -78,6 +80,8 @@ interface Clickable {
 interface TestHooks {
   marks?: () => { ring: [number, number] | null; dot: [number, number] | null; dots: number };
   everyDoor?: DoorList;
+  /** Who the visitor is and how they look. */
+  you?: You;
   jump?: { jump(): boolean; readonly height: number; readonly airborne: boolean };
   /** Game controls on a desk: the mouse looks, keys walk. */
   fps?: Fps;
@@ -363,12 +367,8 @@ async function start(): Promise<void> {
   addSoundControls(controls, sounds);
   hooks.sounds = sounds;
   const jumpList = createJumpList({ relays: () => settings.relays, from: "walk" });
-  // The editor is a page, which can't be seen in a headset.
-  controls.addSection({ id: "you", label: "You", icon: "room", note: "How other people see you when you share a room. It is kept on this device." });
-  controls.add({ id: "figure", section: "you", icon: "room", label: "Change how you look", short: "You", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/look/") });
-  // Who they are: stay a guest, sign in, or switch profile. Signing in is one page and no other (BitLogin, in
-  // BitPortal's colours), so the room leads there and that page leads back. From a headset, the session is ended to
-  // show the page, and the way back says so, so the room offers the way into VR again first.
+  // Who they are and how they look are reached from here (you.ts, added further down, once there is a room to
+  // do them in). This is who the room knows is signed in, from BitLogin's public record.
   let signedInAs = "";
   void readSignedIn().then((who) => {
     signedInAs = who ? (who.name ?? shortKey(who.pubkey)) : "";
@@ -379,29 +379,13 @@ async function start(): Promise<void> {
     const took = ((e as CustomEvent).detail as { took?: string[] } | undefined)?.took ?? [];
     if (took.length) controls.say("Settings from your profile have arrived. They are used from your next door.");
   });
-  controls.add({
-    id: "identity",
-    section: "you",
-    icon: "people",
-    label: () => (signedInAs ? `Signed in as ${signedInAs}. Switch profile, or sign out` : "You are a guest. Sign in, or stay anonymous"),
-    short: "Sign in",
-    act: async () => {
-      const fromHeadset = renderer.xr.isPresenting;
-      try {
-        await renderer.xr.getSession()?.end();
-      } catch {
-        /* already ended */
-      }
-      location.assign(`/account/?back=walk${fromHeadset ? "&xr=1" : ""}`);
-    },
-  });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
     // Every door this copy shows, on a panel in the room: nobody is sent out of the room to read a list.
     { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => everyDoor?.open() },
     // The front page still has what needs a page: signing in, settings, announcing a world. It can't be seen from a headset.
-    { id: "front-page", section: "travel", icon: "list", label: "The front page: sign in, settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/") },
+    { id: "front-page", section: "travel", icon: "list", label: "The front page: settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/") },
   );
   // Someone whose home is a world of their own keeps their doors here, and goes home from here. Nothing is asked
   // of them on the way: the Airlock looks at their home first, and brings them back here if it doesn't answer.
@@ -1036,20 +1020,98 @@ async function start(): Promise<void> {
   // Whether the visitor is in the room here, and heard: it goes with them through a door.
   let travelling = (): { joined: boolean; mic: boolean } => ({ joined: false, mic: false });
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
-  const myLook = loadLook();
+  let myLook = loadLook();
   const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), onChange: () => refreshRoom() });
   // And they can see it too: their own figure stands to one side, as others will see it.
+  // It is drawn again whenever they change it, which they do from the menu, standing here (you.ts).
   let mirror: Figure | null = null;
-  if (myLook) {
+  let mirrorSign: THREE.Sprite | null = null;
+  const showMirror = () => {
+    if (mirror) {
+      scene.remove(mirror.group);
+      mirror.dispose();
+      mirror = null;
+    }
+    if (mirrorSign) mirrorSign.visible = !!myLook;
+    state.mirror = null;
+    if (!myLook) return;
     mirror = createFigure(lookOf(myLook));
     // Ahead and to the left of where a visitor first stands, turned to face them.
     mirror.group.position.set(1.9, 1.6, 4.6);
     mirror.group.rotation.y = Math.atan2(1.9, 4.6);
-    const sign = textSprite("How others see you\nMenu: Change how you look", INK, 1.3);
-    sign.position.set(1.9, 2.32, 4.6);
-    scene.add(mirror.group, sign);
+    scene.add(mirror.group);
+    if (!mirrorSign) {
+      mirrorSign = textSprite("How others see you\nMenu: You, then Change how you look", INK, 1.3);
+      mirrorSign.position.set(1.9, 2.32, 4.6);
+      scene.add(mirrorSign);
+    }
     state.mirror = mirror.look;
-  }
+  };
+  showMirror();
+
+  // ------------------------------------------------ who they are, and how they look
+  // A world's menu brings its visitor here to change their look, and the door back is kept for the tab by the
+  // Airlock (who.ts). It is offered while it lasts, however they came to be standing here.
+  const whoDoor = readWhoDoor(tabStore(), Date.now());
+  const goBack = async () => {
+    const req = whoDoor ? parseAirlockFragment(whoDoor.hash) : null;
+    if (leaving || !whoDoor || !req) return;
+    leaving = true;
+    state.leaving = "back";
+    everyDoor?.close();
+    sounds.play("cross");
+    const where = whoDoor.host || "the world you came from";
+    // The crossing's room comes up, as it does through any door, and the Airlock is next: it checks the door.
+    await crossing.leave({ title: where, address: where });
+    document.body.classList.add("leaving");
+    // They left a headset session to come here, or are in one now: the world offers the way back into one.
+    const immersive = renderer.xr.isPresenting || !!req.immersive;
+    try {
+      await renderer.xr.getSession()?.end();
+    } catch {
+      /* already ended */
+    }
+    const dest = { ...(req.naddr ? { naddr: req.naddr.raw } : {}), ...(req.url ? { url: req.url } : {}), ...(req.entryPoint ? { entryPoint: req.entryPoint } : {}) };
+    // They go back as they are now: what they set here goes with them, and the room they were in there is theirs to rejoin.
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, dest, { immersive, ...(req.joined ? { joined: true, ...(req.mic ? { mic: true } : {}) } : {}), ...(req.blocked ? { blocked: req.blocked } : {}), ...movingFlag(), form: currentForm(), settings: currentSettings() }));
+  };
+  // Signing in is a place of its own (`/account/`), reached by the crossing's room like anywhere else.
+  const goSignIn = async () => {
+    if (leaving) return;
+    leaving = true;
+    state.leaving = "account";
+    everyDoor?.close();
+    sounds.play("cross");
+    await crossing.leave({ title: "Who you are", address: location.host });
+    document.body.classList.add("leaving");
+    const fromHeadset = renderer.xr.isPresenting;
+    try {
+      await renderer.xr.getSession()?.end();
+    } catch {
+      /* already ended */
+    }
+    try {
+      sessionStorage.setItem(ARRIVED_SETTINGS, JSON.stringify(currentSettings()));
+    } catch {
+      /* the page keeps what it had */
+    }
+    location.assign(`/account/?back=${whoDoor ? "door" : "walk"}${fromHeadset ? "&xr=1" : ""}`);
+  };
+  const you: You = addYou({
+    controls,
+    openMenu: (section) => hud.setOpen(true, section),
+    door: whoDoor,
+    goBack: () => void goBack(),
+    goSignIn: () => void goSignIn(),
+    look: () => myLook,
+    onLook: (kept: KeptLook | null) => {
+      myLook = kept;
+      showMirror();
+    },
+    signedInAs: () => signedInAs,
+  });
+  hooks.you = you;
+  state.whoDoor = whoDoor?.host ?? null;
   // Brought here by the Airlock from a world where they were in the room: it says so once, on this site only.
   // The people they have blocked everywhere are blocked here too: this room is their own client's.
   let arrived: { joined?: boolean; mic?: boolean; blocked?: string[] } = { blocked: loadBlockedEverywhere().map((b) => b.key) };
@@ -1112,7 +1174,9 @@ async function start(): Promise<void> {
   // Back from a world (the Airlock says so in the address, and it is taken off at once). Someone who left a
   // headset session to come home is offered the way back into one, first and alone.
   const back = location.hash.replace(/^#/, "").split("&");
-  const cameBack = back.includes("back");
+  // Brought here from a world to change their look: they step out of the crossing's room too.
+  const cameForLook = back.includes("look");
+  const cameBack = back.includes("back") || cameForLook;
   const cameFromHeadset = cameBack && back.includes("xr=1");
   // A link the Bridge printed asks to add a computer. It is taken off the address too, so a reload doesn't ask again.
   const pairing = computers.fromAddress(location.hash);
@@ -1381,6 +1445,14 @@ async function start(): Promise<void> {
   if (cameBack) {
     camera.updateMatrixWorld(true);
     crossing.arrive({ title: "BitPortal", address: location.host, hold: () => offered });
+  }
+  // What they came for is put in front of them once the crossing's room has opened.
+  if (cameForLook) {
+    const wait = setInterval(() => {
+      if (crossing.state !== "none") return;
+      clearInterval(wait);
+      you.openLook();
+    }, 200);
   }
   state.ready = true;
 
