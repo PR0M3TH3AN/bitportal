@@ -17,7 +17,13 @@ describe("a Nostr profile, as BitPortal reads it", () => {
     expect(readProfile(JSON.stringify({ display_name: "  Alice\n", name: "alice" })).name).toBe("Alice");
     expect(readProfile(JSON.stringify({ name: "alice" })).name).toBe("alice");
     expect(readProfile(JSON.stringify({ display_name: "​", name: "bob" })).name).toBe("bob");
-    expect(readProfile("not json")).toEqual({ name: "", picture: "" });
+    expect(readProfile("not json")).toEqual({ name: "", picture: "", about: "" });
+  });
+  it("takes the start of what they wrote about themselves, as one line of plain text", () => {
+    expect(readProfile(JSON.stringify({ about: "  Keeper of the east wing.\n\nAsk me about the clocks. " })).about).toBe("Keeper of the east wing. Ask me about the clocks.");
+    expect([...readProfile(JSON.stringify({ about: "z".repeat(900) })).about]).toHaveLength(280);
+    expect(readProfile(JSON.stringify({ about: `nice ${String.fromCodePoint(0x202e)}person` })).about).toBe("nice person");
+    for (const not of [7, null, { a: 1 }]) expect(readProfile(JSON.stringify({ about: not })).about).toBe("");
   });
   it("takes a picture only from an https address", () => {
     expect(readProfile(JSON.stringify({ picture: "https://pictures.example/a.webp" })).picture).toBe("https://pictures.example/a.webp");

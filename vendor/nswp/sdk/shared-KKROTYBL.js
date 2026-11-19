@@ -35,55 +35,6 @@ var ICONS = {
   people: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a6 6 0 0 1 12 0M16 11a2.5 2.5 0 1 0 0-5M21 20a5 5 0 0 0-4-4.9"
 };
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/theme.ts
-var DEFAULT_THEME = { accent: "#ffb65c", ink: "#eef5fb", glass: "#0a1018", warn: "#ff7566", motion: true, scale: 1, wrist: "left" };
-var UI_PRESETS = [
-  { id: "lantern", label: "Lantern", accent: "#ffb65c" },
-  { id: "ion", label: "Ion", accent: "#62d9ff" },
-  { id: "verdant", label: "Verdant", accent: "#4fd08b" },
-  { id: "rose", label: "Rose", accent: "#ff8fb1" },
-  { id: "paper", label: "Paper", accent: "#f2f3f6" }
-];
-var KEY = "nswp:ui";
-var HEX = /^#[0-9a-f]{6}$/i;
-function cleanTheme(input) {
-  const out = {};
-  if (!input || typeof input !== "object") return out;
-  const t = input;
-  for (const k of ["accent", "ink", "glass", "warn"]) if (typeof t[k] === "string" && HEX.test(t[k])) out[k] = t[k].toLowerCase();
-  if (typeof t.motion === "boolean") out.motion = t.motion;
-  if (typeof t.scale === "number" && Number.isFinite(t.scale)) out.scale = Math.min(1.5, Math.max(0.85, t.scale));
-  if (t.wrist === "left" || t.wrist === "right" || t.wrist === "off") out.wrist = t.wrist;
-  return out;
-}
-function loadVisitorTheme() {
-  try {
-    return cleanTheme(JSON.parse(globalThis.localStorage?.getItem(KEY) ?? "{}"));
-  } catch {
-    return {};
-  }
-}
-function saveVisitorTheme(theme) {
-  try {
-    globalThis.localStorage?.setItem(KEY, JSON.stringify(cleanTheme(theme)));
-  } catch {
-  }
-}
-function prefersStill() {
-  try {
-    return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-  } catch {
-    return false;
-  }
-}
-function resolveTheme(world = {}, visitor = loadVisitorTheme()) {
-  return { ...DEFAULT_THEME, ...prefersStill() ? { motion: false } : {}, ...cleanTheme(world), ...cleanTheme(visitor) };
-}
-function rgb(hex) {
-  const n = Number.parseInt(hex.slice(1), 16);
-  return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
-}
-
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/settings.ts
 import { cleanSettings } from "@nswp/core";
 var arrived = {};
@@ -209,6 +160,55 @@ function loadPicture(address) {
     loaded.set(url, asked);
   }
   return asked;
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/theme.ts
+var DEFAULT_THEME = { accent: "#ffb65c", ink: "#eef5fb", glass: "#0a1018", warn: "#ff7566", motion: true, scale: 1, wrist: "left" };
+var UI_PRESETS = [
+  { id: "lantern", label: "Lantern", accent: "#ffb65c" },
+  { id: "ion", label: "Ion", accent: "#62d9ff" },
+  { id: "verdant", label: "Verdant", accent: "#4fd08b" },
+  { id: "rose", label: "Rose", accent: "#ff8fb1" },
+  { id: "paper", label: "Paper", accent: "#f2f3f6" }
+];
+var KEY = "nswp:ui";
+var HEX = /^#[0-9a-f]{6}$/i;
+function cleanTheme(input) {
+  const out = {};
+  if (!input || typeof input !== "object") return out;
+  const t = input;
+  for (const k of ["accent", "ink", "glass", "warn"]) if (typeof t[k] === "string" && HEX.test(t[k])) out[k] = t[k].toLowerCase();
+  if (typeof t.motion === "boolean") out.motion = t.motion;
+  if (typeof t.scale === "number" && Number.isFinite(t.scale)) out.scale = Math.min(1.5, Math.max(0.85, t.scale));
+  if (t.wrist === "left" || t.wrist === "right" || t.wrist === "off") out.wrist = t.wrist;
+  return out;
+}
+function loadVisitorTheme() {
+  try {
+    return cleanTheme(JSON.parse(globalThis.localStorage?.getItem(KEY) ?? "{}"));
+  } catch {
+    return {};
+  }
+}
+function saveVisitorTheme(theme) {
+  try {
+    globalThis.localStorage?.setItem(KEY, JSON.stringify(cleanTheme(theme)));
+  } catch {
+  }
+}
+function prefersStill() {
+  try {
+    return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  } catch {
+    return false;
+  }
+}
+function resolveTheme(world = {}, visitor = loadVisitorTheme()) {
+  return { ...DEFAULT_THEME, ...prefersStill() ? { motion: false } : {}, ...cleanTheme(world), ...cleanTheme(visitor) };
+}
+function rgb(hex) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/chat.ts
@@ -384,13 +384,6 @@ function createHeldButton(hold = SUMMON_HOLD) {
 
 export {
   ICONS,
-  DEFAULT_THEME,
-  UI_PRESETS,
-  cleanTheme,
-  loadVisitorTheme,
-  saveVisitorTheme,
-  resolveTheme,
-  rgb,
   arriveWith,
   arrivedSettings,
   reportSettings,
@@ -401,6 +394,13 @@ export {
   setShowsPictures,
   onPicturesChange,
   loadPicture,
+  DEFAULT_THEME,
+  UI_PRESETS,
+  cleanTheme,
+  loadVisitorTheme,
+  saveVisitorTheme,
+  resolveTheme,
+  rgb,
   CHAT_KEY,
   showsChat,
   setShowsChat,
