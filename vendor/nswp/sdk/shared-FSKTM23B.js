@@ -4150,11 +4150,30 @@ function createConsole(controls, opts) {
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
 var resumed = false;
 var waiting = false;
+var FULL_KEY = "nswp:full";
+var prefers = false;
+var keepFull = (on) => {
+  prefers = on;
+  try {
+    if (on) localStorage.setItem(FULL_KEY, "1");
+    else localStorage.removeItem(FULL_KEY);
+  } catch {
+  }
+};
+var prefersFullscreen = () => prefers;
 function resumeFullscreen(presenting = () => false) {
   if (resumed || typeof document === "undefined") return;
   resumed = true;
-  reportSettings("screen", () => ({ full: !!document.fullscreenElement || waiting }));
-  waiting = arrivedSettings().full === true && document.fullscreenEnabled && !document.fullscreenElement;
+  const came = arrivedSettings().full;
+  let kept = false;
+  try {
+    kept = localStorage.getItem(FULL_KEY) === "1";
+  } catch {
+  }
+  if (came === void 0) prefers = kept;
+  else keepFull(came);
+  reportSettings("screen", () => ({ full: prefers }));
+  waiting = prefers && document.fullscreenEnabled && !document.fullscreenElement;
   if (!waiting) return;
   const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
   const stop = () => {
@@ -4183,41 +4202,29 @@ function fullscreenAction(controls, presenting) {
     id: "fullscreen",
     section: "view",
     icon: "size",
-    on: () => !!document.fullscreenElement,
+    on: () => prefers,
     // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
     hidden: () => !document.fullscreenEnabled || presenting(),
-    label: () => document.fullscreenElement ? "Fullscreen: on" : "Fullscreen: off",
+    // It says what they prefer, in every world, and whether the screen is filled just now.
+    label: () => !prefers ? "Fullscreen: off" : document.fullscreenElement ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
     act: async () => {
+      const fill = !document.fullscreenElement;
+      if (!fill) keepFull(false);
       try {
-        if (document.fullscreenElement) await document.exitFullscreen();
-        else await document.documentElement.requestFullscreen();
+        if (fill) {
+          await document.documentElement.requestFullscreen();
+          keepFull(true);
+        } else await document.exitFullscreen();
       } catch {
         controls.say("This browser wouldn't go fullscreen.");
       }
+      controls.setTarget("");
     }
   };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
-import { shortNpub as shortNpub3 } from "@nswp/core";
-
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
-import {
-  arrivalParam,
-  buildAirlockUrl,
-  buildArrivalUrl,
-  buildWayUrl,
-  checkDestination,
-  decodeArrival,
-  doorFor,
-  fromLocal,
-  localMap,
-  parseManifest,
-  stripArrivalParam,
-  toLocal,
-  verifyRoomPass as verifyRoomPass2,
-  WELL_KNOWN_PATH
-} from "@nswp/core";
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/desk.ts
+import { FOV_RANGE, LOOK_RANGE } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
 var matches = (query) => {
@@ -4267,6 +4274,128 @@ function watch() {
     { capture: true, passive: true }
   );
 }
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/desk.ts
+var DESK_PREFS_KEY = "nswp:desk";
+var LOOK_STEPS = [
+  { value: 0.5, word: "slow" },
+  { value: 0.75, word: "gentle" },
+  { value: 1, word: "normal" },
+  { value: 1.5, word: "quick" },
+  { value: 2, word: "fast" },
+  { value: 3, word: "fastest" }
+];
+var FOV_STEPS = [null, 60, 70, 80, 90, 100, 110];
+var clampLook = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(LOOK_RANGE[1], Math.max(LOOK_RANGE[0], v)) * 100) / 100 : 1;
+var clampFov = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(FOV_RANGE[1], Math.max(FOV_RANGE[0], v))) : null;
+var prefs = null;
+var watchers = /* @__PURE__ */ new Set();
+var keep = (p) => {
+  try {
+    localStorage.setItem(DESK_PREFS_KEY, JSON.stringify(p));
+  } catch {
+  }
+};
+function load() {
+  if (prefs) return prefs;
+  let kept = {};
+  try {
+    kept = JSON.parse(localStorage.getItem(DESK_PREFS_KEY) ?? "{}") ?? {};
+  } catch {
+  }
+  const came = arrivedSettings();
+  prefs = { look: clampLook(came.look ?? kept.look), fov: came.fov !== void 0 ? clampFov(came.fov) : clampFov(kept.fov) };
+  if (came.look !== void 0 || came.fov !== void 0) keep(prefs);
+  reportSettings("desk", () => ({ look: load().look, ...load().fov === null ? {} : { fov: load().fov } }));
+  return prefs;
+}
+var change = (next) => {
+  prefs = next;
+  keep(next);
+  for (const w of watchers) w();
+};
+var lookScale = () => load().look;
+var setLookScale = (v) => change({ ...load(), look: clampLook(v) });
+var visitorFov = () => currentForm() === "desk" ? load().fov : null;
+var setVisitorFov = (v) => change({ ...load(), fov: v === null ? null : clampFov(v) });
+function onDeskChange(cb) {
+  watchers.add(cb);
+  return () => void watchers.delete(cb);
+}
+var after = (steps, at) => steps[(at + 1) % steps.length];
+function addDeskControls(controls, o) {
+  const lookAt = () => {
+    const now = lookScale();
+    let best = 0;
+    LOOK_STEPS.forEach((s, i) => {
+      if (Math.abs(s.value - now) < Math.abs(LOOK_STEPS[best].value - now)) best = i;
+    });
+    return best;
+  };
+  controls.add(
+    {
+      id: "look-speed",
+      section: "moving",
+      icon: "turn",
+      hidden: o.presenting,
+      label: () => `Look speed: ${LOOK_STEPS[lookAt()].word}`,
+      short: "Look speed",
+      act: () => {
+        setLookScale(after(LOOK_STEPS, lookAt()).value);
+        controls.say(`Look speed: ${LOOK_STEPS[lookAt()].word}. It is the same in every world.`);
+      }
+    },
+    {
+      id: "fov",
+      section: "view",
+      icon: "size",
+      // A touch screen's view is fitted to its window by the world, and a headset has its own.
+      hidden: () => o.presenting() || currentForm() !== "desk",
+      label: () => load().fov === null ? "Field of view: this world's own" : `Field of view: ${load().fov}\xB0`,
+      short: "View width",
+      act: () => {
+        const at = FOV_STEPS.indexOf(load().fov);
+        setVisitorFov(after(FOV_STEPS, at === -1 ? 0 : at));
+        controls.say(load().fov === null ? "Field of view: each world's own." : `Field of view: ${load().fov}\xB0, in every world.`);
+      }
+    }
+  );
+  onDeskChange(() => controls.setTarget(""));
+}
+function watchFov(camera, o = {}) {
+  const first = camera.fov;
+  const apply = () => {
+    if (o.presenting?.()) return;
+    const fov = visitorFov() ?? o.own?.() ?? first;
+    if (camera.fov === fov) return;
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  };
+  onDeskChange(apply);
+  apply();
+  return apply;
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
+import { shortNpub as shortNpub3 } from "@nswp/core";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
+import {
+  arrivalParam,
+  buildAirlockUrl,
+  buildArrivalUrl,
+  buildWayUrl,
+  checkDestination,
+  decodeArrival,
+  doorFor,
+  fromLocal,
+  localMap,
+  parseManifest,
+  stripArrivalParam,
+  toLocal,
+  verifyRoomPass as verifyRoomPass2,
+  WELL_KNOWN_PATH
+} from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bring.ts
 import { readBrought } from "@nswp/core";
@@ -5048,9 +5177,9 @@ function createXrInput(opts) {
       if (held.get(i)?.by === "pinch") release(i);
     }));
   });
-  const setComfort = (patch, keep = false) => {
+  const setComfort = (patch, keep2 = false) => {
     comfort = { ...comfort, ...cleanComfort(patch) };
-    if (keep) saveComfort(comfort);
+    if (keep2) saveComfort(comfort);
   };
   if (opts.arrivedIntense && !isIntense(comfort)) setComfort(INTENSE_COMFORT, true);
   if (opts.controls) {
@@ -5064,7 +5193,7 @@ function createXrInput(opts) {
     const hidden = () => !headset;
     const note = () => comfort.move === "steps" ? "With a controller: push a stick forward, point at the floor and let go to step there. Flick the other stick to turn. Squeeze the grip to pick things up. Pointing and selecting does everything too." : "With a controller: one stick walks, the other turns. If it makes you feel unwell, go back to stepping: it is the comfortable way.";
     controls.addSection({ id: "moving", label: "Moving", icon: "step", note });
-    const change = (patch) => {
+    const change2 = (patch) => {
       setComfort(patch, true);
       controls.addSection({ id: "moving", label: "Moving", icon: "step", note });
     };
@@ -5081,13 +5210,13 @@ function createXrInput(opts) {
         short: "Style",
         act: () => {
           const intense = !isIntense(comfort);
-          change(intense ? INTENSE_COMFORT : CASUAL_COMFORT);
+          change2(intense ? INTENSE_COMFORT : CASUAL_COMFORT);
           controls.say(
             intense ? "Intense: one stick walks, the other turns, smoothly, with the whole view. If it makes you feel unwell, go back to casual." : "Casual: point at the floor to step there, and turn a notch at a time. The comfortable way."
           );
         }
       },
-      { id: "move-mode", section: "moving", icon: "step", hidden, on: () => comfort.move === "smooth", label: () => comfort.move === "steps" ? "Moving in steps. Walk smoothly instead" : "Walking smoothly. Move in steps instead", short: "Walk", act: () => change({ move: comfort.move === "steps" ? "smooth" : "steps" }) },
+      { id: "move-mode", section: "moving", icon: "step", hidden, on: () => comfort.move === "smooth", label: () => comfort.move === "steps" ? "Moving in steps. Walk smoothly instead" : "Walking smoothly. Move in steps instead", short: "Walk", act: () => change2({ move: comfort.move === "steps" ? "smooth" : "steps" }) },
       {
         id: "turn-mode",
         section: "moving",
@@ -5097,9 +5226,9 @@ function createXrInput(opts) {
         label: () => comfort.turn === "smooth" ? "Turning smoothly. Turn in steps instead" : `Turning ${comfort.turnStep}\xB0 at a time. Change`,
         short: "Turn",
         // In steps of 30, then 45, then 90, then smoothly, and round again.
-        act: () => change(comfort.turn === "smooth" ? { turn: "steps", turnStep: 30 } : comfort.turnStep === 30 ? { turnStep: 45 } : comfort.turnStep === 45 ? { turnStep: 90 } : { turn: "smooth" })
+        act: () => change2(comfort.turn === "smooth" ? { turn: "steps", turnStep: 30 } : comfort.turnStep === 30 ? { turnStep: 45 } : comfort.turnStep === 45 ? { turnStep: 90 } : { turn: "smooth" })
       },
-      { id: "move-hand", section: "moving", icon: "motion", hidden, label: () => `The ${comfort.moveHand} stick moves you. Swap hands`, short: "Hands", act: () => change({ moveHand: comfort.moveHand === "left" ? "right" : "left" }) },
+      { id: "move-hand", section: "moving", icon: "motion", hidden, label: () => `The ${comfort.moveHand} stick moves you. Swap hands`, short: "Hands", act: () => change2({ moveHand: comfort.moveHand === "left" ? "right" : "left" }) },
       {
         id: "move-narrow",
         section: "moving",
@@ -5108,7 +5237,7 @@ function createXrInput(opts) {
         on: () => comfort.narrow,
         label: () => comfort.narrow ? "The view narrows while you move. Turn that off" : "Narrow the view while you move",
         short: "Narrow",
-        act: () => change({ narrow: !comfort.narrow })
+        act: () => change2({ narrow: !comfort.narrow })
       }
     );
   }
@@ -6737,6 +6866,8 @@ var DESK_WORDS = {
 var hasMouse = () => startingForm() === "desk";
 function startsIntense(arrived2, key = DESK_KEY) {
   if (!hasMouse()) return false;
+  const prefers2 = arrivedSettings().intense;
+  if (typeof prefers2 === "boolean") return prefers2;
   try {
     return arrived2 || localStorage.getItem(key) === "1";
   } catch {
@@ -6754,6 +6885,10 @@ function createFps(o) {
   const key = o.keep ?? DESK_KEY;
   const mouse = hasMouse();
   let enabled = startsIntense(o.arrived === true, key);
+  if (mouse) {
+    if (typeof arrivedSettings().intense === "boolean" || o.arrived) keepIntense(enabled, key);
+    reportSettings("moving", () => ({ intense: enabled }));
+  }
   const held = {};
   let pitch = 0;
   let weLetGo = false;
@@ -6782,7 +6917,7 @@ function createFps(o) {
   const free = (e) => !looking() && !o.hud?.open && e.target === o.dom && e.buttons === 0;
   const onMove = (e) => {
     if (!active() || !(looking() || free(e))) return;
-    const next = lookAfter(o.rig.rotation.y, pitch, e.movementX, e.movementY);
+    const next = lookAfter(o.rig.rotation.y, pitch, e.movementX, e.movementY, LOOK_SPEED * lookScale());
     o.rig.rotation.y = next.yaw;
     pitch = next.pitch;
     o.camera.rotation.x = pitch;
@@ -8084,7 +8219,7 @@ function addCameraControls(controls, d) {
     controls.say(text);
   };
   let latest = null;
-  const keep = (capture) => {
+  const keep2 = (capture) => {
     latest = capture;
     d.onCapture?.(capture);
     if (presenting()) {
@@ -8099,7 +8234,7 @@ function addCameraControls(controls, d) {
     try {
       const hide = d.hide?.() ?? [];
       const blob = kind === "selfie" ? await takeSelfie(d.renderer, d.scene, d.camera, d.look?.() ?? plain, { hide }) : await takePicture(d.renderer, d.scene, d.camera, { hide });
-      keep({ kind, blob, name: `${name}-${kind === "selfie" ? "selfie-" : ""}${stamp()}.jpg` });
+      keep2({ kind, blob, name: `${name}-${kind === "selfie" ? "selfie-" : ""}${stamp()}.jpg` });
     } catch {
       tell("That picture couldn't be taken on this device.");
     }
@@ -8107,7 +8242,7 @@ function addCameraControls(controls, d) {
   const finish = (blob) => {
     clip = null;
     d.recording?.(false);
-    keep({ kind: "clip", blob, name: `${name}-clip-${stamp()}.${blob.type.includes("mp4") ? "mp4" : "webm"}` });
+    keep2({ kind: "clip", blob, name: `${name}-clip-${stamp()}.${blob.type.includes("mp4") ? "mp4" : "webm"}` });
   };
   controls.addSection({ id: "camera", label: "Camera", icon: "camera", note: () => clip ? `Recording: ${Math.floor(clip.seconds())} s. Others in the room can see that you are.` : last });
   controls.add(
@@ -9385,6 +9520,8 @@ async function addViewControls(controls, d) {
     { id: "turn", section: "view", icon: "turn", label: "Turn around", act: () => turnVisitor(d.rig, d.camera, 180) },
     fullscreenAction(controls, presenting)
   );
+  addDeskControls(controls, { presenting });
+  if (d.fov !== false && d.camera.isPerspectiveCamera) watchFov(d.camera, { presenting });
   if (!controls.has("identity") && identityHost()) {
     const leaving = async (to) => ({ ...await d.leaving?.(to), xrSession: d.renderer.xr.getSession() });
     controls.addSection(identitySection());
@@ -9408,6 +9545,7 @@ export {
   CUES,
   turnVisitor,
   createConsole,
+  prefersFullscreen,
   resumeFullscreen,
   fullscreenWaiting,
   deviceForms,
@@ -9415,6 +9553,15 @@ export {
   startingForm,
   currentForm,
   usedForm,
+  LOOK_STEPS,
+  FOV_STEPS,
+  lookScale,
+  setLookScale,
+  visitorFov,
+  setVisitorFov,
+  onDeskChange,
+  addDeskControls,
+  watchFov,
   identityWords,
   identityHost,
   identitySection,

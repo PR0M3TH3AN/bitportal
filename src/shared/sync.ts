@@ -92,6 +92,9 @@ export const SECTIONS: Section[] = [
   { name: "ui", key: "nswp:ui" },
   { name: "comfort", key: "nswp:comfort" },
   { name: "moving", key: "bitportal:fps" },
+  // What they prefer in every world: a filled screen, how fast the view turns, how wide they see (prefs.ts).
+  { name: "screen", key: "nswp:full" },
+  { name: "desk", key: "nswp:desk" },
   { name: "blocked", key: "bitportal:blocked" },
   { name: "home", key: "bitportal:home" },
   { name: "lists", key: "bitportal:lists" },
