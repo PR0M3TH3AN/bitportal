@@ -278,6 +278,18 @@ tells you.
 Signed in, your profile takes the width of the page, and BitLogin's own
 element is scaled as one piece so its text is the size of the page's.
 
+## How old a world's controls are
+
+Each world carries its own copy of the kit that draws its menu and moves
+you about, and says which version in its manifest. When that is older than
+the one this copy of BitPortal has, or the world doesn't say, the Airlock
+tells you under "More about this place". The world still works: it only
+misses what was added since. It is not a warning, and it changes nothing
+about whether or how you go through the door.
+
+Signing in, your look, the Airlock and your lists are BitPortal's, so they
+are always the newest whatever a world was built with.
+
 ## What you prefer, in every world
 
 Settings has "In every world": fill the screen, move the intense way at a

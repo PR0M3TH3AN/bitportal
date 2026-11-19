@@ -50,6 +50,7 @@ import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type S
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
 import { keptSettings, settingsToCarry } from "../shared/prefs.js";
+import { kitNote } from "../shared/kit.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
 
 /** The last world this Airlock sent the visitor to, as a host: where a block they report was most likely made. */
@@ -469,6 +470,10 @@ async function render(): Promise<void> {
   const body = el("div", { class: "more-body" });
   more.append(body);
   body.append(el("p", { class: "full-url muted" }, a.url), w?.summary ? el("p", {}, w.summary) : "", chips, fit.tone === "ok" || fit.tone === "plain" ? fitLine : "", device);
+  // How old the world's own controls are, when they are older than this copy's (kit.ts). Something to know, down
+  // here with the rest of what there is to know: it is not a warning and decides nothing about the crossing.
+  const kit = kitNote(a.manifest?.kit, a.nswpAware);
+  if (kit) body.append(el("p", { class: "small muted", id: "kit-note" }, kit));
 
   const card = el(
     "section",
