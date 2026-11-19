@@ -16,13 +16,15 @@
  * place the visitor's address. It is shown only while the visitor has
  * pictures on (the kit's switch, `showsPictures`), and it is only ever drawn.
  */
-import { cleanName, cleanPicture, isHex64, queryRelays, shortNpub, verifyEvent, type NostrEvent } from "@nswp/core";
+import { cleanAbout, cleanName, cleanPicture, isHex64, queryRelays, shortNpub, verifyEvent, type NostrEvent } from "@nswp/core";
 import { loadPicture } from "nswp-sdk/ui";
 
 export interface Profile {
   name: string;
   /** Where their picture is, or "". */
   picture: string;
+  /** The start of what they wrote about themselves, as plain text, or "". Their own words, not a fact. */
+  about: string;
   /** When they wrote it. A newer one replaces an older one, never the other way. */
   at: number;
   /** When this browser last asked, in milliseconds. */
@@ -45,8 +47,8 @@ const local = (): Store | null => {
   }
 };
 
-/** The name and picture in a profile event's content. Either may be "". */
-export function readProfile(content: string): { name: string; picture: string } {
+/** The name, the picture and the few words about themselves in a profile event's content. Any may be "". */
+export function readProfile(content: string): { name: string; picture: string; about: string } {
   try {
     const meta = JSON.parse(content) as Record<string, unknown>;
     let name = "";
@@ -56,9 +58,9 @@ export function readProfile(content: string): { name: string; picture: string } 
         break;
       }
     }
-    return { name, picture: cleanPicture(meta.picture) };
+    return { name, picture: cleanPicture(meta.picture), about: cleanAbout(meta.about) };
   } catch {
-    return { name: "", picture: "" };
+    return { name: "", picture: "", about: "" };
   }
 }
 
@@ -70,7 +72,7 @@ function all(store: Store | null = local()): Map<string, Profile> {
     const kept = JSON.parse(store?.getItem(PROFILES_KEY) ?? "{}") as Record<string, Partial<Profile>>;
     for (const [key, p] of Object.entries(kept)) {
       if (!isHex64(key) || !p || typeof p !== "object") continue;
-      cache.set(key, { name: typeof p.name === "string" ? cleanName(p.name) : "", picture: cleanPicture(p.picture), at: Number(p.at) || 0, asked: Number(p.asked) || 0 });
+      cache.set(key, { name: typeof p.name === "string" ? cleanName(p.name) : "", picture: cleanPicture(p.picture), about: cleanAbout(p.about), at: Number(p.at) || 0, asked: Number(p.asked) || 0 });
     }
   } catch {
     /* nothing kept */
@@ -119,7 +121,7 @@ export function takeProfiles(events: NostrEvent[], asked: string[], now: number,
   for (const key of asked) {
     const had = map.get(key);
     if (had) had.asked = now;
-    else map.set(key, { name: "", picture: "", at: 0, asked: now });
+    else map.set(key, { name: "", picture: "", about: "", at: 0, asked: now });
   }
   keep(store);
   return [...changed];

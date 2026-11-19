@@ -261,3 +261,17 @@ describe("the name in a profile", () => {
     expect([...nameFromProfile(JSON.stringify({ name: "x".repeat(200) }))].length).toBe(48);
   });
 });
+
+describe("what a pass says about its holder (NSWP-10, \"Who someone is\")", () => {
+  it("carries the few words from their profile, signed with the rest and cut to what a pass may hold", async () => {
+    const signer = checkedSigner(alice, { signEvent: async (t) => finalizeEvent(t, ALICE) });
+    const { pass, sessionKey } = await issuePass(signer, { origin: "https://grove.example", name: "Alice", about: `Keeper of the grove.\n${"z".repeat(600)}` }, { now: T });
+    const session = getPublicKey(Uint8Array.from(sessionKey.match(/../g)!.map((b) => parseInt(b, 16))));
+    const read = verifyRoomPass(pass, { origin: "https://grove.example", session, now: T + 30 });
+    expect(read.ok && read.value.about.startsWith("Keeper of the grove. zzz")).toBe(true);
+    expect(read.ok && [...read.value.about]).toHaveLength(PASS_LIMITS.aboutChars);
+    // Nothing to say is left off the pass altogether.
+    const bare = await issuePass(signer, { origin: "https://grove.example", name: "Alice" }, { now: T });
+    expect(bare.pass.tags.some((t) => t[0] === "about")).toBe(false);
+  });
+});

@@ -80,7 +80,7 @@ import {
   viewScale,
   visitorFov,
   watchFov
-} from "./shared-AKBDBPZM.js";
+} from "./shared-63KBOX3U.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -91,7 +91,7 @@ import {
   reportSettings,
   setShowsPictures,
   showsPictures
-} from "./shared-5SYS43Z3.js";
+} from "./shared-KKROTYBL.js";
 import {
   browserVoice,
   computerVoice,

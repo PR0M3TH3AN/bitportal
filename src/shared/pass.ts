@@ -35,7 +35,7 @@ const hex = (bytes: Uint8Array): string => [...bytes].map((b) => b.toString(16).
  */
 export async function issuePass(
   signer: Signer,
-  to: { origin: string; name?: string; picture?: string },
+  to: { origin: string; name?: string; picture?: string; about?: string },
   opts: { now?: number; random?: (bytes: Uint8Array<ArrayBuffer>) => void } = {},
 ): Promise<IssuedPass> {
   const now = opts.now ?? Math.floor(Date.now() / 1000);
@@ -53,7 +53,7 @@ export async function issuePass(
   if (!session) throw new PassError("no_session_key", "Couldn't make a session key.");
   const identity = await signer.getPublicKey();
   if (session === identity) throw new PassError("no_session_key", "Couldn't make a session key.");
-  const pass = await signer.signEvent(buildRoomPass({ session, origin: to.origin, ...(to.name ? { name: to.name } : {}), ...(to.picture ? { picture: to.picture } : {}), createdAt: now }));
+  const pass = await signer.signEvent(buildRoomPass({ session, origin: to.origin, ...(to.name ? { name: to.name } : {}), ...(to.picture ? { picture: to.picture } : {}), ...(to.about ? { about: to.about } : {}), createdAt: now }));
   const checked = verifyRoomPass(pass, { origin: to.origin, session, now });
   if (!checked.ok || checked.value.pubkey !== identity) throw new PassError("pass_invalid", "The pass that was signed wouldn't be believed, so it wasn't used.");
   return { pass, sessionKey: hex(secret) };

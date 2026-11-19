@@ -496,10 +496,13 @@ async function render(): Promise<void> {
   // The name and the picture people will see are the ones in the visitor's own Nostr profile (profiles.ts). What
   // this browser already knows of it is used at once; it is asked for here only the first time.
   let picture = "";
-  // The throwaway test identity may be given a throwaway picture, so pictures can be tried without anybody's own.
+  // And the few words about themselves, from the same place: the card people see when they choose them.
+  let about = "";
+  // The throwaway test identity may be given a throwaway picture and a few words, so both can be tried without anybody's own.
   if (testKey) {
     try {
       picture = sessionStorage.getItem("bitportal:test-picture") ?? "";
+      about = sessionStorage.getItem("bitportal:test-about") ?? "";
     } catch {
       /* none */
     }
@@ -510,6 +513,7 @@ async function render(): Promise<void> {
     const mineNow = profileOf(who.pubkey);
     if (mineNow?.name) who.name = mineNow.name;
     picture = mineNow?.picture ?? "";
+    about = mineNow?.about ?? "";
   }
   // By name is for a site that has proved it is who it says: a pass names the visitor's key for good.
   const canName = !!who && verified;
@@ -683,7 +687,7 @@ async function render(): Promise<void> {
         if (!quiet) throw new Error("locked");
         try {
           // A pass is for the place it is shown at: on a development server, the local copy.
-          return await issuePass(quiet.signer, { origin: new URL(await toLocal(a.url)).origin, ...(who.name ? { name: who.name } : {}), ...(picture ? { picture } : {}) });
+          return await issuePass(quiet.signer, { origin: new URL(await toLocal(a.url)).origin, ...(who.name ? { name: who.name } : {}), ...(picture ? { picture } : {}), ...(about ? { about } : {}) });
         } finally {
           quiet.close();
         }
