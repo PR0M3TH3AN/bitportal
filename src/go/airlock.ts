@@ -754,5 +754,28 @@ function backButton(): HTMLElement {
   return b;
 }
 
+/**
+ * The address on one line, whole, as large as the card allows. It is the one thing on this screen that has to be
+ * read exactly, and an address broken across two lines in the middle of a word is harder to read than a smaller
+ * one. Only an address too long to fit at the smallest size worth reading is let wrap, and never cut short.
+ */
+const LEAST = 14;
+function fitAddresses(): void {
+  for (const host of document.querySelectorAll<HTMLElement>("#main .host")) {
+    if (!host.isConnected || host.clientWidth === 0) continue;
+    host.classList.remove("wraps");
+    host.style.fontSize = "";
+    let size = Number.parseFloat(getComputedStyle(host).fontSize);
+    while (host.scrollWidth > host.clientWidth + 1 && size > LEAST) {
+      size -= 1;
+      host.style.fontSize = `${size}px`;
+    }
+    if (host.scrollWidth > host.clientWidth + 1) host.classList.add("wraps");
+  }
+}
+new MutationObserver(fitAddresses).observe($("main"), { childList: true, subtree: true });
+addEventListener("resize", fitAddresses);
+void document.fonts?.ready.then(fitAddresses);
+
 addEventListener("hashchange", () => location.reload());
 void render();

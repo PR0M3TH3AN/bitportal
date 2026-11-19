@@ -331,7 +331,9 @@ textarea:focus, input:focus { border-color: var(--bitportal-accent); }
 .card > h1:first-child { margin-top: 0; }
 .card p { margin-top: 10px; }
 .leaving { color: var(--bitportal-muted); }
-.host { margin-top: 4px; font-size: clamp(1.5rem, 5.6vw, 2.5rem); font-weight: 700; line-height: 1.08; overflow-wrap: anywhere; color: var(--bitportal-ink); }
+/* The address, on one line: the Airlock sizes it down to fit (fitAddresses), and lets it wrap only when it can't. */
+.host { margin-top: 4px; font-size: clamp(1.25rem, 4.4vw, 2rem); font-weight: 700; line-height: 1.12; white-space: nowrap; overflow: hidden; color: var(--bitportal-ink); }
+.host.wraps { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .host .prefix { color: var(--bitportal-muted); font-weight: 400; }
 .full-url { font-size: 0.82rem; color: var(--bitportal-muted); overflow-wrap: anywhere; }
 .muted { color: var(--bitportal-muted); }
@@ -535,6 +537,6 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 @media (prefers-reduced-motion: reduce) { .more > summary::before { transition: none; } }
 /* Going straight through to a place they know: where they are going, and a way to stop. */
 .passing { border-top: 2px solid var(--bitportal-accent); }
-.passing .host { font-size: clamp(1.4rem, 5vw, 2.2rem); }
+.passing .host { font-size: clamp(1.2rem, 4vw, 1.8rem); }
 .checking .button { margin-left: 12px; vertical-align: middle; }
 .from-vr .passing .button, .from-vr .checking .button { min-height: 60px; font-size: 1.15rem; }
