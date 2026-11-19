@@ -431,6 +431,10 @@ body.booth:not([data-crossing="none"]) main { transform: translateY(14px); }
 @media (prefers-reduced-motion: reduce) { body.booth .top, body.booth main { transition: none; } }
 .everywhere { margin-top: 16px; font-weight: 600; }
 .everywhere input { margin-right: 8px; accent-color: var(--bitportal-accent); width: 18px; height: 18px; vertical-align: -3px; }
+/* Someone's own picture, from their Nostr profile: a small round badge beside their name. */
+.who-picture { width: 1.6em; height: 1.6em; border-radius: 50%; vertical-align: -0.42em; margin-right: 0.5em; box-shadow: 0 0 0 1px rgba(var(--bitportal-accent-rgb), 0.55); }
+.you-mark.has-picture { width: 44px; height: 44px; background: none; border-radius: 50%; box-shadow: none; }
+.you-mark.has-picture .who-picture { width: 44px; height: 44px; margin: 0; vertical-align: top; box-shadow: 0 0 0 2px var(--bitportal-accent), 0 0 18px rgba(var(--bitportal-accent-rgb), 0.45); }
 /* The badge: small, under the sign-in, never in the way of it. */
 .powered { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; font: 500 0.78rem var(--mono); color: var(--bitportal-muted); letter-spacing: 0.02em; }
 .powered strong { color: var(--bitportal-ink); font-weight: 650; }

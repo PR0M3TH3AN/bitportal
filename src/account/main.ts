@@ -17,7 +17,9 @@
  * Airlock still checks the door before they go.
  */
 import { attachJumpList } from "../shared/jump.js";
-import { profileName, shortKey, watchBitLogin, type Session } from "../shared/session.js";
+import { encodeNpub } from "@nswp/core";
+import { label, pictureOf, PROFILES_EVENT, wantProfiles } from "../shared/profiles.js";
+import { watchBitLogin, type Session } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
 import { goesAsGuest, setGoesAsGuest } from "../shared/look.js";
@@ -129,15 +131,22 @@ const show = (session: Session | null, message?: string) => {
     $("signed-in").scrollIntoView({ block: "center", behavior: "smooth" });
     $("carry-on").focus({ preventScroll: true });
   }
-  $("you-name").textContent = shortKey(session.pubkey);
-  $("you-key").textContent = "";
-  $("you-key").title = session.pubkey;
-  // Their own name for themselves, from their own relays, when they have one.
-  void profileName(session.pubkey, loadSettings().relays).then((name) => {
-    if (!name || $("signed-in").hidden) return;
-    $("you-name").textContent = name;
-    $("you-key").textContent = ` ${shortKey(session.pubkey)}`;
-  });
+  // By the name they chose for themselves, with their picture: never a string of hex. Until their profile has
+  // been read, and for someone with no name, the short form of their public key stands in.
+  const sayWho = () => {
+    if ($("signed-in").hidden) return;
+    $("you-name").textContent = label(session.pubkey);
+    $("you-key").textContent = "";
+    $("you-key").title = encodeNpub(session.pubkey);
+    void pictureOf(session.pubkey).then((picture) => {
+      if (!picture || $("signed-in").hidden) return;
+      $("you-mark").replaceChildren(picture);
+      $("you-mark").classList.add("has-picture");
+    });
+  };
+  sayWho();
+  addEventListener(PROFILES_EVENT, sayWho, { once: true });
+  wantProfiles([session.pubkey], () => loadSettings().relays);
 };
 
 watchBitLogin(widget, (session, error) => {

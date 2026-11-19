@@ -23,7 +23,8 @@ import {
   type NostrEvent,
 } from "@nswp/core";
 import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../shared/publishing.js";
-import { checkedSigner, shortKey, watchBitLogin, type Session } from "../shared/session.js";
+import { checkedSigner, watchBitLogin, type Session } from "../shared/session.js";
+import { label } from "../shared/profiles.js";
 import { attachJumpList } from "../shared/jump.js";
 import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
@@ -104,7 +105,7 @@ function refresh(): void {
   const f = readForm();
   who.replaceChildren();
   if (session) {
-    who.append("Announcing as ", el("span", { class: "key", title: session.pubkey }, shortKey(session.pubkey)), dryRun ? " (a test key: nothing will be published)." : ".");
+    who.append("Announcing as ", el("span", { class: "key", title: session.pubkey }, label(session.pubkey, { key: true })), dryRun ? " (a test key: nothing will be published)." : ".");
   } else who.textContent = "You're signed out. You can check a site and fill this in first, then sign in to publish.";
 
   // The manifest the creator needs to host, once we know who they are and where.

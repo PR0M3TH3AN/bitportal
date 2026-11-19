@@ -20,6 +20,7 @@ import { attachJumpList } from "../shared/jump.js";
 import { saveRoomText, storedRoomText } from "../shared/room.js";
 import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, savedUrls, storeSaved, type SavedPlace } from "../shared/saved.js";
 import { quietSigner, readSignedIn } from "../shared/session.js";
+import { label, pictureOf, profileOf, PROFILES_EVENT, wantProfiles } from "../shared/profiles.js";
 import { changedAllowList, isOperator, loadOperatorLists, publishAllowList, storeOperatorLists } from "../shared/operator.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadTastes, setTaste, storeTastes, tasteFor, tasteOf, type Tastes } from "../shared/tastes.js";
@@ -48,7 +49,6 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
   for (const c of children) if (c !== null && c !== false && c !== undefined) e.append(c);
   return e;
 }
-const shortKey = (pubkey: string) => `${pubkey.slice(0, 6)}…${pubkey.slice(-4)}`;
 
 let settings: Settings = loadSettings();
 /** Your doors: kept on this device, drawn first, and left out of the shelves (spec §14.1). */
@@ -302,7 +302,7 @@ function listShelf(l: ListView, index: number): HTMLElement | null {
   if (ids.length === 0 && l.missing === 0) return null;
   const blurb = [
     l.description,
-    `A list by ${shortKey(l.pubkey)}.`,
+    `A list by ${label(l.pubkey, { key: true })}.`,
     l.missing > 0 ? `${count(l.missing, "world")} on it ${l.missing === 1 ? "hasn't" : "haven't"} been found on your relays.` : "",
   ]
     .filter(Boolean)
@@ -478,7 +478,7 @@ function draw(): void {
   const source = $("source");
   const lead = signedIn ? "You're signed in, but your follows don't shape this lobby yet. " : "You're browsing signed out. ";
   const only = catalog.lists.length === 1 ? catalog.lists[0]! : null;
-  if (only) source.replaceChildren(lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: only.pubkey }, shortKey(only.pubkey)), ". ");
+  if (only) source.replaceChildren(lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: encodeNpub(only.pubkey) }, label(only.pubkey, { key: true })), ". ");
   else if (catalog.lists.length === 0) source.replaceChildren(lead, "You aren't showing any list. ");
   else if (catalog.policy.allowListOnly && !showingUnlisted()) source.replaceChildren(lead, "These doors are the ones this copy's operator has listed. ");
   else source.replaceChildren(lead, `These doors come from the ${catalog.lists.length} lists you've chosen. `);
@@ -487,7 +487,9 @@ function draw(): void {
   source.append(about);
 
   $("r-doors").textContent = String(catalog.entries.length);
-  $("r-curator").textContent = only ? shortKey(only.pubkey) : catalog.lists.length === 0 ? "nobody" : `${catalog.lists.length} keys`;
+  $("r-curator").textContent = only ? label(only.pubkey) : catalog.lists.length === 0 ? "nobody" : `${catalog.lists.length} people`;
+  // Everyone this page names is asked about, so that it names them by the name they chose (profiles.ts).
+  wantProfiles([...catalog.lists.map((l) => l.pubkey), ...catalog.entries.map((e) => e.event.pubkey), ...(signedIn ? [signedIn.pubkey] : [])], () => settings.relays);
 
   drawTopics();
   drawShelves();
@@ -650,7 +652,7 @@ function openDetail(entry: Entry, why: string): void {
   });
 
   const onLists = catalog.lists.filter((l) => l.ids.includes(entry.id)).map((l) => l.title);
-  const announced = `Announced by the key ${shortKey(entry.event.pubkey)}.`;
+  const announced = `Announced by ${label(entry.event.pubkey, { key: true })}.`;
   const where = onLists.length ? ` On ${onLists.length === 1 ? "the list" : "the lists"} ${onLists.join(", ")}.` : isSaved(saved, entry.id) ? "" : catalog.policy.allowListOnly ? " It is not on this site's list." : " It is on none of your lists.";
   const provenance = el("p", { class: "provenance" }, entry.curatorListing ? `This description was written by the curator of ${entry.listedBy ?? "a list you follow"}. The site hasn't announced itself.` : announced + where);
 
@@ -717,6 +719,8 @@ function openSettings(): void {
   fullBox.checked = prefs.full;
   const intenseBox = el("input", { type: "checkbox", id: "set-intense" }) as HTMLInputElement;
   intenseBox.checked = prefs.intense;
+  const picturesBox = el("input", { type: "checkbox", id: "set-pictures" }) as HTMLInputElement;
+  picturesBox.checked = prefs.pictures;
   const lookPick = el("select", { id: "set-look" }, ...LOOK_CHOICES.map((c) => el("option", { value: String(c.value), ...(c.value === prefs.look ? { selected: "" } : {}) }, c.word))) as HTMLSelectElement;
   // A speed set somewhere else to something not on this list is kept, and shown as what it is.
   if (!LOOK_CHOICES.some((c) => c.value === prefs.look)) lookPick.append(el("option", { value: String(prefs.look), selected: "" }, `${prefs.look} times normal`));
@@ -877,6 +881,8 @@ function openSettings(): void {
     el("h3", {}, "In every world"),
     el("label", { class: "check", for: "set-full" }, fullBox, " Fill the screen"),
     el("label", { class: "check", for: "set-intense" }, intenseBox, " At a desk, move the intense way: the mouse looks round and keys walk"),
+    el("label", { class: "check", for: "set-pictures" }, picturesBox, " Show people's own pictures, from their Nostr profiles"),
+    el("p", { class: "small" }, "People are shown by the name and picture they chose for themselves on Nostr. A picture is fetched from wherever its owner keeps it, which tells that place your address, as reading Nostr anywhere does. Off, nobody's picture is fetched, here or in any world."),
     el("label", { for: "set-look" }, "How fast the view turns, with a mouse or a finger"),
     lookPick,
     el("label", { for: "set-fov" }, "How wide you see at a desk (field of view)"),
@@ -942,7 +948,7 @@ function openSettings(): void {
     const cleaned = cleanRelays(relays.value.split(/\s+/));
     settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays, airlock: airlockBox.checked ? "known" : "ask" };
     saveSettings(settings);
-    storePrefs({ full: fullBox.checked, intense: intenseBox.checked, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null }, localStorage);
+    storePrefs({ full: fullBox.checked, intense: intenseBox.checked, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null, pictures: picturesBox.checked }, localStorage);
     void refresh();
   });
   dialog.replaceChildren(form);
@@ -978,7 +984,7 @@ function openOperatorLists(): void {
     el(
       "ul",
       { class: "list-rows" },
-      ...catalog.lists.map((l) => el("li", {}, el("p", { class: "list-title" }, l.title), el("p", { class: "small" }, `Signed by ${shortKey(l.pubkey)}. ${count(l.ids.length, "world")}, last changed ${new Date(l.updatedAt * 1000).toLocaleDateString()}.`), l.description ? el("p", { class: "small" }, l.description) : "")),
+      ...catalog.lists.map((l) => el("li", {}, el("p", { class: "list-title" }, l.title), el("p", { class: "small" }, `Signed by ${label(l.pubkey, { key: true })}. ${count(l.ids.length, "world")}, last changed ${new Date(l.updatedAt * 1000).toLocaleDateString()}.`), l.description ? el("p", { class: "small" }, l.description) : "")),
     ),
     el("p", { class: "small" }, followed.length ? `You follow ${count(followed.length, "list")} of other people's. They are kept on this device and not shown on this copy.` : "Following other people's lists is switched off on this copy."),
     el("div", { class: "actions" }, close),
@@ -1019,7 +1025,7 @@ function openLists(address = ""): void {
     rows.replaceChildren(
       row(
         c.title,
-        `BitPortal's own list, signed by ${shortKey(c.pubkey)}. ${starterOn ? `${count(starterView?.ids.length ?? 0, "world")}, last changed ${new Date(c.updatedAt * 1000).toLocaleDateString()}.` : "Put away."}`,
+        `BitPortal's own list, signed by ${label(c.pubkey, { key: true })}. ${starterOn ? `${count(starterView?.ids.length ?? 0, "world")}, last changed ${new Date(c.updatedAt * 1000).toLocaleDateString()}.` : "Put away."}`,
         c.description,
         toggle,
         copy(encodeNaddr({ kind: CURATION_SET_KIND, pubkey: c.pubkey, identifier: bundle.set.tags.find((t) => t[0] === "d")?.[1] ?? "", relays: settings.relays.slice(0, 2) })),
@@ -1035,7 +1041,7 @@ function openLists(address = ""): void {
         const [, pubkey = "", ...d] = f.id.split(":");
         return row(
           view?.title ?? f.id,
-          `Signed by ${shortKey(pubkey)}. ${count(view?.ids.length ?? 0, "world")}${view?.missing ? `, ${view.missing} more not found on your relays` : ""}, last changed ${new Date((view?.updatedAt ?? 0) * 1000).toLocaleDateString()}.`,
+          `Signed by ${label(pubkey, { key: true })}. ${count(view?.ids.length ?? 0, "world")}${view?.missing ? `, ${view.missing} more not found on your relays` : ""}, last changed ${new Date((view?.updatedAt ?? 0) * 1000).toLocaleDateString()}.`,
           view?.description ?? "",
           stop,
           copy(encodeNaddr({ kind: CURATION_SET_KIND, pubkey, identifier: d.join(":"), relays: settings.relays.slice(0, 2) })),
@@ -1247,12 +1253,21 @@ async function start(): Promise<void> {
     const note = el("p", { class: "small sync-note", role: "status" }, "Settings from your profile have arrived. ", el("a", { href: location.pathname }, "Use them now"), ", or carry on: they are used from your next page.");
     document.querySelector("main")?.prepend(note);
   });
+  // Names this page was drawn without have arrived: it is drawn again with them.
+  addEventListener(PROFILES_EVENT, () => draw());
   void readSignedIn().then((who) => {
     signedIn = who;
     startSync();
     if (!who) return;
     const link = $("account-link");
-    link.textContent = who.name ?? shortKey(who.pubkey);
+    // By the name they chose for themselves, with their picture: never a string of hex.
+    const sayWho = () => {
+      link.replaceChildren(profileOf(who.pubkey)?.name || who.name || label(who.pubkey));
+      void pictureOf(who.pubkey).then((picture) => picture && link.prepend(picture));
+    };
+    sayWho();
+    addEventListener(PROFILES_EVENT, sayWho);
+    wantProfiles([who.pubkey], () => settings.relays);
     link.title = "Your identity";
     // Whoever runs this copy is shown what is waiting for them, which nobody else here is.
     if (isOperator(who.pubkey)) {

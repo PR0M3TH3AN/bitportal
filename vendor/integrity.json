@@ -24,7 +24,7 @@
         "sdk-types/console.d.ts": "72771b47b922434ce153b42edb65bfca5b9dc070ce955965c041b4ba1a675668",
         "sdk-types/desk.d.ts": "f52d074b3d42ca096291641df55303118b54a5aed274854ae8e2c1b4616bba74",
         "sdk-types/engine-menu.d.ts": "5bea9cf5ba1f719e0e505c45739f6ab9f18c198c1f71b87bd4324c8225bb7a2f",
-        "sdk-types/engine.d.ts": "bcc60225b10f9e19d434e718f4f415d42f13999d49eb51def62ff6b85cd46e79",
+        "sdk-types/engine.d.ts": "24c9e829b28eb676ded949c5b3d7399da648e5da00ffc53dd9173eec94d1f521",
         "sdk-types/environment.d.ts": "f882dde0236f6c5f6963e861fdf5826b3aecc6ed7c004c2a7f9d341a2298dc07",
         "sdk-types/figure.d.ts": "60526ae01b89c4b693aa59cb594a81e3d86f867af21ed2af4d61c4bffb9a6392",
         "sdk-types/floor-mark.d.ts": "d6e7e6b59980f1269ccec176c59ba36f35e4d2775ae4ed96b349aad0b260bcda",
