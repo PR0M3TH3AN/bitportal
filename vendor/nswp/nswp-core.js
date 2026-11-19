@@ -9,7 +9,7 @@ var SCHEMAS = {
   arrival: "nswp/arrival/0.3"
 };
 var WELL_KNOWN_PATH = "/.well-known/nswp.json";
-var KIT_VERSION = "0.24.0";
+var KIT_VERSION = "0.26.0";
 function parseKitVersion(v) {
   const m = typeof v === "string" ? /^(\d{1,4})\.(\d{1,4})\.(\d{1,4})$/.exec(v) : null;
   return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
@@ -4923,6 +4923,10 @@ function decodeArrival(value) {
     if (isHttpsUrl(json.airlock)) out.airlock = json.airlock;
     else c.warn("url_not_https", "airlock", "Ignoring a non-https return Airlock.");
   }
+  if (json.signer !== void 0) {
+    if (isHttpsUrl(json.signer) && json.signer.length <= 300) out.signer = json.signer;
+    else c.warn("url_not_https", "signer", "Ignoring a signer address that isn't a usable https address.");
+  }
   if (json.assertion !== void 0) {
     if (hasEventShape(json.assertion)) out.assertion = json.assertion;
     else c.warn("invalid_assertion", "assertion", "Ignoring a malformed entry assertion.");
@@ -5952,6 +5956,152 @@ function bubbleSeconds(text) {
   return Math.min(12, 4 + [...text].length * 0.06);
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/signing.ts
+var SIGNER_PROTOCOL = "nswp-signer";
+var SIGNER_VERSION = 1;
+var SIGN_LIMITS = {
+  /** The longest a note's content may be, in characters. */
+  contentChars: 8e3,
+  tags: 60,
+  tagItems: 8,
+  tagChars: 400,
+  /** How long an unlocked signer stays unlocked for a world, at most. Closing the world's page ends it sooner. */
+  grantSec: 4 * 3600,
+  /** No more than this many notes for one world in `perMs`. */
+  burst: 6,
+  perMs: 6e4,
+  /** And no more than this many in an hour. */
+  hourly: 60
+};
+var ORDINARY_KINDS = [1, 7];
+var NEVER_KINDS = [4, 13, 14, 15, 1059, 1060, 13194, 22242, 23194, 23195, 24133, 27235, 27300, 27301, 30078];
+function signClass(kind) {
+  if (typeof kind !== "number" || !Number.isInteger(kind) || kind < 0 || kind > 65535) return "never";
+  if (NEVER_KINDS.includes(kind)) return "never";
+  if (ORDINARY_KINDS.includes(kind)) return "ordinary";
+  return "careful";
+}
+var WORLD_TAG = "nswp:world";
+function cleanOrigin(input) {
+  if (typeof input !== "string" || input.length > 300) return "";
+  try {
+    const u = new URL(input);
+    return (u.protocol === "https:" || u.protocol === "http:") && u.origin !== "null" ? u.origin : "";
+  } catch {
+    return "";
+  }
+}
+function prepareForWorld(input, world, now) {
+  const origin = cleanOrigin(world);
+  if (!origin || !input || typeof input !== "object") return null;
+  const e = input;
+  if (signClass(e.kind) !== "ordinary") return null;
+  if (typeof e.content !== "string" || [...e.content].length > SIGN_LIMITS.contentChars) return null;
+  if (!Array.isArray(e.tags) || e.tags.length > SIGN_LIMITS.tags) return null;
+  const tags = [];
+  for (const tag of e.tags) {
+    if (!Array.isArray(tag) || tag.length === 0 || tag.length > SIGN_LIMITS.tagItems) return null;
+    if (!tag.every((item) => typeof item === "string" && item.length <= SIGN_LIMITS.tagChars)) return null;
+    if (tag[0] === WORLD_TAG) continue;
+    tags.push([...tag]);
+  }
+  tags.push([WORLD_TAG, origin]);
+  return { kind: e.kind, created_at: Math.floor(now), tags, content: e.content };
+}
+function isWhatWasAsked(asked, signed) {
+  if (signed.kind !== asked.kind || signed.content !== asked.content) return false;
+  const mine = asked.tags.filter((t) => t[0] !== WORLD_TAG);
+  const theirs = signed.tags.filter((t) => t[0] !== WORLD_TAG);
+  return JSON.stringify(mine) === JSON.stringify(theirs);
+}
+function createSignGate(limits = SIGN_LIMITS) {
+  let times = [];
+  return {
+    take(now) {
+      times = times.filter((t) => now - t < 36e5);
+      if (times.length >= limits.hourly) return false;
+      if (times.filter((t) => now - t < limits.perMs).length >= limits.burst) return false;
+      times.push(now);
+      return true;
+    }
+  };
+}
+function signerAddresses(airlock) {
+  if (!airlock) return null;
+  try {
+    const base = new URL(airlock);
+    if (base.protocol !== "https:") return null;
+    return { origin: base.origin, signer: new URL("../signer/", base).href, window: new URL("../connect/", base).href };
+  } catch {
+    return null;
+  }
+}
+function signerAt(base) {
+  if (!base || base.length > 300) return null;
+  try {
+    const at = new URL(base);
+    if (at.protocol !== "https:" || at.username || at.password) return null;
+    if (!at.pathname.endsWith("/")) at.pathname += "/";
+    at.search = "";
+    at.hash = "";
+    return { origin: at.origin, signer: new URL("signer/", at).href, window: new URL("connect/", at).href };
+  } catch {
+    return null;
+  }
+}
+var ID = /^[0-9a-z-]{1,40}$/i;
+var wrapped = (data) => {
+  if (!data || typeof data !== "object") return null;
+  const d = data;
+  return d.nswp === SIGNER_PROTOCOL && d.v === SIGNER_VERSION && typeof d.t === "string" ? d : null;
+};
+var signerMessage = (message) => ({ nswp: SIGNER_PROTOCOL, v: SIGNER_VERSION, ...message });
+function readSignerRequest(data) {
+  const d = wrapped(data);
+  if (!d || typeof d.id !== "string" || !ID.test(d.id)) return null;
+  if (d.t === "state") return { t: "state", id: d.id };
+  if (d.t === "lock") return { t: "lock", id: d.id };
+  if (d.t === "sign" && d.event && typeof d.event === "object") return { t: "sign", id: d.id, event: d.event };
+  return null;
+}
+function readSignerReply(data) {
+  const d = wrapped(data);
+  if (!d) return null;
+  if (d.t === "ready") return { t: "ready" };
+  if (d.t === "state" && typeof d.unlocked === "boolean") {
+    const pubkey = typeof d.pubkey === "string" && /^[0-9a-f]{64}$/.test(d.pubkey) ? d.pubkey : void 0;
+    return {
+      t: "state",
+      ...typeof d.id === "string" && ID.test(d.id) ? { id: d.id } : {},
+      unlocked: d.unlocked && !!pubkey,
+      ...pubkey ? { pubkey } : {},
+      ...typeof d.name === "string" && cleanLine(d.name, 48) ? { name: cleanLine(d.name, 48) } : {},
+      ...typeof d.until === "number" && Number.isFinite(d.until) ? { until: d.until } : {}
+    };
+  }
+  if (typeof d.id !== "string" || !ID.test(d.id)) return null;
+  if (d.t === "refused") return { t: "refused", id: d.id };
+  if (d.t === "signed" && d.event && typeof d.event === "object") return { t: "signed", id: d.id, event: d.event };
+  return null;
+}
+var HANDOFF_PROTOCOL = "nswp-handoff";
+var handoffMessage = (message) => ({ nswp: HANDOFF_PROTOCOL, v: SIGNER_VERSION, ...message });
+function readHandoffMessage(data) {
+  if (!data || typeof data !== "object") return null;
+  const d = data;
+  if (d.nswp !== HANDOFF_PROTOCOL || d.v !== SIGNER_VERSION || typeof d.nonce !== "string" || !ID.test(d.nonce)) return null;
+  const hex = (v) => typeof v === "string" && /^[0-9a-f]{64}$/.test(v);
+  if (d.t === "hello") return { t: "hello", nonce: d.nonce };
+  if (d.t === "frame" && cleanOrigin(d.world) && hex(d.recipient)) return { t: "frame", nonce: d.nonce, world: cleanOrigin(d.world), recipient: d.recipient };
+  if (d.t === "grant" && cleanOrigin(d.world) && d.sealed && typeof d.sealed === "object") {
+    const s = d.sealed;
+    if (!hex(s.senderPublicKey) || typeof s.payload !== "string" || s.payload.length > 4e3) return null;
+    return { t: "grant", nonce: d.nonce, world: cleanOrigin(d.world), sealed: { senderPublicKey: s.senderPublicKey, payload: s.payload }, ...typeof d.name === "string" && cleanLine(d.name, 48) ? { name: cleanLine(d.name, 48) } : {} };
+  }
+  if (d.t === "done" && typeof d.ok === "boolean") return { t: "done", nonce: d.nonce, ok: d.ok };
+  return null;
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/layout.ts
 var HOME_LAYOUT_KIND = 37302;
 var ITEM_KIND = 37303;
@@ -6642,6 +6792,7 @@ export {
   DEFAULT_RELAYS,
   ENTRY_ASSERTION_KIND,
   FOV_RANGE,
+  HANDOFF_PROTOCOL,
   HOME_CAPABILITY,
   HOME_LAYOUT_KIND,
   INPUTS,
@@ -6659,7 +6810,9 @@ export {
   LOOK_PARTS,
   LOOK_RANGE,
   MODES,
+  NEVER_KINDS,
   NswpError,
+  ORDINARY_KINDS,
   PASS_LIMITS,
   PERF_TIERS,
   POSE_BYTES,
@@ -6671,11 +6824,15 @@ export {
   ROOM_TEMPLATES,
   SCHEMAS,
   SETTINGS_LINK_LIMIT,
+  SIGNER_PROTOCOL,
+  SIGNER_VERSION,
+  SIGN_LIMITS,
   STATUSES,
   VERSION,
   WELL_KNOWN_PATH,
   WORLD_GRANT_LIMITS,
   WORLD_KIND,
+  WORLD_TAG,
   applyChoices,
   arrivalParam,
   assertManifest,
@@ -6708,6 +6865,7 @@ export {
   cleanLine,
   cleanLocalMap,
   cleanName,
+  cleanOrigin,
   cleanPicture,
   cleanSettings,
   cleanSize,
@@ -6715,6 +6873,7 @@ export {
   cleanWorldOrigin,
   coordinate,
   createChatGate,
+  createSignGate,
   decodeArrival,
   decodeLook,
   decodeNaddr,
@@ -6739,6 +6898,7 @@ export {
   grantCode,
   guestColor,
   guestName,
+  handoffMessage,
   hasEventShape,
   hasSettings,
   isForm,
@@ -6747,6 +6907,7 @@ export {
   isLocalHost,
   isPlainObject,
   isPublicKey,
+  isWhatWasAsked,
   isWssUrl,
   kitAge,
   latestAddressable,
@@ -6779,16 +6940,24 @@ export {
   parseSpeechControl,
   parseWorldEvent,
   portalTarget,
+  prepareForWorld,
   previewOnWorldOrigin,
   publishEvent,
   queryRelays,
   randomNonce,
   readBrought,
+  readHandoffMessage,
+  readSignerReply,
+  readSignerRequest,
   roomTopic,
   serializeEvent,
   setLocalMap,
   shortNpub,
   shouldInitiate,
+  signClass,
+  signerAddresses,
+  signerAt,
+  signerMessage,
   spawnOffset,
   stripArrivalParam,
   toHex,

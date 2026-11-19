@@ -123,3 +123,19 @@ describe("what is shown", () => {
     expect(c.withheld).toEqual({ adult: 0, notListed: 0, lists: 0 });
   });
 });
+
+describe("where this copy's visitors sign from inside a world", () => {
+  it("is BitLogin's own site, an https address, and every arrival says so", async () => {
+    const { signerAt } = await import("@nswp/core");
+    expect(INSTANCE.signer).toBe("https://bitlogin.network/");
+    expect(signerAt(INSTANCE.signer)).toEqual({ origin: "https://bitlogin.network", signer: "https://bitlogin.network/signer/", window: "https://bitlogin.network/connect/" });
+    // Both ways the Airlock sends someone to a world carry it: through a door, and home.
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const airlock = readFileSync(new URL("../src/go/airlock.ts", import.meta.url), "utf8");
+    expect(airlock.split("buildArrivalUrl(").length - 1).toBe(airlock.split("signer: INSTANCE.signer").length - 1);
+    // BitPortal has no signer of its own, and no page of it may be embedded by another site.
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    expect(build).not.toContain("frame-ancestors https:");
+    expect(build).not.toMatch(/signer\/main|connect\/main/);
+  });
+});
