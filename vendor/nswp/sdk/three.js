@@ -83,7 +83,7 @@ import {
   visitorFov,
   watchFov,
   worldSigner
-} from "./shared-ESR2RPAY.js";
+} from "./shared-NRNAAW34.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
