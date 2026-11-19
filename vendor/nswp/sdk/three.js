@@ -83,7 +83,7 @@ import {
   visitorFov,
   watchFov,
   worldSigner
-} from "./shared-5LLDT6HJ.js";
+} from "./shared-T6N2ZIQW.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
