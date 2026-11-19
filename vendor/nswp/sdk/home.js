@@ -8,7 +8,7 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-NIFXJJMN.js";
+} from "./shared-UWQ6VXMD.js";
 import "./shared-D4HEPMWG.js";
 import "./shared-U2U7QRDK.js";
 import "./shared-QLSLERQ3.js";
