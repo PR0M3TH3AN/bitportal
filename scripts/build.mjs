@@ -25,6 +25,8 @@ await build({
     "account/main": join(root, "src/account/main.ts"),
     "publish/main": join(root, "src/publish/main.ts"),
     "look/main": join(root, "src/look/main.ts"),
+    "signer/main": join(root, "src/signer/main.ts"),
+    "connect/main": join(root, "src/connect/main.ts"),
   },
   bundle: true,
   splitting: true, // keeps the headset emulator out of the page until asked for
@@ -53,7 +55,7 @@ cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: t
 cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
-for (const page of ["account", "publish", "look"]) {
+for (const page of ["account", "publish", "look", "signer", "connect"]) {
   mkdirSync(join(out, page), { recursive: true });
   cpSync(join(root, `src/${page}/index.html`), join(out, page, "index.html"));
 }
@@ -74,6 +76,10 @@ const csp = [
   "form-action 'none'",
   "frame-ancestors 'none'",
 ].join("; ");
+// The signer (src/signer/main.ts) is the one page another site may embed: a world asks it to sign, and can't read
+// it. It has no interface, loads nothing from anywhere, and reaches no network. Decided by the owner, 2026-11-19
+// (NSWP docs/plans/signing-in-worlds.md, decision 1). Every other page keeps `frame-ancestors 'none'`.
+const signerCsp = ["default-src 'none'", "script-src 'self' 'wasm-unsafe-eval'", "worker-src 'self'", "connect-src 'self'", "base-uri 'none'", "form-action 'none'", "frame-ancestors https:"].join("; ");
 writeFileSync(
   join(out, "vercel.json"),
   `${JSON.stringify(
@@ -84,7 +90,17 @@ writeFileSync(
       redirects: [{ source: "/(.*)", has: [{ type: "host", value: "bitportal.vercel.app" }], destination: "https://portal.bitblocks.network/$1", permanent: false }],
       headers: [
         {
-          source: "/(.*)",
+          source: "/signer/(.*)",
+          headers: [
+            { key: "Content-Security-Policy", value: signerCsp },
+            { key: "Referrer-Policy", value: "no-referrer" },
+            { key: "X-Content-Type-Options", value: "nosniff" },
+            { key: "Permissions-Policy", value: "xr-spatial-tracking=(), microphone=(), camera=(), geolocation=()" },
+          ],
+        },
+        {
+          // Everything but the signer.
+          source: "/((?!signer/).*)",
           headers: [
             { key: "Content-Security-Policy", value: csp },
             { key: "Referrer-Policy", value: "no-referrer" },

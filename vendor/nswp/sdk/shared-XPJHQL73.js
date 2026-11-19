@@ -14,7 +14,7 @@ import {
   showsChat,
   showsPictures,
   wrapWords
-} from "./shared-KKROTYBL.js";
+} from "./shared-NQ7DZT5J.js";
 import {
   LiveKeys,
   TextEntry,
@@ -27,7 +27,7 @@ import {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE13 from "three";
-import { bubbleSeconds, CHAT_LIMITS as CHAT_LIMITS2, decodeLook as decodeLook2, encodeNpub, shortNpub as shortNpub4, spawnOffset } from "@nswp/core";
+import { bubbleSeconds, CHAT_LIMITS as CHAT_LIMITS2, cleanChat, decodeLook as decodeLook2, DEFAULT_RELAYS as DEFAULT_RELAYS2, encodeNpub, publishEvent, shortNpub as shortNpub4, spawnOffset } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
 import * as THREE3 from "three";
@@ -4824,6 +4824,144 @@ function showFallback(dest) {
   go.focus();
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/signer.ts
+import { cleanOrigin, isWhatWasAsked, readSignerReply, signerAddresses, signerMessage, toLocal as toLocal2, verifyEvent, WORLD_TAG } from "@nswp/core";
+var NONE = {
+  state: "none",
+  pubkey: null,
+  name: null,
+  host: null,
+  unlock: () => false,
+  lock() {
+  },
+  sign: async () => null,
+  onChange: () => () => {
+  },
+  dispose() {
+  }
+};
+function createWorldSigner(opts) {
+  const real = signerAddresses(opts.airlock);
+  if (!real || typeof document === "undefined") return NONE;
+  const test = new URLSearchParams(opts.search ?? location.search).get("signer") === "test";
+  const watchers2 = /* @__PURE__ */ new Set();
+  const pending = /* @__PURE__ */ new Map();
+  let state = "none";
+  let pubkey = null;
+  let name = null;
+  let origin = "";
+  let windowAt = "";
+  let frame = null;
+  let disposed = false;
+  let n = 0;
+  const changed = () => {
+    for (const fn of watchers2) fn();
+  };
+  const tell = (message) => frame?.contentWindow?.postMessage(signerMessage(message), origin);
+  const onMessage = (e) => {
+    if (!frame || e.source !== frame.contentWindow || e.origin !== origin) return;
+    const reply = readSignerReply(e.data);
+    if (!reply) return;
+    if (reply.t === "ready") {
+      if (state === "none") state = "locked";
+      tell({ t: "state", id: `s${++n}` });
+      return changed();
+    }
+    if (reply.t === "state") {
+      state = reply.unlocked ? "unlocked" : "locked";
+      pubkey = reply.unlocked ? reply.pubkey ?? null : null;
+      name = reply.unlocked ? reply.name ?? null : null;
+      return changed();
+    }
+    const waiting2 = pending.get(reply.id);
+    if (!waiting2) return;
+    pending.delete(reply.id);
+    clearTimeout(waiting2.timer);
+    if (reply.t === "refused") return waiting2.done(null);
+    const signed = reply.event;
+    const marked = Array.isArray(signed?.tags) && signed.tags.some((t) => t[0] === WORLD_TAG && t[1] === cleanOrigin(location.origin));
+    waiting2.done(verifyEvent(signed) && signed.pubkey === pubkey && marked && isWhatWasAsked(waiting2.asked, signed) ? signed : null);
+  };
+  void (async () => {
+    try {
+      const signerAt = await toLocal2(real.signer);
+      windowAt = await toLocal2(real.window);
+      origin = new URL(signerAt).origin;
+      if (disposed) return;
+      frame = document.createElement("iframe");
+      frame.title = "Signer";
+      frame.setAttribute("aria-hidden", "true");
+      frame.tabIndex = -1;
+      frame.setAttribute("allow", "");
+      frame.referrerPolicy = "no-referrer";
+      frame.style.cssText = "position:fixed;left:-10px;top:-10px;width:1px;height:1px;border:0;visibility:hidden;pointer-events:none";
+      addEventListener("message", onMessage);
+      frame.src = signerAt;
+      document.body.append(frame);
+    } catch {
+    }
+  })();
+  return {
+    get state() {
+      return state;
+    },
+    get pubkey() {
+      return pubkey;
+    },
+    get name() {
+      return name;
+    },
+    get host() {
+      try {
+        return new URL(real.origin).host;
+      } catch {
+        return null;
+      }
+    },
+    unlock() {
+      if (state === "none" || !windowAt) return false;
+      try {
+        const opened = window.open(`${windowAt}${test ? "?signer=test" : ""}`, "nswp-connect", "popup,width=460,height=660");
+        return !!opened;
+      } catch {
+        return false;
+      }
+    },
+    lock() {
+      if (state === "unlocked") tell({ t: "lock", id: `l${++n}` });
+    },
+    sign(note) {
+      if (state !== "unlocked" || !frame) return Promise.resolve(null);
+      const asked = { kind: note.kind, content: note.content, tags: note.tags ?? [] };
+      const id = `q${++n}`;
+      return new Promise((done) => {
+        const timer = setTimeout(() => {
+          pending.delete(id);
+          done(null);
+        }, 8e3);
+        pending.set(id, { asked, done, timer });
+        tell({ t: "sign", id, event: asked });
+      });
+    },
+    onChange(fn) {
+      watchers2.add(fn);
+      return () => void watchers2.delete(fn);
+    },
+    dispose() {
+      disposed = true;
+      removeEventListener("message", onMessage);
+      frame?.remove();
+      frame = null;
+      for (const w of pending.values()) {
+        clearTimeout(w.timer);
+        w.done(null);
+      }
+      pending.clear();
+      state = "none";
+    }
+  };
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
 function identityWords() {
   const who = arrival.identity();
@@ -4868,6 +5006,37 @@ function identityAction(controls, leaving = () => ({})) {
     short: () => identityWords().short,
     hidden: () => portal.airlockFor() === null,
     act: () => leave(controls, "identity", leaving)
+  };
+}
+var shared = null;
+function worldSigner() {
+  shared ??= createWorldSigner({ airlock: portal.airlockFor() });
+  return shared;
+}
+function signerAction(controls, opts = {}) {
+  const signer = worldSigner();
+  let was = signer.state;
+  signer.onChange(() => {
+    if (signer.state === "unlocked" && was !== "unlocked") controls.say(`You can sign notes here as ${signer.name ?? shortNpub3(signer.pubkey ?? "")}. It ends when you leave this world, or when you turn it off under You.`);
+    if (signer.state === "locked" && was === "unlocked") controls.say("Nothing more can be signed as you here.");
+    was = signer.state;
+    controls.signal("signer");
+  });
+  return {
+    id: "signer",
+    section: "you",
+    icon: "key",
+    label: () => signer.state === "unlocked" ? `Signing as ${signer.name ?? shortNpub3(signer.pubkey ?? "")}: on` : "Sign in to sign notes",
+    short: () => signer.state === "unlocked" ? "Signing" : "Sign",
+    on: () => signer.state === "unlocked",
+    hidden: () => signer.state === "none",
+    act: () => {
+      if (signer.state === "unlocked") return signer.lock();
+      const host = signer.host ?? "your own client";
+      if (opts.presenting?.()) return controls.say(`A window from ${host} is needed for this, and none can open in a headset. Leave the headset view for a moment, sign in to sign, and come back in.`);
+      if (signer.unlock()) controls.say(`A window from ${host} has opened. Say yes there, and you can sign notes here.`);
+      else controls.say(`Your browser didn't let a window open. Allow pop-ups for this site and press this again. Nothing is typed in this world: ${host} asks.`);
+    }
   };
 }
 function figureAction(controls, leaving = () => ({})) {
@@ -9700,7 +9869,8 @@ function addRoomControls(controls, presence, opts = {}) {
       (text) => {
         const how = s.say(text);
         if (how === "slow") return "That is a lot at once. Wait a moment, then send it again.";
-        if (how === "said" && s.members.length === 0) controls.chat.add({ note: true, text: "Nobody else is in the room yet, so nobody read that." });
+        if (how === "said" && postsNotes && worldSigner().state === "unlocked") void postNote(text);
+        else if (how === "said" && s.members.length === 0) controls.chat.add({ note: true, text: "Nobody else is in the room yet, so nobody read that." });
         return null;
       },
       { title: presence.roomName ? "Private room chat" : "Room chat" }
@@ -9727,6 +9897,18 @@ function addRoomControls(controls, presence, opts = {}) {
     if (!showsChat()) closeChatPanel();
     refresh();
   });
+  let postsNotes = false;
+  const postNote = async (text) => {
+    const note = await worldSigner().sign({ kind: 1, content: cleanChat(text), tags: [] });
+    if (!note) return void controls.chat.add({ note: true, text: "That wasn't posted as a note: your signer said no." });
+    const sent = await publishEvent(opts.noteRelays ?? DEFAULT_RELAYS2, note).catch(() => null);
+    const kept2 = sent ? Object.values(sent.relays).filter((said) => said === "ok").length : 0;
+    controls.chat.add({ note: true, text: kept2 ? `Posted as a note, to ${kept2 === 1 ? "1 relay" : `${kept2} relays`}.` : "Signed, but no relay took it. It wasn't posted." });
+  };
+  worldSigner().onChange(() => {
+    if (worldSigner().state !== "unlocked") postsNotes = false;
+    refresh();
+  });
   controls.add(
     {
       id: "room-chat",
@@ -9746,6 +9928,21 @@ function addRoomControls(controls, presence, opts = {}) {
       act: () => {
         if (presence.presenting && opts.panels) return chatPanel ? closeChatPanel() : openChatPanel();
         controls.signal("toggle:chat");
+      }
+    },
+    {
+      id: "room-chat-notes",
+      section: "room",
+      icon: "key",
+      label: () => postsNotes ? "Post what I write as Nostr notes: on" : "Post what I write as Nostr notes: off",
+      on: () => postsNotes,
+      // Only for someone who has unlocked their signer for this world, in a room, with chat on.
+      hidden: () => !presence.session || !showsChat() || worldSigner().state !== "unlocked",
+      act: () => {
+        postsNotes = !postsNotes;
+        tell(
+          postsNotes ? "Each line you write here is now also posted to Nostr as a public note, signed as you. Anyone can read it, anywhere, and it can't be taken back." : "What you write stays in the room again."
+        );
       }
     },
     {
@@ -10025,7 +10222,7 @@ async function addViewControls(controls, d) {
   if (!controls.has("identity") && identityHost()) {
     const leaving = async (to) => ({ ...await d.leaving?.(to), xrSession: d.renderer.xr.getSession() });
     controls.addSection(identitySection());
-    controls.add(figureAction(controls, leaving), identityAction(controls, leaving));
+    controls.add(figureAction(controls, leaving), identityAction(controls, leaving), signerAction(controls, { presenting: () => d.renderer.xr.isPresenting }));
   }
   document.addEventListener("fullscreenchange", () => controls.setTarget(""));
   controls.addSection({
@@ -10062,10 +10259,13 @@ export {
   onDeskChange,
   addDeskControls,
   watchFov,
+  createWorldSigner,
   identityWords,
   identityHost,
   identitySection,
   identityAction,
+  worldSigner,
+  signerAction,
   figureAction,
   WALK_SPEED,
   RUN,

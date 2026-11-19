@@ -44,6 +44,7 @@ import {
   createPresence,
   createSounds,
   createStroll,
+  createWorldSigner,
   createXrInput,
   currentForm,
   deviceForms,
@@ -69,6 +70,7 @@ import {
   saveFile,
   setLookScale,
   setVisitorFov,
+  signerAction,
   speechSprite,
   startingForm,
   strideOf,
@@ -79,8 +81,9 @@ import {
   usedForm,
   viewScale,
   visitorFov,
-  watchFov
-} from "./shared-63KBOX3U.js";
+  watchFov,
+  worldSigner
+} from "./shared-XPJHQL73.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -91,7 +94,7 @@ import {
   reportSettings,
   setShowsPictures,
   showsPictures
-} from "./shared-KKROTYBL.js";
+} from "./shared-NQ7DZT5J.js";
 import {
   browserVoice,
   computerVoice,
@@ -155,6 +158,7 @@ export {
   createStay,
   createStroll,
   createVoice,
+  createWorldSigner,
   createXrInput,
   currentForm,
   currentSettings,
@@ -187,6 +191,7 @@ export {
   setShowsPictures,
   setVisitorFov,
   showsPictures,
+  signerAction,
   speechSprite,
   startingForm,
   strideOf,
@@ -199,5 +204,6 @@ export {
   viewScale,
   visitorFov,
   wasRefreshed,
-  watchFov
+  watchFov,
+  worldSigner
 };

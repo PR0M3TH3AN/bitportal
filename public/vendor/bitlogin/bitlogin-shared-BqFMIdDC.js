@@ -20,13 +20,13 @@ class c {
         return;
       }
       if (typeof n.id != "string") return;
-      const l = this.pending.get(n.id);
-      if (l)
-        if (this.pending.delete(n.id), clearTimeout(l.timer), n.ok)
-          l.resolve(n.result);
+      const a = this.pending.get(n.id);
+      if (a)
+        if (this.pending.delete(n.id), clearTimeout(a.timer), n.ok)
+          a.resolve(n.result);
         else {
-          const a = new Error(n.error);
-          a.name = n.errorName ?? "Error", l.reject(a);
+          const l = new Error(n.error);
+          l.name = n.errorName ?? "Error", a.reject(l);
         }
     });
     const i = (t) => () => this.failAll(t);
@@ -47,12 +47,12 @@ class c {
       return Promise.reject(new Error(this.deadReason));
     const t = `${Date.now().toString(36)}-${(this.counter++).toString(36)}`;
     return new Promise((n, s) => {
-      const l = setTimeout(() => {
+      const a = setTimeout(() => {
         this.pending.delete(t), s(new Error(`BitLogin's ${e} call timed out.`));
       }, i);
-      this.pending.set(t, { resolve: n, reject: s, timer: l });
-      const a = { id: t, action: e, payload: r };
-      this.worker.postMessage(a);
+      this.pending.set(t, { resolve: n, reject: s, timer: a });
+      const l = { id: t, action: e, payload: r };
+      this.worker.postMessage(l);
     });
   }
   configure(e) {
@@ -120,6 +120,15 @@ class c {
   }
   restoreSession() {
     return this.call("restoreSession", {});
+  }
+  handoffBegin() {
+    return this.call("handoffBegin", {});
+  }
+  handoffExport(e) {
+    return this.call("handoffExport", e);
+  }
+  handoffAccept(e) {
+    return this.call("handoffAccept", e);
   }
   vaultStatus() {
     return this.call("vaultStatus", {});
@@ -215,6 +224,18 @@ async function p(o = {}) {
     },
     async nip44Decrypt(t, n) {
       return await i(), (await e.nip44Decrypt({ peerPublicKey: t, payload: n })).plaintext;
+    },
+    async beginHandoff() {
+      return (await e.handoffBegin()).recipientPublicKey;
+    },
+    async exportHandoff(t) {
+      return await i(), e.handoffExport({ recipientPublicKey: t });
+    },
+    async acceptHandoff(t) {
+      return r = (await e.handoffAccept(t)).everydayPublicKey, { pubkey: r };
+    },
+    async isSignerOnly() {
+      return !!(await e.getSessionStatus()).signerOnly;
     },
     async logout() {
       await e.logout(), r = null;

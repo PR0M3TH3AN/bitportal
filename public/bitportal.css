@@ -569,3 +569,10 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 .passing .host { font-size: clamp(1.2rem, 4vw, 1.8rem); }
 .checking .button { margin-left: 12px; vertical-align: middle; }
 .from-vr .passing .button, .from-vr .checking .button { min-height: 60px; font-size: 1.15rem; }
+
+/* ---- the sign-in window a world opens (src/connect/): one question, and whose world is asking */
+.connect { max-width: 34rem; }
+.connect h1 { font-size: 1.35rem; margin: 0 0 .6rem; }
+.connect-world { margin: 0 0 .5rem; padding: .7rem .9rem; border: 1px solid var(--line, rgba(255, 255, 255, .22)); border-radius: 10px; font-size: 1.05rem; overflow-wrap: anywhere; }
+.connect-list { margin: .6rem 0; padding-left: 1.1rem; display: grid; gap: .3rem; }
+.connect .actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }

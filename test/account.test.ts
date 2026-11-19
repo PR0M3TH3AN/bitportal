@@ -36,3 +36,32 @@ describe("saying when signing in can't work", () => {
     expect(cannotSignInHere({ secure: true, subtle: false, host: "x.example", protocol: "https:" })).not.toBeNull();
   });
 });
+
+describe("coming to sign in from the window a world opened", () => {
+  it("leads back to that window, and nowhere a link could name", () => {
+    expect(wayBack("?back=connect")).toMatchObject({ href: "/connect/", label: "Back to what the world asked" });
+    // Anything else in the link changes nothing: the way back is one of BitPortal's own fixed places.
+    expect(wayBack("?back=connect&to=https://evil.example/").href).toBe("/connect/");
+    expect(wayBack("?back=https://evil.example/").href).toBe("/");
+  });
+});
+
+describe("which pages another site may embed", () => {
+  it("is the signer, and only the signer", async () => {
+    // Read as text: this is a test of what the build says, and the project has no Node types to import by name.
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    // Two policies: everything says nobody may embed it, and the signer says any https site may.
+    expect(build.split(`"frame-ancestors 'none'"`).length - 1).toBe(1);
+    expect(build.split(`"frame-ancestors https:"`).length - 1).toBe(1);
+    expect(build).toContain('source: "/signer/(.*)"');
+    expect(build).toContain('source: "/((?!signer/).*)"');
+    // The signer's own policy lets it load nothing from anywhere else and reach no network but its own files.
+    const signer = build.slice(build.indexOf("const signerCsp"), build.indexOf("writeFileSync(", build.indexOf("const signerCsp")));
+    expect(signer).toContain("default-src 'none'");
+    expect(signer).toContain(`"connect-src 'self'"`);
+    // And the signer never uses what this browser keeps for BitPortal.
+    const page = readFileSync(new URL("../src/signer/main.ts", import.meta.url), "utf8");
+    expect(page).not.toMatch(/\.restore\(\)\s*[;)]|readSignedIn|localStorage|indexedDB|sessionStorage/);
+  });
+});
