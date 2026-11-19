@@ -24,6 +24,21 @@ const made = (over: { asGuest?: boolean; signedIn?: boolean; signAs?: Uint8Array
 };
 const note = (content: string, over: Partial<{ kind: number; tags: string[][] }> = {}) => ({ kind: 1, content, tags: [], ...over });
 
+describe("whose feed it is", () => {
+  it("is the key that is signed in, by the name in their own profile, and nobody's for a guest", () => {
+    const notes = createHomeNotes({ asGuest: () => false, signerFor: async () => null, nameOf: (k) => (k === ME ? "Ada" : null) });
+    expect(notes.pubkey()).toBeNull();
+    expect(notes.who()).toBeNull();
+    notes.setWho(ME);
+    expect(notes.pubkey()).toBe(ME);
+    expect(notes.who()).toBe("Ada");
+    const guest = createHomeNotes({ asGuest: () => true, signerFor: async () => null, nameOf: () => "Ada" });
+    guest.setWho(ME);
+    expect(guest.pubkey()).toBeNull();
+    expect(guest.who()).toBeNull();
+  });
+});
+
 describe("posting from your own room", () => {
   it("is offered to someone signed in, and to nobody else", () => {
     const { notes } = made();

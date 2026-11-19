@@ -1,16 +1,16 @@
 /**
- * Posting what you write in your own room as Nostr notes.
+ * Sending out a post from your own room (NSWP-10, "Posting from a world").
  *
- * In a world, a note is signed by the visitor's signer at BitLogin, which the
+ * In a world, a post is signed by the visitor's signer at BitLogin, which the
  * world asks and never holds (NSWP-10, "Signing from a world"). Here there is
  * nobody to ask on their behalf: this is the visitor's own client, and they
- * are already signed in to it. So the room's "Post what I write as Nostr
- * notes" is signed with that sign-in, the way a pass is.
+ * are already signed in to it. So "Send out a post", in the room's "My public
+ * feed", is signed with that sign-in, the way a pass is.
  *
  * It signs one thing: a plain note (kind 1) with the words they wrote and no
- * tags, dated now. It is asked to only when the visitor has turned the switch
- * on in the room, which is off at every visit, and only for a line they just
- * sent. Someone going about as a guest is offered nothing.
+ * tags, dated now. It is asked to only when the visitor writes a post in
+ * their feed and sends it: nothing said to the room is ever posted. Someone
+ * going about as a guest is offered nothing.
  */
 import { cleanChat, finalizeEvent, getPublicKey, type EventTemplate, type NostrEvent } from "@nswp/core";
 import type { Signer } from "../shared/session.js";
@@ -21,6 +21,10 @@ export interface HomeNotes {
   /** Sign a note of the visitor's own words. Null for anything else, or if it can't be signed. */
   sign(note: { kind: number; content: string; tags: string[][] }): Promise<NostrEvent | null>;
   onChange(fn: () => void): () => void;
+  /** Whose key signs: their feed is that key's posts. Null for nobody, or a guest. */
+  pubkey(): string | null;
+  /** What to call them over their feed: the name in their own profile, or null. */
+  who(): string | null;
   /** Say who is signed in, or that nobody is. */
   setWho(pubkey: string | null): void;
   /**
@@ -35,6 +39,8 @@ export interface HomeNotesDeps {
   signerFor(pubkey: string): Promise<{ signer: Signer; close(): void } | null>;
   /** Whether they have said to go about as a guest. */
   asGuest(): boolean;
+  /** The name in someone's own Nostr profile, if this browser knows it. */
+  nameOf?(pubkey: string): string | null;
   now?: () => number;
 }
 
@@ -68,6 +74,11 @@ export function createHomeNotes(deps: HomeNotesDeps): HomeNotes {
     onChange(fn) {
       watchers.add(fn);
       return () => void watchers.delete(fn);
+    },
+    pubkey: () => (deps.asGuest() ? null : (test?.pubkey ?? who)),
+    who: () => {
+      const pubkey = test?.pubkey ?? who;
+      return pubkey && !deps.asGuest() ? (deps.nameOf?.(pubkey) ?? null) : null;
     },
     setWho(pubkey) {
       who = pubkey;
