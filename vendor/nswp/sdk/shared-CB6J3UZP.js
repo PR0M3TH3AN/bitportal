@@ -4119,6 +4119,27 @@ function createConsole(controls, opts) {
   return con;
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
+function fullscreenAction(controls, presenting) {
+  return {
+    id: "fullscreen",
+    section: "view",
+    icon: "size",
+    on: () => !!document.fullscreenElement,
+    // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
+    hidden: () => !document.fullscreenEnabled || presenting(),
+    label: () => document.fullscreenElement ? "Fullscreen: on" : "Fullscreen: off",
+    act: async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch {
+        controls.say("This browser wouldn't go fullscreen.");
+      }
+    }
+  };
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/input.ts
 import * as THREE6 from "three";
 
@@ -6022,6 +6043,7 @@ function addPanelControls(controls, panels, o) {
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/stroll.ts
 var WALK_SPEED2 = 2.4;
 var TAP_REACH = 3;
+var DRAG_LOOK = 5e-3;
 function reachOf(fromX, fromZ, toX, toZ, reach = TAP_REACH) {
   const dx = toX - fromX;
   const dz = toZ - fromZ;
@@ -6112,15 +6134,34 @@ function heldKey(code) {
       return null;
   }
 }
-function createFps(o) {
-  const key = o.keep ?? "nswp:fps";
-  const hasMouse = typeof matchMedia === "function" && matchMedia("(pointer: fine)").matches;
-  let enabled = false;
+var DESK_KEY = "nswp:fps";
+var DESK_WORDS = {
+  intense: "Desk controls: intense",
+  casual: "Desk controls: casual",
+  nowIntense: "Intense: click the view to look round with the mouse. W, A, S, D walk, Shift runs, F uses what is in front of you, and Escape brings up this menu.",
+  nowCasual: "Casual: click where you want to stand, and drag to look round.",
+  click: "Click the view to look round. Escape brings up the menu."
+};
+var hasMouse = () => typeof matchMedia === "function" && matchMedia("(pointer: fine)").matches;
+function startsIntense(arrived, key = DESK_KEY) {
+  if (!hasMouse()) return false;
   try {
-    enabled = hasMouse && (o.arrived === true || localStorage.getItem(key) === "1");
+    return arrived || localStorage.getItem(key) === "1";
   } catch {
-    enabled = hasMouse && o.arrived === true;
+    return arrived;
   }
+}
+function keepIntense(on, key = DESK_KEY) {
+  try {
+    if (on) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
+  } catch {
+  }
+}
+function createFps(o) {
+  const key = o.keep ?? DESK_KEY;
+  const mouse = hasMouse();
+  let enabled = startsIntense(o.arrived === true, key);
   const held = {};
   let pitch = 0;
   let weLetGo = false;
@@ -6218,14 +6259,10 @@ function createFps(o) {
     }
   });
   const setEnabled = (on) => {
-    const next = on && hasMouse;
+    const next = on && mouse;
     if (next === enabled) return;
     enabled = next;
-    try {
-      if (enabled) localStorage.setItem(key, "1");
-      else localStorage.removeItem(key);
-    } catch {
-    }
+    keepIntense(enabled, key);
     if (!enabled) {
       letGo();
       pitch = 0;
@@ -6240,13 +6277,11 @@ function createFps(o) {
     icon: "step",
     on: () => enabled,
     // No mouse, no mouse look. And not in a headset, where it has no meaning.
-    hidden: () => !hasMouse || o.presenting(),
-    label: () => enabled ? "Desk controls: intense" : "Desk controls: casual",
+    hidden: () => !mouse || o.presenting(),
+    label: () => enabled ? DESK_WORDS.intense : DESK_WORDS.casual,
     act: () => {
       setEnabled(!enabled);
-      o.controls.say(
-        enabled ? "Intense: click the view to look round with the mouse. W, A, S, D walk, Shift runs, F uses what is in front of you, and Escape brings up this menu." : "Casual: click where you want to stand, and drag to look round."
-      );
+      o.controls.say(enabled ? DESK_WORDS.nowIntense : DESK_WORDS.nowCasual);
     }
   });
   const at = o.camera.position.clone();
@@ -6265,7 +6300,7 @@ function createFps(o) {
       }
       if (!told && !looking() && !o.hud?.open) {
         told = true;
-        o.controls.say("Click the view to look round. Escape brings up the menu.");
+        o.controls.say(DESK_WORDS.click);
       }
       if (o.hud?.open) return true;
       const [dx, dz] = strideOf(held, o.rig.rotation.y, o.speed ?? 2.4, dt);
@@ -8583,23 +8618,7 @@ async function addViewControls(controls, d) {
       }
     },
     { id: "turn", section: "view", icon: "turn", label: "Turn around", act: () => turnVisitor(d.rig, d.camera, 180) },
-    {
-      id: "fullscreen",
-      section: "view",
-      icon: "size",
-      on: () => !!document.fullscreenElement,
-      // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
-      hidden: () => !document.fullscreenEnabled || presenting(),
-      label: () => document.fullscreenElement ? "Fullscreen: on" : "Fullscreen: off",
-      act: async () => {
-        try {
-          if (document.fullscreenElement) await document.exitFullscreen();
-          else await document.documentElement.requestFullscreen();
-        } catch {
-          controls.say("This browser wouldn't go fullscreen.");
-        }
-      }
-    }
+    fullscreenAction(controls, presenting)
   );
   document.addEventListener("fullscreenchange", () => controls.setTarget(""));
   controls.addSection({
@@ -8634,6 +8653,7 @@ export {
   addPanelControls,
   WALK_SPEED2 as WALK_SPEED,
   TAP_REACH,
+  DRAG_LOOK,
   reachOf,
   createStroll,
   viewScale,

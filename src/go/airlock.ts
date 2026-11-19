@@ -19,6 +19,7 @@ import {
   finalizeEvent,
   getPublicKey,
   fetchManifest,
+  fromLocal,
   latestAddressable,
   parseAirlockFragment,
   parseWorldEvent,
@@ -30,6 +31,7 @@ import {
   type Verification,
   type World,
   shortNpub,
+  toLocal,
 } from "@nswp/core";
 
 import bundleJson from "../starter/starter-set.json";
@@ -62,6 +64,12 @@ const withBlocked = (): { blocked?: string[] } => {
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const SELF = `${location.origin}${location.pathname}`;
+/**
+ * This Airlock's address as a world is given it, for the way back. On a development server that is the real
+ * address this copy stands for, which the world follows back to this copy (core, local.ts). Everywhere else it
+ * is this page's own address.
+ */
+const selfForWorlds = (): Promise<string> => fromLocal(SELF);
 
 function store(): Storage | null {
   try {
@@ -238,7 +246,7 @@ async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: 
   if (!entry.capabilities.includes(HOME_CAPABILITY)) return sorry(`${host} no longer says it can be a home, so you are in BitPortal's room.`);
   // They arrive as they last chose to go anywhere, short of signing: with their look, or plain.
   const mine = goMode() === "plain" ? null : loadLook();
-  location.replace(buildArrivalUrl(home.url, { airlock: SELF, home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry }));
+  location.replace(await toLocal(buildArrivalUrl(home.url, { airlock: await selfForWorlds(), home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry })));
   return true;
 }
 
@@ -509,7 +517,9 @@ async function render(): Promise<void> {
     }
     // A site that hasn't adopted NSWP gets a plain visit: nothing is added to
     // its address that it didn't ask for.
-    if (!a.nswpAware) return location.assign(target);
+    // On a development server, a site that is being served there is visited there (core, local.ts). The check above
+    // was of the real site, and the card says so.
+    if (!a.nswpAware) return location.assign(await toLocal(target));
     // What goes with the visitor is what they chose on this screen. The choice is remembered for next time.
     const how = mine || who ? chosen() : "plain";
     // By name with no look of their own, they wear the one their key generates.
@@ -525,7 +535,8 @@ async function render(): Promise<void> {
           : await quietSigner(who.pubkey);
         if (!quiet) throw new Error("locked");
         try {
-          return await issuePass(quiet.signer, { origin: a.origin, ...(who.name ? { name: who.name } : {}) });
+          // A pass is for the place it is shown at: on a development server, the local copy.
+          return await issuePass(quiet.signer, { origin: new URL(await toLocal(a.url)).origin, ...(who.name ? { name: who.name } : {}) });
         } finally {
           quiet.close();
         }
@@ -556,9 +567,12 @@ async function render(): Promise<void> {
     const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
-    location.assign(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: SELF, ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry }));
+    location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
   };
   go.addEventListener("click", () => void leave());
+  // On a development server: say plainly that the visit is to a copy on this machine or network, and which.
+  const copy = await toLocal(a.url);
+  if (copy !== a.url) card.append(el("p", { class: "small muted", id: "local-copy" }, `Development server: you will be taken to the copy at ${new URL(copy).host}, not to ${new URL(a.url).host}. What was checked above is the real site.`));
   card.append(el("div", { class: "actions" }, backButton(), go));
 
   const answered = Object.values(a.relayStatus).filter((s) => s === "eose").length;
