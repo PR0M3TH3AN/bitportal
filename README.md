@@ -249,7 +249,12 @@ Intense, chosen in the menu under Moving, is for people who play games: the
 mouse looks, W A S D walk, Shift runs, F or a click uses the door or button
 in the middle of the view, and Escape brings up the menu. In a headset,
 casual is stepping and intense is walking and turning smoothly. Each device
-keeps its own choice. Fullscreen is in the menu under View. The choice is
+keeps its own choice.
+
+You can run and jump whichever way you move. At a desk, Shift runs and Space
+jumps, and two clicks on the floor run there. On a touch screen, two taps
+run, and Jump is with the controls at the bottom. In a headset, A or X
+jumps, and pressing the moving stick in runs while you are walking smoothly. Fullscreen is in the menu under View. The choice is
 kept in this browser and goes with the visitor into the worlds they visit.
 
 ## Sound

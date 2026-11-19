@@ -20,7 +20,7 @@ import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, enco
 import { ARRIVED_JOINED, ARRIVED_MOVING } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, createStroll, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -74,6 +74,7 @@ interface Clickable {
 }
 
 interface TestHooks {
+  jump?: { jump(): boolean; readonly height: number; readonly airborne: boolean };
   /** Game controls on a desk: the mouse looks, keys walk. */
   fps?: Fps;
   /** The menu on a flat screen. */
@@ -376,7 +377,7 @@ async function start(): Promise<void> {
     id: "help",
     label: "Help",
     icon: "help",
-    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there. Select a door, or walk through it, to see where it leads before you go.",
+    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there: twice to run. Shift runs and Space jumps. Select a door, or walk through it, to see where it leads before you go.",
   });
   // The ground and the skyline come with the home (nswp-sdk/home), in the room's own colours.
   scene.background = new THREE.Color(0x04070b);
@@ -923,6 +924,7 @@ async function start(): Promise<void> {
       if (!aimFrom(controllers[i]!)) stepToFloor();
     },
     onMenu: () => xrConsole.setOpen(!xrConsole.open),
+    onJump: () => void jump.jump(),
   });
   hooks.input = () => xrInput.info();
   // The visitor's panels are theirs: kept in this browser, with any file they hang, and sent nowhere. They are
@@ -981,12 +983,17 @@ async function start(): Promise<void> {
     const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
     if (!forward && !strafe) return;
     stroll.stop(); // the keys take over from a walk a tap began
-    stepVec.set(strafe, 0, -forward).normalize().multiplyScalar(2.2 * dt).applyAxisAngle(THREE.Object3D.DEFAULT_UP, rig.rotation.y);
-    rig.position.add(stepVec);
+    // The kit's own walking pace, and Shift runs, moving the casual way as it does the intense way.
+    const pace = WALK_SPEED * (keys.has("ShiftLeft") || keys.has("ShiftRight") ? RUN : 1);
+    stepVec.set(strafe, 0, -forward).normalize().multiplyScalar(pace * dt).applyAxisAngle(THREE.Object3D.DEFAULT_UP, rig.rotation.y);
+    rig.position.x += stepVec.x;
+    rig.position.z += stepVec.z;
     const limit = RADIUS + 1.5;
     const dist = Math.hypot(rig.position.x, rig.position.z);
     if (dist > limit) {
-      rig.position.multiplyScalar(limit / dist);
+      // Over the floor only: how high they are is the jump's.
+      rig.position.x *= limit / dist;
+      rig.position.z *= limit / dist;
       sounds.bump();
     }
   };
@@ -1165,13 +1172,18 @@ async function start(): Promise<void> {
   let lastT = 0;
   let wasBusy = false;
   const movedFrom = rig.position.clone();
+  // A jump, the same however they are moving: Space, the Jump control where there is no keyboard, A or X in a headset.
+  const floorY = rig.position.y;
+  const jump = addJump(controls, { presenting: () => renderer.xr.isPresenting, sounds, hud, busy: () => !!panels?.keyboard.open });
+  hooks.jump = jump;
   renderer.setAnimationLoop(() => {
-    // Steps are made from how far the visitor was moved, not from how their head sways.
-    if (state.ready) sounds.moved(Math.hypot(rig.position.x - movedFrom.x, rig.position.z - movedFrom.z));
+    // Steps are made from how far the visitor was moved, not from how their head sways, and not while they are in the air.
+    if (state.ready && !jump.airborne) sounds.moved(Math.hypot(rig.position.x - movedFrom.x, rig.position.z - movedFrom.z));
     movedFrom.copy(rig.position);
     const t = (performance.now() - started) / 1000;
     const dt = Math.min(t - lastT, 0.1);
     lastT = t;
+    rig.position.y = floorY + jump.update(dt);
     xrInput.update(dt);
     panels!.update(t, dt);
     // The keyboard and the library's board come up where the console is: it steps aside for them.
