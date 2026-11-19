@@ -5,14 +5,16 @@ import {
   SUMMON_KEY,
   SUMMON_SLOP,
   UI_PRESETS,
+  arrivedSettings,
   cleanTheme,
   createHeldButton,
   createHoldWatch,
   loadVisitorTheme,
+  reportSettings,
   resolveTheme,
   rgb,
   saveVisitorTheme
-} from "./shared-YO5CGGKR.js";
+} from "./shared-YCC3OB6E.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
@@ -44,6 +46,13 @@ function createControls(opts) {
   const sayers = /* @__PURE__ */ new Set();
   const signals = /* @__PURE__ */ new Set();
   let visitor = loadVisitorTheme();
+  const came = arrivedSettings();
+  const brought = { ...came.text !== void 0 ? { scale: came.text } : {}, ...came.motion !== void 0 ? { motion: came.motion } : {}, ...came.wrist !== void 0 ? { wrist: came.wrist } : {} };
+  if (Object.keys(brought).length) {
+    visitor = { ...visitor, ...brought };
+    saveVisitorTheme(visitor);
+  }
+  reportSettings("look", () => ({ ...visitor.scale !== void 0 ? { text: visitor.scale } : {}, ...visitor.motion !== void 0 ? { motion: visitor.motion } : {}, ...visitor.wrist !== void 0 ? { wrist: visitor.wrist } : {} }));
   let theme = resolveTheme(opts.theme, visitor);
   let target = "";
   let detail = [];

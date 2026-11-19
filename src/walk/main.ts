@@ -17,10 +17,10 @@
  */
 import * as THREE from "three";
 import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, queryRelays, WORLD_KIND } from "@nswp/core";
-import { ARRIVED_JOINED, ARRIVED_MOVING } from "../shared/travel.js";
+import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, currentForm, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, currentSettings, currentForm, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -331,6 +331,15 @@ async function start(): Promise<void> {
   // One list of what a visitor can do in the room (the NSWP controls kit). The
   // HUD draws it on a flat screen and the console draws it in a headset. The
   // look starts from the room's own accent; the visitor can change it.
+  // What the visitor set in the world they have just come home from (their volumes, the size of their text and
+  // the rest) is what the room begins from. The kit cleans it: it is preferences and nothing else.
+  try {
+    const came = sessionStorage.getItem(ARRIVED_SETTINGS);
+    sessionStorage.removeItem(ARRIVED_SETTINGS);
+    if (came) arriveWith(JSON.parse(came));
+  } catch {
+    /* the room keeps what it had */
+  }
   const controls = createControls({ title: "Your room", address: location.host, theme: { accent: room.layout.room.accent } });
   const hud = mountHud(controls);
   hooks.controls = controls;
@@ -366,7 +375,7 @@ async function start(): Promise<void> {
   void readSignedIn().then((who) => {
     const home = homeOf(loadHome(), who?.pubkey);
     if (!home) return;
-    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic, ...movingFlag() })) });
+    controls.add({ id: "go-home", section: "travel", icon: "home", hotbar: true, label: `Go home, to ${home.title || new URL(home.url).host}`, short: "Home", act: () => location.assign(buildWayUrl(new URL("/go/", location.origin).href, { immersive: renderer.xr.isPresenting, joined: travelling().joined, mic: travelling().mic, ...movingFlag(), settings: currentSettings() })) });
   });
   try {
     // Said once, when they were meant to arrive at their home and didn't.
@@ -695,7 +704,7 @@ async function start(): Promise<void> {
       /* already ended */
     }
     // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...movingFlag(), form: currentForm() }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...movingFlag(), form: currentForm(), settings: currentSettings() }));
   };
 
   const raycaster = new THREE.Raycaster();

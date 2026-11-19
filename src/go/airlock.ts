@@ -43,7 +43,7 @@ import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
-import { ARRIVED_JOINED, ARRIVED_MOVING, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
+import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
 
 /** The last world this Airlock sent the visitor to, as a host: where a block they report was most likely made. */
@@ -286,7 +286,7 @@ async function render(): Promise<void> {
       // In the room where they came from: they stay joined at home too. Nothing is asked on the way home, so a
       // microphone goes along only when they have already said theirs may.
       // How they move goes with them too: a preference, with nothing to decide about it.
-      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.moving ? { moving: way.moving } : {}), ...formToCarry(undefined) };
+      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.moving ? { moving: way.moving } : {}), ...formToCarry(undefined), ...(way.settings ? { settings: way.settings } : {}) };
       // Who they blocked where they came from is a link's word. Nothing is asked on the way home, so it waits:
       // for the next door, or for Settings.
       if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
@@ -298,6 +298,14 @@ async function render(): Promise<void> {
       // chamber they left a world in.
       const home = new URL("/walk/", location.origin);
       home.hash = fromHeadset ? "back&xr=1" : "back";
+      // What they set in the world they left comes home with them: the room begins from it.
+      if (way.settings) {
+        try {
+          sessionStorage.setItem(ARRIVED_SETTINGS, JSON.stringify(way.settings));
+        } catch {
+          /* the room keeps what it had */
+        }
+      }
       if (way.moving === "intense") {
         try {
           sessionStorage.setItem(ARRIVED_MOVING, fromHeadset ? "headset" : "desk");
@@ -585,7 +593,7 @@ async function render(): Promise<void> {
     } catch {
       /* the next report says "where you came from" */
     }
-    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}), ...formToCarry(req.form) };
+    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}), ...formToCarry(req.form), ...(req.settings ? { settings: req.settings } : {}) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
