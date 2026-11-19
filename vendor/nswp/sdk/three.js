@@ -20,6 +20,7 @@ import {
   RUN,
   SPRINT,
   TAP_REACH,
+  TOP_SPEED,
   WALK_SPEED,
   addCameraControls,
   addDeskControls,
@@ -44,6 +45,7 @@ import {
   createPortalWindow,
   createPresence,
   createSounds,
+  createStepPace,
   createStroll,
   createWorldSigner,
   createXrInput,
@@ -89,7 +91,7 @@ import {
   watchFov,
   worldSigner,
   youCard
-} from "./shared-GFGD7S3Z.js";
+} from "./shared-NIRKUUOJ.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -134,6 +136,7 @@ export {
   RUN,
   SPRINT,
   TAP_REACH,
+  TOP_SPEED,
   WALK_SPEED,
   addCameraControls,
   addDeskControls,
@@ -163,6 +166,7 @@ export {
   createPresence,
   createSounds,
   createStay,
+  createStepPace,
   createStroll,
   createVoice,
   createWorldSigner,

@@ -20,7 +20,7 @@ import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, enco
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -798,6 +798,10 @@ async function start(): Promise<void> {
     if (out > limit) spot.multiplyScalar(limit / out);
     return spot;
   };
+  // A step in a headset lands at once, and the next waits as long as running there would have taken (the kit's
+  // pace): nobody covers ground faster than a run, whatever they hold or wear.
+  const pace = createStepPace();
+  state.pace = () => ({ ready: pace.ready, wait: pace.wait });
   // On a flat screen a tap is a walk at the keys' pace (the kit's stroll), not a jump.
   const stroll = createStroll({
     where: () => {
@@ -818,10 +822,16 @@ async function start(): Promise<void> {
   const stepToFloor = () => {
     const to = floorSpot();
     if (!to) return;
-    state.steps = ((state.steps as number | undefined) ?? 0) + 1;
-    // Unless the visitor is in a headset, where a slide turns stomachs, or has asked for less motion.
-    if (!renderer.xr.isPresenting && controls.theme.motion) return stroll.to(to.x, to.z);
+    // On a flat screen it is always a walk, on a phone as at a desk, with motion on or off: the walk the keys make.
+    if (!renderer.xr.isPresenting) {
+      state.steps = ((state.steps as number | undefined) ?? 0) + 1;
+      return stroll.to(to.x, to.z);
+    }
+    // In a headset, where a slide turns stomachs, it is a step that lands at once, at the pace of someone running:
+    // a press that comes too soon does nothing, and the ring on the floor is dim until one would.
     camera.getWorldPosition(headNow);
+    if (!pace.take(Math.hypot(to.x - headNow.x, to.z - headNow.z))) return;
+    state.steps = ((state.steps as number | undefined) ?? 0) + 1;
     rig.position.x += to.x - headNow.x;
     rig.position.z += to.z - headNow.z;
   };
@@ -1014,6 +1024,7 @@ async function start(): Promise<void> {
     camera,
     controls,
     accent: ACCENT,
+    pace,
     // Walking smoothly reaches as far as walking with the keys does: into a doorway, which is how one is chosen on foot.
     canStand: (x, z) => crossing.allows(x, z) && Math.hypot(x, z) <= RADIUS + 1.5,
     stepFrom: (i) => {
@@ -1408,6 +1419,8 @@ async function start(): Promise<void> {
         if (to) {
           reticle.position.set(to.x, 0.02, to.z);
           reticle.visible = true;
+          // Dim while the last step is still being paid for: a press now would do nothing.
+          (reticle.material as THREE.MeshBasicMaterial).opacity = pace.ready ? 0.8 : 0.22;
         }
       }
       const through = walkedThrough();
