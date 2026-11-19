@@ -103,6 +103,9 @@ describe("shelves", () => {
       "Here because its list ranks it highly and it runs on this device.",
     );
     expect(whySentence([{ label: "recency", contribution: 0.9 }])).toBe("Here because it is new.");
+    // A scorer with nothing to say is not a reason, and doesn't take the place of one that has.
+    expect(whySentence([{ label: "its list ranks it highly", contribution: 0.3 }, { label: "Tastes", contribution: 0.2 }, { label: "it runs on this device", contribution: 0.15 }])).toBe("Here because its list ranks it highly and it runs on this device.");
+    expect(whySentence([{ label: "Tastes", contribution: 0.2 }])).toBe("");
     expect(whySentence([{ label: "x", contribution: 0 }])).toBe("");
   });
 });
