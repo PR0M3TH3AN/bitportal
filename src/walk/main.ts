@@ -31,7 +31,7 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
-import { readSignedIn } from "../shared/session.js";
+import { readSignedIn, shortKey } from "../shared/session.js";
 import { createJumpList } from "../shared/jump.js";
 import { addComputers, type Computers } from "./computers.js";
 import { plateMarks } from "../shared/plate.js";
@@ -363,6 +363,29 @@ async function start(): Promise<void> {
   // The editor is a page, which can't be seen in a headset.
   controls.addSection({ id: "you", label: "You", icon: "room", note: "How other people see you when you share a room. It is kept on this device." });
   controls.add({ id: "figure", section: "you", icon: "room", label: "Change how you look", short: "You", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/look/") });
+  // Who they are: stay a guest, sign in, or switch profile. Signing in is one page and no other (BitLogin, in
+  // BitPortal's colours), so the room leads there and that page leads back. From a headset, the session is ended to
+  // show the page, and the way back says so, so the room offers the way into VR again first.
+  let signedInAs = "";
+  void readSignedIn().then((who) => {
+    signedInAs = who ? (who.name ?? shortKey(who.pubkey)) : "";
+  });
+  controls.add({
+    id: "identity",
+    section: "you",
+    icon: "people",
+    label: () => (signedInAs ? `Signed in as ${signedInAs}. Switch profile, or sign out` : "You are a guest. Sign in, or stay anonymous"),
+    short: "Sign in",
+    act: async () => {
+      const fromHeadset = renderer.xr.isPresenting;
+      try {
+        await renderer.xr.getSession()?.end();
+      } catch {
+        /* already ended */
+      }
+      location.assign(`/account/?back=walk${fromHeadset ? "&xr=1" : ""}`);
+    },
+  });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },

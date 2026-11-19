@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Your identity · BitPortal</title>
-<meta name="description" content="Sign in to BitPortal with BitLogin or any Nostr signer.">
+<title>Who you are · BitPortal</title>
+<meta name="description" content="Stay anonymous, sign in, or switch profile. BitPortal's sign-in is BitLogin.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/bitportal.css">
 </head>
@@ -13,27 +13,50 @@
 <header class="top">
   <div class="frame top-row">
     <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
-    <span class="top-actions"><button id="jump-button" class="button" type="button">Your doors</button><a class="button" href="/">Back to the lobby</a></span>
+    <span class="top-actions"><button id="jump-button" class="button" type="button">Your doors</button><a class="button" id="back-link" href="/">Back to the lobby</a></span>
   </div>
 </header>
-<main class="frame page">
-  <h1>Your identity</h1>
+<main class="frame page who">
+  <h1>Who you are here</h1>
   <p id="who" class="lede" role="status">Checking whether you're signed in.</p>
-  <div id="next" class="next-steps" hidden>
-    <a class="button primary" href="/publish/">Announce a world</a>
-    <p class="small">Signing in doesn't change your lobby yet. Shelves built from the people you follow come in a later version.</p>
-  </div>
-  <!-- BitLogin's element must stay in this one place for its whole life: moving or removing it ends the session's worker. -->
-  <section class="card widget-card" aria-label="Sign in">
-    <bitlogin-auth id="bitlogin"></bitlogin-auth>
+
+  <!-- Signed in: who they are, and the three things they can do about it. -->
+  <section id="signed-in" class="card you" aria-label="Your profile" hidden>
+    <p class="you-line"><span class="you-mark" aria-hidden="true"></span><span><strong id="you-name"></strong><span id="you-key" class="key"></span></span></p>
+    <div class="you-actions">
+      <a id="carry-on" class="button primary" href="/">Carry on</a>
+      <button id="switch" class="button" type="button">Switch profile</button>
+      <button id="sign-out" class="button" type="button">Sign out</button>
+    </div>
+    <p class="small muted">Switching signs this profile out of this browser, then asks who you'd like to be. Your doors, your look and your settings stay where they are.</p>
+    <p class="small"><a href="/publish/">Announce a world</a> as this profile.</p>
   </section>
+
+  <div class="choices">
+    <!-- Anonymous is a real choice, and the first one. -->
+    <section id="guest" class="card choice" aria-labelledby="guest-title">
+      <h2 id="guest-title">Stay anonymous</h2>
+      <p>Go as a guest. Nothing is asked and nothing about you is kept. You are a different figure on every visit, unless you <a href="/look/">make a look</a> to be recognised by. You can sign in whenever you like.</p>
+      <a id="as-guest" class="button" href="/">Carry on as a guest</a>
+    </section>
+
+    <!-- BitLogin's element must stay in this one place for its whole life: moving or removing it ends the session's worker. -->
+    <section class="card choice sign-in" aria-labelledby="sign-in-title">
+      <h2 id="sign-in-title">Sign in, or make a profile</h2>
+      <p id="sign-in-why">So people can know you by name from world to world, and the worlds you announce are yours.</p>
+      <bitlogin-auth id="bitlogin" data-theme="dark"></bitlogin-auth>
+      <p class="powered"><span class="powered-mark" aria-hidden="true"></span>Powered by <strong>BitLogin</strong></p>
+    </section>
+  </div>
+
   <section class="notes">
     <h2>What to know</h2>
     <ul>
-      <li>Sign-in is handled by BitLogin, which is alpha software. Use an identity you can afford to lose until it has had an outside audit.</li>
+      <li>Sign-in is BitLogin, drawn in BitPortal's colours. It is alpha software: use an identity you can afford to lose until it has had an outside audit.</li>
       <li>Your key stays in this browser. BitPortal has no account server and stores nothing about you.</li>
-      <li>You sign in here, on this page, and nowhere else. No world and no portal will ever ask for your password; if one does, leave.</li>
-      <li>On a headset, set up your account on a phone or computer first. Signing in inside a headset isn't smooth yet.</li>
+      <li>You sign in here, on this page, and nowhere else. No world and no portal will ever ask for your password. If one does, leave.</li>
+      <li>On a phone, a computer or a headset's own screen, it is the same page with the same ways to sign in.</li>
+      <li id="headset-note">From inside VR, this page opens on your headset's flat screen. When you are done, the button back to your room takes you into VR again.</li>
     </ul>
   </section>
 </main>

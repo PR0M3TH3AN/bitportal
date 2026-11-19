@@ -39,6 +39,7 @@ import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalo
 import { placeKind } from "../shared/plate.js";
 import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
+import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
@@ -374,7 +375,7 @@ async function render(): Promise<void> {
     : a.world
       ? chip(a.listedBy ? `Listed by ${a.listedBy}, not verified` : "Listed, not verified", "warn")
       : chip("Unlisted destination", "warn");
-  const chips = el("div", { class: "chips" }, status);
+  const chips = el("div", { class: "chips" });
   const w = a.world;
   // What kind of place this is, and whether this device can run it (spec §6.7).
   const vr = navigator.xr ? await navigator.xr.isSessionSupported("immersive-vr").catch(() => false) : false;
@@ -396,16 +397,27 @@ async function render(): Promise<void> {
 
   const device = el("p", { class: "muted" }, vr ? "This device can enter VR. You'll press Enter VR again on arrival." : "This device can't enter VR; the world opens in your browser.");
 
+  // Whether it suits the form the visitor is in: a phone, a desk, a headset. What this copy found when it tried the
+  // world itself comes before what the world's maker says (fit.ts). Said up front only when there is a problem.
+  const form = formOf({ immersive: req.immersive, form: pressedWith ?? req.form, touchMain: matchMedia("(pointer: coarse)").matches });
+  const fit = fitFor(w, form, checkedFor(w ? `${WORLD_KIND}:${w.pubkey}:${w.d}` : undefined));
+  const fitLine = el("p", { class: `fit fit-${fit.tone}`, id: "fit" }, fit.text);
+
+  // The screen is three things: where the door leads, anything the visitor has to know or answer before going, and
+  // the way through. Everything else is one press away under "More about this place", and reading it holds the
+  // crossing where it is.
+  const more = el("details", { class: "more", id: "more" }, el("summary", {}, "More about this place")) as HTMLDetailsElement;
+  const body = el("div", { class: "more-body" });
+  more.append(body);
+  body.append(el("p", { class: "full-url muted" }, a.url), w?.summary ? el("p", {}, w.summary) : "", chips, fit.tone === "ok" || fit.tone === "plain" ? fitLine : "", device);
+
   const card = el(
     "section",
     { class: "card" },
     el("p", { class: "leaving" }, "This door leads to"),
     host,
-    el("p", { class: "full-url muted" }, a.url),
-    w ? el("h1", {}, w.title) : el("h1", {}, "An unlisted site"),
-    w?.summary ? el("p", {}, w.summary) : "",
-    chips,
-    device,
+    el("div", { class: "title-row" }, w ? el("h1", {}, w.title) : el("h1", {}, "An unlisted site"), status),
+    fit.tone === "warn" || fit.tone === "bad" ? fitLine : "",
   );
   if (a.warnings.length) card.append(issueList(a.warnings, "warn"));
 
@@ -444,19 +456,19 @@ async function render(): Promise<void> {
           mine ? option("look", who ? "A guest, wearing your look" : "Yourself, wearing your look") : "",
           option("plain", "Plain: nothing of yours goes with you"),
           note,
-          el("p", { class: "small" }, el("a", { href: "/look/" }, mine ? "Change your look" : "Make a look"), ...(who ? [] : [". To go by name, ", el("a", { href: "/account/" }, "sign in first"), "."])),
+          el("p", { class: "small" }, el("a", { href: "/look/" }, mine ? "Change your look" : "Make a look"), ...(who ? [] : [". To go by name, ", el("a", { href: "/account/?back=history" }, "sign in first"), "."])),
         )
       : el(
           "p",
           { class: "small go-as-note" },
           a.nswpAware ? "You'll arrive plain: a different figure every visit. " : "This site hasn't adopted the protocol, so nothing about you goes with you. ",
-          ...(a.nswpAware ? [el("a", { href: "/look/" }, "Make a look"), " to be recognised from world to world, or ", el("a", { href: "/account/" }, "sign in"), " to go by name."] : []),
+          ...(a.nswpAware ? [el("a", { href: "/look/" }, "Make a look"), " to be recognised from world to world, or ", el("a", { href: "/account/?back=history" }, "sign in"), " to go by name."] : []),
         );
   identity.addEventListener("change", () => {
     note.textContent = NOTES[chosen()];
     note.className = "small go-as-note";
   });
-  card.append(identity);
+  body.append(identity);
 
   const remember = el(
     "div",
@@ -469,7 +481,7 @@ async function render(): Promise<void> {
     }),
     el("label", { for: "remember" }, "Skip this screen next time for this world", verified ? "" : el("span", { class: "muted" }, " (only for verified worlds)")),
   );
-  card.append(remember);
+  body.append(remember);
 
   // The link says they were in the room where they came from. It is a link's word, so it is shown, and theirs to
   // change: stay among people at the other end or not, and whether their microphone stays on. The second is off
@@ -512,13 +524,13 @@ async function render(): Promise<void> {
         micBox!.disabled = !stayBox!.checked;
       });
     }
-    card.append(staying);
+    body.append(staying);
   }
 
   // Test aid for people without a headset; only the reference worlds understand ?xr=emulate.
   const isReferenceWorld = !!w && w.topics.includes("nswp") && w.topics.includes("reference");
   if (isReferenceWorld) {
-    card.append(
+    body.append(
       el(
         "div",
         { class: "remember muted" },
@@ -602,11 +614,29 @@ async function render(): Promise<void> {
   // On a development server: say plainly that the visit is to a copy on this machine or network, and which.
   const copy = await toLocal(a.url);
   if (copy !== a.url) card.append(el("p", { class: "small muted", id: "local-copy" }, `Development server: you will be taken to the copy at ${new URL(copy).host}, not to ${new URL(a.url).host}. What was checked above is the real site.`));
+  // What goes with them, in a line: it is shown without their having to look for it, and changed under "more".
+  const going = el("span", { id: "going-as" });
+  const sayGoing = () => {
+    if (!a.nswpAware) return void (going.textContent = "This site hasn't adopted the protocol, so nothing about you goes with you.");
+    const how = mine || who ? chosen() : "plain";
+    const as = how === "name" && who ? `by name, as ${who.name ?? shortKey(who.pubkey)}` : how === "look" ? "as a guest, wearing your look" : "as a guest, with nothing of yours";
+    const room = stayBox ? (stayBox.checked ? `, staying in the room${micBox?.checked ? " with your microphone on" : ""}` : ", leaving the room you were in") : "";
+    going.textContent = `Going ${as}${room}.`;
+  };
+  sayGoing();
+  body.addEventListener("change", sayGoing);
+  const change = el("button", { class: "linkish", id: "change-going", type: "button" }, "Change");
+  change.addEventListener("click", () => {
+    more.open = true;
+    (body.querySelector("input") as HTMLElement | null)?.focus();
+  });
+  card.append(el("p", { class: "small going" }, going, " ", a.nswpAware ? change : ""));
   card.append(el("div", { class: "actions" }, backButton(), go));
 
   const answered = Object.values(a.relayStatus).filter((s) => s === "eose").length;
   const total = Object.keys(a.relayStatus).length;
-  card.append(el("p", { class: "small" }, `Checked in ${Math.round(performance.now() - started)} ms${total ? `, with ${answered} of ${total} relays answering` : ""}.`));
+  body.append(el("p", { class: "small" }, `Checked in ${Math.round(performance.now() - started)} ms${total ? `, with ${answered} of ${total} relays answering` : ""}.`));
+  card.append(more);
   main.append(card);
 
   if (fastPath) {
@@ -620,9 +650,14 @@ async function render(): Promise<void> {
         void leave();
       } else $("countdown").textContent = `Continuing in ${n}…`;
     }, 1000);
-    $("cancel-fast").addEventListener("click", () => {
+    const hold = () => {
       clearInterval(timer);
       bar.remove();
+    };
+    $("cancel-fast").addEventListener("click", hold);
+    // Reading more about the place holds the crossing: nobody is taken through while they are reading.
+    more.addEventListener("toggle", () => {
+      if (more.open) hold();
     });
   }
   go.focus();

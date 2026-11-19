@@ -141,6 +141,55 @@ lobby or a world would need to agree with it on is in
 - **Plain mode** (`/?plain=1`, or Settings) is the same lobby with no BitFeed:
   one list in date order. It exists so the protocol never depends on BitBlocks.
 
+## The Airlock, kept short
+
+The Airlock shows three things: where the door leads, anything you have to
+know or answer before going, and the way through. Everything else is one
+press away under "More about this place": the full address, what the world
+says about itself, how you will arrive, whether to stay in the room you were
+in, and whether to skip this screen next time. Opening it holds the crossing
+where it is, including the countdown to a world you have told it to skip
+for, so nobody is taken through while they are reading.
+
+One line always says what goes with you ("Going as a guest, with nothing of
+yours, staying in the room"), with Change beside it. A question that has to
+be answered, such as whether to block someone everywhere, stays in front.
+
+## Whether a world suits your device
+
+A world's maker says what it is for. BitPortal also tries each world on its
+list itself, on a phone-sized touch screen, at a desk and with a made-up
+headset (`npm run probe`, which writes `src/starter/checked.json`), and the
+Airlock tells you what it found before what the maker says:
+
+- **It failed when tried** on the kind of device you are on: said in red,
+  before you go.
+- **Its maker says it isn't for this:** a headset-only world on a phone, a
+  desktop-only world on a phone, a page that isn't made for a headset. Said
+  in amber, before you go.
+- **It ran when tried**, or only its maker's word is known: under "More
+  about this place", and the two are never mixed up.
+
+The Airlock can't try a world at the moment you cross. Loading a world is
+visiting it, and the visit is what the Airlock asks about. So the trying is
+done ahead of time by whoever runs this copy. A form the probe couldn't
+confirm either way is left out: a world is never called broken for something
+only a software renderer or a made-up headset might get wrong.
+
+## Who you are
+
+`/account/` is the one page where anyone signs in. It offers three things,
+each as easy as the others: stay anonymous, sign in or make a profile, and,
+once signed in, switch to another profile or sign out. Signing in is
+BitLogin, drawn in BitPortal's colours through the theme values BitLogin
+gives a page to set, with "Powered by BitLogin" under it. Nothing inside
+BitLogin is reached into or replaced.
+
+It is the same page on a phone, a computer and a headset's own screen. The
+room's menu leads to it ("You", then "Sign in, or stay anonymous"), and it
+leads back to the room. From inside VR the session is ended to show the
+page, and the way back takes you into VR again.
+
 ## Privacy rules it follows
 
 - Drawing the lobby contacts Nostr relays only. A world's own site is contacted
