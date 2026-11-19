@@ -79,13 +79,18 @@ import {
   viewScale,
   visitorFov,
   watchFov
-} from "./shared-KSUOONRL.js";
+} from "./shared-TNH4JNMH.js";
 import {
+  PICTURE_LIMITS,
   arriveWith,
   arrivedSettings,
   currentSettings,
-  reportSettings
-} from "./shared-H5L32T46.js";
+  loadPicture,
+  onPicturesChange,
+  reportSettings,
+  setShowsPictures,
+  showsPictures
+} from "./shared-V7CEZIAV.js";
 import {
   browserVoice,
   computerVoice,
@@ -114,6 +119,7 @@ export {
   LOOK_STEPS,
   PANEL_LIMITS,
   PANEL_LOOKS,
+  PICTURE_LIMITS,
   PITCH_LIMIT,
   RUN,
   SPRINT,
@@ -162,9 +168,11 @@ export {
   identitySection,
   identityWords,
   isIntense,
+  loadPicture,
   lookAfter,
   lookScale,
   onDeskChange,
+  onPicturesChange,
   panoramaTexture,
   prefersFullscreen,
   reachOf,
@@ -175,7 +183,9 @@ export {
   resumeFullscreen,
   saveFile,
   setLookScale,
+  setShowsPictures,
   setVisitorFov,
+  showsPictures,
   startingForm,
   strideOf,
   takePicture,
