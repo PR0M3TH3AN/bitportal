@@ -91,7 +91,7 @@ import {
   watchFov,
   worldSigner,
   youCard
-} from "./shared-NIRKUUOJ.js";
+} from "./shared-UKFP23YZ.js";
 import {
   PICTURE_LIMITS,
   arriveWith,

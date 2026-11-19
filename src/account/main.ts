@@ -22,6 +22,7 @@ import { label, pictureOf, PROFILES_EVENT, wantProfiles } from "../shared/profil
 import { watchBitLogin, type Session } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
+import { INSTANCE, sendsPass } from "../shared/instance.js";
 import { goesAsGuest, setGoesAsGuest } from "../shared/look.js";
 import { chooseOnce, readWhoDoor, tabStore } from "../shared/who.js";
 import { cannotSignInHere, wayBack } from "./back.js";
@@ -52,8 +53,11 @@ const leaveFor = async (go: () => void, label: string): Promise<void> => {
   void label;
   go();
 };
+// Where this host names a sign-in address, a visitor signs in at the world itself (NSWP-10, "A pass from the
+// signer"): there is no going back "by name" from here, only going back.
+const signsThere = !sendsPass();
 for (const [id, text, how] of [
-  ["carry-on", back.named ?? back.label, "name"],
+  ["carry-on", signsThere ? back.label : (back.named ?? back.label), signsThere ? null : "name"],
   ["as-guest-in", back.guest, "guest"],
   ["as-guest", back.guest, "guest"],
   ["back-link", back.label, null],
@@ -75,11 +79,23 @@ for (const [id, text, how] of [
   });
 }
 // Going back to a world, someone signed in can go by name or not, for that one trip.
-$("as-guest-in").hidden = !door;
+$("as-guest-in").hidden = !door || signsThere;
 // Signed in is signed in everywhere, unless they say otherwise. It is theirs to say, here, by their own hand.
 const asMyself = $<HTMLInputElement>("as-myself");
 asMyself.checked = !goesAsGuest();
 asMyself.addEventListener("change", () => setGoesAsGuest(!asMyself.checked));
+if (!signsThere) {
+  // A host with no sign-in address of its own vouches for its visitors at each door, as before.
+  $("as-myself-words").textContent = "Go to worlds as myself";
+  $("name-note").textContent =
+    "Signed in here is signed in everywhere: you don't sign in to worlds one by one. Each world you visit that has proved who it is is told your public key, and so are the people in any room you join there. The pass that proves it lasts four hours and can't be taken back. Your key itself never leaves this browser. Untick this to visit worlds as a guest.";
+} else {
+  try {
+    $("name-note").textContent = ($("name-note").textContent ?? "").replace("your sign-in address", new URL(INSTANCE.signer!).host);
+  } catch {
+    /* said without its name */
+  }
+}
 if (door) document.title = `Who you are at ${door.host || "the world you were in"} · BitPortal`;
 
 // A browser gives a page its cryptography only at an https address, or at localhost on the same machine. Anywhere
