@@ -10,23 +10,23 @@ class c {
   /** Set by the element to receive unsolicited worker frames (auth_url). */
   onNotification = null;
   constructor() {
-    const e = ["cryptoWorker", ".js"].join(""), r = new URL(e, import.meta.url);
-    this.worker = new Worker(r, { type: "module" }), this.worker.addEventListener("message", (t) => {
-      const n = t.data;
-      if (!n || typeof n != "object") return;
-      const s = n;
+    const e = ["cryptoWorker", ".js"].join(""), n = new URL(e, import.meta.url);
+    this.worker = new Worker(n, { type: "module" }), this.worker.addEventListener("message", (t) => {
+      const r = t.data;
+      if (!r || typeof r != "object") return;
+      const s = r;
       if (s.notify === "nip46-auth-url" && typeof s.url == "string") {
         this.onNotification?.(s);
         return;
       }
-      if (typeof n.id != "string") return;
-      const l = this.pending.get(n.id);
-      if (l)
-        if (this.pending.delete(n.id), clearTimeout(l.timer), n.ok)
-          l.resolve(n.result);
+      if (typeof r.id != "string") return;
+      const a = this.pending.get(r.id);
+      if (a)
+        if (this.pending.delete(r.id), clearTimeout(a.timer), r.ok)
+          a.resolve(r.result);
         else {
-          const a = new Error(n.error);
-          a.name = n.errorName ?? "Error", l.reject(a);
+          const l = new Error(r.error);
+          l.name = r.errorName ?? "Error", a.reject(l);
         }
     });
     const i = (t) => () => this.failAll(t);
@@ -37,22 +37,22 @@ class c {
   }
   /** Settles every outstanding call with an error. Idempotent. */
   failAll(e) {
-    const r = [...this.pending.values()];
+    const n = [...this.pending.values()];
     this.pending.clear();
-    for (const i of r)
+    for (const i of n)
       clearTimeout(i.timer), i.reject(new Error(e));
   }
-  call(e, r, i = 6e4) {
+  call(e, n, i = 6e4) {
     if (this.dead)
       return Promise.reject(new Error(this.deadReason));
     const t = `${Date.now().toString(36)}-${(this.counter++).toString(36)}`;
-    return new Promise((n, s) => {
-      const l = setTimeout(() => {
+    return new Promise((r, s) => {
+      const a = setTimeout(() => {
         this.pending.delete(t), s(new Error(`BitLogin's ${e} call timed out.`));
       }, i);
-      this.pending.set(t, { resolve: n, reject: s, timer: l });
-      const a = { id: t, action: e, payload: r };
-      this.worker.postMessage(a);
+      this.pending.set(t, { resolve: r, reject: s, timer: a });
+      const l = { id: t, action: e, payload: n };
+      this.worker.postMessage(l);
     });
   }
   configure(e) {
@@ -121,6 +121,27 @@ class c {
   restoreSession() {
     return this.call("restoreSession", {});
   }
+  handoffBegin() {
+    return this.call("handoffBegin", {});
+  }
+  handoffExport(e) {
+    return this.call("handoffExport", e);
+  }
+  handoffAccept(e) {
+    return this.call("handoffAccept", e);
+  }
+  signerKeep(e) {
+    return this.call("signerKeep", e);
+  }
+  signerRestore(e) {
+    return this.call("signerRestore", e);
+  }
+  signerTouch(e) {
+    return this.call("signerTouch", e);
+  }
+  signerForget(e) {
+    return this.call("signerForget", e);
+  }
   vaultStatus() {
     return this.call("vaultStatus", {});
   }
@@ -187,22 +208,22 @@ async function p(o = {}) {
     vaultRelayUrls: o.vaultRelays ?? [],
     discoveryRelayUrls: o.discoveryRelays ?? []
   });
-  let r = null;
+  let n = null;
   const i = async () => {
-    if (r) return r;
+    if (n) return n;
     const t = await e.getSessionStatus();
     if (!t.unlocked || !t.everydayPublicKey) throw new Error(u);
-    return r = t.everydayPublicKey, r;
+    return n = t.everydayPublicKey, n;
   };
   return {
     async restore() {
       const t = await e.restoreSession();
-      return r = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, r ? { pubkey: r } : null;
+      return n = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, n ? { pubkey: n } : null;
     },
     async isUnlocked() {
-      if (r) return !0;
+      if (n) return !0;
       const t = await e.getSessionStatus();
-      return t.unlocked && t.everydayPublicKey && (r = t.everydayPublicKey), !!t.unlocked;
+      return t.unlocked && t.everydayPublicKey && (n = t.everydayPublicKey), !!t.unlocked;
     },
     getPublicKey() {
       return i();
@@ -210,17 +231,42 @@ async function p(o = {}) {
     async signEvent(t) {
       return await i(), e.signEvent(t);
     },
-    async nip44Encrypt(t, n) {
-      return await i(), (await e.nip44Encrypt({ peerPublicKey: t, plaintext: n })).ciphertext;
+    async nip44Encrypt(t, r) {
+      return await i(), (await e.nip44Encrypt({ peerPublicKey: t, plaintext: r })).ciphertext;
     },
-    async nip44Decrypt(t, n) {
-      return await i(), (await e.nip44Decrypt({ peerPublicKey: t, payload: n })).plaintext;
+    async nip44Decrypt(t, r) {
+      return await i(), (await e.nip44Decrypt({ peerPublicKey: t, payload: r })).plaintext;
+    },
+    async beginHandoff() {
+      return (await e.handoffBegin()).recipientPublicKey;
+    },
+    async exportHandoff(t) {
+      return await i(), e.handoffExport({ recipientPublicKey: t });
+    },
+    async acceptHandoff(t) {
+      return n = (await e.handoffAccept(t)).everydayPublicKey, { pubkey: n };
+    },
+    async isSignerOnly() {
+      return !!(await e.getSessionStatus()).signerOnly;
+    },
+    async keepSignerGrant(t) {
+      return (await e.signerKeep(t)).kept;
+    },
+    async restoreSignerGrant(t) {
+      const r = await e.signerRestore({ site: t });
+      return !r.restored || !r.everydayPublicKey || typeof r.until != "number" ? null : (n = r.everydayPublicKey, { pubkey: n, until: r.until, ...r.name ? { name: r.name } : {}, signed: r.signed ?? [] });
+    },
+    async touchSignerGrant(t, r) {
+      await e.signerTouch({ site: t, signed: r });
+    },
+    async forgetSignerGrant(t) {
+      await e.signerForget({ site: t });
     },
     async logout() {
-      await e.logout(), r = null;
+      await e.logout(), n = null;
     },
     destroy() {
-      e.terminate("BitLogin headless signer was destroyed."), r = null;
+      e.terminate("BitLogin headless signer was destroyed."), n = null;
     }
   };
 }

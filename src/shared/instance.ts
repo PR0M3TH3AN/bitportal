@@ -36,6 +36,14 @@ export interface InstancePolicy {
    * their room at all. `false` leaves it out. Left out, it is allowed.
    */
   sharedMusic?: boolean;
+  /**
+   * Where this copy's visitors sign from inside a world (NSWP-10, "Signing from a world"): the https address the
+   * signer and its sign-in window are under. BitPortal tells each world so in the arrival. It is BitLogin's own
+   * site: the one address a BitLogin password is typed at (owner's decision, 2026-11-19). A world that is told
+   * nothing has no signer to ask, and offers none. Changing this changes where every visitor's "Sign in to sign
+   * notes" leads, so it is the owner's to change.
+   */
+  signer?: string;
 }
 
 export const INSTANCE: InstancePolicy = {
@@ -45,6 +53,7 @@ export const INSTANCE: InstancePolicy = {
   allowListOnly: true,
   allowAdult: false,
   sharedMusic: true,
+  signer: "https://bitlogin.network/",
 };
 
 /** A policy with nothing switched on: every world, every list. What BitPortal did before it had one, and what tests of other things use. */

@@ -281,7 +281,7 @@ async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: 
   if (!entry.capabilities.includes(HOME_CAPABILITY)) return sorry(`${host} no longer says it can be a home, so you are in BitPortal's room.`);
   // They arrive as they last chose to go anywhere, short of signing: with their look, or plain.
   const mine = goMode() === "plain" ? null : loadLook();
-  location.replace(await toLocal(buildArrivalUrl(home.url, { airlock: await selfForWorlds(), home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry })));
+  location.replace(await toLocal(buildArrivalUrl(home.url, { airlock: await selfForWorlds(), ...(INSTANCE.signer ? { signer: INSTANCE.signer } : {}), home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry })));
   return true;
 }
 
@@ -719,7 +719,7 @@ async function render(): Promise<void> {
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     if (stopped) return false;
-    location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
+    location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(INSTANCE.signer ? { signer: INSTANCE.signer } : {}), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
     return true;
   };
   go.addEventListener("click", () => void leave());
