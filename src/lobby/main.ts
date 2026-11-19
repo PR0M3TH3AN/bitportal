@@ -721,6 +721,8 @@ function openSettings(): void {
   intenseBox.checked = prefs.intense;
   const picturesBox = el("input", { type: "checkbox", id: "set-pictures" }) as HTMLInputElement;
   picturesBox.checked = prefs.pictures;
+  const chatBox = el("input", { type: "checkbox", id: "set-chat" }) as HTMLInputElement;
+  chatBox.checked = prefs.chat;
   const lookPick = el("select", { id: "set-look" }, ...LOOK_CHOICES.map((c) => el("option", { value: String(c.value), ...(c.value === prefs.look ? { selected: "" } : {}) }, c.word))) as HTMLSelectElement;
   // A speed set somewhere else to something not on this list is kept, and shown as what it is.
   if (!LOOK_CHOICES.some((c) => c.value === prefs.look)) lookPick.append(el("option", { value: String(prefs.look), selected: "" }, `${prefs.look} times normal`));
@@ -883,6 +885,8 @@ function openSettings(): void {
     el("label", { class: "check", for: "set-intense" }, intenseBox, " At a desk, move the intense way: the mouse looks round and keys walk"),
     el("label", { class: "check", for: "set-pictures" }, picturesBox, " Show people's own pictures, from their Nostr profiles"),
     el("p", { class: "small" }, "People are shown by the name and picture they chose for themselves on Nostr. A picture is fetched from wherever its owner keeps it, which tells that place your address, as reading Nostr anywhere does. Off, nobody's picture is fetched, here or in any world."),
+    el("label", { class: "check", for: "set-chat" }, chatBox, " Show what people write in a room, and let me write"),
+    el("p", { class: "small" }, "What is written in a room goes straight to the people in it and is kept nowhere. Turned off, nothing anyone writes is shown to you, and nobody is told."),
     el("label", { for: "set-look" }, "How fast the view turns, with a mouse or a finger"),
     lookPick,
     el("label", { for: "set-fov" }, "How wide you see at a desk (field of view)"),
@@ -948,7 +952,7 @@ function openSettings(): void {
     const cleaned = cleanRelays(relays.value.split(/\s+/));
     settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays, airlock: airlockBox.checked ? "known" : "ask" };
     saveSettings(settings);
-    storePrefs({ full: fullBox.checked, intense: intenseBox.checked, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null, pictures: picturesBox.checked }, localStorage);
+    storePrefs({ full: fullBox.checked, intense: intenseBox.checked, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null, pictures: picturesBox.checked, chat: chatBox.checked }, localStorage);
     void refresh();
   });
   dialog.replaceChildren(form);
