@@ -251,6 +251,16 @@ in the middle of the view, and Escape brings up the menu. In a headset,
 casual is stepping and intense is walking and turning smoothly. Each device
 keeps its own choice.
 
+Your controls are always one gesture away, here and in every world, whatever
+that world is showing on screen: the key left of 1 at a desk, two fingers
+held still on a touch screen, or B or Y held in a headset. The same gesture
+puts them away, and leaves the world's own screen as it was.
+
+You arrive in a world the way you left the last one: laid out for touch if
+you were tapping, for a mouse and keys if you were at a desk, and offered the
+way back into your headset if you left one. The Airlock passes that on, and
+goes by how you pressed its own button when it can see that.
+
 You can run and jump whichever way you move. At a desk, Shift runs and Space
 jumps, and two clicks on the floor run there. On a touch screen, two taps
 run, and Jump is with the controls at the bottom. In a headset, A or X

@@ -20,7 +20,7 @@ import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, enco
 import { ARRIVED_JOINED, ARRIVED_MOVING } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, currentForm, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf } from "../shared/look.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
@@ -377,7 +377,7 @@ async function start(): Promise<void> {
     id: "help",
     label: "Help",
     icon: "help",
-    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there: twice to run. Shift runs and Space jumps. Select a door, or walk through it, to see where it leads before you go.",
+    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there: twice to run. Shift runs and Space jumps. The key left of 1 brings these controls up here and in any world, whatever is on screen; on a touch screen, hold two fingers still. Select a door, or walk through it, to see where it leads before you go.",
   });
   // The ground and the skyline come with the home (nswp-sdk/home), in the room's own colours.
   scene.background = new THREE.Color(0x04070b);
@@ -674,7 +674,7 @@ async function start(): Promise<void> {
       /* already ended */
     }
     // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...movingFlag() }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...movingFlag(), form: currentForm() }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -925,6 +925,8 @@ async function start(): Promise<void> {
     },
     onMenu: () => xrConsole.setOpen(!xrConsole.open),
     onJump: () => void jump.jump(),
+    // The visitor's own way to their controls, in this room as in any world: the menu button held (NSWP-11).
+    onSummon: () => xrConsole.setOpen(true),
   });
   hooks.input = () => xrInput.info();
   // The visitor's panels are theirs: kept in this browser, with any file they hang, and sent nowhere. They are
