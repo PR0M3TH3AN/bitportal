@@ -23,6 +23,7 @@ export const FULL_KEY = "nswp:full";
 export const INTENSE_KEY = "bitportal:fps";
 export const DESK_KEY = "nswp:desk";
 export const PICTURES_KEY = "nswp:pictures";
+export const CHAT_KEY = "nswp:chat";
 const SOUND_KEY = "bitportal:sound";
 const UI_KEY = "nswp:ui";
 
@@ -35,6 +36,8 @@ export interface Prefs {
   fov: number | null;
   /** Whether other people's own pictures are fetched and shown. On until they say otherwise. */
   pictures: boolean;
+  /** Whether what people write in a room is shown to them, and they may write. On until they say otherwise. */
+  chat: boolean;
 }
 
 /** What Settings offers. The menu in a world steps through the same ones. */
@@ -69,6 +72,7 @@ export function loadPrefs(store: Reader | null): Prefs {
     look: Math.round((within(desk.look, LOOK_RANGE) ?? 1) * 100) / 100,
     fov: fov === null ? null : Math.round(fov),
     pictures: store?.getItem(PICTURES_KEY) !== "0",
+    chat: store?.getItem(CHAT_KEY) !== "0",
   };
 }
 
@@ -82,6 +86,8 @@ export function storePrefs(prefs: Prefs, store: Writer | null): void {
     // Kept as the kit keeps it: nothing when they are on, "0" when they are off.
     if (prefs.pictures) store?.removeItem(PICTURES_KEY);
     else store?.setItem(PICTURES_KEY, "0");
+    if (prefs.chat) store?.removeItem(CHAT_KEY);
+    else store?.setItem(CHAT_KEY, "0");
   } catch {
     /* a private window: they last as long as the page */
   }
@@ -102,6 +108,7 @@ export function keptSettings(store: Reader | null): TravelSettings {
     look: prefs.look,
     ...(prefs.fov === null ? {} : { fov: prefs.fov }),
     pictures: prefs.pictures,
+    chat: prefs.chat,
   });
 }
 

@@ -69,6 +69,7 @@ import {
   saveFile,
   setLookScale,
   setVisitorFov,
+  speechSprite,
   startingForm,
   strideOf,
   takePicture,
@@ -79,7 +80,7 @@ import {
   viewScale,
   visitorFov,
   watchFov
-} from "./shared-TNH4JNMH.js";
+} from "./shared-AKBDBPZM.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -90,7 +91,7 @@ import {
   reportSettings,
   setShowsPictures,
   showsPictures
-} from "./shared-V7CEZIAV.js";
+} from "./shared-5SYS43Z3.js";
 import {
   browserVoice,
   computerVoice,
@@ -186,6 +187,7 @@ export {
   setShowsPictures,
   setVisitorFov,
   showsPictures,
+  speechSprite,
   startingForm,
   strideOf,
   takePicture,

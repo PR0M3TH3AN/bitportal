@@ -97,6 +97,8 @@ export const SECTIONS: Section[] = [
   { name: "desk", key: "nswp:desk" },
   // Whether they see other people's pictures: a preference like the rest.
   { name: "pictures", key: "nswp:pictures" },
+  // Whether they see what people write in a room: the same.
+  { name: "chat", key: "nswp:chat" },
   { name: "blocked", key: "bitportal:blocked" },
   { name: "home", key: "bitportal:home" },
   { name: "lists", key: "bitportal:lists" },
