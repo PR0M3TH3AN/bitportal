@@ -331,8 +331,9 @@ async function start(): Promise<void> {
   // are the visitor's, kept in this browser. A world's sounds stop at its own door: here they are BitPortal's.
   const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal",
     kit: "/sounds/kit/",
-    // The room's own music: four pieces, in turn, starting with the one the owner picked first.
-    theme: { music: ["/sounds/room-b.ogg", "/sounds/room-a.ogg", "/sounds/room-c.ogg", "/sounds/room-d.ogg"] },
+    // The room's own music: eight pieces, in turn, starting with the one the owner picked first. The two kinds
+    // (made in code, a to d; made with a music model, e to h) take turns, so neither runs for long.
+    theme: { music: ["b", "e", "a", "f", "c", "g", "d", "h"].map((n) => `/sounds/room-${n}.ogg`) },
     keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" },
   });
   addSoundControls(controls, sounds);
