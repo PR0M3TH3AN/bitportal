@@ -1,10 +1,14 @@
 import {
   MeshBuilder,
+  PORTAL_HEIGHT,
+  PORTAL_SIGN_HEIGHT,
+  PORTAL_SPRING,
+  PORTAL_WIDTH,
   SKY_GLSL,
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-N24GYDPU.js";
+} from "./shared-I7NRTT73.js";
 import "./shared-YCC3OB6E.js";
 import "./shared-U2U7QRDK.js";
 import "./shared-QLSLERQ3.js";
@@ -18,14 +22,6 @@ import * as THREE2 from "three";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/models.ts
 import * as THREE from "three";
-
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/gate-size.ts
-var PORTAL_WIDTH = 1.5;
-var PORTAL_HEIGHT = 2.1;
-var PORTAL_SPRING = PORTAL_HEIGHT - PORTAL_WIDTH / 2;
-var PORTAL_SIGN_HEIGHT = PORTAL_HEIGHT + 0.72;
-
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/models.ts
 function mouldingProfile(hw, hd, bev, c, cd) {
   return [
     [-hw, -hd + bev],
