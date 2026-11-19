@@ -16,7 +16,8 @@
  * way automation tries this.
  */
 import { getConversationKey, getPublicKey, handoffMessage, nip44Encrypt, readHandoffMessage, shortNpub } from "@nswp/core";
-import { label, profileOf } from "../shared/profiles.js";
+import { fetchProfiles, profileOf } from "../shared/profiles.js";
+import { loadSettings } from "../shared/settings.js";
 import { readSignedIn } from "../shared/session.js";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -30,6 +31,7 @@ type Headless = { restore(): Promise<{ pubkey: string } | null>; exportHandoff(r
 
 /** The signer found in the page that opened this window: its window, the world it is in, and the key to seal to. */
 let found: { frame: Window; world: string; recipient: string } | null = null;
+/** `name` is the one they chose on Nostr, or "" when this browser knows of none: then the key alone is shown, once. */
 let who: { pubkey: string; name: string } | null = null;
 let finished = false;
 /** When the question was put. A press that lands sooner than a person could have read it was meant for the world. */
@@ -65,8 +67,8 @@ const show = () => {
   }
   status("A site is asking to sign notes as you. Check the address.");
   $("world").textContent = found.world;
-  $("who").textContent = who.name;
-  $("who-key").textContent = who.name === shortNpub(who.pubkey) ? "" : ` (${shortNpub(who.pubkey)})`;
+  $("who").textContent = who.name || shortNpub(who.pubkey);
+  $("who-key").textContent = who.name ? ` (${shortNpub(who.pubkey)})` : "";
   $("known").textContent = "Only allow a site you meant to visit. BitPortal shows its address exactly as your browser reports it.";
   $("ask").hidden = false;
   // Allow is never given the keys unasked: a key meant for the world, pressed as this window came up, must not land on it.
@@ -115,7 +117,7 @@ $("allow").addEventListener("click", async () => {
       sealed = await headless.exportHandoff(found.recipient);
     }
     // To the signer and to nothing else: addressed to BitPortal's own origin.
-    found.frame.postMessage(handoffMessage({ t: "grant", nonce, world: found.world, sealed, name: who.name }), me);
+    found.frame.postMessage(handoffMessage({ t: "grant", nonce, world: found.world, sealed, ...(who.name ? { name: who.name } : {}) }), me);
   } catch {
     status("That didn't work, and nothing was handed over. If you signed in with a browser extension or a phone, this isn't offered for it yet.");
     $("ask").hidden = true;
@@ -131,7 +133,13 @@ void (async () => {
   if (testKey) who = { pubkey: getPublicKey(testKey), name: "Test visitor" };
   else {
     const signed = await readSignedIn();
-    if (signed) who = { pubkey: signed.pubkey, name: profileOf(signed.pubkey)?.name || signed.name || label(signed.pubkey) };
+    if (signed) {
+      // Their name is the one in their own Nostr profile. What this browser already knows of it is used at once;
+      // it is asked for here only when nothing is known, as the Airlock does.
+      if (!profileOf(signed.pubkey)?.name) await fetchProfiles([signed.pubkey], loadSettings().relays, { timeoutMs: 2500 });
+      who = { pubkey: signed.pubkey, name: profileOf(signed.pubkey)?.name || signed.name || "" };
+      if (found) show();
+    }
   }
   // The signer may still be loading in the world: ask a few times, then give up plainly.
   call();
