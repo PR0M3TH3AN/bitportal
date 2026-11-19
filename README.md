@@ -373,6 +373,14 @@ pretends to be a Meta Quest 3, and `?mic=tone` sends a test tone instead of
 asking for the microphone. `/publish/?signer=test` signs with a throwaway key
 and never publishes, to try the form without an account.
 
+Trying it beside the worlds on your own machine: build it, then run
+`node scripts/serve-local.mjs` in the NSWP repository next to this one.
+BitPortal is served on port 4300 and the reference worlds beside it, and the
+links between them lead to those copies: a door here goes through this
+Airlock to the local world, and the way home comes back here. The Airlock
+still checks the real site, and says on its card when it is sending you to a
+copy. Once deployed, every link is the real address, with nothing to switch.
+
 ### Vendored dependencies
 
 BitPortal vendors what it depends on and records the exact source commit and
