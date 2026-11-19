@@ -234,7 +234,9 @@ phone opening a development server at `http://192.168…`), BitLogin finds
 the account, can't open it, and says "Account not found or credentials
 incorrect" whatever is typed. This page says so plainly at such an address,
 before anyone types. The deployed site is `https`, so this is only ever met
-in development.
+in development, where the development server can answer `https` too
+(`serve-local.mjs --lan --https` in the NSWP repository): a phone or a
+headset on the same network then signs in and enters VR as on the real site.
 
 ### Signed in everywhere
 
