@@ -533,3 +533,8 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 .more-body > :first-child { margin-top: 8px; }
 .from-vr .more > summary { min-height: 56px; font-size: 1.15rem; }
 @media (prefers-reduced-motion: reduce) { .more > summary::before { transition: none; } }
+/* Going straight through to a place they know: where they are going, and a way to stop. */
+.passing { border-top: 2px solid var(--bitportal-accent); }
+.passing .host { font-size: clamp(1.4rem, 5vw, 2.2rem); }
+.checking .button { margin-left: 12px; vertical-align: middle; }
+.from-vr .passing .button, .from-vr .checking .button { min-height: 60px; font-size: 1.15rem; }

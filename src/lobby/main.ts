@@ -707,6 +707,8 @@ function openSettings(): void {
   dialog.setAttribute("aria-label", "Settings");
   const rankBox = el("input", { type: "checkbox", id: "set-ranking" });
   rankBox.checked = settings.ranking;
+  const airlockBox = el("input", { type: "checkbox", id: "set-airlock" });
+  airlockBox.checked = settings.airlock === "known";
   const relays = el("textarea", { id: "set-relays", rows: "4", spellcheck: "false" });
   relays.value = settings.relays.join("\n");
   const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3df2a0"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
@@ -813,6 +815,13 @@ function openSettings(): void {
     el("h2", {}, "Settings"),
     el("h3", {}, "Lists"),
     el("p", { class: "small" }, "Which lists fill this lobby, and whether to show worlds nobody has listed, are under ", lists, "."),
+    el("h3", {}, "Doors"),
+    el("label", { class: "check", for: "set-airlock" }, airlockBox, " Go straight through doors to places I've been before"),
+    el(
+      "p",
+      { class: "small" },
+      "The Airlock always stops you the first time you go somewhere, and shows you the real address. With this on, it doesn't stop you again for a place you have already been, as long as the site still proves it is who it says, it is on this copy's list, nothing about it has changed, and nothing needs an answer. You are still shown where you are going, with a Stop button. Off, it stops at every door.",
+    ),
     el("h3", {}, "Ranking"),
     el("label", { class: "check", for: "set-ranking" }, rankBox, " Rank shelves with BitFeed and say why each world is there"),
     el("p", { class: "small" }, "Off shows one list in date order, with no ranking code loaded."),
@@ -853,7 +862,7 @@ function openSettings(): void {
       return;
     }
     const cleaned = cleanRelays(relays.value.split(/\s+/));
-    settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays };
+    settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays, airlock: airlockBox.checked ? "known" : "ask" };
     saveSettings(settings);
     void refresh();
   });

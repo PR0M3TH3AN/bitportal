@@ -9,10 +9,15 @@ export interface Settings {
   showUnlisted: boolean;
   /** Show BitPortal's own list. A visitor who follows other lists can put it away. */
   showStarter: boolean;
+  /**
+   * The Airlock: "known" goes straight through a door to a place the visitor has been before, when nothing has
+   * changed (crossing.ts says exactly when). "ask" stops at every door.
+   */
+  airlock: "known" | "ask";
 }
 
 const KEY = "bitportal:settings";
-export const DEFAULTS: Settings = { ranking: true, relays: DEFAULT_RELAYS, showUnlisted: false, showStarter: true };
+export const DEFAULTS: Settings = { ranking: true, relays: DEFAULT_RELAYS, showUnlisted: false, showStarter: true, airlock: "known" };
 
 export function cleanRelays(input: string[]): string[] {
   const out: string[] = [];
@@ -40,6 +45,7 @@ export function loadSettings(search = location.search): Settings {
     relays: relays.length ? relays : DEFAULTS.relays,
     showUnlisted: saved.showUnlisted === true,
     showStarter: saved.showStarter !== false,
+    airlock: saved.airlock === "ask" ? "ask" : "known",
   };
   // ?plain=1 forces the no-BitBlocks lobby without changing saved settings.
   if (new URLSearchParams(search).get("plain") === "1") s.ranking = false;

@@ -155,6 +155,31 @@ One line always says what goes with you ("Going as a guest, with nothing of
 yours, staying in the room"), with Change beside it. A question that has to
 be answered, such as whether to block someone everywhere, stays in front.
 
+### Only seen when there is something to see
+
+The first time you go anywhere, the Airlock stops you and shows the real
+address. After that it goes straight through to a place you have been
+before: you are shown where you are going, with a Stop button, for the
+second or so the door takes to check, and then you are there.
+
+It only does that when every one of these holds:
+
+- the site still proves it is who it says, checked that moment;
+- it is on this copy's list;
+- you have been through the Airlock to it before, and its publisher is the
+  same one;
+- nothing about it has changed, nothing is warned about, nothing is waiting
+  for an answer, and it suits the device you are on.
+
+If any one fails, the whole screen comes back and you are asked. You can
+bring it back yourself three ways: "Stop here" while the door is being
+checked, "Always stop here for this world" under "More about this place",
+or the switch in Settings ("Go straight through doors to places I've been
+before"), which makes it stop at every door.
+
+On the way through, staying in a room goes along with you and a microphone
+only if you had already said it may, as on the way home.
+
 ## Whether a world suits your device
 
 A world's maker says what it is for. BitPortal also tries each world on its
