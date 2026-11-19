@@ -27,7 +27,7 @@ import {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
 import * as THREE13 from "three";
-import { bubbleSeconds, CHAT_LIMITS as CHAT_LIMITS2, cleanChat, decodeLook as decodeLook2, DEFAULT_RELAYS as DEFAULT_RELAYS2, encodeNpub, publishEvent, shortNpub as shortNpub4, spawnOffset } from "@nswp/core";
+import { bubbleSeconds, CHAT_LIMITS as CHAT_LIMITS2, cleanChat, decodeLook as decodeLook2, DEFAULT_RELAYS as DEFAULT_RELAYS2, encodeNpub, publishEvent, shortNpub as shortNpub4, spawnOffset, verifyEvent as verifyEvent2 } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
 import * as THREE3 from "three";
@@ -9925,7 +9925,7 @@ function addRoomControls(controls, presence, opts = {}) {
       (text) => {
         const how = s.say(text);
         if (how === "slow") return "That is a lot at once. Wait a moment, then send it again.";
-        if (how === "said" && postsNotes && worldSigner().state === "unlocked") void postNote(text);
+        if (how === "said" && postsNotes && notes.ready()) void postNote(text);
         else if (how === "said" && s.members.length === 0) controls.chat.add({ note: true, text: "Nobody else is in the room yet, so nobody read that." });
         return null;
       },
@@ -9954,15 +9954,18 @@ function addRoomControls(controls, presence, opts = {}) {
     refresh();
   });
   let postsNotes = false;
+  const notes = opts.notes ?? { ready: () => worldSigner().state === "unlocked", sign: (n) => worldSigner().sign(n), onChange: (fn) => worldSigner().onChange(fn) };
   const postNote = async (text) => {
-    const note = await worldSigner().sign({ kind: 1, content: cleanChat(text), tags: [] });
+    const words = cleanChat(text);
+    const signed = await notes.sign({ kind: 1, content: words, tags: [] }).catch(() => null);
+    const note = signed && verifyEvent2(signed) && signed.kind === 1 && signed.content === words ? signed : null;
     if (!note) return void controls.chat.add({ note: true, text: "That wasn't posted as a note: your signer said no." });
     const sent = await publishEvent(opts.noteRelays ?? DEFAULT_RELAYS2, note).catch(() => null);
     const kept2 = sent ? Object.values(sent.relays).filter((said) => said === "ok").length : 0;
     controls.chat.add({ note: true, text: kept2 ? `Posted as a note, to ${kept2 === 1 ? "1 relay" : `${kept2} relays`}.` : "Signed, but no relay took it. It wasn't posted." });
   };
-  worldSigner().onChange(() => {
-    if (worldSigner().state !== "unlocked") postsNotes = false;
+  notes.onChange?.(() => {
+    if (!notes.ready()) postsNotes = false;
     refresh();
   });
   controls.add(
@@ -9993,7 +9996,7 @@ function addRoomControls(controls, presence, opts = {}) {
       label: () => postsNotes ? "Post what I write as Nostr notes: on" : "Post what I write as Nostr notes: off",
       on: () => postsNotes,
       // Only for someone who has unlocked their signer for this world, in a room, with chat on.
-      hidden: () => !presence.session || !showsChat() || worldSigner().state !== "unlocked",
+      hidden: () => !presence.session || !showsChat() || !notes.ready(),
       act: () => {
         postsNotes = !postsNotes;
         tell(

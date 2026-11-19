@@ -34,6 +34,7 @@ import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
 import { quietSigner, readSignedIn } from "../shared/session.js";
+import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { startSync } from "../shared/sync-run.js";
@@ -125,6 +126,8 @@ interface TestHooks {
   device?: unknown;
   spot?: (name: string, u: number, v: number) => { local: number[]; screen: number[] } | null;
   computers?: Computers;
+  /** What signs a note when the visitor posts what they write in their own room. */
+  notes?: import("./notes.js").HomeNotes;
 }
 declare global {
   interface Window {
@@ -376,6 +379,9 @@ async function start(): Promise<void> {
   // way the Airlock signs one for a world, with the name and picture from their own profile, so the people they
   // share the room with see who they are. Not for someone who has said to go about as a guest.
   let roomIdentity: Awaited<ReturnType<typeof issuePass>> | undefined;
+  // And what they write in their own room can be posted as notes, signed with this same sign-in (notes.ts).
+  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest });
+  hooks.notes = homeNotes;
   const nameMe = async (pubkey: string): Promise<void> => {
     if (goesAsGuest()) return void (roomIdentity = undefined);
     const quiet = await quietSigner(pubkey);
@@ -399,6 +405,7 @@ async function start(): Promise<void> {
     await fetchProfiles([who.pubkey], settings.relays);
     sayWho();
     controls.setTarget("");
+    homeNotes.setWho(who.pubkey);
     await nameMe(who.pubkey);
     // A pass lasts four hours. Someone who stays longer is signed for again before it runs out.
     setInterval(() => void nameMe(who.pubkey), 3 * 3600 * 1000);
@@ -1155,7 +1162,7 @@ async function start(): Promise<void> {
   // Someone they blocked in a world, reported on the way home, is waiting for their answer.
   const waiting = loadPendingBlocks().length;
   if (waiting) setTimeout(() => controls.say(`You blocked ${waiting === 1 ? "1 person" : `${waiting} people`} in a world. To block them everywhere you go, say so in Settings on the front page, or at your next door.`), 3000);
-  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false }));
+  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays }));
 
   // -------------------------------------------------------- walking
   const keys = new Set<string>();
