@@ -39,6 +39,7 @@ import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalo
 import { placeKind } from "../shared/plate.js";
 import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
+import { crossingFor } from "../shared/crossing.js";
 import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
 import { issuePass } from "../shared/pass.js";
@@ -117,6 +118,7 @@ function writeJson(key: string, value: unknown): void {
 
 const PINS = "bitportal:publisher-pins"; // origin -> verified publisher pubkey (spec §7.3)
 const APPROVED = "bitportal:approved"; // "origin|pubkey|d" -> true (spec §6.5 fast path)
+const ASK_ALWAYS = "bitportal:airlock-ask"; // "origin|pubkey|d" -> true: always stop at the Airlock for this world
 
 function el(tag: string, attrs: Record<string, string> = {}, ...children: (Node | string)[]): HTMLElement {
   const e = document.createElement(tag);
@@ -149,6 +151,10 @@ interface Assessment {
   blockers: Issue[];
   relayStatus: Record<string, string>;
   publisherChanged: boolean;
+  /** The world is on this copy's own list. */
+  onList: boolean;
+  /** The visitor has gone through the Airlock to this site before, with this same publisher. */
+  beenBefore: boolean;
 }
 
 async function assess(): Promise<Assessment | { fatal: Issue }> {
@@ -237,6 +243,8 @@ async function assess(): Promise<Assessment | { fatal: Issue }> {
     blockers: [],
     relayStatus,
     publisherChanged,
+    onList: !!world && !!starter && starter.allowed.has(`${WORLD_KIND}:${world.pubkey}:${world.d}`),
+    beenBefore: !!verification?.verified && !!world?.pubkey && pins[dest.value.origin] === world.pubkey,
   };
 }
 
@@ -330,6 +338,15 @@ async function render(): Promise<void> {
   }
   $("landing").hidden = true;
   $("checking").hidden = false;
+  // A way to stop, while the door is being checked: a crossing to a place they know goes straight through, and this
+  // is how they say "not this time". Pressed, the whole screen is shown and they are asked.
+  let held = false;
+  const stop = el("button", { class: "button", id: "hold", type: "button" }, "Stop here");
+  stop.addEventListener("click", () => {
+    held = true;
+    stop.replaceWith(el("span", { class: "muted", id: "held" }, " You'll be asked before going."));
+  });
+  $("checking").append(" ", stop);
   const started = performance.now();
   const a = await assess();
   $("checking").hidden = true;
@@ -367,7 +384,7 @@ async function render(): Promise<void> {
   // People a world says the visitor blocked there, and any still waiting from a trip home. A question to answer,
   // so this screen isn't hurried past.
   const asking = blocksToAsk(req.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld());
-  const fastPath = verified && !!approvalKey && approved[approvalKey] === true && !a.publisherChanged && a.warnings.length === 0 && asking.length === 0;
+  const askAlways = !!approvalKey && readJson<Record<string, boolean>>(ASK_ALWAYS, {})[approvalKey] === true;
 
   const host = el("p", { class: "host" }, el("span", { class: "prefix" }, a.hostPrefix), el("strong", {}, a.domain));
   const status = verified
@@ -482,6 +499,14 @@ async function render(): Promise<void> {
     el("label", { for: "remember" }, "Skip this screen next time for this world", verified ? "" : el("span", { class: "muted" }, " (only for verified worlds)")),
   );
   body.append(remember);
+  // The other way about: a place they know, where they would still rather be asked.
+  const always = el(
+    "div",
+    { class: "remember" },
+    el("input", { type: "checkbox", id: "always-ask", ...(askAlways ? { checked: "" } : {}), ...(approvalKey ? {} : { disabled: "" }) }),
+    el("label", { for: "always-ask" }, "Always stop here for this world", el("span", { class: "muted" }, " (it won't be gone straight through to)")),
+  );
+  body.append(always);
 
   // The link says they were in the room where they came from. It is a link's word, so it is shown, and theirs to
   // change: stay among people at the other end or not, and whether their microphone stays on. The second is off
@@ -541,13 +566,21 @@ async function render(): Promise<void> {
   }
 
   const go = el("button", { class: "button primary", id: "continue", type: "button" }, `Continue to ${a.domain}`) as HTMLButtonElement;
-  const leave = async (): Promise<void> => {
+  /** Through the door. Returns false if they are still here: a pass couldn't be signed, or they said stop. */
+  let stopped = false;
+  const leave = async (): Promise<boolean> => {
     if (verified && approvalKey) {
       // Ticked remembers this world; unticking an earlier approval forgets it.
       const next = { ...readJson<Record<string, boolean>>(APPROVED, {}) };
       if (($("remember") as HTMLInputElement).checked) next[approvalKey] = true;
       else delete next[approvalKey];
       writeJson(APPROVED, next);
+    }
+    if (approvalKey) {
+      const asks = { ...readJson<Record<string, boolean>>(ASK_ALWAYS, {}) };
+      if (($("always-ask") as HTMLInputElement).checked) asks[approvalKey] = true;
+      else delete asks[approvalKey];
+      writeJson(ASK_ALWAYS, asks);
     }
     if (verified && w?.pubkey) writeJson(PINS, { ...readJson<Record<string, string>>(PINS, {}), [a.origin]: w.pubkey });
     let target = a.url;
@@ -560,7 +593,10 @@ async function render(): Promise<void> {
     // its address that it didn't ask for.
     // On a development server, a site that is being served there is visited there (core, local.ts). The check above
     // was of the real site, and the card says so.
-    if (!a.nswpAware) return location.assign(await toLocal(target));
+    if (!a.nswpAware) {
+      location.assign(await toLocal(target));
+      return true;
+    }
     // What goes with the visitor is what they chose on this screen. The choice is remembered for next time.
     const how = mine || who ? chosen() : "plain";
     // By name with no look of their own, they wear the one their key generates.
@@ -590,7 +626,7 @@ async function render(): Promise<void> {
         note.textContent = "Your sign-in isn't unlocked in this browser, so a pass couldn't be signed. Go as a guest or plain, or open Your identity first and come back.";
         note.className = "small go-as-note verify-warn";
         go.disabled = false;
-        return;
+        return false;
       }
     }
     // Whether a microphone may travel is the visitor's standing choice: kept as they left it on this screen.
@@ -608,7 +644,9 @@ async function render(): Promise<void> {
     const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}), ...formToCarry(req.form), ...(req.settings ? { settings: req.settings } : {}) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
+    if (stopped) return false;
     location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
+    return true;
   };
   go.addEventListener("click", () => void leave());
   // On a development server: say plainly that the visit is to a copy on this machine or network, and which.
@@ -639,6 +677,53 @@ async function render(): Promise<void> {
   card.append(more);
   main.append(card);
 
+  // How much of this screen the crossing needs (crossing.ts). A place they know, with nothing changed and nothing to
+  // answer, needs none of it: they are shown where they are going, and they go.
+  const crossing = crossingFor({
+    verified,
+    onList: a.onList,
+    beenBefore: a.beenBefore,
+    approved: !!approvalKey && approved[approvalKey] === true,
+    askAlways,
+    publisherChanged: a.publisherChanged,
+    warnings: a.warnings.length,
+    asking: asking.length,
+    fit: fit.tone,
+    setting: loadSettings().airlock,
+    held,
+  });
+  document.body.dataset.crossing = crossing;
+  if (crossing === "straight") {
+    card.hidden = true;
+    const halt = el("button", { class: "button", id: "stop-passing", type: "button" }, "Stop");
+    const passing = el(
+      "section",
+      { class: "card passing", id: "passing", role: "status" },
+      el("p", { class: "leaving" }, "Going to"),
+      el("p", { class: "host" }, el("span", { class: "prefix" }, a.hostPrefix), el("strong", {}, a.domain)),
+      el("p", { class: "small muted" }, `${w?.title ?? ""}. A place you have been before, and nothing about it has changed.`),
+      el("div", { class: "actions" }, halt),
+    );
+    main.append(passing);
+    // Anything that keeps them here shows the whole screen: they said stop, or a pass couldn't be signed.
+    const reveal = () => {
+      passing.remove();
+      card.hidden = false;
+      go.focus();
+    };
+    halt.addEventListener("click", () => {
+      stopped = true;
+      reveal();
+    });
+    void leave().then((went) => {
+      if (!went) {
+        stopped = false;
+        reveal();
+      }
+    });
+    return;
+  }
+  const fastPath = crossing === "countdown";
   if (fastPath) {
     let n = 3;
     const bar = el("div", { class: "fast" }, el("span", { id: "countdown" }, `Continuing in ${n}…`), el("button", { id: "cancel-fast", class: "button", type: "button" }, "Cancel"));
