@@ -1,10 +1,12 @@
 import {
   ICONS,
+  arriveWith,
   arrivedSettings,
   createHeldButton,
+  currentSettings,
   reportSettings,
   rgb
-} from "./shared-YCC3OB6E.js";
+} from "./shared-H5L32T46.js";
 import {
   LiveKeys,
   TextEntry,
@@ -1878,11 +1880,11 @@ var ScalarMultiplier = class {
       table[i] = table[i - 1].add(point);
     const windows = Math.ceil(bits / W4);
     let acc = this.ZERO;
-    for (let window = windows - 1; window >= 0; window--) {
-      if (window !== windows - 1)
+    for (let window2 = windows - 1; window2 >= 0; window2--) {
+      if (window2 !== windows - 1)
         for (let d = 0; d < W4; d++)
           acc = acc.double();
-      const digit = Number(n >> BigInt(window * W4) & mask);
+      const digit = Number(n >> BigInt(window2 * W4) & mask);
       let sel = table[0];
       for (let i = 1; i < size; i++)
         sel = i === digit ? table[i] : sel;
@@ -3361,9 +3363,9 @@ var room = {
    */
   async join(opts = {}) {
     if (typeof RTCPeerConnection === "undefined") throw new Error("nswp-sdk: this browser has no WebRTC support");
-    const session = new RoomSession(opts);
-    session.start();
-    return session;
+    const session2 = new RoomSession(opts);
+    session2.start();
+    return session2;
   }
 };
 
@@ -4192,6 +4194,388 @@ function fullscreenAction(controls, presenting) {
       } catch {
         controls.say("This browser wouldn't go fullscreen.");
       }
+    }
+  };
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
+import { shortNpub as shortNpub3 } from "@nswp/core";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
+import {
+  arrivalParam,
+  buildAirlockUrl,
+  buildArrivalUrl,
+  buildWayUrl,
+  checkDestination,
+  decodeArrival,
+  doorFor,
+  fromLocal,
+  localMap,
+  parseManifest,
+  stripArrivalParam,
+  toLocal,
+  verifyRoomPass as verifyRoomPass2,
+  WELL_KNOWN_PATH
+} from "@nswp/core";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
+var matches = (query) => {
+  try {
+    return typeof matchMedia === "function" && matchMedia(query).matches;
+  } catch {
+    return false;
+  }
+};
+function deviceForms() {
+  const touch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0 || matches("(any-pointer: coarse)");
+  const mouse = matches("(any-pointer: fine)");
+  return { touch, mouse, main: matches("(pointer: fine)") ? "desk" : "touch" };
+}
+function formFor(said, device) {
+  if (said === "touch" && device.touch) return "touch";
+  if (said === "desk" && device.mouse) return "desk";
+  return device.main;
+}
+var arrived;
+var used;
+var watching = false;
+function arriveAs(form) {
+  arrived = form;
+  watch();
+}
+function startingForm() {
+  return formFor(arrived, deviceForms());
+}
+function currentForm() {
+  watch();
+  return used ?? startingForm();
+}
+function usedForm() {
+  watch();
+  return used;
+}
+function watch() {
+  if (watching || typeof addEventListener !== "function") return;
+  watching = true;
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.pointerType === "touch") used = "touch";
+      else if (e.pointerType === "mouse") used = "desk";
+    },
+    { capture: true, passive: true }
+  );
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bring.ts
+import { readBrought } from "@nswp/core";
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
+var RETURN_KEY = "nswp:return-airlock";
+var LOOK_KEY = "nswp:look";
+var PASS_KEY = "nswp:pass";
+var HOME_KEY = "nswp:at-home";
+var defaultAirlock;
+var cached;
+function session() {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+var arrival = {
+  /**
+   * Read the arrival context once, then remove it from the URL so it doesn't
+   * linger in history or reach third-party scripts. Call this before loading
+   * any third-party code. Later calls return the same result.
+   */
+  read() {
+    if (cached) return cached;
+    void localMap();
+    const raw = arrivalParam(location.hash);
+    if (!raw) {
+      cached = { context: null, warnings: [] };
+      arriveAs(void 0);
+      return cached;
+    }
+    history.replaceState(history.state, "", `${location.pathname}${location.search}${stripArrivalParam(location.hash)}`);
+    const r = decodeArrival(raw);
+    cached = r.ok ? { context: r.value, warnings: r.warnings } : { context: null, warnings: [...r.errors, ...r.warnings] };
+    arriveAs(cached.context?.form);
+    arriveWith(cached.context?.settings);
+    resumeFullscreen();
+    try {
+      if (cached.context?.home) session()?.setItem(HOME_KEY, "1");
+      else if (cached.context) session()?.removeItem(HOME_KEY);
+    } catch {
+    }
+    if (cached.context?.airlock) {
+      try {
+        session()?.setItem(RETURN_KEY, cached.context.airlock);
+      } catch {
+      }
+    }
+    if (cached.context) {
+      try {
+        if (cached.context.look) session()?.setItem(LOOK_KEY, cached.context.look);
+        else session()?.removeItem(LOOK_KEY);
+        const { pass, sessionKey } = cached.context;
+        if (pass && sessionKey && verifyRoomPass2(pass, { origin: location.origin }).ok) session()?.setItem(PASS_KEY, JSON.stringify({ pass, sessionKey }));
+        else session()?.removeItem(PASS_KEY);
+      } catch {
+      }
+    }
+    return cached;
+  },
+  /**
+   * The look this visitor arrived wearing, in its inline form (spec §4.2), or
+   * undefined if they came plain. Hand it to a room so others see them as
+   * they chose to be seen. Kept for this tab's session only.
+   */
+  look() {
+    try {
+      return session()?.getItem(LOOK_KEY) ?? void 0;
+    } catch {
+      return void 0;
+    }
+  },
+  /**
+   * Who this visitor chose to be here, if they came by name
+   * (protocol/10-identity.md): their public key, the name on their pass, and
+   * the pass and session key to hand to a room. Checked against this site and
+   * the clock each time; undefined for a guest, and once the pass has run out.
+   * The world never sees their own key, only this throwaway one.
+   */
+  identity() {
+    try {
+      const kept = JSON.parse(session()?.getItem(PASS_KEY) ?? "null");
+      if (!kept?.pass || typeof kept.sessionKey !== "string") return void 0;
+      const checked = verifyRoomPass2(kept.pass, { origin: location.origin });
+      if (!checked.ok) {
+        session()?.removeItem(PASS_KEY);
+        return void 0;
+      }
+      return { pubkey: checked.value.pubkey, name: checked.value.name, pass: kept.pass, sessionKey: kept.sessionKey };
+    } catch {
+      return void 0;
+    }
+  },
+  /** The Airlock this visitor came from, for this tab's session only. */
+  /**
+   * Whether this world is where the visitor starts: their own client brought
+   * them home (NSWP-07). Remembered for the tab, so a refresh at home is
+   * still at home. From here the way home leads nowhere new.
+   */
+  atHome() {
+    try {
+      return session()?.getItem(HOME_KEY) === "1";
+    } catch {
+      return false;
+    }
+  },
+  returnAirlock() {
+    try {
+      return session()?.getItem(RETURN_KEY) ?? void 0;
+    } catch {
+      return void 0;
+    }
+  }
+};
+var carried = (opts, immersive) => ({
+  immersive,
+  ...opts.joined ? { joined: true, ...opts.mic ? { mic: true } : {} } : {},
+  ...opts.blocked?.length ? { blocked: opts.blocked } : {},
+  ...opts.moving === "intense" ? { moving: "intense" } : {},
+  form: opts.form ?? currentForm(),
+  // Their settings as they are now, so the next place needn't be set up again.
+  settings: currentSettings()
+});
+var portal = {
+  /** Which Airlock `go()` would use right now, or null for the built-in screen. */
+  airlockFor(opts = {}) {
+    return opts.airlock ?? arrival.returnAirlock() ?? defaultAirlock ?? null;
+  },
+  async go(dest, opts = {}) {
+    if (!dest.naddr && !dest.url) throw new Error("nswp-sdk: portal destination needs an naddr or a url");
+    if (dest.url) {
+      const chk = checkDestination(dest.url);
+      if (!chk.ok) throw new Error(`nswp-sdk: refusing portal destination (${chk.error.code})`);
+    }
+    const immersive = opts.immersive ?? !!opts.xrSession;
+    if (opts.xrSession) {
+      try {
+        await opts.xrSession.end();
+      } catch {
+      }
+    }
+    if (typeof window.nswp?.navigate === "function") {
+      window.nswp.navigate(dest);
+      return;
+    }
+    const airlock = portal.airlockFor(opts);
+    if (airlock) {
+      location.assign(await toLocal(buildAirlockUrl(airlock, dest, carried(opts, immersive))));
+      return;
+    }
+    showFallback(dest);
+  },
+  /**
+   * Take the visitor back to their own client's start place (spec §6.3): the
+   * Airlock they came through, opened with no destination. Returns false, and
+   * does nothing, when there is no Airlock to go back to.
+   */
+  async home(opts = {}) {
+    const airlock = portal.airlockFor(opts);
+    if (!airlock) return false;
+    const immersive = opts.immersive ?? !!opts.xrSession;
+    if (opts.xrSession) {
+      try {
+        await opts.xrSession.end();
+      } catch {
+      }
+    }
+    location.assign(await toLocal(buildWayUrl(airlock, carried(opts, immersive))));
+    return true;
+  },
+  /**
+   * This world's own door: the announcement its manifest lists for this page,
+   * and its address. It is what sends a visitor back here through their own
+   * client, which checks it like any other door. With no manifest, or none
+   * that names this page, the door is the address alone.
+   */
+  async here() {
+    const url = await fromLocal(new URL(location.pathname, location.origin).href);
+    try {
+      const res = await fetch(WELL_KNOWN_PATH, { signal: AbortSignal.timeout(2500), credentials: "omit" });
+      const parsed = res.ok ? parseManifest(await res.json()) : null;
+      if (parsed?.ok) return doorFor(parsed.value, url);
+    } catch {
+    }
+    return { url };
+  },
+  /**
+   * The visitor asked to say who they are: to sign in, switch to another
+   * profile, or go on as a guest. A world never asks that itself
+   * (protocol/09-what-a-world-owes.md), so this leaves for their own client
+   * with a door back here and the request (`who=1`). Their client asks them
+   * in its own way and brings them back, by name if they chose that
+   * (protocol/10-identity.md, "Signing in from inside a world"). Returns
+   * false, and does nothing, when they came through no client.
+   */
+  async signIn(opts = {}) {
+    const airlock = portal.airlockFor(opts);
+    if (!airlock) return false;
+    const immersive = opts.immersive ?? !!opts.xrSession;
+    const here = await portal.here();
+    if (opts.xrSession) {
+      try {
+        await opts.xrSession.end();
+      } catch {
+      }
+    }
+    location.assign(await toLocal(buildAirlockUrl(airlock, here, { ...carried(opts, immersive), who: true })));
+    return true;
+  },
+  /**
+   * Take the visitor to their doors: their client's own place for them. For
+   * most visitors that is where home is too. It is a different place for one
+   * whose home is a world of their own, and a world that can be a home
+   * offers this wherever it offers the way home (protocol/07-homes.md).
+   */
+  async doors(opts = {}) {
+    const airlock = portal.airlockFor(opts);
+    if (!airlock) return false;
+    const immersive = opts.immersive ?? !!opts.xrSession;
+    if (opts.xrSession) {
+      try {
+        await opts.xrSession.end();
+      } catch {
+      }
+    }
+    location.assign(await toLocal(buildWayUrl(airlock, { ...carried(opts, immersive), doors: true })));
+    return true;
+  }
+};
+function showFallback(dest) {
+  const chk = dest.url ? checkDestination(dest.url) : null;
+  const host = document.createElement("div");
+  host.setAttribute("role", "dialog");
+  host.setAttribute("aria-modal", "true");
+  host.style.cssText = "position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:rgba(0,0,0,.72);font:16px/1.4 system-ui,sans-serif;color:#fff";
+  const card = document.createElement("div");
+  card.style.cssText = "background:#16181d;border:1px solid #333;border-radius:12px;padding:24px;max-width:min(92vw,480px)";
+  const h = document.createElement("p");
+  h.textContent = "This portal leads to:";
+  h.style.margin = "0 0 8px";
+  const where = document.createElement("p");
+  where.style.cssText = "margin:0 0 16px;font-size:1.6em;word-break:break-all";
+  if (chk?.ok) {
+    const pre = document.createElement("span");
+    pre.textContent = chk.value.hostPrefix;
+    pre.style.opacity = "0.6";
+    const dom = document.createElement("strong");
+    dom.textContent = chk.value.registrableDomain ?? chk.value.hostname;
+    where.append(pre, dom);
+  } else where.textContent = "A world this page can't look up without an Airlock.";
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;gap:12px;justify-content:flex-end";
+  const cancel = document.createElement("button");
+  cancel.textContent = "Stay here";
+  const go = document.createElement("button");
+  go.textContent = "Continue";
+  for (const b of [cancel, go]) b.style.cssText = "font:inherit;padding:10px 18px;border-radius:8px;border:1px solid #555;background:#23262d;color:#fff;cursor:pointer";
+  go.style.background = "#2f6df6";
+  go.disabled = !chk?.ok;
+  cancel.onclick = () => host.remove();
+  go.onclick = () => {
+    if (chk?.ok) void toLocal(buildArrivalUrl(chk.value.url, dest.entryPoint ? { entry: dest.entryPoint } : {})).then((to) => location.assign(to));
+  };
+  row.append(cancel, go);
+  card.append(h, where, row);
+  host.append(card);
+  document.body.append(host);
+  go.focus();
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
+function identityWords() {
+  const who = arrival.identity();
+  const name = who ? who.name || shortNpub3(who.pubkey) : "";
+  return who ? { signedIn: true, name, label: `Here as ${name}. Switch profile, or go as a guest`, short: "You" } : { signedIn: false, name: "", label: "You are a guest here. Sign in", short: "Sign in" };
+}
+function identityHost() {
+  const airlock = portal.airlockFor();
+  try {
+    return airlock ? new URL(airlock).host : null;
+  } catch {
+    return null;
+  }
+}
+var identitySection = () => ({
+  id: "you",
+  label: "You",
+  icon: "you",
+  note: () => {
+    const host = identityHost();
+    return host ? `Who you are is asked and kept by ${host}, the place you set out from, and never by this world. Signing in takes you there and brings you back here.` : "";
+  }
+});
+function identityAction(controls, leaving = () => ({})) {
+  let going = false;
+  return {
+    id: "identity",
+    section: "you",
+    icon: "you",
+    label: () => identityWords().label,
+    short: () => identityWords().short,
+    hidden: () => portal.airlockFor() === null,
+    act: async () => {
+      if (going) return;
+      going = true;
+      controls.say(`Taking you to ${identityHost() ?? "your own client"} to say who you are.`);
+      if (!await portal.signIn(leaving())) going = false;
     }
   };
 }
@@ -6273,51 +6657,6 @@ var PORTAL_SPRING = PORTAL_HEIGHT - PORTAL_WIDTH / 2;
 var PORTAL_SIGN_HEIGHT = PORTAL_HEIGHT + 0.72;
 var DOOR_REACH = 3.05;
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
-var matches = (query) => {
-  try {
-    return typeof matchMedia === "function" && matchMedia(query).matches;
-  } catch {
-    return false;
-  }
-};
-function deviceForms() {
-  const touch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0 || matches("(any-pointer: coarse)");
-  const mouse = matches("(any-pointer: fine)");
-  return { touch, mouse, main: matches("(pointer: fine)") ? "desk" : "touch" };
-}
-function formFor(said, device) {
-  if (said === "touch" && device.touch) return "touch";
-  if (said === "desk" && device.mouse) return "desk";
-  return device.main;
-}
-var arrived;
-var used;
-var watching = false;
-function startingForm() {
-  return formFor(arrived, deviceForms());
-}
-function currentForm() {
-  watch();
-  return used ?? startingForm();
-}
-function usedForm() {
-  watch();
-  return used;
-}
-function watch() {
-  if (watching || typeof addEventListener !== "function") return;
-  watching = true;
-  addEventListener(
-    "pointerdown",
-    (e) => {
-      if (e.pointerType === "touch") used = "touch";
-      else if (e.pointerType === "mouse") used = "desk";
-    },
-    { capture: true, passive: true }
-  );
-}
-
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/fps.ts
 var LOOK_SPEED = 22e-4;
 var PITCH_LIMIT = 85 * Math.PI / 180;
@@ -7823,7 +8162,7 @@ function createPresence(d) {
   d.camera.add(listener);
   const avatars = /* @__PURE__ */ new Map();
   const pendingStreams = /* @__PURE__ */ new Map();
-  let session = null;
+  let session2 = null;
   let roomName = null;
   let sendTimer;
   let micTrack = null;
@@ -7944,7 +8283,7 @@ function createPresence(d) {
   const headAt = new THREE13.Vector3();
   const theirs = new THREE13.Vector3();
   const tendMusic = (dt) => {
-    if (!session) return;
+    if (!session2) return;
     d.camera.getWorldPosition(headAt);
     const away = (a) => a.head.getWorldPosition(theirs).distanceTo(headAt);
     sinceChoosing += dt;
@@ -7954,7 +8293,7 @@ function createPresence(d) {
       const want = new Set(musicToHear(sharing, hearShared));
       for (const a of avatars.values()) {
         const on = want.has(a.member.pubkey);
-        session.listen(a.member.pubkey, on);
+        session2.listen(a.member.pubkey, on);
         const stream = tunes.get(a.member.pubkey);
         if (on && stream) playTune(a, stream);
         else if (!on && a.tune) stopTune(a);
@@ -8043,8 +8382,8 @@ function createPresence(d) {
   const leave = () => {
     if (sendTimer) clearInterval(sendTimer);
     sendTimer = void 0;
-    session?.leave();
-    session = null;
+    session2?.leave();
+    session2 = null;
     stopScreen();
     screens.clear();
     tuneTrack = null;
@@ -8071,7 +8410,7 @@ function createPresence(d) {
     const look = typeof d.look === "function" ? d.look() : d.look;
     const identity = typeof d.identity === "function" ? d.identity() : d.identity;
     const s = await room.join({ ...name ? { name } : {}, ...look ? { look } : {}, ...identity ? { identity } : {}, blocked: blockedKeys() });
-    session = s;
+    session2 = s;
     if (!offsetApplied) {
       const off = spawnOffset(s.self.pubkey);
       d.rig.position.x += off.x;
@@ -8148,7 +8487,7 @@ function createPresence(d) {
   };
   return {
     get session() {
-      return session;
+      return session2;
     },
     get roomName() {
       return roomName;
@@ -8160,10 +8499,10 @@ function createPresence(d) {
       return !!screenTrack;
     },
     get screenViewers() {
-      return session?.screenViewers ?? 0;
+      return session2?.screenViewers ?? 0;
     },
     async shareScreen(track) {
-      if (!session) {
+      if (!session2) {
         track?.stop();
         return;
       }
@@ -8174,19 +8513,19 @@ function createPresence(d) {
         track.onended = () => {
           if (screenTrack !== track) return;
           screenTrack = null;
-          void session?.setScreen(null);
+          void session2?.setScreen(null);
           changed();
         };
       }
-      await session.setScreen(track);
+      await session2.setScreen(track);
       changed();
     },
     watch(pubkey, on) {
-      session?.watch(pubkey, on);
+      session2?.watch(pubkey, on);
       changed();
     },
     isWatching(pubkey) {
-      return !!session?.isWatching(pubkey);
+      return !!session2?.isWatching(pubkey);
     },
     screenOf(pubkey) {
       return screens.get(pubkey) ?? null;
@@ -8196,14 +8535,14 @@ function createPresence(d) {
     async setMicrophone(track) {
       if (!track && micTrack) micTrack.stop();
       micTrack = track;
-      await session?.setMicrophone(track);
+      await session2?.setMicrophone(track);
       changed();
     },
     setRecording(on) {
-      session?.setRecording(on);
+      session2?.setRecording(on);
     },
     selfLook() {
-      if (session) return session.self.look;
+      if (session2) return session2.self.look;
       const mine = typeof d.look === "function" ? d.look() : d.look;
       const read = mine ? decodeLook2(mine) : null;
       return read?.ok ? read.value.look : plainSeed ??= `plain-${Math.random().toString(36).slice(2, 12)}`;
@@ -8235,12 +8574,12 @@ function createPresence(d) {
       return !!tuneTrack;
     },
     get musicListeners() {
-      return session?.musicListeners ?? 0;
+      return session2?.musicListeners ?? 0;
     },
     async shareMusic(track) {
-      if (!session) return;
+      if (!session2) return;
       tuneTrack = track;
-      await session.setMusic(track);
+      await session2.setMusic(track);
       changed();
     },
     setHearShared(on, volume) {
@@ -8267,7 +8606,7 @@ function createPresence(d) {
       return mutedKeys.has(pubkey);
     },
     block(pubkey) {
-      const gone = session?.block(pubkey);
+      const gone = session2?.block(pubkey);
       if (!gone) return null;
       mutedKeys.delete(pubkey);
       if (gone.identity) {
@@ -8280,7 +8619,7 @@ function createPresence(d) {
     },
     unblock(key) {
       reported.delete(key);
-      if (!fromClient.has(key)) session?.unblock(key);
+      if (!fromClient.has(key)) session2?.unblock(key);
       if (blockedNow.delete(key)) return changed();
       keptBlocks = withoutBlocked(keptBlocks, key);
       storeBlocked(keptBlocks);
@@ -8899,17 +9238,17 @@ function addRoomControls(controls, presence, opts = {}) {
   } catch {
   }
   refresh();
-  const carried = opts.arrived?.joined ? { mic: !!opts.arrived.mic, from: "there" } : kept ? { mic: kept === "mic", from: "refresh" } : null;
-  if (carried && (carried.from === "refresh" || !invited)) {
+  const carried2 = opts.arrived?.joined ? { mic: !!opts.arrived.mic, from: "there" } : kept ? { mic: kept === "mic", from: "refresh" } : null;
+  if (carried2 && (carried2.from === "refresh" || !invited)) {
     busy = true;
     void (async () => {
       try {
-        await presence.join(carried.from === "refresh" ? invited : null);
-        const heard = carried.mic ? await microphone() : false;
+        await presence.join(carried2.from === "refresh" ? invited : null);
+        const heard = carried2.mic ? await microphone() : false;
         const early = 2500 - performance.now();
         if (early > 0) await new Promise((done) => setTimeout(done, early));
         tell(
-          `You are still in the room${carried.from === "there" ? ", as you were where you came from" : ""}: others here can see you${heard ? " and hear you" : ""}.${carried.mic && !heard ? " Your microphone is off here: the browser didn't allow it." : ""} Leave is where Join was.`
+          `You are still in the room${carried2.from === "there" ? ", as you were where you came from" : ""}: others here can see you${heard ? " and hear you" : ""}.${carried2.mic && !heard ? " Your microphone is off here: the browser didn't allow it." : ""} Leave is where Join was.`
         );
       } catch (err) {
         tell(`Couldn't stay joined: ${err instanceof Error ? err.message : String(err)}`);
@@ -8978,10 +9317,10 @@ async function addViewControls(controls, d) {
   const enter = async () => {
     if (presenting()) return;
     try {
-      const session = await xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "hand-tracking"] });
-      await d.renderer.xr.setSession(session);
+      const session2 = await xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "hand-tracking"] });
+      await d.renderer.xr.setSession(session2);
       d.onState?.("presenting");
-      session.addEventListener("end", () => d.onState?.("ended"));
+      session2.addEventListener("end", () => d.onState?.("ended"));
       answered();
     } catch (err) {
       d.onState?.(`error: ${err instanceof Error ? err.message : String(err)}`);
@@ -9014,6 +9353,10 @@ async function addViewControls(controls, d) {
     { id: "turn", section: "view", icon: "turn", label: "Turn around", act: () => turnVisitor(d.rig, d.camera, 180) },
     fullscreenAction(controls, presenting)
   );
+  if (!controls.has("identity") && identityHost()) {
+    controls.addSection(identitySection());
+    controls.add(identityAction(controls, () => ({ ...d.leaving?.(), xrSession: d.renderer.xr.getSession() })));
+  }
   document.addEventListener("fullscreenchange", () => controls.setTarget(""));
   controls.addSection({
     id: "view",
@@ -9034,6 +9377,15 @@ export {
   createConsole,
   resumeFullscreen,
   fullscreenWaiting,
+  deviceForms,
+  formFor,
+  startingForm,
+  currentForm,
+  usedForm,
+  identityWords,
+  identityHost,
+  identitySection,
+  identityAction,
   WALK_SPEED,
   RUN,
   DOUBLE_TAP,
@@ -9061,11 +9413,6 @@ export {
   PORTAL_SPRING,
   PORTAL_SIGN_HEIGHT,
   DOOR_REACH,
-  deviceForms,
-  formFor,
-  startingForm,
-  currentForm,
-  usedForm,
   LOOK_SPEED,
   PITCH_LIMIT,
   SPRINT,

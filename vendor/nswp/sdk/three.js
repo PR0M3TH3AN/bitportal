@@ -48,6 +48,10 @@ import {
   formFor,
   fullscreenWaiting,
   heldKey,
+  identityAction,
+  identityHost,
+  identitySection,
+  identityWords,
   isIntense,
   lookAfter,
   panoramaTexture,
@@ -64,13 +68,13 @@ import {
   turnVisitor,
   usedForm,
   viewScale
-} from "./shared-SELKSVAE.js";
+} from "./shared-NLPVKM6K.js";
 import {
   arriveWith,
   arrivedSettings,
   currentSettings,
   reportSettings
-} from "./shared-YCC3OB6E.js";
+} from "./shared-H5L32T46.js";
 import {
   browserVoice,
   computerVoice,
@@ -138,6 +142,10 @@ export {
   formFor,
   fullscreenWaiting,
   heldKey,
+  identityAction,
+  identityHost,
+  identitySection,
+  identityWords,
   isIntense,
   lookAfter,
   panoramaTexture,
