@@ -379,8 +379,8 @@ async function start(): Promise<void> {
   // way the Airlock signs one for a world, with the name and picture from their own profile, so the people they
   // share the room with see who they are. Not for someone who has said to go about as a guest.
   let roomIdentity: Awaited<ReturnType<typeof issuePass>> | undefined;
-  // And what they write in their own room can be posted as notes, signed with this same sign-in (notes.ts).
-  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest });
+  // And they can send out a post from their own room, signed with this same sign-in (notes.ts).
+  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest, nameOf: (pubkey) => profileOf(pubkey)?.name ?? null });
   hooks.notes = homeNotes;
   const nameMe = async (pubkey: string): Promise<void> => {
     if (goesAsGuest()) return void (roomIdentity = undefined);
