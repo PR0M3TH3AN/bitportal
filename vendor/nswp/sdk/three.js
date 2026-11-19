@@ -40,6 +40,9 @@ import {
   createSounds,
   createStroll,
   createXrInput,
+  currentForm,
+  deviceForms,
+  formFor,
   heldKey,
   isIntense,
   lookAfter,
@@ -48,14 +51,16 @@ import {
   readPad,
   recordClip,
   saveFile,
+  startingForm,
   strideOf,
   takePicture,
   takeSelfie,
   textSprite,
   turnVisitor,
+  usedForm,
   viewScale
-} from "./shared-R2UKL3UM.js";
-import "./shared-YU6PPIY6.js";
+} from "./shared-JUKUZZOO.js";
+import "./shared-YO5CGGKR.js";
 import {
   browserVoice,
   computerVoice,
@@ -112,6 +117,9 @@ export {
   createStroll,
   createVoice,
   createXrInput,
+  currentForm,
+  deviceForms,
+  formFor,
   heldKey,
   isIntense,
   lookAfter,
@@ -121,12 +129,14 @@ export {
   recordClip,
   recordVoice,
   saveFile,
+  startingForm,
   strideOf,
   takePicture,
   takeSelfie,
   textSprite,
   toPcm16,
   turnVisitor,
+  usedForm,
   viewScale,
   wasRefreshed
 };

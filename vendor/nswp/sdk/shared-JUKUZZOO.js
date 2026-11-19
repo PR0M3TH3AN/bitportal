@@ -1,7 +1,8 @@
 import {
   ICONS,
+  createHeldButton,
   rgb
-} from "./shared-YU6PPIY6.js";
+} from "./shared-YO5CGGKR.js";
 import {
   LiveKeys,
   TextEntry,
@@ -4314,10 +4315,11 @@ var Locomotion = class {
   backward = /* @__PURE__ */ new Set();
   menuDown = false;
   jumpDown = false;
+  heldMenu = createHeldButton();
   /** Running, once the moving stick is pressed in, until that stick comes back to rest. */
   running = false;
   frame(dt, pads, comfort) {
-    const intent = { turn: 0, walk: [0, 0], stepFrom: [], aiming: [], menu: false, jump: false, running: false, narrow: 0 };
+    const intent = { turn: 0, walk: [0, 0], stepFrom: [], aiming: [], menu: false, jump: false, summon: false, running: false, narrow: 0 };
     let pushed = false;
     const roles = stickRoles(pads, comfort.moveHand);
     const seen = /* @__PURE__ */ new Set();
@@ -4368,6 +4370,7 @@ var Locomotion = class {
     const menu = pads.some((p) => p.pad.secondary);
     intent.menu = menu && !this.menuDown;
     this.menuDown = menu;
+    intent.summon = this.heldMenu(menu, dt);
     const jump = pads.some((p) => p.pad.primary);
     intent.jump = jump && !this.jumpDown;
     this.jumpDown = jump;
@@ -4657,6 +4660,7 @@ function createXrInput(opts) {
       }
       if (intent.menu) opts.onMenu?.();
       if (intent.jump) opts.onJump?.();
+      if (intent.summon) opts.onSummon?.();
       aiming = intent.aiming;
       narrow += (intent.narrow - narrow) * Math.min(1, dt * (intent.narrow > narrow ? 12 : 3));
       vignette.material.uniforms.uAmount.value = narrow * 0.85;
@@ -6135,6 +6139,51 @@ function addPanelControls(controls, panels, o) {
   );
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
+var matches = (query) => {
+  try {
+    return typeof matchMedia === "function" && matchMedia(query).matches;
+  } catch {
+    return false;
+  }
+};
+function deviceForms() {
+  const touch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0 || matches("(any-pointer: coarse)");
+  const mouse = matches("(any-pointer: fine)");
+  return { touch, mouse, main: matches("(pointer: fine)") ? "desk" : "touch" };
+}
+function formFor(said, device) {
+  if (said === "touch" && device.touch) return "touch";
+  if (said === "desk" && device.mouse) return "desk";
+  return device.main;
+}
+var arrived;
+var used;
+var watching = false;
+function startingForm() {
+  return formFor(arrived, deviceForms());
+}
+function currentForm() {
+  watch();
+  return used ?? startingForm();
+}
+function usedForm() {
+  watch();
+  return used;
+}
+function watch() {
+  if (watching || typeof addEventListener !== "function") return;
+  watching = true;
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.pointerType === "touch") used = "touch";
+      else if (e.pointerType === "mouse") used = "desk";
+    },
+    { capture: true, passive: true }
+  );
+}
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/fps.ts
 var LOOK_SPEED = 22e-4;
 var PITCH_LIMIT = 85 * Math.PI / 180;
@@ -6181,13 +6230,13 @@ var DESK_WORDS = {
   nowCasual: "Casual: click where you want to stand, twice to run there, and drag to look round. W, A, S, D walk, Shift runs and Space jumps.",
   click: "Click the view to look round. Escape brings up the menu."
 };
-var hasMouse = () => typeof matchMedia === "function" && matchMedia("(pointer: fine)").matches;
-function startsIntense(arrived, key = DESK_KEY) {
+var hasMouse = () => startingForm() === "desk";
+function startsIntense(arrived2, key = DESK_KEY) {
   if (!hasMouse()) return false;
   try {
-    return arrived || localStorage.getItem(key) === "1";
+    return arrived2 || localStorage.getItem(key) === "1";
   } catch {
-    return arrived;
+    return arrived2;
   }
 }
 function keepIntense(on, key = DESK_KEY) {
@@ -8294,7 +8343,7 @@ function addRoomControls(controls, presence, opts = {}) {
   const refresh = () => {
     const s = presence.session;
     opts.onState?.(
-      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn, screen: presence.screenOn, music: presence.musicOn, musicListeners: presence.musicListeners, sharing: s.members.filter((m) => m.sharing).map((m) => m.pubkey), watching: [...watching.keys()] } : null
+      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn, screen: presence.screenOn, music: presence.musicOn, musicListeners: presence.musicListeners, sharing: s.members.filter((m) => m.sharing).map((m) => m.pubkey), watching: [...watching2.keys()] } : null
     );
     controls.addSection({ id: "room", label: "Room", icon: "room", note: status });
     people();
@@ -8316,12 +8365,12 @@ function addRoomControls(controls, presence, opts = {}) {
       return false;
     }
   };
-  const watching = /* @__PURE__ */ new Map();
+  const watching2 = /* @__PURE__ */ new Map();
   const sharers = /* @__PURE__ */ new Set();
   const stopWatching = (pubkey, panelGone = false) => {
-    const w = watching.get(pubkey);
+    const w = watching2.get(pubkey);
     if (!w) return;
-    watching.delete(pubkey);
+    watching2.delete(pubkey);
     presence.watch(pubkey, false);
     w.video.srcObject = null;
     w.texture?.dispose();
@@ -8329,15 +8378,15 @@ function addRoomControls(controls, presence, opts = {}) {
   };
   const startWatching = (m) => {
     const stream = presence.screenOf(m.pubkey);
-    if (!opts.panels || !stream || watching.has(m.pubkey)) return false;
+    if (!opts.panels || !stream || watching2.has(m.pubkey)) return false;
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
     video.srcObject = stream;
     const w = { video, texture: null, panel: null };
-    watching.set(m.pubkey, w);
+    watching2.set(m.pubkey, w);
     const show = () => {
-      if (w.panel || watching.get(m.pubkey) !== w || !video.videoWidth || !video.videoHeight) return;
+      if (w.panel || watching2.get(m.pubkey) !== w || !video.videoWidth || !video.videoHeight) return;
       w.texture = new THREE12.VideoTexture(video);
       w.texture.colorSpace = THREE12.SRGBColorSpace;
       w.panel = opts.panels.open(
@@ -8417,7 +8466,7 @@ function addRoomControls(controls, presence, opts = {}) {
       toldOfMusic = true;
       controls.say(`${here.find((m) => m.music).name} is sharing music. To hear what people near you share, turn it on in Sound.`);
     }
-    for (const key of [...watching.keys()]) if (!here.some((m) => m.pubkey === key && m.sharing)) stopWatching(key);
+    for (const key of [...watching2.keys()]) if (!here.some((m) => m.pubkey === key && m.sharing)) stopWatching(key);
     for (const m of here) {
       if (m.sharing && !sharers.has(m.pubkey)) controls.say(opts.panels ? `${m.name} is sharing their screen. Select them in People to watch.` : `${m.name} is sharing their screen.`);
       if (m.sharing) sharers.add(m.pubkey);
@@ -8430,10 +8479,10 @@ function addRoomControls(controls, presence, opts = {}) {
         id: "person-watch",
         section: "people",
         icon: "panel",
-        on: () => watching.has(who.pubkey),
-        label: () => watching.has(who.pubkey) ? `Stop watching ${who.name}'s screen` : `Watch ${who.name}'s screen`,
+        on: () => watching2.has(who.pubkey),
+        label: () => watching2.has(who.pubkey) ? `Stop watching ${who.name}'s screen` : `Watch ${who.name}'s screen`,
         act: () => {
-          if (watching.has(who.pubkey)) stopWatching(who.pubkey);
+          if (watching2.has(who.pubkey)) stopWatching(who.pubkey);
           else if (startWatching(who)) controls.say(`${who.name}'s screen is opening on a panel of your own. Put the panel away to stop.`);
           else controls.say(`${who.name}'s screen can't be shown here.`);
           refresh();
@@ -8522,7 +8571,7 @@ function addRoomControls(controls, presence, opts = {}) {
       hidden: () => busy,
       act: async () => {
         if (presence.session) {
-          for (const key of [...watching.keys()]) stopWatching(key);
+          for (const key of [...watching2.keys()]) stopWatching(key);
           presence.leave();
           controls.signal("leave");
           tell("You left the room.");
@@ -8810,6 +8859,11 @@ export {
   createLibrary,
   createPanels,
   addPanelControls,
+  deviceForms,
+  formFor,
+  startingForm,
+  currentForm,
+  usedForm,
   LOOK_SPEED,
   PITCH_LIMIT,
   SPRINT,

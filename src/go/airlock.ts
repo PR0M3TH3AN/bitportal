@@ -55,11 +55,32 @@ const lastWorld = (): string => {
     return "";
   }
 };
+/** The form that goes with the visitor: how they pressed this page if they did, and otherwise what the link said. */
+const formToCarry = (said: "touch" | "desk" | undefined): { form?: "touch" | "desk" } => {
+  const form = pressedWith ?? said;
+  return form ? { form } : {};
+};
 /** The visitor's own block list, as it goes with them: nothing when it is empty. */
 const withBlocked = (): { blocked?: string[] } => {
   const keys = blockedToCarry(loadBlockedEverywhere(), roomBlocks());
   return keys.length ? { blocked: keys } : {};
 };
+
+/**
+ * What the visitor is pressing this page with: their fingers, or a mouse. Seen here, on their own client's page,
+ * it is worth more than what a link says of where they came from, so it is what goes on with them when it is known
+ * (NSWP-11, "The same form on the other side").
+ */
+let pressedWith: "touch" | "desk" | undefined;
+addEventListener(
+  "pointerdown",
+  (e) => {
+    const type = (e as PointerEvent).pointerType;
+    if (type === "touch") pressedWith = "touch";
+    else if (type === "mouse") pressedWith = "desk";
+  },
+  { capture: true, passive: true },
+);
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const SELF = `${location.origin}${location.pathname}`;
@@ -265,7 +286,7 @@ async function render(): Promise<void> {
       // In the room where they came from: they stay joined at home too. Nothing is asked on the way home, so a
       // microphone goes along only when they have already said theirs may.
       // How they move goes with them too: a preference, with nothing to decide about it.
-      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.moving ? { moving: way.moving } : {}) };
+      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.moving ? { moving: way.moving } : {}), ...formToCarry(undefined) };
       // Who they blocked where they came from is a link's word. Nothing is asked on the way home, so it waits:
       // for the next door, or for Settings.
       if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
@@ -564,7 +585,7 @@ async function render(): Promise<void> {
     } catch {
       /* the next report says "where you came from" */
     }
-    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}) };
+    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}), ...formToCarry(req.form) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
