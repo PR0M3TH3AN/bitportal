@@ -20,6 +20,7 @@ import {
   getPublicKey,
   fetchManifest,
   fromLocal,
+  hasSettings,
   latestAddressable,
   parseAirlockFragment,
   parseWorldEvent,
@@ -28,6 +29,7 @@ import {
   WORLD_KIND,
   type Issue,
   type Manifest,
+  type TravelSettings,
   type Verification,
   type World,
   shortNpub,
@@ -47,6 +49,7 @@ import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
+import { keptSettings, settingsToCarry } from "../shared/prefs.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
 
 /** The last world this Airlock sent the visitor to, as a host: where a block they report was most likely made. */
@@ -280,6 +283,22 @@ async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: 
   return true;
 }
 
+/**
+ * The visitor's settings as they go on: what this browser keeps for them, and over it whatever the place they are
+ * leaving said they have now (prefs.ts). So a door opened from the front page, which says nothing, still takes
+ * what they prefer along: a filled screen, how they move, how fast the view turns.
+ */
+function carriedSettings(said: TravelSettings | undefined): { settings?: TravelSettings } {
+  let kept: TravelSettings = {};
+  try {
+    kept = keptSettings(localStorage);
+  } catch {
+    /* storage unavailable: only what was said goes on */
+  }
+  const settings = settingsToCarry(kept, said);
+  return hasSettings(settings) ? { settings } : {};
+}
+
 async function render(): Promise<void> {
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
@@ -318,7 +337,7 @@ async function render(): Promise<void> {
       // In the room where they came from: they stay joined at home too. Nothing is asked on the way home, so a
       // microphone goes along only when they have already said theirs may.
       // How they move goes with them too: a preference, with nothing to decide about it.
-      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.moving ? { moving: way.moving } : {}), ...formToCarry(undefined), ...(way.settings ? { settings: way.settings } : {}) };
+      const carry = { ...carriedOn(way, { stay: true, mic: micMayTravel() }), ...withBlocked(), ...(way.moving ? { moving: way.moving } : {}), ...formToCarry(undefined), ...carriedSettings(way.settings) };
       // Who they blocked where they came from is a link's word. Nothing is asked on the way home, so it waits:
       // for the next door, or for Settings.
       if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
@@ -671,7 +690,7 @@ async function render(): Promise<void> {
     } catch {
       /* the next report says "where you came from" */
     }
-    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}), ...formToCarry(req.form), ...(req.settings ? { settings: req.settings } : {}) };
+    const carry = { ...carriedOn(req, { stay: !!stayBox?.checked, mic: !!micBox?.checked }), ...(a.nswpAware ? withBlocked() : {}), ...(req.moving ? { moving: req.moving } : {}), ...formToCarry(req.form), ...carriedSettings(req.settings) };
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     if (stopped) return false;

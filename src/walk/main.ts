@@ -20,7 +20,7 @@ import { buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, enco
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -936,7 +936,7 @@ async function start(): Promise<void> {
   });
   window.addEventListener("pointermove", (e) => {
     if (dragging && !renderer.xr.isPresenting) {
-      rig.rotation.y += (e.clientX - lastX) * 0.005;
+      rig.rotation.y += (e.clientX - lastX) * 0.005 * lookScale();
       moved += Math.abs(e.clientX - lastX);
       lastX = e.clientX;
     }
@@ -1195,6 +1195,8 @@ async function start(): Promise<void> {
     onState: (s) => (state.xr = s),
     ...(backToHeadset ? { arrived: { title: "BitPortal" } } : {}),
     onOffer: (showing) => (offered = showing),
+    // The room fits its own view to the window, and gives way to the visitor's own width itself (fit, below).
+    fov: false,
   }).then((supported) => {
     if (!supported) offered = false;
   });
@@ -1210,7 +1212,8 @@ async function start(): Promise<void> {
     // A tall screen sees a wider slice top to bottom, so that it still takes in
     // three doors side by side and not one and a half.
     const across = THREE.MathUtils.degToRad(52);
-    camera.fov = Math.min(90, Math.max(62, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(across / 2) / camera.aspect))));
+    // At a desk, a visitor who has asked for a width has it, here as in every world.
+    camera.fov = visitorFov() ?? Math.min(90, Math.max(62, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(across / 2) / camera.aspect))));
     const cover = hud.cover();
     covered = `${cover.top}|${cover.bottom}`;
     const shift = Math.min(Math.round((cover.bottom - cover.top) / 2), Math.round(innerHeight * 0.3));
@@ -1219,6 +1222,7 @@ async function start(): Promise<void> {
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
     state.shift = Math.max(shift, 0);
+    state.fov = Math.round(camera.fov);
   };
   window.addEventListener("resize", fit);
   // The controls change height as keys come and go on the hotbar.
@@ -1227,6 +1231,7 @@ async function start(): Promise<void> {
     if (`${cover.top}|${cover.bottom}` !== covered) fit();
   }, 500);
   renderer.xr.addEventListener("sessionend", fit);
+  onDeskChange(fit);
   fit();
 
   // ------------------------------------------------------ test hooks

@@ -278,6 +278,21 @@ tells you.
 Signed in, your profile takes the width of the page, and BitLogin's own
 element is scaled as one piece so its text is the size of the page's.
 
+## What you prefer, in every world
+
+Settings has "In every world": fill the screen, move the intense way at a
+desk (the mouse looks round, keys walk), how fast the view turns, and how
+wide you see. They are what you prefer, not what you last did. Every world
+you enter starts that way: pressing Escape in one world, or using a phone
+for a while, doesn't change the next. Each has a control in any world's menu
+as well, and changing it there changes it everywhere.
+
+The Airlock starts from these, so a door opened from the front page or from
+your list of doors takes them along as a door in the room does. A browser
+fills the screen only on a press, so that happens at your first key or click
+in each world. The field of view is for a desk: on a phone each world fits
+its own view to the window, and a headset has its own.
+
 ## Your settings, on your other devices
 
 Everything BitPortal knows about you is kept in the browser you are using.

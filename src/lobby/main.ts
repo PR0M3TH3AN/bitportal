@@ -25,6 +25,7 @@ import { INSTANCE } from "../shared/instance.js";
 import { loadTastes, setTaste, storeTastes, tasteFor, tasteOf, type Tastes } from "../shared/tastes.js";
 import { checkHome, homeOf, loadHome, storeHome, type HomeChoice } from "../shared/home.js";
 import { cleanRelays, loadSettings, saveSettings, type Settings } from "../shared/settings.js";
+import { FOV_CHOICES, loadPrefs, LOOK_CHOICES, storePrefs } from "../shared/prefs.js";
 import { plainShelf, type Candidate, type Shelf } from "../shared/shelves.js";
 import { cachedVerification, verifyWorld, type VerificationResult } from "../shared/verify.js";
 import { VERSION } from "../shared/version.js";
@@ -710,6 +711,17 @@ function openSettings(): void {
   rankBox.checked = settings.ranking;
   const airlockBox = el("input", { type: "checkbox", id: "set-airlock" });
   airlockBox.checked = settings.airlock === "known";
+  // What they prefer in every world (prefs.ts). Standing preferences: not whatever they last did somewhere.
+  const prefs = loadPrefs(localStorage);
+  const fullBox = el("input", { type: "checkbox", id: "set-full" }) as HTMLInputElement;
+  fullBox.checked = prefs.full;
+  const intenseBox = el("input", { type: "checkbox", id: "set-intense" }) as HTMLInputElement;
+  intenseBox.checked = prefs.intense;
+  const lookPick = el("select", { id: "set-look" }, ...LOOK_CHOICES.map((c) => el("option", { value: String(c.value), ...(c.value === prefs.look ? { selected: "" } : {}) }, c.word))) as HTMLSelectElement;
+  // A speed set somewhere else to something not on this list is kept, and shown as what it is.
+  if (!LOOK_CHOICES.some((c) => c.value === prefs.look)) lookPick.append(el("option", { value: String(prefs.look), selected: "" }, `${prefs.look} times normal`));
+  const fovPick = el("select", { id: "set-fov" }, ...FOV_CHOICES.map((f) => el("option", { value: f === null ? "" : String(f), ...(f === prefs.fov ? { selected: "" } : {}) }, f === null ? "Each world's own" : `${f}°`))) as HTMLSelectElement;
+  if (prefs.fov !== null && !FOV_CHOICES.includes(prefs.fov)) fovPick.append(el("option", { value: String(prefs.fov), selected: "" }, `${prefs.fov}°`));
   // Keeping settings with the visitor's profile, sealed, so they follow them to another device (sync.ts). Off until
   // they turn it on. It acts when pressed, not when the sheet is saved: it is a thing done, not a preference noted.
   const syncBox = el("input", { type: "checkbox", id: "set-sync" }) as HTMLInputElement;
@@ -862,12 +874,24 @@ function openSettings(): void {
       { class: "small" },
       "The Airlock always stops you the first time you go somewhere, and shows you the real address. With this on, it doesn't stop you again for a place you have already been, as long as the site still proves it is who it says, it is on this copy's list, nothing about it has changed, and nothing needs an answer. You are still shown where you are going, with a Stop button. Off, it stops at every door.",
     ),
+    el("h3", {}, "In every world"),
+    el("label", { class: "check", for: "set-full" }, fullBox, " Fill the screen"),
+    el("label", { class: "check", for: "set-intense" }, intenseBox, " At a desk, move the intense way: the mouse looks round and keys walk"),
+    el("label", { for: "set-look" }, "How fast the view turns, with a mouse or a finger"),
+    lookPick,
+    el("label", { for: "set-fov" }, "How wide you see at a desk (field of view)"),
+    fovPick,
+    el(
+      "p",
+      { class: "small" },
+      "These are what you prefer, not what you last did. Every world you enter starts this way, and pressing Escape or switching for a moment in one world doesn't change the next. Each has a control in any world's menu too, and changing it there changes it everywhere. A browser fills the screen only on a press, so it happens at your first key or click in each world. In a headset none of these apply.",
+    ),
     el("h3", {}, "Your settings, on your other devices"),
     el("label", { class: "check", for: "set-sync" }, syncBox, " Keep my settings with my profile, sealed, so they follow me to other devices"),
     el(
       "p",
       { class: "small" },
-      "Off, everything stays in this browser, as it always has. On, a copy is kept on your relays in one note that only your own key can open: your volumes, the size of your text, how you move, your saved doors, the lists you follow, your hashtags, your home, your look, your room and who you have blocked. A world never reads it. This browser's own copy is still the one that is used, so nothing waits on a relay.",
+      "Off, everything stays in this browser, as it always has. On, a copy is kept on your relays in one note that only your own key can open: your volumes, the size of your text, how you move, whether you fill the screen, how fast the view turns and how wide you see, your saved doors, the lists you follow, your hashtags, your home, your look, your room and who you have blocked. A world never reads it. This browser's own copy is still the one that is used, so nothing waits on a relay.",
     ),
     el(
       "p",
@@ -918,6 +942,7 @@ function openSettings(): void {
     const cleaned = cleanRelays(relays.value.split(/\s+/));
     settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays, airlock: airlockBox.checked ? "known" : "ask" };
     saveSettings(settings);
+    storePrefs({ full: fullBox.checked, intense: intenseBox.checked, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null }, localStorage);
     void refresh();
   });
   dialog.replaceChildren(form);

@@ -1,0 +1,107 @@
+/**
+ * What a visitor prefers, in every world: a filled screen, the intense way of
+ * moving at a desk, how fast the view turns, how wide they see.
+ *
+ * These are standing preferences, not a record of what they last did. Someone
+ * who prefers a filled screen and pressed Escape in one world still prefers a
+ * filled screen in the next (NSWP-11, "Settings that travel"). They are set
+ * in Settings here, or with the control for each in any world's menu, and
+ * nothing else changes them.
+ *
+ * They are kept where the kit keeps them, so the room, this page and the
+ * Airlock read the same thing: one small entry each in this browser. With
+ * "Keep my settings with my profile" on, they go in that note too (sync.ts).
+ *
+ * `keptSettings` is everything of the visitor's that travels, as this browser
+ * has it. The Airlock starts from it, so a door opened from the front page or
+ * the jump list, which says nothing about settings, still takes them along.
+ */
+import { cleanSettings, FOV_RANGE, LOOK_RANGE, type TravelSettings } from "@nswp/core";
+
+/** The kit's own names for these, on this site. */
+export const FULL_KEY = "nswp:full";
+export const INTENSE_KEY = "bitportal:fps";
+export const DESK_KEY = "nswp:desk";
+const SOUND_KEY = "bitportal:sound";
+const UI_KEY = "nswp:ui";
+
+export interface Prefs {
+  full: boolean;
+  intense: boolean;
+  /** 1 is the kit's own speed. */
+  look: number;
+  /** Degrees top to bottom at a desk, or null for each world's own. */
+  fov: number | null;
+}
+
+/** What Settings offers. The menu in a world steps through the same ones. */
+export const LOOK_CHOICES: readonly { value: number; word: string }[] = [
+  { value: 0.5, word: "Slow" },
+  { value: 0.75, word: "Gentle" },
+  { value: 1, word: "Normal" },
+  { value: 1.5, word: "Quick" },
+  { value: 2, word: "Fast" },
+  { value: 3, word: "Fastest" },
+];
+export const FOV_CHOICES: readonly (number | null)[] = [null, 60, 70, 80, 90, 100, 110];
+
+type Reader = Pick<Storage, "getItem">;
+type Writer = Pick<Storage, "setItem" | "removeItem">;
+
+const json = (text: string | null): unknown => {
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
+};
+const within = (v: unknown, [least, most]: readonly [number, number]): number | null => (typeof v === "number" && Number.isFinite(v) ? Math.min(most, Math.max(least, v)) : null);
+
+export function loadPrefs(store: Reader | null): Prefs {
+  const desk = (json(store?.getItem(DESK_KEY) ?? null) ?? {}) as { look?: unknown; fov?: unknown };
+  const fov = within(desk.fov, FOV_RANGE);
+  return {
+    full: store?.getItem(FULL_KEY) === "1",
+    intense: store?.getItem(INTENSE_KEY) === "1",
+    look: Math.round((within(desk.look, LOOK_RANGE) ?? 1) * 100) / 100,
+    fov: fov === null ? null : Math.round(fov),
+  };
+}
+
+export function storePrefs(prefs: Prefs, store: Writer | null): void {
+  try {
+    if (prefs.full) store?.setItem(FULL_KEY, "1");
+    else store?.removeItem(FULL_KEY);
+    if (prefs.intense) store?.setItem(INTENSE_KEY, "1");
+    else store?.removeItem(INTENSE_KEY);
+    store?.setItem(DESK_KEY, JSON.stringify({ look: prefs.look, fov: prefs.fov }));
+  } catch {
+    /* a private window: they last as long as the page */
+  }
+}
+
+/** Everything of the visitor's that travels, as this browser keeps it. Cleaned: preferences and nothing else. */
+export function keptSettings(store: Reader | null): TravelSettings {
+  const prefs = loadPrefs(store);
+  const sound = json(store?.getItem(SOUND_KEY) ?? null);
+  const ui = (json(store?.getItem(UI_KEY) ?? null) ?? {}) as { scale?: unknown; motion?: unknown; wrist?: unknown };
+  return cleanSettings({
+    ...(sound && typeof sound === "object" ? { sound } : {}),
+    ...(typeof ui.scale === "number" ? { text: ui.scale } : {}),
+    ...(typeof ui.motion === "boolean" ? { motion: ui.motion } : {}),
+    ...(typeof ui.wrist === "string" ? { wrist: ui.wrist } : {}),
+    full: prefs.full,
+    intense: prefs.intense,
+    look: prefs.look,
+    ...(prefs.fov === null ? {} : { fov: prefs.fov }),
+  });
+}
+
+/**
+ * What goes on through a door: what this browser keeps, and over it whatever
+ * the place they are leaving said they have now. A world's menu is where most
+ * settings are changed, so what it says is the newer word.
+ */
+export function settingsToCarry(kept: TravelSettings, said: TravelSettings | undefined): TravelSettings {
+  return cleanSettings({ ...kept, ...said, ...(kept.sound || said?.sound ? { sound: { ...kept.sound, ...said?.sound } } : {}) });
+}
