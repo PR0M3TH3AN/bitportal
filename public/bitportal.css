@@ -418,6 +418,19 @@ bitlogin-auth {
 .you-mark { width: 14px; height: 30px; background: var(--bitportal-accent); border-radius: 7px 7px 0 0; box-shadow: 0 0 18px rgba(var(--bitportal-accent-rgb), 0.55); flex: none; }
 .you-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .you > .small { margin-top: 12px; }
+/* The place you sign in (src/account/booth.ts): the room's ground and sky behind the page, and the page a panel
+   standing in it. While the crossing's room is round the visitor, the panel is out of the way. */
+.booth-stage { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.booth-stage canvas { display: block; width: 100%; height: 100%; }
+body.booth { background: none; }
+body.booth .top, body.booth main { position: relative; z-index: 1; transition: opacity 0.35s ease, transform 0.35s ease; }
+body.booth .top { background: linear-gradient(rgba(4, 7, 11, 0.88), rgba(4, 7, 11, 0)); border-bottom-color: transparent; }
+body.booth .page.who { margin-block: clamp(10px, 3vh, 40px); padding: clamp(18px, 3.4vw, 40px); background: rgba(6, 11, 17, 0.82); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(var(--bitportal-accent-rgb), 0.32); box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55); }
+body.booth:not([data-crossing="none"]) main, body.booth:not([data-crossing="none"]) .top { opacity: 0; pointer-events: none; }
+body.booth:not([data-crossing="none"]) main { transform: translateY(14px); }
+@media (prefers-reduced-motion: reduce) { body.booth .top, body.booth main { transition: none; } }
+.everywhere { margin-top: 16px; font-weight: 600; }
+.everywhere input { margin-right: 8px; accent-color: var(--bitportal-accent); width: 18px; height: 18px; vertical-align: -3px; }
 /* The badge: small, under the sign-in, never in the way of it. */
 .powered { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; font: 500 0.78rem var(--mono); color: var(--bitportal-muted); letter-spacing: 0.02em; }
 .powered strong { color: var(--bitportal-ink); font-weight: 650; }

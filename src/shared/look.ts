@@ -6,7 +6,78 @@
  * a different figure every visit. A kept look goes to a world only through
  * the Airlock, and only when the visitor chose to go as themselves.
  */
-import { applyChoices, encodeLook, generatedLook, LOOK_COLORS, LOOK_PARTS, type Look, type LookPart } from "@nswp/core";
+import { applyChoices, encodeLook, generatedLook, LOOK_COLORS, LOOK_PARTS, type Look, type LookColor, type LookPart } from "@nswp/core";
+
+/** What each list and choice is called, on the page and in the room's menu. The values stay the protocol's. */
+export const LOOK_TITLES: Record<LookPart | LookColor, string> = {
+  color: "Main colour",
+  accent: "Trim",
+  light: "Light",
+  build: "Build",
+  head: "Head",
+  face: "Face",
+  accessory: "On top",
+  body: "Body",
+  shoulders: "Shoulders",
+  pattern: "Pattern",
+  finish: "Finish",
+};
+const WORDS: Record<string, string> = { none: "Nothing", split: "Two bars", dots: "Two dots", tee: "A T", plain: "Plain" };
+export const lookWord = (value: string): string => WORDS[value] ?? value[0]!.toUpperCase() + value.slice(1);
+
+/**
+ * Colours to step through where there is no colour picker: in the room's menu, on a phone, on a headset's wrist.
+ * The page's picker still gives any colour at all, and a colour chosen there is kept.
+ */
+export const LOOK_PALETTE: readonly { name: string; hex: string }[] = [
+  { name: "Mint", hex: "#3df2a0" },
+  { name: "Teal", hex: "#22b8b0" },
+  { name: "Sky", hex: "#5ab0ff" },
+  { name: "Indigo", hex: "#5b62e8" },
+  { name: "Violet", hex: "#a56bff" },
+  { name: "Rose", hex: "#ff6fa5" },
+  { name: "Ember", hex: "#ff6b4a" },
+  { name: "Amber", hex: "#ffb65c" },
+  { name: "Lemon", hex: "#f2e35a" },
+  { name: "Moss", hex: "#7fae4e" },
+  { name: "Bone", hex: "#e9e3d2" },
+  { name: "Slate", hex: "#5d6b7a" },
+  { name: "Ink", hex: "#1b2230" },
+];
+
+const rgbOf = (hex: string): [number, number, number] => {
+  const n = /^#?([0-9a-f]{6})$/i.exec(hex.trim())?.[1] ?? "000000";
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+};
+
+/** What a colour is called: the name of the one on the list it is nearest to. The chip beside it shows the colour itself. */
+export function colourName(hex: string): string {
+  const [r, g, b] = rgbOf(hex);
+  let best = LOOK_PALETTE[0]!;
+  let least = Infinity;
+  for (const c of LOOK_PALETTE) {
+    const [cr, cg, cb] = rgbOf(c.hex);
+    const d = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
+    if (d < least) [best, least] = [c, d];
+  }
+  return best.name;
+}
+
+/** The next choice on a list after this one, going round. */
+export function nextOf<T>(list: readonly T[], now: T): T {
+  return list[(list.indexOf(now) + 1) % list.length]!;
+}
+
+/** The look with one part or colour stepped on to the next choice. */
+export function stepLook(kept: KeptLook, what: LookPart | LookColor): KeptLook {
+  const now = lookOf(kept);
+  if ((LOOK_COLORS as readonly string[]).includes(what)) {
+    const hexes = LOOK_PALETTE.map((c) => c.hex);
+    return { seed: kept.seed, choices: { ...kept.choices, [what]: nextOf(hexes, String(now[what as LookColor]).toLowerCase()) } };
+  }
+  const list = LOOK_PARTS[what as LookPart] as readonly string[];
+  return { seed: kept.seed, choices: { ...kept.choices, [what]: nextOf(list, String(now[what as LookPart])) } };
+}
 
 const KEY = "bitportal:look";
 const PLAIN = "bitportal:go-plain";
@@ -119,6 +190,45 @@ export function setGoMode(mode: GoMode): void {
   } catch {
     /* the choice lasts for this trip only */
   }
+}
+
+const AS_GUEST = "bitportal:as-guest";
+
+/**
+ * Whether someone signed in has said to go to worlds as a guest all the same.
+ *
+ * Signed in is signed in everywhere: a world that has proved who it is is
+ * told who they are, with nothing to choose at each door (NSWP-10, "Signed in
+ * everywhere"). This is the way out of that, and it is theirs: set only by
+ * their own hand, on the sign-in page or at the Airlock, and kept on this
+ * device.
+ */
+export function goesAsGuest(): boolean {
+  try {
+    return localStorage.getItem(AS_GUEST) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setGoesAsGuest(guest: boolean): void {
+  try {
+    if (guest) localStorage.setItem(AS_GUEST, "1");
+    else localStorage.removeItem(AS_GUEST);
+  } catch {
+    /* the choice lasts for this trip only */
+  }
+}
+
+/**
+ * How a visitor goes through a door, before they change anything on the way.
+ * Signed in, to a site that may be told: by name, unless they said otherwise.
+ * Anyone else: as they last went, wearing their look or plain.
+ */
+export function startingMode(o: { canName: boolean; hasLook: boolean; asGuest: boolean; last: GoMode }): GoMode {
+  if (o.canName && !o.asGuest) return "name";
+  if (o.last === "plain") return "plain";
+  return o.hasLook ? "look" : "plain";
 }
 
 /** Pick every part and colour by chance, keeping the seed (and so the mark). */

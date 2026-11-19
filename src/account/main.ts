@@ -20,8 +20,10 @@ import { attachJumpList } from "../shared/jump.js";
 import { profileName, shortKey, watchBitLogin, type Session } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
+import { goesAsGuest, setGoesAsGuest } from "../shared/look.js";
 import { chooseOnce, readWhoDoor, tabStore } from "../shared/who.js";
 import { wayBack } from "./back.js";
+import { createBooth } from "./booth.js";
 
 declare global {
   interface Window {
@@ -35,6 +37,19 @@ attachJumpList($<HTMLButtonElement>("jump-button"), { relays: () => loadSettings
 
 const back = wayBack(location.search, readWhoDoor(tabStore(), Date.now()));
 const door = back.door ?? null;
+const query = new URLSearchParams(location.search);
+// Come from a world or from the room: they step out of the crossing's room, and leave by it.
+const fromAPlace = query.get("back") === "door" || query.get("back") === "walk";
+// Read on a headset's flat panel with a controller's ray: everything to press is larger.
+if (query.get("xr") === "1") document.body.classList.add("from-vr");
+const booth = createBooth($("booth"), { arriving: fromAPlace });
+/** Leave for a place by the crossing's room, when that is how they came and where they are going. */
+const leaveFor = async (go: () => void, label: string): Promise<void> => {
+  const toAPlace = !!back.href && (back.href.startsWith("/go/") || back.href.startsWith("/walk/"));
+  if (booth && toAPlace) await booth.leave({ title: door ? door.host || "The world you came from" : "Your room", address: door ? door.host : location.host });
+  void label;
+  go();
+};
 for (const [id, text, how] of [
   ["carry-on", back.named ?? back.label, "name"],
   ["as-guest-in", back.guest, "guest"],
@@ -43,20 +58,26 @@ for (const [id, text, how] of [
 ] as const) {
   const link = $<HTMLAnchorElement>(id);
   link.textContent = text;
-  if (back.href) link.href = back.href;
-  else {
-    link.href = "#";
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      history.back();
-    });
-  }
-  // Back to a world: which button they press is how they go, for this one trip. The Airlock reads it once.
-  if (door && how) link.addEventListener("click", () => chooseOnce(how, door, tabStore()));
+  link.href = back.href ?? "#";
+  let going = false;
+  link.addEventListener("click", (e) => {
+    // A press with a key held is the visitor asking their browser for something else: left to it.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (going) return;
+    going = true;
+    // Back to a world: which button they press is how they go, for this one trip. The Airlock reads it once.
+    if (door && how) chooseOnce(how, door, tabStore());
+    const href = back.href;
+    void leaveFor(() => (href ? location.assign(href) : history.back()), text);
+  });
 }
-// Going back to a world, someone signed in can go by name or not; what going by name tells that site is said here.
+// Going back to a world, someone signed in can go by name or not, for that one trip.
 $("as-guest-in").hidden = !door;
-$("name-note").hidden = !door;
+// Signed in is signed in everywhere, unless they say otherwise. It is theirs to say, here, by their own hand.
+const asMyself = $<HTMLInputElement>("as-myself");
+asMyself.checked = !goesAsGuest();
+asMyself.addEventListener("change", () => setGoesAsGuest(!asMyself.checked));
 if (door) document.title = `Who you are at ${door.host || "the world you were in"} · BitPortal`;
 
 const who = $("who");

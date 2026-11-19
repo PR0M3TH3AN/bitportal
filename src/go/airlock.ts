@@ -41,7 +41,7 @@ import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { crossingFor } from "../shared/crossing.js";
 import { checkedFor, fitFor, formOf } from "../shared/fit.js";
-import { goMode, inlineLook, loadLook, setGoMode, type GoMode } from "../shared/look.js";
+import { goesAsGuest, goMode, inlineLook, loadLook, setGoesAsGuest, setGoMode, startingMode, type GoMode } from "../shared/look.js";
 import { forgetWhoDoor, keepWhoDoor, tabStore, takeOnce, whoDoorFrom } from "../shared/who.js";
 import { issuePass } from "../shared/pass.js";
 import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
@@ -283,14 +283,22 @@ async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: 
 async function render(): Promise<void> {
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
-  // Asked, from inside a world, to say who they are first (who.ts). That is done on the sign-in page and nowhere
-  // else, so they are sent there with the door kept for the way back. Nothing has been checked or decided yet:
-  // the door is checked when they come back through here, like any other.
+  // Asked, from inside a world, for something of their own first: to say who they are, or to change how they look
+  // (who.ts). Both are kept here, so they are brought here to do it, with the door kept for the way back: to the
+  // place they sign in, or to the room, where a look is changed. Either way they step out of the crossing's room
+  // as they would coming home, with their settings and their way of moving as they left the world. Nothing has
+  // been checked or decided yet: the door is checked when they come back through here, like any other.
   if (req?.who) {
     const door = whoDoorFrom(location.hash, Date.now());
     if (door) {
       keepWhoDoor(door, tabStore());
-      location.replace("/account/?back=door");
+      try {
+        if (req.settings) sessionStorage.setItem(ARRIVED_SETTINGS, JSON.stringify(req.settings));
+        if (req.moving === "intense") sessionStorage.setItem(ARRIVED_MOVING, req.immersive ? "headset" : "desk");
+      } catch {
+        /* the place they arrive keeps what it had */
+      }
+      location.replace(req.who === "look" ? `/walk/#look${req.immersive ? "&xr=1" : ""}` : `/account/?back=door${req.immersive ? "&xr=1" : ""}`);
       return;
     }
   }
@@ -468,10 +476,10 @@ async function render(): Promise<void> {
   // By name is for a site that has proved it is who it says: a pass names the visitor's key for good.
   const canName = !!who && verified;
   const remembered = goMode();
-  // Asked for on the sign-in page a moment ago, for this door: that is their choice for this trip. Otherwise, as
-  // they last went anywhere.
-  const wanted: GoMode = once === "name" ? "name" : once === "guest" ? (remembered === "plain" ? "plain" : "look") : remembered;
-  const mode: GoMode = wanted === "name" ? (canName ? "name" : mine ? "look" : "plain") : wanted === "look" && !mine ? "plain" : wanted;
+  // Signed in is signed in everywhere (NSWP-10): to a site that has proved who it is they go by name, with nothing
+  // to choose at each door, unless they have said to go as a guest. What they pressed a moment ago where they
+  // signed in, for this door, comes first: it is their choice for this trip.
+  const mode: GoMode = startingMode({ canName: canName && once !== "guest", hasLook: !!mine, asGuest: once === "name" ? false : goesAsGuest(), last: remembered === "name" ? "look" : remembered });
   // They asked to go by name and can't: that is something to be told, not hurried past.
   const unmet = once === "name" && mode !== "name";
   const NOTES: Record<GoMode, string> = {
@@ -502,6 +510,8 @@ async function render(): Promise<void> {
           ...(a.nswpAware ? [el("a", { href: "/look/" }, "Make a look"), " to be recognised from world to world, or ", el("a", { href: "/account/?back=history" }, "sign in"), " to go by name."] : []),
         );
   identity.addEventListener("change", () => {
+    // Their own hand, on their own client's screen: as a guest from now on, or as themselves again.
+    if (who) setGoesAsGuest(chosen() !== "name");
     note.textContent = NOTES[chosen()];
     note.className = "small go-as-note";
   });
