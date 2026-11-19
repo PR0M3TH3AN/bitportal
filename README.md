@@ -288,6 +288,30 @@ tells you.
 Signed in, your profile takes the width of the page, and BitLogin's own
 element is scaled as one piece so its text is the size of the page's.
 
+## Names and pictures
+
+People are shown by the name they chose for themselves on Nostr, never by a
+string of hex: you, on every page, and whoever signed a list or announced a
+world. Where which key did something is what matters (a list's signer, a
+world's announcer), the short form of the key is shown beside the name,
+because anyone can call themselves anything. Someone with no name is shown
+by the short form of their key.
+
+Profiles are read from your own relays, kept in this browser, and asked for
+again in the background, so a page shows names at once. Your own picture is
+on the sign-in page and beside your name.
+
+When you go by name, the pass that says so carries your name and where your
+picture is, both from your Nostr profile, so the people in a room see who
+you are. Your own room here does the same: it signs a pass for itself, and
+you see each other's names and pictures. A picture over someone's head is a
+button: press it to choose them, and the menu comes up on what you can do.
+
+A picture is fetched from wherever its owner keeps it, which tells that
+place your address, as reading Nostr anywhere does. "Show people's own
+pictures" in Settings turns that off, here and in every world. A picture
+shows only if the place that holds it lets a web page read it.
+
 ## How old a world's controls are
 
 Each world carries its own copy of the kit that draws its menu and moves

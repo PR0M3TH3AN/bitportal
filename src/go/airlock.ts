@@ -46,7 +46,8 @@ import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goesAsGuest, goMode, inlineLook, loadLook, setGoesAsGuest, setGoMode, startingMode, type GoMode } from "../shared/look.js";
 import { forgetWhoDoor, keepWhoDoor, tabStore, takeOnce, whoDoorFrom } from "../shared/who.js";
 import { issuePass } from "../shared/pass.js";
-import { checkedSigner, profileName, quietSigner, readSignedIn, shortKey, type Signer } from "../shared/session.js";
+import { checkedSigner, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
+import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
 import { keptSettings, settingsToCarry } from "../shared/prefs.js";
@@ -492,10 +493,23 @@ async function render(): Promise<void> {
   // Who is signed in, from BitLogin's public record: no widget, nothing asked. `?signer=test` stands in a throwaway.
   const testKey = new URLSearchParams(location.search).get("signer") === "test" ? crypto.getRandomValues(new Uint8Array(32)) : null;
   const who: { pubkey: string; name?: string } | null = !a.nswpAware ? null : testKey ? { pubkey: getPublicKey(testKey), name: "Test visitor" } : await readSignedIn();
-  // The name people will see is the one in the visitor's own profile, when their sign-in doesn't carry one.
-  if (who && !who.name) {
-    const name = await profileName(who.pubkey, loadSettings().relays);
-    if (name) who.name = name;
+  // The name and the picture people will see are the ones in the visitor's own Nostr profile (profiles.ts). What
+  // this browser already knows of it is used at once; it is asked for here only the first time.
+  let picture = "";
+  // The throwaway test identity may be given a throwaway picture, so pictures can be tried without anybody's own.
+  if (testKey) {
+    try {
+      picture = sessionStorage.getItem("bitportal:test-picture") ?? "";
+    } catch {
+      /* none */
+    }
+  }
+  if (who && !testKey) {
+    if (!profileOf(who.pubkey)) await fetchProfiles([who.pubkey], loadSettings().relays, { timeoutMs: 2500 });
+    else void fetchProfiles([who.pubkey], loadSettings().relays);
+    const mineNow = profileOf(who.pubkey);
+    if (mineNow?.name) who.name = mineNow.name;
+    picture = mineNow?.picture ?? "";
   }
   // By name is for a site that has proved it is who it says: a pass names the visitor's key for good.
   const canName = !!who && verified;
@@ -514,14 +528,16 @@ async function render(): Promise<void> {
   const note = el("p", { class: unmet ? "small go-as-note verify-warn" : "small go-as-note", id: "go-as-note", role: "status" }, unmet ? (who ? "This site hasn't proved it is the one its announcement names, so you can't go there by name. You would go as a guest." : "You aren't signed in in this browser, so you would go as a guest.") : NOTES[mode]);
   const option = (value: GoMode, text: string, enabled = true) =>
     el("label", {}, el("input", { type: "radio", name: "go-as", value, id: `go-${value}`, ...(mode === value ? { checked: "" } : {}), ...(enabled ? {} : { disabled: "" }) }), ` ${text}`);
-  const chosen = (): GoMode => (document.querySelector<HTMLInputElement>('input[name="go-as"]:checked')?.value as GoMode | undefined) ?? "plain";
+  // Asked of the card's own body, which holds the choice whether or not the card is on the page yet: asked of the
+  // page, the line that says how they are going read "as a guest" for someone going by name, until they touched it.
+  const chosen = (): GoMode => (body.querySelector<HTMLInputElement>('input[name="go-as"]:checked')?.value as GoMode | undefined) ?? "plain";
   const identity =
     mine || who
       ? el(
           "fieldset",
           { class: "identity" },
           el("legend", {}, "Go as"),
-          who ? option("name", `Yourself, by name: ${who.name ?? shortKey(who.pubkey)}${testKey ? " (testing: a throwaway identity)" : ""}${verified ? "" : " (only for verified worlds)"}`, canName) : "",
+          who ? option("name", `Yourself, by name: ${who.name ?? label(who.pubkey)}${testKey ? " (testing: a throwaway identity)" : ""}${verified ? "" : " (only for verified worlds)"}`, canName) : "",
           mine ? option("look", who ? "A guest, wearing your look" : "Yourself, wearing your look") : "",
           option("plain", "Plain: nothing of yours goes with you"),
           note,
@@ -667,7 +683,7 @@ async function render(): Promise<void> {
         if (!quiet) throw new Error("locked");
         try {
           // A pass is for the place it is shown at: on a development server, the local copy.
-          return await issuePass(quiet.signer, { origin: new URL(await toLocal(a.url)).origin, ...(who.name ? { name: who.name } : {}) });
+          return await issuePass(quiet.signer, { origin: new URL(await toLocal(a.url)).origin, ...(who.name ? { name: who.name } : {}), ...(picture ? { picture } : {}) });
         } finally {
           quiet.close();
         }
@@ -711,7 +727,7 @@ async function render(): Promise<void> {
   const sayGoing = () => {
     if (!a.nswpAware) return void (going.textContent = "This site hasn't adopted the protocol, so nothing about you goes with you.");
     const how = mine || who ? chosen() : "plain";
-    const as = how === "name" && who ? `by name, as ${who.name ?? shortKey(who.pubkey)}` : how === "look" ? "as a guest, wearing your look" : "as a guest, with nothing of yours";
+    const as = how === "name" && who ? `by name, as ${who.name ?? label(who.pubkey)}` : how === "look" ? "as a guest, wearing your look" : "as a guest, with nothing of yours";
     const room = stayBox ? (stayBox.checked ? `, staying in the room${micBox?.checked ? " with your microphone on" : ""}` : ", leaving the room you were in") : "";
     going.textContent = `Going ${as}${room}.`;
   };

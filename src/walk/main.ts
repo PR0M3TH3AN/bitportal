@@ -21,7 +21,7 @@ import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/trav
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
 import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
-import { inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
+import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
 import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
@@ -33,7 +33,9 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
-import { readSignedIn, shortKey } from "../shared/session.js";
+import { quietSigner, readSignedIn } from "../shared/session.js";
+import { issuePass } from "../shared/pass.js";
+import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { startSync } from "../shared/sync-run.js";
 import { createJumpList } from "../shared/jump.js";
 import { addComputers, type Computers } from "./computers.js";
@@ -370,10 +372,36 @@ async function start(): Promise<void> {
   // Who they are and how they look are reached from here (you.ts, added further down, once there is a room to
   // do them in). This is who the room knows is signed in, from BitLogin's public record.
   let signedInAs = "";
-  void readSignedIn().then((who) => {
-    signedInAs = who ? (who.name ?? shortKey(who.pubkey)) : "";
+  // Who they are in their own room: signed in is signed in here too (NSWP-10). A pass for this site is signed the
+  // way the Airlock signs one for a world, with the name and picture from their own profile, so the people they
+  // share the room with see who they are. Not for someone who has said to go about as a guest.
+  let roomIdentity: Awaited<ReturnType<typeof issuePass>> | undefined;
+  const nameMe = async (pubkey: string): Promise<void> => {
+    if (goesAsGuest()) return void (roomIdentity = undefined);
+    const quiet = await quietSigner(pubkey);
+    if (!quiet) return;
+    try {
+      const mine = profileOf(pubkey);
+      roomIdentity = await issuePass(quiet.signer, { origin: location.origin, ...(mine?.name ? { name: mine.name } : {}), ...(mine?.picture ? { picture: mine.picture } : {}) });
+    } catch {
+      /* they are a guest in the room until it can be signed */
+    } finally {
+      quiet.close();
+    }
+  };
+  void readSignedIn().then(async (who) => {
+    // By the name they chose for themselves: never a string of hex.
+    const sayWho = () => (signedInAs = who ? profileOf(who.pubkey)?.name || who.name || label(who.pubkey) : "");
+    sayWho();
     // Settings kept with their profile: fetched behind the room, which has already started from this browser's own.
     startSync();
+    if (!who) return;
+    await fetchProfiles([who.pubkey], settings.relays);
+    sayWho();
+    controls.setTarget("");
+    await nameMe(who.pubkey);
+    // A pass lasts four hours. Someone who stays longer is signed for again before it runs out.
+    setInterval(() => void nameMe(who.pubkey), 3 * 3600 * 1000);
   });
   addEventListener("bitportal:synced", (e) => {
     const took = ((e as CustomEvent).detail as { took?: string[] } | undefined)?.took ?? [];
@@ -841,6 +869,8 @@ async function start(): Promise<void> {
     // A panel hangs in front of whatever is behind it, a door included.
     const onPanel = panels?.pick(raycaster);
     if (onPanel) return { mesh: null, onPanel, say: "", act: () => panels!.press(onPanel) };
+    // Someone's picture, over their head, is a button: pressing it chooses them.
+    if (presence.personAt(raycaster)) return { mesh: null, say: "", act: () => void presence.pressAt(raycaster) };
     for (const hit of raycaster.intersectObjects(clickables.flatMap((c) => (c.mesh ? [c.mesh] : [])), false)) {
       const found = clickables.find((c) => c.mesh === hit.object);
       if (!found) continue;
@@ -1021,7 +1051,7 @@ async function start(): Promise<void> {
   let travelling = (): { joined: boolean; mic: boolean } => ({ joined: false, mic: false });
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
   let myLook = loadLook();
-  const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), onChange: () => refreshRoom() });
+  const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
   // And they can see it too: their own figure stands to one side, as others will see it.
   // It is drawn again whenever they change it, which they do from the menu, standing here (you.ts).
   let mirror: Figure | null = null;
