@@ -56,9 +56,9 @@ describe("a tally for each place on show", () => {
 
   it("shares a door's plate with a warning where items are part of the game there", () => {
     const fit = { ok: true, reason: "" };
-    const world = { modes: ["inline-3d"], comfort: {}, contentWarning: undefined } as const;
-    expect(plateMarks({ ...world, items: "play" }, fit, false).find((m) => /Items/.test(m.text))).toEqual({ text: "Items in play", tone: "warn" });
-    expect(plateMarks({ ...world, items: "allowed" }, fit, false).find((m) => /Items/.test(m.text))).toEqual({ text: "Items work", tone: "plain" });
+    const world = { modes: ["inline-3d"], comfort: {}, contentWarning: undefined };
+    expect(plateMarks({ ...world, items: "play" as const }, fit, false).find((m) => /Items/.test(m.text))).toEqual({ text: "Items in play", tone: "warn" });
+    expect(plateMarks({ ...world, items: "allowed" as const }, fit, false).find((m) => /Items/.test(m.text))).toEqual({ text: "Items work", tone: "plain" });
     // A place that says nothing draws and runs nothing carried, and its plate says nothing of it.
     expect(plateMarks(world, fit, false).some((m) => /Items/.test(m.text))).toBe(false);
   });
