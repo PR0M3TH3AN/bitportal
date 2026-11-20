@@ -22,7 +22,7 @@ import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -35,6 +35,7 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
+import { homeBag } from "../shared/bag.js";
 import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
@@ -1415,6 +1416,21 @@ async function start(): Promise<void> {
     say: (text) => controls.say(text),
     presenting: () => renderer.xr.isPresenting,
   });
+  // Their bag (NSWP-17): looked through and changed here, at home. Nothing carried is drawn in this room.
+  const carried = homeBag({ me: () => (goesAsGuest() ? null : signedInKey), relays: settings.relays, signerFor: quietSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });
+  const baggingTab = addBagControls(controls, {
+    bag: carried.bag,
+    // Descriptions only, from relays. No model is ever fetched from here.
+    items: createItems({ relays: settings.relays, fetchBytes: async () => null }),
+    me: () => (goesAsGuest() ? null : signedInKey),
+    rule: () => "none",
+    holding: () => "",
+    hold: async () => ({ ok: false, said: "Nothing carried is drawn or works in this place." }),
+    allowed: carried.allowed,
+    ask: carried.ask,
+    keyboard: () => panels?.keyboard ?? null,
+    presenting: () => renderer.xr.isPresenting,
+  });
   // What someone has done in the worlds this copy knows, on their card (NSWP-15, NSWP-16): asked of relays when
   // the visitor opens the card, and shown only where it is marked with that world's own address.
   const about = homePersonLines({
@@ -1428,6 +1444,7 @@ async function start(): Promise<void> {
   refreshFollowing = () => {
     followingTab.refresh();
     messagingTab.refresh();
+    baggingTab.refresh();
   };
   showMaker = (pubkey) => {
     followingTab.choose(pubkey);

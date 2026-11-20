@@ -37,6 +37,13 @@ describe("what BitPortal asks its sign-in address to let it do", () => {
     for (const kind of [0, 3, 4, 5, 10000, 10002, 22242]) expect([...more.sign, ...more.read]).not.toContain(kind);
     expect(permissionsFor(true, ["people", "messages"]).sign).toContain(3);
   });
+  it("asks to change their bag only where a visitor has pressed for it, and for nothing else beside", () => {
+    expect(permissionsFor(true).sign).not.toContain(37308);
+    const more = permissionsFor(true, ["bag"]);
+    expect(more).toEqual({ ...permissionsFor(true), sign: [1, 27300, 27302, 27303, 30004, 30078, 37300, 37305, 37308] });
+    // Not who they follow or their messages, unless those were asked for too.
+    for (const kind of [3, 13, 1059, 10050]) expect([...more.sign, ...more.read]).not.toContain(kind);
+  });
   it("is the same without the pass and the grants, where the sign-in address won't sign those", () => {
     const less = permissionsFor(false);
     for (const kind of RESERVED_KINDS) expect(less.sign).not.toContain(kind);
