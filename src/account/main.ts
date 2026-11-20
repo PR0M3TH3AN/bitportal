@@ -131,12 +131,8 @@ const show = (session: Session | null, message?: string) => {
     link.textContent = host;
     why.replaceChildren("This profile is kept by BitLogin. Its keys, its recovery, its other ways to sign in and the sites you have allowed are at ", link, ".");
   } else if (switching) {
-    const link = document.createElement("a");
-    link.href = address;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.textContent = `sign out at ${host}`;
-    why.replaceChildren("BitPortal is signed out. ", `${host} still remembers the profile you used, and its window signs you in as that one. To be someone else, `, link, " first, then sign in here.");
+    // BitLogin's window signs them in as the profile it remembers, and offers another there.
+    why.textContent = `BitPortal is signed out. To be someone else, press Sign in: the window at ${host} shows who it would sign you in as, and has "Use a different account" beside it.`;
   } else {
     why.textContent = "So people can know you by name from world to world, and the worlds you announce are yours.";
   }
