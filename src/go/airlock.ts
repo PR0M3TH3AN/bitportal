@@ -10,6 +10,7 @@
  */
 import {
   audienceOf,
+  categoryWords,
   wayWithoutDestination,
   HOME_CAPABILITY,
   normalizeUrl,
@@ -441,6 +442,9 @@ async function render(): Promise<void> {
   // What kind of place this is, and whether this device can run it (spec §6.7).
   const vr = navigator.xr ? await navigator.xr.isSessionSupported("immersive-vr").catch(() => false) : false;
   if (w) {
+    // Its maker's own word for what kind of place it is, first: it is what most people want to know.
+    const category = categoryWords(w.category);
+    if (category) chips.append(chip(category));
     const kind = placeKind(w);
     if (kind) chips.append(chip(kind));
     const immersiveOnly = w.modes.length > 0 && w.modes.every((m) => m === "immersive-vr" || m === "immersive-ar");
