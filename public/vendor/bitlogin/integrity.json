@@ -1,87 +1,87 @@
 {
   "name": "@bitlogin/widget",
   "version": "0.1.0",
-  "commit": "c1a7ae8a5c8d63ff12ba7be74341219773adef75",
+  "commit": "9311a0058da83482f7ae5efd8c9e86eb0454cab4",
   "files": {
     "bitlogin-client.js": {
       "bytes": 5558,
-      "sha256": "02faad1c329a5b15fdf1f7675b33b3355f2fbd52fdc223addd35b3d956d4d3ae",
-      "sri": "sha384-l4HGy3duUG5SSUupTAQARYRVUXIMVqRPeI1HjngPTuoyuv4MKTDsUmSamvL3N6Je"
+      "sha256": "fa850e98ca111e572665abbf46bb189bbb62916a36e4bf85b4c3c8e04bd9cb1b",
+      "sri": "sha384-4CkQ2b5xsvshu01CNPdO1rtUz1U0NApcSyW3wawG7sj1mq5QYJrbYPCU9SE2tNQb"
     },
     "bitlogin-headless.js": {
       "bytes": 96,
-      "sha256": "23b18af9098366588300b6b2ca0837fd4fbb369ff298c1352df19bc81e665792",
-      "sri": "sha384-ANBy/Vg2tKxVXXvlqFtidfUHdfZuxdC5UJsCJd2yc56qx0Qjrlv2h+Ef2Im1EEsA"
+      "sha256": "756e6c547b74a745004805e89fa1444aa57182ce4088e48dd5d32046592c1b52",
+      "sri": "sha384-iaeX7VusKKN6iZBjRUSAl3c1cn5N81XEln5lXom4dnsEHUZX6EPXVnCjZQxunicB"
     },
     "bitlogin-session.js": {
       "bytes": 1337,
       "sha256": "fc7484a7e6897a3d2cbaefaaebb6a667ce7d3eefdfb868673b41b1be8e2eacd5",
       "sri": "sha384-QYQ8Yt2an8SE1pE3K9e9zP/abjsZG9Kgo8KBK1DoKdN0KCkte5Ct8ljFv4+fNuhF"
     },
-    "bitlogin-shared-BfY0khWO.js": {
+    "bitlogin-shared-3bwrMYp8.js": {
       "bytes": 5542,
-      "sha256": "1fe41c11dc325130639e02c3b8354d0759b7b34115b904039bdad655fe5d7d5f",
-      "sri": "sha384-okhnY83PHmeR3Ibui/+5FwCmlwKR1sOb/EqSNvpGW+W66xkbtAVrxltoxeBVXxDX"
+      "sha256": "e42f64b54acda10e8795040e379cccfa6e337dc802bc3160770a9be7ac6167f6",
+      "sri": "sha384-IdIFnlFEx7MEnzVaAx7Qc6NvppvSWHoNcNW59DrVk/JHqzrknX4+weac/PkDSdiY"
     },
-    "bitlogin-shared-CFGY85HS.js": {
-      "bytes": 81094,
-      "sha256": "4f02a2a43198a76515db7126504c43689b7aaf9860c1a6ae66f1af97b8bd0c5a",
-      "sri": "sha384-MurDzfLtwVexn2nyh+yuVmTjv54I+m44yCOp0jFYua56taQ8yIAT6wNokV7QoJ6s"
-    },
-    "bitlogin-shared-CK86q_VY.js": {
-      "bytes": 208323,
-      "sha256": "9f96efaf1d59263e7ad9d88d9934bb698bb0774d435abf5605291b05b05b5e1c",
-      "sri": "sha384-FoEcfhq7OnWUdtH2rmF9VWxUb25plw3P5uCX2FSyW5xyuhCgJofTPIJ1Gy8Q5hlv"
-    },
-    "bitlogin-shared-CvOFcR_u.js": {
-      "bytes": 12045,
-      "sha256": "283cb71c7ecede27817b44f726a20dd120afc97fe34255a906ccb2ea70201f38",
-      "sri": "sha384-JuqqQQJT5WcjgYAZYkwUEBB43HX1HLbc1geRi+SdMV3lzt2xNYX+AHZpLoStM+gN"
-    },
-    "bitlogin-shared-D74d_dQp.js": {
-      "bytes": 3451,
-      "sha256": "c20cc029c51e8cd11792e26bd938524330d2ab1f49fe558d00648cf5ef7c613a",
-      "sri": "sha384-vnBlB3jZaA5gmqVbxpKi1bj25wLAdTyTTZs+oDQ8G7lYlSJxuTIY9oc//kMda70i"
-    },
-    "bitlogin-shared-DTsFoqOu.js": {
-      "bytes": 545711,
-      "sha256": "eedffb7d6b61716f471e79b92e5baf42a2de83d1429ed4602e618dafaed7914f",
-      "sri": "sha384-uIg4n9RI2jaj6cgUpDxiZseTL9GtGvThtjOXWbHNSYulNsCW4rhLq3mYgdtj48/i"
-    },
-    "bitlogin-shared-DY8Ndhn6.js": {
-      "bytes": 152123,
-      "sha256": "82b958d66873071a738cff9181f1b64b48d74cc17e608a92a39a56c9c256a187",
-      "sri": "sha384-nT0M4m1fKQXGk2wHylLMNBwqrsl7p7OXPyyYlZKZ1hSVpIBmnf931uPpCEX8PRZB"
-    },
-    "bitlogin-shared-NfeEZyQi.js": {
+    "bitlogin-shared-BFW8D8aZ.js": {
       "bytes": 483717,
-      "sha256": "ec4d0fbbc6553f008039f41140b6c9e832a5b6bff504fe81d4898c604f135119",
-      "sri": "sha384-q1UaLnv62TvzGZj4DKDWShS46bq6utS6ZXq2yi3BB3KWTganhfOsXiAVoWk3YF1k"
+      "sha256": "f8fc3b1377714d0485b59d52df43b1019df64cbeabd012358bbd12ee34b342c4",
+      "sri": "sha384-lKInB/mzg5f/4FNeQkSokiqvbp7lhpb813f654oapIEHGSkhqSuJJrgvvcpHDZeR"
     },
-    "bitlogin-shared-U7Szz15o.js": {
-      "bytes": 31087,
-      "sha256": "5eba9a2280ec17a83f51f753e3d62f5deb2dddb92037e4c2922bde315f9edf84",
-      "sri": "sha384-o4CMeH+L46wSspEhIxNBi0/RwQ1qgJSblifsT8kTkwZL/ua7PSZzvnWiXLfEGbsQ"
+    "bitlogin-shared-CGO-deNx.js": {
+      "bytes": 545711,
+      "sha256": "6e26221d03efd286c4d020159aaa1863d488aebd081911592b494b8f342c7ad4",
+      "sri": "sha384-9KfOxUAVl7SCzQQStxhzgzPLgJSUwl2/FKi5iHMvrZ4YmB5C9fXfMJcJtpG0txG4"
+    },
+    "bitlogin-shared-CPV3bQ-1.js": {
+      "bytes": 35465,
+      "sha256": "27a9f92b554816aba68250764a92d4ca985af7772018ff844f3054935e4c5c14",
+      "sri": "sha384-xCb372kPDfux/JSzsixFQyp1ITN5QN180X/J/saA6N4QgHl1Ity87UHXdJs8q0cR"
+    },
+    "bitlogin-shared-Cj9s0_W_.js": {
+      "bytes": 81105,
+      "sha256": "654f500dbf6275d86df08b8618e156cc1ade67ce7095a6d2477973707172ef30",
+      "sri": "sha384-+peKIOmShgn/ntH/g2SdOejuHYEYFtJIaUfHyHM7QLxZyWR3jOfpf8whw3TBI1G8"
+    },
+    "bitlogin-shared-D5YLu70u.js": {
+      "bytes": 208323,
+      "sha256": "d2d28b23f850e25581b18951679a248729ee7ad991bcd20b8cf9421263fd4d0d",
+      "sri": "sha384-sEHM92I4v9UAqJfVhmOY7uGggj3cJ44YSkMM7Q/ACfEL7IqurrvyXbXqzyPoTpJC"
+    },
+    "bitlogin-shared-D6Hzbnis.js": {
+      "bytes": 3451,
+      "sha256": "53c97b255622312070091975fd0cec74be0fa7eb8e714d384c68853a70cc7539",
+      "sri": "sha384-0UwU1PTsWweCsGvmmL44m1mHM5q60166C30bwwLP01CX8ieirxN7lcMld1k205dC"
+    },
+    "bitlogin-shared-DO_m8vK9.js": {
+      "bytes": 152123,
+      "sha256": "5097c1219edc4139e985a789258a7d200231e151cff99ba9cac79d663ed3ff78",
+      "sri": "sha384-TGTmtsXOzOeRHgHnM5j2AyONxek9FfGksNLrNxxA4EctJruL9olXDSeFnOs8hpev"
+    },
+    "bitlogin-shared-Dg1jplWn.js": {
+      "bytes": 12476,
+      "sha256": "edf23d68e70fa1da0798101473ec0e1db3217d05e7adf408314a3c6aaf981095",
+      "sri": "sha384-Q98SH0tKH5/YydINXNdTZCMMrC02GQ2c/BjVTD1+EBraA7saOo7MaAODxXvO8fR0"
     },
     "bitlogin-signer.js": {
-      "bytes": 7488,
-      "sha256": "32a43d67226828458f9591194f83af566821541e27615032ea25c50c4f9c840e",
-      "sri": "sha384-95rMubVyU2770FBi531WwyVw4Y5hgV2I1bCF0nJqLn8IgXDXtKXDTjv2UYBve6Yx"
+      "bytes": 8385,
+      "sha256": "dcdc5d42c49d2e6ad79faced0d8b7f05c9b285aa56f656c292cbcdaa20e235a2",
+      "sri": "sha384-1aClPx4fBmIFH37v/nWcs/og/zmxqTkn7qSG0CrhXYooUS4JGIHaKfOYPMjGdvB7"
     },
     "bitlogin-window.js": {
-      "bytes": 6407,
-      "sha256": "2cefbb6f1ab465e956ca21a85460300446aa4c8c60655ca2f4b3d86b1fad33c9",
-      "sri": "sha384-HmF+rW2wrbDppKm1Ul8hxpmYPrNqJN5oAP1z9uVm2G1PI07Y3OxUVSq7zoyHwv7b"
+      "bytes": 6529,
+      "sha256": "f96100bd49c6cc7f81a411c727a555909eca6b797af8644142830ee72e9f04a7",
+      "sri": "sha384-OVxgrF1svMdPp6d5dH5ySp6W0ZKroR/lRy5vXuXWQYsEh0uUw1BJFl+odcpYgqvL"
     },
     "bitlogin.js": {
       "bytes": 183536,
-      "sha256": "4351c2bdd54839ea9fd01d7e173227edce2bbbae2685981cac896c9935d012a5",
-      "sri": "sha384-gBcGmNuvSY8CC7L+AKyjOZLPWpJxQmAiiWmiOgskDp4QvgAXz1NsEnRD8gslckth"
+      "sha256": "1a065a90c4decd4b2a84f7ec5232dbb6aa6e8439224758b13cbac88ae8d0b314",
+      "sri": "sha384-DBrQjsOClXZIYixytE2UTiyDpjhxslDdiH7szh6YOKMhxtIGFKgNvu6vjPzZPTjA"
     },
     "cryptoWorker.js": {
-      "bytes": 173214,
-      "sha256": "e6d98bdb89a6d2a098b70d219723382a520aafb83eda08640884219ac4b8b35b",
-      "sri": "sha384-cCWwFe1ToEkZVmv3rDP1EUNpLKbmFjteOwin4uCbTEE8717hPXhVelDh2JVnv2M1"
+      "bytes": 174752,
+      "sha256": "b1187b0f585af17b1602abc78d4b967805bf6e2135b052fd366d49aa805311e7",
+      "sri": "sha384-PiozLaJlSQvTQNq7XEEh9EyH7jougxH4/pTLZjSdl5+pbIxeyWb9CUAo0OyErJ33"
     }
   }
 }

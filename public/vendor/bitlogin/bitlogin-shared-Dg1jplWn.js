@@ -187,6 +187,15 @@ class u {
   worldFollow(e) {
     return this.call("worldFollow", e);
   }
+  worldSeal(e) {
+    return this.call("worldSeal", e);
+  }
+  worldUnwrap(e) {
+    return this.call("worldUnwrap", e);
+  }
+  worldReach(e) {
+    return this.call("worldReach", e);
+  }
   signerKeep(e) {
     return this.call("signerKeep", e);
   }
@@ -268,7 +277,7 @@ class u {
   }
 }
 const p = "BitLogin: no session is unlocked. Call restore() first, or have the user sign in once via <bitlogin-auth>.";
-async function y(c = {}) {
+async function d(c = {}) {
   const e = new u();
   await e.configure({
     vaultRelayUrls: c.vaultRelays ?? [],
@@ -350,6 +359,15 @@ async function y(c = {}) {
     async worldFollow(t, r) {
       return e.worldFollow({ list: t, ...r });
     },
+    async worldSeal(t, r) {
+      return e.worldSeal({ to: t, text: r });
+    },
+    async worldUnwrap(t) {
+      return (await e.worldUnwrap({ event: t })).message;
+    },
+    async worldReach(t) {
+      return e.worldReach({ relays: t });
+    },
     async acceptHandoff(t) {
       const r = await e.handoffAccept(t);
       return i = r.everydayPublicKey, { pubkey: i, ...r.app ? { app: r.app } : {}, ...r.site ? { site: r.site } : {}, ...r.profile ? { profile: r.profile } : {}, ...r.remember ? { remember: !0 } : {}, ...r.family ? { family: r.family } : {}, ...r.more?.length ? { more: r.more } : {} };
@@ -400,5 +418,5 @@ async function y(c = {}) {
 }
 export {
   u as W,
-  y as c
+  d as c
 };
