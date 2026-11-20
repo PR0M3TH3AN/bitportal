@@ -9,9 +9,9 @@
  * first time they put something in or take something out, in BitLogin's own window (`askFor`). Until then
  * nothing here can sign a bag.
  *
- * Nothing carried is drawn in this room: drawing an item means fetching its model from wherever its maker keeps
- * it, and this site reaches only itself, its sign-in address and relays. So the room's rule for items is "none",
- * and the tab says so.
+ * Nothing carried is drawn in this room. That is a choice, not something the site's rules force: the room's
+ * rule for items is "none", and the tab says so. Whether the home room should draw what people hold is the
+ * owner's to decide.
  */
 import { itemCoordinate } from "@nswp/core";
 import { createBag, type Bag } from "nswp-sdk/three";
