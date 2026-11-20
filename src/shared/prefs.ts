@@ -26,6 +26,8 @@ export const PICTURES_KEY = "nswp:pictures";
 export const CHAT_KEY = "nswp:chat";
 const SOUND_KEY = "bitportal:sound";
 const UI_KEY = "nswp:ui";
+/** The tabs of the menu they keep on their bar, as the kit keeps them here. */
+const PINS_KEY = "nswp:ui:pins";
 
 export interface Prefs {
   full: boolean;
@@ -98,7 +100,10 @@ export function keptSettings(store: Reader | null): TravelSettings {
   const prefs = loadPrefs(store);
   const sound = json(store?.getItem(SOUND_KEY) ?? null);
   const ui = (json(store?.getItem(UI_KEY) ?? null) ?? {}) as { scale?: unknown; motion?: unknown; wrist?: unknown };
+  // Said only once they have chosen: an empty list is them taking every tab off, and nothing kept is no choice.
+  const pins = json(store?.getItem(PINS_KEY) ?? null);
   return cleanSettings({
+    ...(Array.isArray(pins) ? { pins } : {}),
     ...(sound && typeof sound === "object" ? { sound } : {}),
     ...(typeof ui.scale === "number" ? { text: ui.scale } : {}),
     ...(typeof ui.motion === "boolean" ? { motion: ui.motion } : {}),

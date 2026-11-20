@@ -59,3 +59,23 @@ describe("what goes through a door", () => {
     expect(keptSettings(store()).fov).toBeUndefined();
   });
 });
+
+describe("the tabs a visitor keeps on their bar", () => {
+  it("go through a door with everything else, once they have chosen", () => {
+    expect(keptSettings(store()).pins).toBeUndefined();
+    expect(keptSettings(store({ "nswp:ui:pins": JSON.stringify(["people", "sound"]) })).pins).toEqual(["people", "sound"]);
+    // Taking every tab off is a choice too, and it is carried.
+    expect(keptSettings(store({ "nswp:ui:pins": "[]" })).pins).toEqual([]);
+  });
+  it("carry nothing but tabs' names, whatever this browser was made to hold", () => {
+    expect(keptSettings(store({ "nswp:ui:pins": JSON.stringify(["people", "Not A Tab", "https://x.example", "a", "b", "c", "d", "e"]) })).pins).toEqual(["people", "a", "b", "c"]);
+    expect(keptSettings(store({ "nswp:ui:pins": "{not json" })).pins).toBeUndefined();
+    expect(keptSettings(store({ "nswp:ui:pins": JSON.stringify("people") })).pins).toBeUndefined();
+  });
+  it("are as the world they are leaving says, where it says: the menu there is where they were changed", () => {
+    const kept = keptSettings(store({ "nswp:ui:pins": JSON.stringify(["people"]) }));
+    expect(settingsToCarry(kept, { pins: ["sound", "people"] }).pins).toEqual(["sound", "people"]);
+    expect(settingsToCarry(kept, { text: 1.15 }).pins).toEqual(["people"]);
+    expect(settingsToCarry(kept, { pins: [] }).pins).toEqual([]);
+  });
+});

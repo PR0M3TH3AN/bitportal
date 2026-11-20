@@ -16,7 +16,7 @@ import {
   showsChat,
   showsPictures,
   wrapWords
-} from "./shared-D4HEPMWG.js";
+} from "./shared-HFQGPOTV.js";
 import {
   LiveKeys,
   TextEntry,
