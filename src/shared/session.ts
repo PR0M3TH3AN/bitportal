@@ -10,7 +10,7 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { cleanName, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { BAG_KIND, cleanName, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { INSTANCE } from "./instance.js";
@@ -119,18 +119,20 @@ export interface AppPermissions {
  * - "people": 3, who they follow (NSWP-14). BitLogin lists it apart, under a warning.
  * - "messages": private messages (NSWP-14; NIP-17). To send: 13, a sealed message, and 10050, where their own
  *   reach them. To read: 13 and 1059. BitLogin lists reading messages, and 10050, apart under a warning.
+ * - "bag": 37308, the items they have (NSWP-17). Asked the first time they put something in their bag or take
+ *   something out. A bag is public, and nothing else is signed with it.
  *
  * Nobody is asked for these at sign-in unless this device has already been let.
  */
 export function permissionsFor(reserved: boolean, more: readonly Ask[] = []): AppPermissions {
   const messages = more.includes("messages");
-  const sign = [1, ...(more.includes("people") ? [FOLLOWS_KIND] : []), ...(messages ? [SEAL_KIND, MESSAGE_RELAYS_KIND] : []), ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND].sort((a, b) => a - b);
+  const sign = [1, ...(more.includes("people") ? [FOLLOWS_KIND] : []), ...(more.includes("bag") ? [BAG_KIND] : []), ...(messages ? [SEAL_KIND, MESSAGE_RELAYS_KIND] : []), ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND].sort((a, b) => a - b);
   return { name: "BitPortal", sign, appData: ["bitportal/"], read: [...(messages ? [SEAL_KIND, WRAP_KIND] : []), 30078] };
 }
 
 /** What BitPortal asks a visitor for only when they first use it, by name. */
-export type Ask = "people" | "messages";
-const ASKS: readonly Ask[] = ["people", "messages"];
+export type Ask = "people" | "messages" | "bag";
+const ASKS: readonly Ask[] = ["people", "messages", "bag"];
 const ASKS_KEY = "bitportal:asks";
 
 /**
