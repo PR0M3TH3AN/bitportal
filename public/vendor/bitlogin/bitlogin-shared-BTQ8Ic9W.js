@@ -25,8 +25,8 @@ class o {
         if (this.pending.delete(r.id), clearTimeout(s.timer), r.ok)
           s.resolve(r.result);
         else {
-          const l = new Error(r.error);
-          l.name = r.errorName ?? "Error", s.reject(l);
+          const c = new Error(r.error);
+          c.name = r.errorName ?? "Error", s.reject(c);
         }
     });
     const a = (t) => () => this.failAll(t);
@@ -51,8 +51,8 @@ class o {
         this.pending.delete(t), n(new Error(`BitLogin's ${e} call timed out.`));
       }, a);
       this.pending.set(t, { resolve: r, reject: n, timer: s });
-      const l = { id: t, action: e, payload: i };
-      this.worker.postMessage(l);
+      const c = { id: t, action: e, payload: i };
+      this.worker.postMessage(c);
     });
   }
   configure(e) {
@@ -132,6 +132,18 @@ class o {
   }
   loadProfile(e = {}) {
     return this.call("loadProfile", e);
+  }
+  accountsList() {
+    return this.call("accountsList", {});
+  }
+  accountsSwitch(e) {
+    return this.call("accountsSwitch", { pubkey: e });
+  }
+  accountsAdd() {
+    return this.call("accountsAdd", {});
+  }
+  accountsRemove(e) {
+    return this.call("accountsRemove", { pubkey: e });
   }
   takeBack(e) {
     return this.call("takeBack", e);
@@ -244,11 +256,11 @@ class o {
   }
 }
 const u = "BitLogin: no session is unlocked. Call restore() first, or have the user sign in once via <bitlogin-auth>.";
-async function p(c = {}) {
+async function p(l = {}) {
   const e = new o();
   await e.configure({
-    vaultRelayUrls: c.vaultRelays ?? [],
-    discoveryRelayUrls: c.discoveryRelays ?? []
+    vaultRelayUrls: l.vaultRelays ?? [],
+    discoveryRelayUrls: l.discoveryRelays ?? []
   });
   let i = null;
   const a = async () => {
@@ -261,6 +273,16 @@ async function p(c = {}) {
     async restore() {
       const t = await e.restoreSession();
       return i = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, i ? { pubkey: i } : null;
+    },
+    async accounts() {
+      return (await e.accountsList()).accounts;
+    },
+    async switchAccount(t) {
+      const r = await e.accountsSwitch(t);
+      return r.locked ? { locked: !0 } : (i = r.restored && r.everydayPublicKey ? r.everydayPublicKey : null, i ? { pubkey: i } : null);
+    },
+    async addAccount() {
+      await e.accountsAdd(), i = null;
     },
     async isUnlocked() {
       if (i) return !0;
@@ -282,8 +304,8 @@ async function p(c = {}) {
     async beginHandoff() {
       return (await e.handoffBegin()).recipientPublicKey;
     },
-    async exportHandoff(t, r, n, s, l) {
-      return await a(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...n ? { site: n } : {}, ...s ? { remember: !0 } : {}, ...l ? { family: l } : {} });
+    async exportHandoff(t, r, n, s, c) {
+      return await a(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...n ? { site: n } : {}, ...s ? { remember: !0 } : {}, ...c ? { family: c } : {} });
     },
     async lockStatus() {
       return e.lockStatus();

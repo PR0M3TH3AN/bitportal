@@ -136,6 +136,8 @@ interface SignInClient {
   state(): SignInState;
   onChange(listener: (state: SignInState) => void): () => void;
   signIn(): Promise<boolean>;
+  /** Open the window at its account chooser. True if someone is signed in here once it closes. */
+  switchAccount?(): Promise<boolean>;
   signOut(): Promise<void>;
   signEvent(e: EventTemplate): Promise<unknown>;
   nip44: { encrypt(peer: string, text: string): Promise<string> };
@@ -242,6 +244,22 @@ export async function signIn(): Promise<boolean> {
   if (!c) return false;
   try {
     return await c.signIn();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Open BitLogin's window at its account chooser, where the visitor picks who to be here, or signs in as someone
+ * new. Call it from their own press. BitPortal never sees the accounts on offer, and stays signed in as before
+ * until they allow it as another. Resolves true if someone is signed in here once the window closes; who that is
+ * comes the usual way (`watchSignIn`).
+ */
+export async function switchAccount(): Promise<boolean> {
+  const c = made ?? (await signInClient());
+  if (!c) return false;
+  try {
+    return await (c.switchAccount ? c.switchAccount() : c.signIn());
   } catch {
     return false;
   }
