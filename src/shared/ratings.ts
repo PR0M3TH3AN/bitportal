@@ -7,7 +7,9 @@
  * What is asked of relays is asked by world, never by person: nobody is told whose ratings are being looked for.
  * Who the visitor follows is asked for at home and kept on the device, so the Airlock asks nothing about them.
  */
-import { buildRating, publishEvent, queryRelays, RATING_KIND, tallyRatings, verifyEvent, type NostrEvent, type Tally } from "@nswp/core";
+import { buildRating, RATING_KIND, tallyRatings, verifyEvent, type NostrEvent, type Tally } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { publishBacked as publishEvent, queryBacked as queryRelays } from "nswp-sdk/ui";
 import type { Signer } from "./session.js";
 
 const FOLLOWS_KEY = "bitportal:follows";

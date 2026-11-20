@@ -7,7 +7,9 @@
  * if anything changed. Nothing is ever waited for: the page has already
  * started from what this browser keeps.
  */
-import { finalizeEvent, getConversationKey, getPublicKey, latestAddressable, nip44Decrypt, nip44Encrypt, publishEvent, queryRelays, verifyEvent, WORLD_KIND, type NostrEvent } from "@nswp/core";
+import { finalizeEvent, getConversationKey, getPublicKey, latestAddressable, nip44Decrypt, nip44Encrypt, verifyEvent, WORLD_KIND, type NostrEvent } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { publishBacked as publishEvent, queryBacked as queryRelays } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { quietVault, readSignedIn } from "./session.js";
 import { loadSettings } from "./settings.js";

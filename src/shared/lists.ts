@@ -16,12 +16,13 @@ import {
   parseCoordinate,
   parseListEvent,
   parseWorldEvent,
-  queryRelays,
   verifyEvent,
   WORLD_KIND,
   type NostrEvent,
   type WorldList,
 } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { queryBacked as queryRelays } from "nswp-sdk/ui";
 
 export interface FollowedList {
   /** The list's coordinate, `30004:<pubkey>:<d>`. It fixes the curator's key. */

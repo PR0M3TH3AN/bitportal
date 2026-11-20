@@ -10,7 +10,9 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { cleanName, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, queryRelays, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { cleanName, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { INSTANCE } from "./instance.js";
 
 export interface Signer {

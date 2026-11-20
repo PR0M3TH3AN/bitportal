@@ -7,7 +7,9 @@
  * sign-in: this code builds what is to be signed and hands it to the signer.
  * Publishing it is public and is the operator's own act, one press at a time.
  */
-import { buildListEvent, parseListEvent, publishEvent, verifyEvent, CURATION_SET_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { buildListEvent, parseListEvent, verifyEvent, CURATION_SET_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { publishBacked as publishEvent } from "nswp-sdk/ui";
 import { INSTANCE, type InstancePolicy } from "./instance.js";
 import type { Signer } from "./session.js";
 

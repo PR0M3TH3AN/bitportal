@@ -15,13 +15,13 @@ import {
   getPublicKey,
   latestAddressable,
   parseWorldEvent,
-  publishEvent,
-  queryRelays,
   verifyOrigin,
   WORLD_KIND,
   type Manifest,
   type NostrEvent,
 } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { publishBacked as publishEvent, queryBacked as queryRelays } from "nswp-sdk/ui";
 import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../shared/publishing.js";
 import { checkedSigner, signIn, signInHost, watchSignIn, type Session } from "../shared/session.js";
 import { label } from "../shared/profiles.js";
