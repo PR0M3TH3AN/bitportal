@@ -32,6 +32,7 @@ import {
   addMessagingControls,
   addPanelControls,
   addRoomControls,
+  addScoreControls,
   addSoundControls,
   addViewControls,
   byName,
@@ -53,6 +54,7 @@ import {
   createPresence,
   createProfiles,
   createSaves,
+  createScores,
   createSounds,
   createStepPace,
   createStroll,
@@ -106,7 +108,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-ITS2GKPW.js";
+} from "./shared-NEDUQKV4.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -171,6 +173,7 @@ export {
   addMessagingControls,
   addPanelControls,
   addRoomControls,
+  addScoreControls,
   addSoundControls,
   addViewControls,
   arriveWith,
@@ -197,6 +200,7 @@ export {
   createPresence,
   createProfiles,
   createSaves,
+  createScores,
   createSounds,
   createStay,
   createStepPace,
