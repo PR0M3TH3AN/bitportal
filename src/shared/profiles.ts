@@ -16,7 +16,9 @@
  * place the visitor's address. It is shown only while the visitor has
  * pictures on (the kit's switch, `showsPictures`), and it is only ever drawn.
  */
-import { cleanAbout, cleanName, cleanPicture, isHex64, queryRelays, shortNpub, verifyEvent, type NostrEvent } from "@nswp/core";
+import { cleanAbout, cleanName, cleanPicture, isHex64, shortNpub, verifyEvent, type NostrEvent } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { loadPicture } from "nswp-sdk/ui";
 
 export interface Profile {

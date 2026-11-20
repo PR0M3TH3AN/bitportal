@@ -14,7 +14,9 @@
  * Settings, by the visitor, and kept in this browser. No link, door or world
  * can make it.
  */
-import { checkDestination, fetchManifest, HOME_CAPABILITY, isPublicKey, normalizeUrl, parseWorldEvent, queryRelays, verifyEvent, verifyOrigin, WORLD_KIND, type FetchManifestResult, type NostrEvent, type World } from "@nswp/core";
+import { checkDestination, fetchManifest, HOME_CAPABILITY, isPublicKey, normalizeUrl, parseWorldEvent, verifyEvent, verifyOrigin, WORLD_KIND, type FetchManifestResult, type NostrEvent, type World } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { queryBacked as queryRelays } from "nswp-sdk/ui";
 
 export interface HomeChoice {
   /** The world's entry address. */

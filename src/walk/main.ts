@@ -16,7 +16,9 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
-import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, queryRelays, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
+import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";

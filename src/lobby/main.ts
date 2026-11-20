@@ -6,7 +6,9 @@
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
 import { forgetSync, setSyncOn, startSync, syncState, testing as syncTesting } from "../shared/sync-run.js";
-import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND, type Tally } from "@nswp/core";
+import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, shortNpub, WORLD_KIND, type Tally } from "@nswp/core";
+// Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
+import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { loadBlockedEverywhere, loadPendingBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere, withoutBlockedEverywhere, type BlockedEverywhere } from "../shared/blocked.js";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type ListView, type StarterBundle } from "../shared/catalog.js";
