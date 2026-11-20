@@ -112,7 +112,7 @@ describe("a catalogue of several lists", () => {
     expect(c.lists.map((l) => [l.title, l.starter])).toEqual([[c.curator.title, true], ["List quiet", false]]);
     expect(c.lists[1]!.ids).toEqual([id(pond), id(cave)]);
     expect(c.lists[1]!.missing).toBe(1); // "nowhere" was never announced
-    expect(c.entries.length).toBe(14);
+    expect(c.entries.length).toBe(15);
     expect(c.entries.map((e) => e.rank)).toEqual(c.entries.map((_, i) => i));
     expect(c.unlisted).toEqual([]);
   });
@@ -141,7 +141,7 @@ describe("a catalogue of several lists", () => {
     const first = starter.worlds[0]!;
     const both = follow([], list("both", ALICE, [id(first), id(pond)]), [pond], 1);
     const c = buildCatalog(starter, [], { followed: both });
-    expect(c.entries.length).toBe(13);
+    expect(c.entries.length).toBe(14);
     expect(c.lists[1]!.ids).toEqual([id(first), id(pond)]);
     const closed = world("pond", BOB, { status: "retired" }, T + 1);
     const after = buildCatalog(starter, [closed], { followed: both });
@@ -161,7 +161,7 @@ describe("worlds nobody has listed", () => {
   it("shows them apart, newest first, a few per key", () => {
     const flood = Array.from({ length: 7 }, (_, i) => world(`spam${i}`, BOB, {}, T + i));
     const c = buildCatalog(starter, [...flood, world("cave", ALICE, {}, T - 100)]);
-    expect(c.entries.length).toBe(12);
+    expect(c.entries.length).toBe(13);
     expect(c.unlisted.map((e) => e.world.d)).toEqual(["spam6", "spam5", "spam4", "cave"]);
     expect(c.unlistedHeld).toBe(7 - UNLISTED_LIMITS.perKey);
   });

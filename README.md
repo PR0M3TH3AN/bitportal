@@ -409,7 +409,7 @@ and BitPortal never holds your key.
 ## The starter set
 
 A signed-out visitor sees a **starter set**: a hand-picked list signed by a
-named key (`src/starter/starter-set.json`). It currently holds the eight worlds made for
+named key (`src/starter/starter-set.json`). It currently holds the nine worlds made for
 BitPortal and four existing WebXR sites. The four are described by the
 curator and always shown as "listed by", never as verified.
 
