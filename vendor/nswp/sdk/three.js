@@ -129,7 +129,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-VGE2EAY6.js";
+} from "./shared-34CJENDL.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
