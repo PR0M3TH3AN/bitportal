@@ -11,25 +11,25 @@ class u {
   onNotification = null;
   constructor() {
     const e = ["cryptoWorker", ".js"].join(""), i = new URL(e, import.meta.url);
-    this.worker = new Worker(i, { type: "module" }), this.worker.addEventListener("message", (t) => {
-      const r = t.data;
-      if (!r || typeof r != "object") return;
-      const n = r;
+    this.worker = new Worker(i, { type: "module" }), this.worker.addEventListener("message", (r) => {
+      const t = r.data;
+      if (!t || typeof t != "object") return;
+      const n = t;
       if (n.notify === "nip46-auth-url" && typeof n.url == "string") {
         this.onNotification?.(n);
         return;
       }
-      if (typeof r.id != "string") return;
-      const l = this.pending.get(r.id);
+      if (typeof t.id != "string") return;
+      const l = this.pending.get(t.id);
       if (l)
-        if (this.pending.delete(r.id), clearTimeout(l.timer), r.ok)
-          l.resolve(r.result);
+        if (this.pending.delete(t.id), clearTimeout(l.timer), t.ok)
+          l.resolve(t.result);
         else {
-          const s = new Error(r.error);
-          s.name = r.errorName ?? "Error", l.reject(s);
+          const s = new Error(t.error);
+          s.name = t.errorName ?? "Error", l.reject(s);
         }
     });
-    const a = (t) => () => this.failAll(t);
+    const a = (r) => () => this.failAll(r);
     this.worker.addEventListener("error", a("The BitLogin crypto worker stopped unexpectedly.")), this.worker.addEventListener(
       "messageerror",
       a("The BitLogin crypto worker sent an unreadable message.")
@@ -45,13 +45,13 @@ class u {
   call(e, i, a = 6e4) {
     if (this.dead)
       return Promise.reject(new Error(this.deadReason));
-    const t = `${Date.now().toString(36)}-${(this.counter++).toString(36)}`;
-    return new Promise((r, n) => {
+    const r = `${Date.now().toString(36)}-${(this.counter++).toString(36)}`;
+    return new Promise((t, n) => {
       const l = setTimeout(() => {
-        this.pending.delete(t), n(new Error(`BitLogin's ${e} call timed out.`));
+        this.pending.delete(r), n(new Error(`BitLogin's ${e} call timed out.`));
       }, a);
-      this.pending.set(t, { resolve: r, reject: n, timer: l });
-      const s = { id: t, action: e, payload: i };
+      this.pending.set(r, { resolve: t, reject: n, timer: l });
+      const s = { id: r, action: e, payload: i };
       this.worker.postMessage(s);
     });
   }
@@ -196,6 +196,12 @@ class u {
   worldReach(e) {
     return this.call("worldReach", e);
   }
+  worldScore(e) {
+    return this.call("worldScore", e);
+  }
+  worldAchieve(e) {
+    return this.call("worldAchieve", e);
+  }
   signerKeep(e) {
     return this.call("signerKeep", e);
   }
@@ -286,109 +292,115 @@ async function d(c = {}) {
   let i = null;
   const a = async () => {
     if (i) return i;
-    const t = await e.getSessionStatus();
-    if (!t.unlocked || !t.everydayPublicKey) throw new Error(p);
-    return i = t.everydayPublicKey, i;
+    const r = await e.getSessionStatus();
+    if (!r.unlocked || !r.everydayPublicKey) throw new Error(p);
+    return i = r.everydayPublicKey, i;
   };
   return {
     async restore() {
-      const t = await e.restoreSession();
-      return i = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, i ? { pubkey: i } : null;
+      const r = await e.restoreSession();
+      return i = r.restored && r.everydayPublicKey ? r.everydayPublicKey : null, i ? { pubkey: i } : null;
     },
     async accounts() {
       return (await e.accountsList()).accounts;
     },
-    async switchAccount(t) {
-      const r = await e.accountsSwitch(t);
-      return r.locked ? { locked: !0 } : (i = r.restored && r.everydayPublicKey ? r.everydayPublicKey : null, i ? { pubkey: i } : null);
+    async switchAccount(r) {
+      const t = await e.accountsSwitch(r);
+      return t.locked ? { locked: !0 } : (i = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, i ? { pubkey: i } : null);
     },
     async addAccount() {
       await e.accountsAdd(), i = null;
     },
     async isUnlocked() {
       if (i) return !0;
-      const t = await e.getSessionStatus();
-      return t.unlocked && t.everydayPublicKey && (i = t.everydayPublicKey), !!t.unlocked;
+      const r = await e.getSessionStatus();
+      return r.unlocked && r.everydayPublicKey && (i = r.everydayPublicKey), !!r.unlocked;
     },
     getPublicKey() {
       return a();
     },
-    async signEvent(t) {
-      return await a(), e.signEvent(t);
+    async signEvent(r) {
+      return await a(), e.signEvent(r);
     },
-    async nip44Encrypt(t, r) {
-      return await a(), (await e.nip44Encrypt({ peerPublicKey: t, plaintext: r })).ciphertext;
+    async nip44Encrypt(r, t) {
+      return await a(), (await e.nip44Encrypt({ peerPublicKey: r, plaintext: t })).ciphertext;
     },
-    async nip44Decrypt(t, r) {
-      return await a(), (await e.nip44Decrypt({ peerPublicKey: t, payload: r })).plaintext;
+    async nip44Decrypt(r, t) {
+      return await a(), (await e.nip44Decrypt({ peerPublicKey: r, payload: t })).plaintext;
     },
     async beginHandoff() {
       return (await e.handoffBegin()).recipientPublicKey;
     },
-    async exportHandoff(t, r, n, l, s, o) {
-      return await a(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...n ? { site: n } : {}, ...l ? { remember: !0 } : {}, ...s ? { family: s } : {}, ...o?.length ? { more: [...o] } : {} });
+    async exportHandoff(r, t, n, l, s, o) {
+      return await a(), e.handoffExport({ recipientPublicKey: r, ...t ? { app: t } : {}, ...n ? { site: n } : {}, ...l ? { remember: !0 } : {}, ...s ? { family: s } : {}, ...o?.length ? { more: [...o] } : {} });
     },
     async lockStatus() {
       return e.lockStatus();
     },
-    async lockOpen(t) {
-      const r = await e.lockOpen(t);
-      return i = r.ok && r.everydayPublicKey ? r.everydayPublicKey : null, { ok: r.ok, left: r.left, removed: r.removed };
+    async lockOpen(r) {
+      const t = await e.lockOpen(r);
+      return i = t.ok && t.everydayPublicKey ? t.everydayPublicKey : null, { ok: t.ok, left: t.left, removed: t.removed };
     },
-    async loadProfile(t = {}) {
-      return await a(), (await e.loadProfile(t)).profile ?? null;
+    async loadProfile(r = {}) {
+      return await a(), (await e.loadProfile(r)).profile ?? null;
     },
-    async takeBack(t) {
-      return await a(), e.takeBack(t);
+    async takeBack(r) {
+      return await a(), e.takeBack(r);
     },
-    async checkTakenBack(t) {
-      return (await e.signerCheck({ site: t })).state;
+    async checkTakenBack(r) {
+      return (await e.signerCheck({ site: r })).state;
     },
-    async roomPass(t) {
-      return e.roomPass({ session: t });
+    async roomPass(r) {
+      return e.roomPass({ session: r });
     },
-    async worldSave(t, r) {
-      return e.worldSave({ slot: t, data: r });
+    async worldSave(r, t) {
+      return e.worldSave({ slot: r, data: t });
     },
-    async worldFind(t) {
-      return (await e.worldFind({ slot: t })).d;
+    async worldFind(r) {
+      return (await e.worldFind({ slot: r })).d;
     },
-    async worldOpen(t) {
-      return e.worldOpen({ event: t });
+    async worldOpen(r) {
+      return e.worldOpen({ event: r });
     },
-    async worldFollow(t, r) {
-      return e.worldFollow({ list: t, ...r });
+    async worldFollow(r, t) {
+      return e.worldFollow({ list: r, ...t });
     },
-    async worldSeal(t, r) {
-      return e.worldSeal({ to: t, text: r });
+    async worldSeal(r, t) {
+      return e.worldSeal({ to: r, text: t });
     },
-    async worldUnwrap(t) {
-      return (await e.worldUnwrap({ event: t })).message;
+    async worldUnwrap(r) {
+      return (await e.worldUnwrap({ event: r })).message;
     },
-    async worldReach(t) {
-      return e.worldReach({ relays: t });
+    async worldReach(r) {
+      return e.worldReach({ relays: r });
     },
-    async acceptHandoff(t) {
-      const r = await e.handoffAccept(t);
-      return i = r.everydayPublicKey, { pubkey: i, ...r.app ? { app: r.app } : {}, ...r.site ? { site: r.site } : {}, ...r.profile ? { profile: r.profile } : {}, ...r.remember ? { remember: !0 } : {}, ...r.family ? { family: r.family } : {}, ...r.more?.length ? { more: r.more } : {} };
+    async worldScore(r, t, n, l = {}) {
+      return e.worldScore({ world: r, board: t, score: n, ...l.title ? { title: l.title } : {}, ...l.format === "time" ? { format: "time" } : {} });
     },
-    async appEncrypt(t, r, n = "nip44") {
-      return (await e.appEncrypt({ peerPublicKey: t, text: r, scheme: n })).text;
+    async worldAchieve(r, t, n) {
+      return e.worldAchieve({ world: r, achievement: t, title: n });
     },
-    async appDecrypt(t, r, n = "nip44") {
-      return (await e.appDecrypt({ peerPublicKey: t, text: r, scheme: n })).text;
+    async acceptHandoff(r) {
+      const t = await e.handoffAccept(r);
+      return i = t.everydayPublicKey, { pubkey: i, ...t.app ? { app: t.app } : {}, ...t.site ? { site: t.site } : {}, ...t.profile ? { profile: t.profile } : {}, ...t.remember ? { remember: !0 } : {}, ...t.family ? { family: t.family } : {}, ...t.more?.length ? { more: t.more } : {} };
     },
-    async appDecryptEvent(t) {
-      return (await e.appDecryptEvent({ event: t })).text;
+    async appEncrypt(r, t, n = "nip44") {
+      return (await e.appEncrypt({ peerPublicKey: r, text: t, scheme: n })).text;
+    },
+    async appDecrypt(r, t, n = "nip44") {
+      return (await e.appDecrypt({ peerPublicKey: r, text: t, scheme: n })).text;
+    },
+    async appDecryptEvent(r) {
+      return (await e.appDecryptEvent({ event: r })).text;
     },
     async isSignerOnly() {
       return !!(await e.getSessionStatus()).signerOnly;
     },
-    async keepSignerGrant(t) {
-      return (await e.signerKeep(t)).kept;
+    async keepSignerGrant(r) {
+      return (await e.signerKeep(r)).kept;
     },
-    async restoreSignerGrant(t, r) {
-      const n = await e.signerRestore({ site: t, ...r ? { family: r } : {} });
+    async restoreSignerGrant(r, t) {
+      const n = await e.signerRestore({ site: r, ...t ? { family: t } : {} });
       return !n.restored || !n.everydayPublicKey || typeof n.until != "number" ? null : (i = n.everydayPublicKey, {
         pubkey: i,
         until: n.until,
@@ -402,11 +414,11 @@ async function d(c = {}) {
         ...n.permissions ? { permissions: n.permissions, signedSensitive: n.signedSensitive ?? [] } : {}
       });
     },
-    async touchSignerGrant(t, r, n, l) {
-      await e.signerTouch({ site: t, signed: r, ...n ? { signedSensitive: n } : {}, ...l ? { signedPass: l } : {} });
+    async touchSignerGrant(r, t, n, l) {
+      await e.signerTouch({ site: r, signed: t, ...n ? { signedSensitive: n } : {}, ...l ? { signedPass: l } : {} });
     },
-    async forgetSignerGrant(t) {
-      await e.signerForget({ site: t });
+    async forgetSignerGrant(r) {
+      await e.signerForget({ site: r });
     },
     async logout() {
       await e.logout(), i = null;
