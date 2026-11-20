@@ -2,7 +2,7 @@
  * The marks on a door plate: what a visitor is told before they commit
  * (NSWP spec §6.7). The list and the walk-in hall draw the same marks.
  */
-import { categoryWords, type World } from "@nswp/core";
+import { categoryWords, itemsWords, type World } from "@nswp/core";
 
 export interface Mark {
   text: string;
@@ -19,7 +19,7 @@ export function placeKind(world: Pick<World, "modes">): string {
   return world.modes.includes("2d") ? "Web page" : "";
 }
 
-export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category">>, fit: { ok: boolean; reason: string }, verified: boolean, rating: string = ""): Mark[] {
+export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category" | "items">>, fit: { ok: boolean; reason: string }, verified: boolean, rating: string = ""): Mark[] {
   const marks: Mark[] = [];
   // What kind of place its maker says it is (NSWP-01): a game, an experience, a place to meet, an app, a site.
   const category = categoryWords(world.category);
@@ -31,6 +31,11 @@ export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarn
   if (kind) marks.push({ text: kind, tone: "plain" });
   if (verified) marks.push({ text: "Verified", tone: "ok" });
   if (!fit.ok) marks.push({ text: fit.reason, tone: "warn" });
+  // What it does with the things visitors carry (NSWP-17), told before anyone goes in: a place where items are
+  // part of the game is somewhere other people can reach you with them. Said as a caution; one that only lets
+  // items work is said plainly.
+  const carried = itemsWords(world.items);
+  if (carried) marks.push({ text: world.items === "play" ? "Items in play" : "Items work", tone: world.items === "play" ? "warn" : "plain" });
   const intensity = world.comfort.intensity;
   if (intensity === "high") marks.push({ text: "Intense", tone: "warn" });
   else if (intensity === "low") marks.push({ text: "Gentle", tone: "plain" });

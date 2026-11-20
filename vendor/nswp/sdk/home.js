@@ -15,7 +15,7 @@ import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
 import * as THREE3 from "three";
-import { categoryWords, checkDestination, checkPictureBytes, encodeNaddr, LAYOUT_LIMITS, portalTarget, WORLD_KIND } from "@nswp/core";
+import { categoryWords, itemsWords, checkDestination, checkPictureBytes, encodeNaddr, LAYOUT_LIMITS, portalTarget, WORLD_KIND } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/environment.ts
 import * as THREE2 from "three";
@@ -939,6 +939,7 @@ function createPortalGate(destination, opts = {}) {
   let said = opts.label ?? "Portal";
   let category = opts.category ?? null;
   let rating = "";
+  let items = null;
   const setLabel = (label) => {
     said = label;
     if (sign) {
@@ -948,7 +949,8 @@ function createPortalGate(destination, opts = {}) {
     }
     sign = textSprite(`${label}
 ${addressLine(destination, category)}${rating ? `
-${rating}` : ""}`, textColor, 2.2);
+${rating}` : ""}${itemsWords(items) ? `
+${itemsWords(items)}` : ""}`, textColor, 2.2);
     sign.position.set(0, PORTAL_SIGN_HEIGHT, 0);
     group.add(sign);
   };
@@ -963,6 +965,11 @@ ${rating}` : ""}`, textColor, 2.2);
     setCategory(next) {
       if ((next ?? null) === category) return;
       category = next ?? null;
+      setLabel(said);
+    },
+    setItems(next) {
+      if ((next ?? null) === items) return;
+      items = next ?? null;
       setLabel(said);
     },
     setRating(mark) {
