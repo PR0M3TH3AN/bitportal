@@ -24,6 +24,8 @@ export const INTENSE_KEY = "bitportal:fps";
 export const DESK_KEY = "nswp:desk";
 export const PICTURES_KEY = "nswp:pictures";
 export const CHAT_KEY = "nswp:chat";
+/** Whether anything people carry is drawn for them (NSWP-17): the kit keeps "off" here, and nothing while it is on. */
+export const ITEMS_KEY = "nswp:items";
 const SOUND_KEY = "bitportal:sound";
 const UI_KEY = "nswp:ui";
 /** The tabs of the menu they keep on their bar, as the kit keeps them here. */
@@ -114,6 +116,8 @@ export function keptSettings(store: Reader | null): TravelSettings {
     ...(prefs.fov === null ? {} : { fov: prefs.fov }),
     pictures: prefs.pictures,
     chat: prefs.chat,
+    // Their switch for everything people carry, set in the Bag tab of any menu: off here is off in the next world.
+    items: store?.getItem(ITEMS_KEY) !== "off",
   });
 }
 

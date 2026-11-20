@@ -39,7 +39,9 @@ describe("what goes through a door", () => {
 
   it("is everything this browser keeps for them, and only what may travel", () => {
     const s = keptSettings(kept);
-    expect(s).toEqual({ sound: { music: 0.2, effects: 0.6 }, text: 1.25, motion: false, full: true, intense: true, look: 2, fov: 100, pictures: true, chat: true });
+    expect(s).toEqual({ sound: { music: 0.2, effects: 0.6 }, text: 1.25, motion: false, full: true, intense: true, look: 2, fov: 100, pictures: true, chat: true, items: true });
+    // Someone who turned every item off, in the Bag tab of any menu, has them off in the next world too.
+    expect(keptSettings(store({ "nswp:items": "off" })).items).toBe(false);
     // Hearing other people's music is a consent, not a setting: it never goes on a link.
     expect(JSON.stringify(s)).not.toContain("hearShared");
   });
