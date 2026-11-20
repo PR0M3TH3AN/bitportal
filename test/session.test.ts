@@ -28,6 +28,15 @@ describe("what BitPortal asks its sign-in address to let it do", () => {
     // Still never a profile, a deletion, a mute or relay list, a relay sign-in, or anyone's messages.
     for (const kind of [0, 5, 10000, 10002, 10050, 22242, 4, 13, 1059]) expect([...more.sign, ...more.read]).not.toContain(kind);
   });
+  it("asks to send and read private messages only where a visitor has pressed for it", () => {
+    for (const kind of [13, 1059, 10050]) expect([...permissionsFor(true).sign, ...permissionsFor(true).read]).not.toContain(kind);
+    const more = permissionsFor(true, ["messages"]);
+    expect(more.sign).toEqual([1, 13, 10050, 27300, 27302, 27303, 30004, 30078, 37300, 37305]);
+    expect(more.read).toEqual([13, 1059, 30078]);
+    // Not who they follow, unless that was asked for too; and never the older kind of message, a profile or a deletion.
+    for (const kind of [0, 3, 4, 5, 10000, 10002, 22242]) expect([...more.sign, ...more.read]).not.toContain(kind);
+    expect(permissionsFor(true, ["people", "messages"]).sign).toContain(3);
+  });
   it("is the same without the pass and the grants, where the sign-in address won't sign those", () => {
     const less = permissionsFor(false);
     for (const kind of RESERVED_KINDS) expect(less.sign).not.toContain(kind);

@@ -10,7 +10,7 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { cleanName, FOLLOWS_KIND, isHex64, queryRelays, RATING_KIND, toLocal, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { cleanName, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, queryRelays, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
 import { INSTANCE } from "./instance.js";
 
 export interface Signer {
@@ -115,17 +115,20 @@ export interface AppPermissions {
  * decision of 2026-11-20: "only when someone first uses People or Messages"):
  *
  * - "people": 3, who they follow (NSWP-14). BitLogin lists it apart, under a warning.
+ * - "messages": private messages (NSWP-14; NIP-17). To send: 13, a sealed message, and 10050, where their own
+ *   reach them. To read: 13 and 1059. BitLogin lists reading messages, and 10050, apart under a warning.
  *
  * Nobody is asked for these at sign-in unless this device has already been let.
  */
 export function permissionsFor(reserved: boolean, more: readonly Ask[] = []): AppPermissions {
-  const sign = [1, ...(more.includes("people") ? [FOLLOWS_KIND] : []), ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND];
-  return { name: "BitPortal", sign, appData: ["bitportal/"], read: [30078] };
+  const messages = more.includes("messages");
+  const sign = [1, ...(more.includes("people") ? [FOLLOWS_KIND] : []), ...(messages ? [SEAL_KIND, MESSAGE_RELAYS_KIND] : []), ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND].sort((a, b) => a - b);
+  return { name: "BitPortal", sign, appData: ["bitportal/"], read: [...(messages ? [SEAL_KIND, WRAP_KIND] : []), 30078] };
 }
 
 /** What BitPortal asks a visitor for only when they first use it, by name. */
-export type Ask = "people";
-const ASKS: readonly Ask[] = ["people"];
+export type Ask = "people" | "messages";
+const ASKS: readonly Ask[] = ["people", "messages"];
 const ASKS_KEY = "bitportal:asks";
 
 /**
@@ -453,7 +456,9 @@ export async function quietSigner(expected: string): Promise<{ signer: Signer; c
  * (sync.ts). BitLogin's worker seals to the visitor's own key, and opens only a whole signed note of a kind
  * BitPortal was allowed to read; this page never sees the key. Null when nobody is signed in as `expected`.
  */
-export async function quietVault(expected: string): Promise<{ pubkey: string; sign(t: EventTemplate): Promise<NostrEvent>; seal(text: string): Promise<string>; open(note: NostrEvent): Promise<string>; close(): void } | null> {
+export async function quietVault(
+  expected: string,
+): Promise<{ pubkey: string; sign(t: EventTemplate): Promise<NostrEvent>; seal(text: string): Promise<string>; sealTo(peer: string, text: string): Promise<string>; open(note: NostrEvent): Promise<string>; close(): void } | null> {
   const c = await signInClient();
   const state = c ? await settled(c) : null;
   if (!c || !state?.signedIn || state.pubkey !== expected) return null;
@@ -462,6 +467,8 @@ export async function quietVault(expected: string): Promise<{ pubkey: string; si
     pubkey: expected,
     sign: (t) => signer.signEvent(t),
     seal: (text) => c.nip44.encrypt(expected, text),
+    // To someone else: BitLogin's worker allows it only where the visitor let BitPortal send private messages.
+    sealTo: (peer, text) => c.nip44.encrypt(peer, text),
     open: (note) => c.decryptEvent(note),
     close: () => {},
   };

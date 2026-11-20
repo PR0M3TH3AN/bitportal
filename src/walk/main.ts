@@ -33,9 +33,10 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
+import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, quietSigner, readSignedIn } from "../shared/session.js";
+import { holdsReserved, quietSigner, quietVault, readSignedIn } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -1402,9 +1403,22 @@ async function start(): Promise<void> {
     keepFollows(signedInKey, now);
     void retally();
   });
+  // Their private messages (NSWP-14), sealed and opened by their own signer, and asked for on first use.
+  const messages = homeMessages({
+    me: () => (goesAsGuest() ? null : signedInKey),
+    relays: settings.relays,
+    vaultFor: quietVault,
+    known: (pubkey) => !!follows.people.follows()?.includes(pubkey),
+    say: (text) => controls.say(text),
+    presenting: () => renderer.xr.isPresenting,
+  });
   let followingTab: ReturnType<typeof addRoomControls>["following"];
-  ({ refresh: refreshRoom, travelling, following: followingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, presenting: () => renderer.xr.isPresenting }));
-  refreshFollowing = () => followingTab.refresh();
+  let messagingTab: ReturnType<typeof addRoomControls>["messaging"];
+  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, messages, presenting: () => renderer.xr.isPresenting }));
+  refreshFollowing = () => {
+    followingTab.refresh();
+    messagingTab.refresh();
+  };
   showMaker = (pubkey) => {
     followingTab.choose(pubkey);
     hud.setOpen(true, "following");
