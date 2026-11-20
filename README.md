@@ -458,6 +458,21 @@ what you are asked when you sign in. Say no and nothing changes; you stay signed
 BitPortal changes one line of your list and keeps the rest. If none of your relays can be reached it changes nothing,
 so a list is never written over one it couldn't find.
 
+## Private messages
+
+The menu has a **Messages** tab: your private messages with one person at a time. They are Nostr's own (NIP-17), so
+a conversation started here carries on in any other Nostr app that speaks it. Write to someone from their card in
+People, or from Following.
+
+- A conversation is on a panel of its own, named for who it is with, beside the room's chat. Only you and they can
+  read it. A relay is told who a message is for, and nothing of who sent it or what it says.
+- The first time, your sign-in address asks whether BitPortal may send and read your private messages. It is not part
+  of what you are asked when you sign in, and it is asked apart from following.
+- You say where messages should reach you (a short public list of relays) before you send your first. Someone who
+  hasn't said where theirs reach them can't be written to this way, and BitPortal says so.
+- A message from someone you don't follow and haven't written to waits apart, as a request.
+- Nothing you read is kept on the device once the page is closed.
+
 ## What people thought of a place
 
 A visitor who is signed in can rate a place from one to five stars
