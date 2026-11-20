@@ -36,7 +36,7 @@ import {
   setShowsPictures,
   showsChat,
   showsPictures
-} from "./shared-264RGM3S.js";
+} from "./shared-FY6RN3Q2.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
