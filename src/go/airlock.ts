@@ -11,6 +11,7 @@
 import {
   audienceOf,
   categoryWords,
+  itemsWords,
   wayWithoutDestination,
   HOME_CAPABILITY,
   normalizeUrl,
@@ -448,6 +449,9 @@ async function render(): Promise<void> {
     // Its maker's own word for what kind of place it is, first: it is what most people want to know.
     const category = categoryWords(w.category);
     if (category) chips.append(chip(category));
+    // What it does with the things visitors carry (NSWP-17): said here, before they cross, in the core's words.
+    const carried = itemsWords(w.items);
+    if (carried) chips.append(chip(carried, w.items === "play" ? "warn" : "plain"));
     const kind = placeKind(w);
     if (kind) chips.append(chip(kind));
     const immersiveOnly = w.modes.length > 0 && w.modes.every((m) => m === "immersive-vr" || m === "immersive-ar");
