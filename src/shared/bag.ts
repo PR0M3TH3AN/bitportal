@@ -13,8 +13,16 @@
  * it, and this site reaches only itself, its sign-in address and relays. So the room's rule for items is "none",
  * and the tab says so.
  */
+import { itemCoordinate } from "@nswp/core";
 import { createBag, type Bag } from "nswp-sdk/three";
+import starterJson from "../starter/items.json";
 import { askFor, asks, signInHost, type quietSigner } from "./session.js";
+
+/**
+ * A few items offered here to begin with (`src/starter/items.json`): put in a bag with one press, like any other
+ * item someone takes up. Which ones are offered is the operator's to say, as the starter set of worlds is.
+ */
+export const STARTER_ITEMS: readonly string[] = (starterJson.items as unknown[]).map((i) => itemCoordinate(i)).filter(Boolean);
 
 export interface HomeBagOptions {
   /** Who is signed in, or null: a guest, or someone going about as one. */

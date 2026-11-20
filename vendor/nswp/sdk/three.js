@@ -124,7 +124,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-TKKZ2SOQ.js";
+} from "./shared-IPYDYP3B.js";
 import {
   PICTURE_LIMITS,
   arriveWith,

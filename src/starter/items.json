@@ -1,0 +1,10 @@
+{
+  "note": "A few items offered in the Bag tab of the home room, for someone to put in their bag with one press (NSWP-17). Each is named by its coordinate: 37303:<maker>:<name>. They are the reference publisher's starter items, kept by the Grove.",
+  "items": [
+    "37303:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:brass-lantern",
+    "37303:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:lantern-seedling",
+    "37303:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:old-book",
+    "37303:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:tin-mug",
+    "37303:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:paper-pinwheel"
+  ]
+}
