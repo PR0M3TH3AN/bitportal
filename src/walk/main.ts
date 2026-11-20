@@ -35,7 +35,7 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
-import { homeBag } from "../shared/bag.js";
+import { homeBag, STARTER_ITEMS } from "../shared/bag.js";
 import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
@@ -1428,6 +1428,7 @@ async function start(): Promise<void> {
     hold: async () => ({ ok: false, said: "Nothing carried is drawn or works in this place." }),
     allowed: carried.allowed,
     ask: carried.ask,
+    offered: () => [...STARTER_ITEMS],
     keyboard: () => panels?.keyboard ?? null,
     presenting: () => renderer.xr.isPresenting,
   });
