@@ -1,7 +1,7 @@
 import { c as K } from "./bitlogin-shared-D-JqvHzL.js";
-import { k as Q } from "./bitlogin-shared-BHH9fg7P.js";
-import { f as B } from "./bitlogin-shared-CUuCznJE.js";
-import { c as W, a as u, b as g, A as h, s as _, d as V, m as X, p as Y, e as Z, l as $, f as ee, k as te, W as ne, h as re } from "./bitlogin-shared-2ZbEccYy.js";
+import { k as Q } from "./bitlogin-shared-Bz2TyEFe.js";
+import { f as B } from "./bitlogin-shared-h0qMlq2Q.js";
+import { c as W, a as u, b as g, A as h, s as _, d as V, m as X, p as Y, e as Z, l as $, f as ee, k as te, W as ne, h as re } from "./bitlogin-shared-DsCziTXz.js";
 function le(N = {}) {
   if (typeof window > "u" || window.parent === window) return { embedded: !1, stop() {
   } };
