@@ -829,7 +829,10 @@ const On = {
   34235: "post videos",
   34236: "post short videos",
   37300: "announce a world as yours",
-  37305: "rate worlds, from one to five stars"
+  37305: "rate worlds, from one to five stars",
+  37306: "post your scores on worlds' boards",
+  37307: "show which achievements you hold in worlds",
+  37308: "change what is in your bag: the items you carry between worlds"
 }, kn = {
   4: "read your private messages (older kind)",
   13: "read your private messages",
