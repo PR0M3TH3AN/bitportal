@@ -1,4 +1,4 @@
-import { g as Ye } from "./bitlogin-shared-DSv2Wjlg.js";
+import { P as Ye } from "./bitlogin-shared-CFGY85HS.js";
 function We(we, je) {
   for (var Ie = 0; Ie < je.length; Ie++) {
     const Ae = je[Ie];
