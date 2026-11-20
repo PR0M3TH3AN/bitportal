@@ -25,6 +25,7 @@ import {
   TAP_REACH,
   TOP_SPEED,
   WALK_SPEED,
+  addAchievementControls,
   addCameraControls,
   addDeskControls,
   addFollowingControls,
@@ -38,6 +39,7 @@ import {
   byName,
   canRecord,
   capturePanorama,
+  createAchievements,
   createChamber,
   createConsole,
   createCrossing,
@@ -108,7 +110,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-NEDUQKV4.js";
+} from "./shared-EYIJ24XB.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -166,6 +168,7 @@ export {
   TAP_REACH,
   TOP_SPEED,
   WALK_SPEED,
+  addAchievementControls,
   addCameraControls,
   addDeskControls,
   addFollowingControls,
@@ -184,6 +187,7 @@ export {
   canRecord,
   capturePanorama,
   computerVoice,
+  createAchievements,
   createChamber,
   createConsole,
   createCrossing,
