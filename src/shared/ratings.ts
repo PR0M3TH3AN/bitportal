@@ -35,6 +35,18 @@ export function keptFollows(pubkey: string | null | undefined): string[] {
   }
 }
 
+/**
+ * Keep who this person follows as it is now known: after they follow or unfollow someone here, so that what
+ * ratings are counted from is not six hours behind what they just did.
+ */
+export function keepFollows(pubkey: string, follows: readonly string[], now: number = Date.now()): void {
+  try {
+    localStorage.setItem(FOLLOWS_KEY, JSON.stringify({ pubkey, at: now, follows: follows.filter((k) => HEX64.test(k)).slice(0, FOLLOWS_MOST) } satisfies KeptFollows));
+  } catch {
+    /* a private window: counted for this page only */
+  }
+}
+
 /** The people a follow list (NIP-02, kind 3) names. */
 export function followsIn(event: Pick<NostrEvent, "tags"> | null | undefined): string[] {
   if (!event || !Array.isArray(event.tags)) return [];

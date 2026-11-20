@@ -20,6 +20,14 @@ describe("what BitPortal asks its sign-in address to let it do", () => {
     // Its own data only, under its own name: never every application's.
     expect(asked.appData).not.toContain("*");
   });
+  it("asks to change who they follow only where a visitor has pressed for it, and for nothing else beside", () => {
+    // What everyone is asked at sign-in never has it (the owner's decision of 2026-11-20: asked on first use).
+    expect(permissionsFor(true).sign).not.toContain(3);
+    const more = permissionsFor(true, ["people"]);
+    expect(more).toEqual({ ...permissionsFor(true), sign: [1, 3, 27300, 27302, 27303, 30004, 30078, 37300, 37305] });
+    // Still never a profile, a deletion, a mute or relay list, a relay sign-in, or anyone's messages.
+    for (const kind of [0, 5, 10000, 10002, 10050, 22242, 4, 13, 1059]) expect([...more.sign, ...more.read]).not.toContain(kind);
+  });
   it("is the same without the pass and the grants, where the sign-in address won't sign those", () => {
     const less = permissionsFor(false);
     for (const kind of RESERVED_KINDS) expect(less.sign).not.toContain(kind);
