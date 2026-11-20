@@ -1427,8 +1427,10 @@ async function start(): Promise<void> {
   const carried = homeBag({ me: () => (goesAsGuest() ? null : signedInKey), relays: settings.relays, signerFor: quietSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });
   const baggingTab = addBagControls(controls, {
     bag: carried.bag,
-    // Descriptions only, from relays. No model is ever fetched from here.
-    items: createItems({ relays: settings.relays, fetchBytes: async () => null }),
+    // A bag shows the things in it, each drawn from its own model (NSWP-17): so a model is fetched for the Bag
+    // tab's pictures, once the tab is looked at, and for nothing else. Nothing held is drawn in this room.
+    items: createItems({ relays: settings.relays }),
+    place: () => "your home",
     me: () => (goesAsGuest() ? null : signedInKey),
     rule: () => "none",
     holding: () => "",
