@@ -23,7 +23,7 @@ import {
   type NostrEvent,
 } from "@nswp/core";
 import { formToEvent, manifestFor, manifestLocation, slugify, validateForm, worldToForm, writeRelays, type WorldForm } from "../shared/publishing.js";
-import { checkedSigner, watchBitLogin, type Session } from "../shared/session.js";
+import { checkedSigner, signIn, signInHost, watchSignIn, type Session } from "../shared/session.js";
 import { label } from "../shared/profiles.js";
 import { attachJumpList } from "../shared/jump.js";
 import { loadSettings } from "../shared/settings.js";
@@ -149,18 +149,26 @@ if (dryRun) {
   const pubkey = getPublicKey(key);
   void onSession({ pubkey, method: "test", signer: checkedSigner(pubkey, { signEvent: async (t) => finalizeEvent(t, key) }) });
 } else {
-  let settled = false;
-  watchBitLogin($("bitlogin"), (s, error) => {
-    settled = true;
+  const host = signInHost();
+  const button = $<HTMLButtonElement>("sign-in");
+  button.textContent = `Sign in at ${host}`;
+  $("sign-in-at").textContent = host;
+  watchSignIn((s, error, state) => {
+    button.disabled = false;
     void onSession(s);
-    if (error) who.textContent = `${error.message} Try signing in again.`;
-  });
-  setTimeout(() => {
-    if (!settled) {
+    if (error) who.textContent = error.message;
+    else if (!s && state?.needsMore) who.textContent = `You allowed BitPortal at ${host} before, for less than it asks for now. Sign in again and it will list the rest.`;
+    if (!s) {
       identity.open = true;
       refresh();
     }
-  }, 2500);
+  });
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    const done = await signIn();
+    button.disabled = false;
+    if (!done) who.textContent = `You weren't signed in: the window at ${host} was closed before you allowed BitPortal, or your browser didn't let it open.`;
+  });
 }
 
 // ---------------------------------------------------------- check a site

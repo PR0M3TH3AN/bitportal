@@ -60,11 +60,18 @@ for (const page of ["account", "publish", "look"]) {
 
 // Everything is same-origin except what the visitor asks for: relays (wss)
 // and, on opening a door or at the Airlock, a world's manifest (https).
+// The one other site a page of BitPortal may embed: the sign-in address, whose signer runs unseen in a frame and
+// signs what the visitor allowed in that address's own window (src/shared/session.ts). It is read from the
+// instance's own settings, so the two can't drift; a test pins that nothing else is ever named here.
+const instance = readFileSync(join(root, "src/shared/instance.ts"), "utf8");
+const named = /^\s*signer:\s*"(https:\/\/[^"]+)"/m.exec(instance)?.[1] ?? "https://bitlogin.network/";
+const signInOrigin = new URL(named).origin;
 const csp = [
   "default-src 'self'",
-  // BitLogin hashes passwords with Argon2 compiled to WebAssembly in its worker.
-  "script-src 'self' 'wasm-unsafe-eval'",
+  // No page of BitPortal runs WebAssembly or takes a password: signing in is done at the sign-in address.
+  "script-src 'self'",
   "worker-src 'self'",
+  `frame-src ${signInOrigin}`,
   "style-src 'self'",
   "font-src 'self'",
   "img-src 'self' data: blob:",

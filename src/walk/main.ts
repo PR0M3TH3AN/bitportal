@@ -33,7 +33,7 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
-import { quietSigner, readSignedIn } from "../shared/session.js";
+import { holdsReserved, quietSigner, readSignedIn } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -382,10 +382,12 @@ async function start(): Promise<void> {
   // share the room with see who they are. Not for someone who has said to go about as a guest.
   let roomIdentity: Awaited<ReturnType<typeof issuePass>> | undefined;
   // And they can send out a post from their own room, signed with this same sign-in (notes.ts).
-  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest, nameOf: (pubkey) => profileOf(pubkey)?.name ?? null });
+  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest, nameOf: (pubkey) => profileOf(pubkey)?.name || (pubkey === signedInKey ? signedInAs : "") || null, marked: () => location.host });
   hooks.notes = homeNotes;
   const nameMe = async (pubkey: string): Promise<void> => {
     if (goesAsGuest()) return void (roomIdentity = undefined);
+    // A pass is one of the kinds the sign-in address signs for BitPortal's own address and no other.
+    if (!holdsReserved()) return;
     const quiet = await quietSigner(pubkey);
     if (!quiet) return;
     try {

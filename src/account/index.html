@@ -28,12 +28,12 @@
     <div class="you-actions">
       <a id="carry-on" class="button primary" href="/">Carry on</a>
       <a id="as-guest-in" class="button" href="/" hidden>Go back as a guest</a>
-      <button id="switch" class="button" type="button">Switch profile</button>
+      <button id="switch" class="button" type="button">Be someone else</button>
       <button id="sign-out" class="button" type="button">Sign out</button>
     </div>
     <p class="everywhere"><label><input type="checkbox" id="as-myself"> <span id="as-myself-words">Go by my name in my own room</span></label></p>
-    <p id="name-note" class="small">A world is told nothing about who you are when you arrive. To be known by name in a world, sign in there: under You, choose Sign in, and a window from your sign-in address asks you once. Your key itself never leaves this browser. This tick is for your own room here: untick it to be a guest there too.</p>
-    <p class="small muted">Switching signs this profile out of this browser, then asks who you'd like to be. Your doors, your look and your settings stay where they are.</p>
+    <p id="name-note" class="small">A world is told nothing about who you are when you arrive. To be known by name in a world, sign in there: under You, choose Sign in, and a window from your sign-in address asks you once. Your key stays with BitLogin: BitPortal never holds it. This tick is for your own room here: untick it to be a guest there too.</p>
+    <p id="switch-note" class="small muted">Signing out here signs BitPortal out, and nothing else. Your doors, your look and your settings stay where they are.</p>
     <p class="small"><a href="/publish/">Announce a world</a> as this profile.</p>
   </section>
 
@@ -45,16 +45,16 @@
       <a id="as-guest" class="button" href="/">Carry on as a guest</a>
     </section>
 
-    <!-- BitLogin's element must stay in this one place for its whole life: moving or removing it ends the session's worker. -->
+    <!-- Signing in is done at BitLogin's own address, in a window of its own. No password is typed on this page. -->
     <section class="card choice sign-in" aria-labelledby="sign-in-title">
       <div class="sign-in-words">
         <h2 id="sign-in-title">Sign in, or make a profile</h2>
         <p id="sign-in-why">So people can know you by name from world to world, and the worlds you announce are yours.</p>
       </div>
       <div class="sign-in-box">
-        <!-- Said when the browser has switched off what signing in needs (src/account/main.ts). -->
-        <p id="cannot-sign-in" class="small verify-warn" role="alert" hidden></p>
-        <bitlogin-auth id="bitlogin" data-theme="dark"></bitlogin-auth>
+        <button id="sign-in" class="button primary" type="button" disabled>Sign in</button>
+        <p id="sign-in-how" class="small">A window opens at your sign-in address. You sign in there, or make a profile, and it asks you once whether BitPortal may act as you. Nothing is typed on this page.</p>
+        <p id="sign-in-said" class="small verify-warn" role="alert" hidden></p>
         <p class="powered"><span class="powered-mark" aria-hidden="true"></span>Powered by <strong>BitLogin</strong></p>
       </div>
     </section>
@@ -63,16 +63,15 @@
   <section class="notes">
     <h2>What to know</h2>
     <ul>
-      <li>Sign-in is BitLogin, drawn in BitPortal's colours. It is alpha software: use an identity you can afford to lose until it has had an outside audit.</li>
-      <li>Your key stays in this browser. BitPortal has no account server and stores nothing about you.</li>
-      <li>You sign in once, here, and you are signed in wherever you go. A world never asks you to sign in to it.</li>
-      <li>You sign in here, on this page, and nowhere else. A world's menu can bring you here and take you back, and that is all it can do: no world will ever ask for your password itself. If one does, leave. Before you type anything, check that the address above is this site's.</li>
+      <li>Sign-in is BitLogin. It is alpha software: use an identity you can afford to lose until it has had an outside audit.</li>
+      <li id="note-where">You sign in at your sign-in address, in a window of its own, and nowhere else. No page of BitPortal and no world will ever ask for your password. If one does, leave. Before you type anything, check the address at the top of that window.</li>
+      <li>BitPortal holds no key and no password, has no account server, and stores nothing about you. It may do only what that window listed when you allowed it.</li>
+      <li>You are asked once for BitPortal, and once at each world you choose to sign in to, in the same window, as the same profile.</li>
       <li>On a phone, a computer or a headset's own screen, it is the same page with the same ways to sign in.</li>
       <li id="headset-note">From inside VR, this page opens on your headset's flat screen. When you are done, the button back to your room takes you into VR again.</li>
     </ul>
   </section>
 </main>
 <script type="module" src="/account/main.js"></script>
-<script type="module" src="/vendor/bitlogin/bitlogin.js"></script>
 </body>
 </html>

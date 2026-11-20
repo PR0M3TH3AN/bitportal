@@ -140,6 +140,39 @@ describe("where this copy's visitors sign from inside a world", () => {
   });
 });
 
+describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-11-19)", () => {
+  it("is the sign-in address's own window: no page of BitPortal has a sign-in form, and none loads BitLogin's widget", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    for (const page of ["account", "publish", "go", "walk", "lobby", "look"]) {
+      const html = readFileSync(new URL(`../src/${page}/index.html`, import.meta.url), "utf8");
+      expect(html, page).not.toContain("<bitlogin-auth");
+      expect(html, page).not.toContain("/vendor/bitlogin/");
+      expect(html, page).not.toMatch(/type="password"/);
+    }
+    // Only the session module reaches for BitLogin, and only for its client: never its widget or its headless signer.
+    const session = readFileSync(new URL("../src/shared/session.ts", import.meta.url), "utf8");
+    expect(session).toContain("/vendor/bitlogin/bitlogin-client.js");
+    expect(session).not.toMatch(/bitlogin-headless|bitlogin-session|bitlogin\.js/);
+  });
+  it("may embed that one address and no other, runs no WebAssembly, and still may be embedded by nobody", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    expect(build).toContain("`frame-src ${signInOrigin}`");
+    expect(build.split("frame-src").length - 1).toBe(1);
+    expect(build).toContain(`"script-src 'self'"`);
+    expect(build).not.toContain("wasm-unsafe-eval");
+    expect(build).toContain(`"frame-ancestors 'none'"`);
+    // The address in the policy is read from this instance's own settings, as the one named to worlds.
+    expect(/^\s*signer:\s*"(https:\/\/[^"]+)"/m.exec(readFileSync(new URL("../src/shared/instance.ts", import.meta.url), "utf8"))?.[1]).toBe(INSTANCE.signer);
+  });
+  it("leaves the Airlock waiting on nobody: it reads this browser's own note, and loads nothing from the sign-in address to do it", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const airlock = readFileSync(new URL("../src/go/airlock.ts", import.meta.url), "utf8");
+    expect(airlock).toContain("knownSignedIn()");
+    expect(airlock).not.toContain("readSignedIn");
+  });
+});
+
 describe("who says who a visitor is, at a world (NSWP-10, A pass from the signer)", () => {
   it("is their sign-in address, where this host names one: the Airlock sends no pass", () => {
     expect(INSTANCE.signer).toBe("https://bitlogin.network/");

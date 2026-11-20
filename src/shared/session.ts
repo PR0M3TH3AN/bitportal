@@ -1,11 +1,17 @@
 /**
  * Who is signed in. BitLogin is BitPortal's only session source (BitBlocks
- * convention D8); everything else is handed a signer explicitly and never
- * reaches for `window.nostr` itself.
+ * convention D8), and a visitor signs in at BitLogin's own address, in a
+ * window of its own: no page of BitPortal has a sign-in form, a password or a
+ * key (owner's decision, 2026-11-19). BitPortal is an application to
+ * BitLogin's signer: it says what it asks for, the visitor allows it once,
+ * and the signer signs that and nothing else.
  *
- * The signer is NIP-07 shaped. Its results are checked here before use.
+ * Everything else is handed a signer explicitly and never reaches for
+ * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
+ * before use.
  */
-import { cleanName, isHex64, queryRelays, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { cleanName, isHex64, queryRelays, toLocal, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { INSTANCE } from "./instance.js";
 
 export interface Signer {
   getPublicKey(): Promise<string>;
@@ -14,9 +20,11 @@ export interface Signer {
 
 export interface Session {
   pubkey: string;
-  /** How the visitor signed in: 'bitlogin', 'nip07', 'nip46', or 'test'. */
+  /** How the visitor signed in: 'bitlogin', or 'test'. */
   method: string;
   signer: Signer;
+  /** The name the sign-in address knows them by, if any. Their own profile's name is shown before it. */
+  name?: string;
 }
 
 export class SessionError extends Error {
@@ -30,21 +38,27 @@ export class SessionError extends Error {
   }
 }
 
-declare global {
-  interface Window {
-    nostr?: { getPublicKey(): Promise<string>; signEvent(e: EventTemplate): Promise<unknown> };
-  }
-}
+/** The mark BitLogin's signer puts on what it signs for an application: which site asked (its `docs/sign-in-window.md` §SW9.4). */
+export const SITE_MARK = "bitlogin:site";
 
-/** Wraps a raw NIP-07 provider so every signature is verified before it is used. */
-export function checkedSigner(pubkey: string, raw: { signEvent(e: EventTemplate): Promise<unknown> }): Signer {
+/**
+ * Wraps a signer so every signature is verified before it is used, and what was signed is what was asked.
+ *
+ * `site` is this page's own address, where the signer is BitLogin's for an application: that signer adds one tag
+ * of its own to what it signs, saying which site asked. It is allowed for only as exactly that, once, naming this
+ * site. Anything else the signer changed is a refusal.
+ */
+export function checkedSigner(pubkey: string, raw: { signEvent(e: EventTemplate): Promise<unknown> }, site?: string): Signer {
   return {
     getPublicKey: async () => pubkey,
     async signEvent(template) {
       const signed = await raw.signEvent({ kind: template.kind, created_at: template.created_at, tags: template.tags, content: template.content });
       if (!verifyEvent(signed)) throw new SessionError("bad_signature", "The signer returned an event that doesn't verify.");
       if (signed.pubkey !== pubkey) throw new SessionError("wrong_identity", "The signer signed as a different identity than the one signed in.");
-      if (signed.kind !== template.kind || signed.created_at !== template.created_at || signed.content !== template.content || JSON.stringify(signed.tags) !== JSON.stringify(template.tags)) {
+      const marks = site ? signed.tags.filter((t) => t[0] === SITE_MARK) : [];
+      const marked = marks.length === 0 || (marks.length === 1 && marks[0]!.length === 2 && marks[0]![1] === site);
+      const tags = site ? signed.tags.filter((t) => t[0] !== SITE_MARK) : signed.tags;
+      if (!marked || signed.kind !== template.kind || signed.created_at !== template.created_at || signed.content !== template.content || JSON.stringify(tags) !== JSON.stringify(template.tags)) {
         throw new SessionError("event_altered", "The signer changed the event before signing it.");
       }
       return signed;
@@ -52,95 +66,224 @@ export function checkedSigner(pubkey: string, raw: { signEvent(e: EventTemplate)
   };
 }
 
+/** Passes and grants: the kinds BitLogin signs only for the address they are reserved to (its §SW9.3, "Reserved"). */
+export const RESERVED_KINDS: readonly number[] = [27300, 27302, 27303];
+
 /**
- * Follows a `<bitlogin-auth>` element. Call before the widget's script runs,
- * so a restored session's first event isn't missed.
+ * The addresses BitLogin's own site signs passes and grants for. It is BitLogin's list (`KNOWN_APPS` in its
+ * `embedded/permissions.ts`), repeated here because a set that names a reserved kind from any other address is
+ * dropped whole there, and nobody could sign in at all.
  */
-export function watchBitLogin(el: HTMLElement, onChange: (session: Session | null, error?: SessionError) => void): void {
-  let current: string | null = null;
-  const onLogin = async (e: Event) => {
-    const detail = ((e as CustomEvent).detail ?? {}) as { pubkey?: unknown; publicKey?: unknown; method?: unknown };
-    // `pubkey` is the convention (D1); today's widget still says `publicKey`.
-    let pubkey = detail.pubkey ?? detail.publicKey;
-    const provider = window.nostr;
-    if (!provider) return onChange(null, new SessionError("no_signer", "Signed in, but no signer is available on this page."));
-    try {
-      if (!isHex64(pubkey)) pubkey = await provider.getPublicKey();
-      if (!isHex64(pubkey)) throw new SessionError("invalid_pubkey", "The sign-in didn't report a valid public key.");
-      if (pubkey === current) return;
-      current = pubkey;
-      onChange({ pubkey, method: typeof detail.method === "string" ? detail.method : "bitlogin", signer: checkedSigner(pubkey, provider) });
-    } catch (err) {
-      onChange(null, err instanceof SessionError ? err : new SessionError("sign_in_failed", "Sign-in didn't complete."));
-    }
-  };
-  const onLogout = () => {
-    current = null;
-    onChange(null);
-  };
-  // Today's hyphen events, and the colon aliases the conventions plan (D2).
-  for (const name of ["bitlogin-login", "bitlogin:login"]) el.addEventListener(name, (e) => void onLogin(e));
-  for (const name of ["bitlogin-logout", "bitlogin:logout"]) el.addEventListener(name, onLogout);
+const NAMED_ADDRESSES: readonly string[] = ["https://portal.bitblocks.network"];
+
+/** Whether this address may have a pass or a grant signed: BitPortal at the address BitLogin knows it by. */
+export const holdsReserved = (origin: string = location.origin): boolean => NAMED_ADDRESSES.includes(origin);
+
+export interface AppPermissions {
+  name: string;
+  sign: number[];
+  appData: string[];
+  read: number[];
 }
 
 /**
- * A signer for someone already signed in, with nothing shown: BitLogin's
- * headless module restores the session this browser already holds. It can't
- * sign anyone in, which is the point. A page in the middle of a crossing must
- * never ask for a sign-in (NSWP spec §6.3, §12.3), so when there is no
- * unlocked session for `expected` this returns null and the caller carries on
- * without a signature.
+ * Everything BitPortal asks BitLogin to let it do as the visitor, which they are shown once, in BitLogin's own
+ * window, before they allow it (BitLogin `docs/sign-in-window.md` §SW9.2):
+ *
+ * - 1: a post, from "My public feed" in their own room (`walk/notes.ts`).
+ * - 27300: a pass for BitPortal's own room, and the Airlock's where a host names no sign-in address.
+ * - 27302, 27303: a grant for a computer of their own, and for a world they are building (`walk/computers.ts`).
+ * - 30004: the operator's list of worlds (`operator.ts`).
+ * - 30078 under `bitportal/`: their settings, sealed to their own key, and read back (`sync.ts`).
+ * - 37300: a world they announce (`/publish/`).
+ *
+ * Adding to this is adding to what every visitor is asked to allow: it is the owner's to change.
  */
-export async function quietSigner(expected: string): Promise<{ signer: Signer; close(): void } | null> {
-  type Headless = { restore(): Promise<{ pubkey: string } | null>; signEvent(e: EventTemplate): Promise<unknown>; destroy(): void };
-  let headless: Headless | null = null;
+export function permissionsFor(origin: string): AppPermissions {
+  const reserved = holdsReserved(origin) ? RESERVED_KINDS : [];
+  return { name: "BitPortal", sign: [1, ...reserved, 30004, 30078, 37300], appData: ["bitportal/"], read: [30078] };
+}
+
+/** Where a visitor signs in when the host names nowhere: BitLogin's own site. */
+const SIGN_IN_ADDRESS = "https://bitlogin.network/";
+
+/** The address BitPortal's visitors sign in at: the one this host names for worlds too, so there is one sign-in. */
+export const signInAddress = (): string => INSTANCE.signer ?? SIGN_IN_ADDRESS;
+
+/** The sign-in address's name, for saying where a password is typed. */
+export function signInHost(): string {
   try {
-    const url = "/vendor/bitlogin/bitlogin-headless.js";
-    const mod = (await import(/* @vite-ignore */ url)) as { createHeadlessSigner(): Promise<Headless> };
-    headless = await mod.createHeadlessSigner();
-    const who = await headless.restore();
-    if (!who || who.pubkey !== expected) {
-      headless.destroy();
-      return null;
-    }
-    const held = headless;
-    return { signer: checkedSigner(expected, held), close: () => held.destroy() };
+    return new URL(signInAddress()).host;
   } catch {
-    headless?.destroy();
+    return "your sign-in address";
+  }
+}
+
+/** What BitLogin's client says of this site: whether the visitor allowed it, and as whom. */
+export interface SignInState {
+  signedIn: boolean;
+  pubkey?: string;
+  name?: string;
+  /** When what they allowed stops, in seconds. */
+  until?: number;
+  /** They allowed this site before, for less than it now asks: they have to be asked again. */
+  needsMore?: boolean;
+}
+
+/** BitLogin's client for an application (`bitlogin-client.js`), as far as BitPortal uses it. */
+interface SignInClient {
+  ready(): Promise<SignInState>;
+  state(): SignInState;
+  onChange(listener: (state: SignInState) => void): () => void;
+  signIn(): Promise<boolean>;
+  signOut(): Promise<void>;
+  signEvent(e: EventTemplate): Promise<unknown>;
+  nip44: { encrypt(peer: string, text: string): Promise<string> };
+  decryptEvent(event: NostrEvent): Promise<string>;
+}
+
+const RECORD = "bitportal:signed-in";
+
+/** Write down who the signer says is signed in: their public key and name, and nothing that could sign. */
+function keepRecord(state: SignInState): void {
+  try {
+    if (state.signedIn && isHex64(state.pubkey)) localStorage.setItem(RECORD, JSON.stringify({ pubkey: state.pubkey, ...(state.name ? { name: state.name } : {}), until: state.until ?? 0 }));
+    else localStorage.removeItem(RECORD);
+  } catch {
+    /* not kept: every page asks the signer anyway */
+  }
+}
+
+/**
+ * Who the signer last said was signed in, read from this browser's own note of it, with nothing loaded and nothing
+ * asked. For the Airlock, which must never wait on another site and never shows a sign-in: it decides only whose
+ * home to go to and what the screen says. It can sign nothing, and nothing is signed on its word.
+ */
+export function knownSignedIn(now: number = Date.now()): { pubkey: string; name?: string } | null {
+  try {
+    const kept = JSON.parse(localStorage.getItem(RECORD) ?? "null") as { pubkey?: unknown; name?: unknown; until?: unknown } | null;
+    if (!kept || !isHex64(kept.pubkey)) return null;
+    if (typeof kept.until === "number" && kept.until > 0 && kept.until * 1000 <= now) return null;
+    const name = typeof kept.name === "string" ? cleanName(kept.name) : "";
+    return name ? { pubkey: kept.pubkey, name } : { pubkey: kept.pubkey };
+  } catch {
     return null;
   }
+}
+
+let client: Promise<SignInClient | null> | null = null;
+/** The client once it is made, for a press: a window may only be opened while the press is still being handled. */
+let made: SignInClient | null = null;
+
+/**
+ * BitLogin's client for this page: one unseen frame of the sign-in address's signer, told what BitPortal asks
+ * for. Made once a page, the first time anything asks who is signed in. Null where it can't be made.
+ *
+ * BitPortal holds no key and no password, and none is typed on any page of it: the frame signs what the visitor
+ * allowed, in BitLogin's own window, and refuses everything else.
+ */
+function signInClient(): Promise<SignInClient | null> {
+  return (client ??= (async () => {
+    try {
+      const at = new URL(await toLocal(signInAddress())).origin;
+      const url = "/vendor/bitlogin/bitlogin-client.js";
+      const mod = (await import(/* @vite-ignore */ url)) as { createBitLoginClient(o: { at: string; permissions: unknown }): SignInClient };
+      made = mod.createBitLoginClient({ at, permissions: permissionsFor(location.origin) });
+      made.onChange(keepRecord);
+      return made;
+    } catch {
+      return null;
+    }
+  })());
+}
+
+/** How long a page waits for the sign-in address to say who is signed in, before carrying on as nobody. */
+const ANSWER_MS = 8000;
+
+/** What the signer says now, or null if it doesn't answer in time. */
+async function settled(c: SignInClient): Promise<SignInState | null> {
+  try {
+    // `ready()` answers with what was so the first time it was asked. What is so now is `state()`.
+    const answered = await Promise.race([c.ready().then(() => true), new Promise<false>((done) => setTimeout(() => done(false), ANSWER_MS))]);
+    if (!answered) return null;
+    const state = c.state();
+    keepRecord(state);
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+const appSigner = (c: SignInClient, pubkey: string): Signer => checkedSigner(pubkey, c, location.origin);
+
+/**
+ * Follows who is signed in on this page: called once with what the signer says, and again whenever that changes
+ * (they signed in, in BitLogin's window, or out). `error` says why nobody could be asked.
+ */
+export function watchSignIn(onChange: (session: Session | null, error?: SessionError, state?: SignInState) => void): void {
+  void (async () => {
+    const c = await signInClient();
+    if (!c) return onChange(null, new SessionError("no_signer", `${signInHost()} couldn't be reached, so nobody can sign in just now.`, true));
+    const tell = (state: SignInState) => onChange(state.signedIn && isHex64(state.pubkey) ? { pubkey: state.pubkey, method: "bitlogin", signer: appSigner(c, state.pubkey), ...(state.name ? { name: state.name } : {}) } : null, undefined, state);
+    c.onChange(tell);
+    const first = await settled(c);
+    if (first) tell(first);
+    else onChange(null, new SessionError("no_signer", `${signInHost()} didn't answer, so nobody can sign in just now.`, true));
+  })();
+}
+
+/**
+ * Open BitLogin's window, where the visitor signs in and is asked once whether BitPortal may act as them. Call it
+ * from their own press, on a page that is already watching (`watchSignIn`): a browser opens a window only for a
+ * press. Resolves true once they allowed it, false if they closed the window, said no, or it was blocked.
+ */
+export async function signIn(): Promise<boolean> {
+  const c = made ?? (await signInClient());
+  if (!c) return false;
+  try {
+    return await c.signIn();
+  } catch {
+    return false;
+  }
+}
+
+/** Sign out of BitPortal: BitLogin's signer forgets this site. They stay signed in at the sign-in address itself. */
+export async function signOut(): Promise<void> {
+  const c = await signInClient();
+  await c?.signOut();
+  keepRecord({ signedIn: false });
+}
+
+/**
+ * A signer for someone already signed in, with nothing shown. It can't sign anyone in, which is the point: a page
+ * in the middle of a crossing must never ask for a sign-in (NSWP spec §6.3, §12.3), so when the signer doesn't
+ * hold BitPortal's permission for `expected` this returns null and the caller carries on without a signature.
+ */
+export async function quietSigner(expected: string): Promise<{ signer: Signer; close(): void } | null> {
+  const c = await signInClient();
+  const state = c ? await settled(c) : null;
+  if (!c || !state?.signedIn || state.pubkey !== expected) return null;
+  // The frame is the page's, and is not put away after one signature.
+  return { signer: appSigner(c, expected), close: () => {} };
 }
 
 /**
  * The same, for sealing as well as signing: what keeping a visitor's settings with their profile needs
- * (sync.ts). BitLogin's headless module seals to the visitor's own key inside its worker; this page never sees
- * the key. Null when there is no unlocked session for `expected`, as above.
+ * (sync.ts). BitLogin's worker seals to the visitor's own key, and opens only a whole signed note of a kind
+ * BitPortal was allowed to read; this page never sees the key. Null when nobody is signed in as `expected`.
  */
-export async function quietVault(expected: string): Promise<{ pubkey: string; sign(t: EventTemplate): Promise<NostrEvent>; seal(text: string): Promise<string>; open(sealed: string): Promise<string>; close(): void } | null> {
-  type Headless = { restore(): Promise<{ pubkey: string } | null>; signEvent(e: EventTemplate): Promise<unknown>; nip44Encrypt?(peer: string, text: string): Promise<string>; nip44Decrypt?(peer: string, payload: string): Promise<string>; destroy(): void };
-  let headless: Headless | null = null;
-  try {
-    const url = "/vendor/bitlogin/bitlogin-headless.js";
-    const mod = (await import(/* @vite-ignore */ url)) as { createHeadlessSigner(): Promise<Headless> };
-    headless = await mod.createHeadlessSigner();
-    const who = await headless.restore();
-    if (!who || who.pubkey !== expected || typeof headless.nip44Encrypt !== "function" || typeof headless.nip44Decrypt !== "function") {
-      headless.destroy();
-      return null;
-    }
-    const held = headless;
-    const signer = checkedSigner(expected, held);
-    return {
-      pubkey: expected,
-      sign: (t) => signer.signEvent(t),
-      seal: (text) => held.nip44Encrypt!(expected, text),
-      open: (sealed) => held.nip44Decrypt!(expected, sealed),
-      close: () => held.destroy(),
-    };
-  } catch {
-    headless?.destroy();
-    return null;
-  }
+export async function quietVault(expected: string): Promise<{ pubkey: string; sign(t: EventTemplate): Promise<NostrEvent>; seal(text: string): Promise<string>; open(note: NostrEvent): Promise<string>; close(): void } | null> {
+  const c = await signInClient();
+  const state = c ? await settled(c) : null;
+  if (!c || !state?.signedIn || state.pubkey !== expected) return null;
+  const signer = appSigner(c, expected);
+  return {
+    pubkey: expected,
+    sign: (t) => signer.signEvent(t),
+    seal: (text) => c.nip44.encrypt(expected, text),
+    open: (note) => c.decryptEvent(note),
+    close: () => {},
+  };
 }
 
 /** The name in a profile event's content: `display_name`, else `name`, tidied. "" when there is none. */
@@ -176,18 +319,12 @@ export function shortKey(pubkey: string): string {
 }
 
 /**
- * The public-only record BitLogin keeps beside its session, read with its tiny
- * session module. Lets any page say who is signed in without loading the
- * widget. It can't sign anything.
+ * Who is signed in, as BitLogin's signer says: whoever allowed BitPortal, in BitLogin's window, and hasn't signed
+ * out of it since. Null for a guest, and where the sign-in address doesn't answer. It can't sign anything.
  */
 export async function readSignedIn(): Promise<{ pubkey: string; name?: string } | null> {
-  try {
-    const url = "/vendor/bitlogin/bitlogin-session.js";
-    const mod = (await import(/* @vite-ignore */ url)) as { readCachedSession(): Promise<{ pubkey?: string; name?: string } | null> };
-    const who = await mod.readCachedSession();
-    if (!who || !isHex64(who.pubkey)) return null;
-    return who.name ? { pubkey: who.pubkey, name: who.name } : { pubkey: who.pubkey };
-  } catch {
-    return null;
-  }
+  const c = await signInClient();
+  const state = c ? await settled(c) : null;
+  if (!state?.signedIn || !isHex64(state.pubkey)) return null;
+  return state.name ? { pubkey: state.pubkey, name: state.name } : { pubkey: state.pubkey };
 }

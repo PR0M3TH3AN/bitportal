@@ -46,7 +46,7 @@ import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goesAsGuest, goMode, inlineLook, loadLook, setGoesAsGuest, setGoMode, startingMode, type GoMode } from "../shared/look.js";
 import { forgetWhoDoor, keepWhoDoor, tabStore, takeOnce, whoDoorFrom } from "../shared/who.js";
 import { issuePass } from "../shared/pass.js";
-import { checkedSigner, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
+import { checkedSigner, knownSignedIn, quietSigner, type Signer } from "../shared/session.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
@@ -343,7 +343,7 @@ async function render(): Promise<void> {
       // Who they blocked where they came from is a link's word. Nothing is asked on the way home, so it waits:
       // for the next door, or for Settings.
       if (way.blocked) storePendingBlocks(blocksToAsk(way.blocked, loadPendingBlocks(), loadBlockedEverywhere(), lastWorld()));
-      const theirs = way.doors ? null : homeOf(loadHome(), (await readSignedIn())?.pubkey);
+      const theirs = way.doors ? null : homeOf(loadHome(), knownSignedIn()?.pubkey);
       if (theirs && (await goHome(theirs, fromHeadset, carry))) return;
       // Home is the room, whichever way they left: by one of its doors, from the list, or by a link from somewhere
       // else. They are coming from a world, on foot or in a headset, and a page of text is no place to land from
@@ -490,9 +490,11 @@ async function render(): Promise<void> {
   // NSWP-10). Only a world that reads the arrival context is told anything,
   // and only on this trip.
   const mine = a.nswpAware ? loadLook() : null;
-  // Who is signed in, from BitLogin's public record: no widget, nothing asked. `?signer=test` stands in a throwaway.
+  // Who is signed in, from this browser's own note of what the signer last said: nothing is loaded from the sign-in
+  // address here and nothing is asked, so the Airlock never waits on another site. It decides what this screen
+  // says; a pass is signed only by the signer itself, which is asked then. `?signer=test` stands in a throwaway.
   const testKey = new URLSearchParams(location.search).get("signer") === "test" ? crypto.getRandomValues(new Uint8Array(32)) : null;
-  const who: { pubkey: string; name?: string } | null = !a.nswpAware ? null : testKey ? { pubkey: getPublicKey(testKey), name: "Test visitor" } : await readSignedIn();
+  const who: { pubkey: string; name?: string } | null = !a.nswpAware ? null : testKey ? { pubkey: getPublicKey(testKey), name: "Test visitor" } : knownSignedIn();
   // The name and the picture people will see are the ones in the visitor's own Nostr profile (profiles.ts). What
   // this browser already knows of it is used at once; it is asked for here only the first time.
   let picture = "";

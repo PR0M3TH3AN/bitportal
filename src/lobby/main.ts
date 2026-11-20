@@ -531,7 +531,7 @@ function operatorActions(entry: Entry): HTMLElement | null {
     note.textContent = "Signing with your sign-in…";
     const quiet = await quietSigner(me);
     if (!quiet) {
-      note.textContent = "Your sign-in is locked. Unlock it on the Sign in page, then try again.";
+      note.textContent = "Your sign-in has run out here. Sign in again on the Sign in page, then try again.";
       button.disabled = false;
       return;
     }
@@ -754,7 +754,7 @@ function openSettings(): void {
       if (out.why === "locked") {
         syncBox.checked = false;
         setSyncOn(false);
-        return saySync("Your profile is locked in this browser, so nothing could be sealed. Unlock it under Your identity and turn this on again.");
+        return saySync("Your sign-in has run out here, so nothing could be sealed. Sign in again and turn this on again.");
       }
       if (out.why === "unreadable") return saySync("On, but your relays couldn't be reached or the copy there couldn't be opened just now. Nothing was changed. It is tried again each time a page opens.");
       saySync(out.took.length ? `On. Settings from your profile arrived (${out.took.join(", ")}). Reload to use them.` : out.sent ? "On. Your settings are kept with your profile now." : undefined);

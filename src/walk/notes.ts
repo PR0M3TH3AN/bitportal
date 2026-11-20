@@ -25,6 +25,8 @@ export interface HomeNotes {
   pubkey(): string | null;
   /** What to call them over their feed: the name in their own profile, or null. */
   who(): string | null;
+  /** The site each post is marked with by what signs it, or null for none. They are told so where they write. */
+  marked(): string | null;
   /** Say who is signed in, or that nobody is. */
   setWho(pubkey: string | null): void;
   /**
@@ -41,6 +43,8 @@ export interface HomeNotesDeps {
   asGuest(): boolean;
   /** The name in someone's own Nostr profile, if this browser knows it. */
   nameOf?(pubkey: string): string | null;
+  /** The site their signer marks each post with, to tell them so; null where it marks nothing. */
+  marked?(): string | null;
   now?: () => number;
 }
 
@@ -80,6 +84,8 @@ export function createHomeNotes(deps: HomeNotesDeps): HomeNotes {
       const pubkey = test?.pubkey ?? who;
       return pubkey && !deps.asGuest() ? (deps.nameOf?.(pubkey) ?? null) : null;
     },
+    // The throwaway identity tests use marks nothing.
+    marked: () => (test ? null : (deps.marked?.() ?? null)),
     setWho(pubkey) {
       who = pubkey;
       changed();

@@ -8,10 +8,11 @@
  * - **A look** is a handful of choices from short lists. They are in the
  *   room's menu, which is the same on a phone, at a desk and on a headset's
  *   wrist, and the visitor's own figure stands in the room to show them.
- * - **Signing in** is BitLogin, which is mounted on one page of BitPortal's
- *   own and nowhere else (`/account/`). That page is a place too: it is
- *   stepped into from the crossing's room, and left by it. So the room's
- *   control leads there, by the same room every door leads through.
+ * - **Signing in** is done at BitLogin's own address, in a window of its own.
+ *   The button that opens it is on one page of BitPortal's (`/account/`),
+ *   which is a place too: it is stepped into from the crossing's room, and
+ *   left by it. So the room's control leads there, by the same room every
+ *   door leads through.
  * - **The way back** to the world they came from is the door this site's own
  *   Airlock kept for the tab (who.ts). It leads to the Airlock, which checks
  *   it as it checks any door.
@@ -19,17 +20,12 @@
 import { LOOK_COLORS, LOOK_PARTS, type LookColor, type LookPart } from "@nswp/core";
 import type { Controls, UiCard } from "nswp-sdk/ui";
 import { colourName, forgetLook, LOOK_TITLES, lookOf, lookWord, newSeed, stepLook, storeLook, surprise, type KeptLook } from "../shared/look.js";
-import { INSTANCE } from "../shared/instance.js";
+import { holdsReserved, signInHost } from "../shared/session.js";
 import type { WhoDoor } from "../shared/who.js";
 
-/** What to say about signing in at a world: where its window comes from. "" where this host names no signer. */
-const atWorlds = (): string => {
-  try {
-    return INSTANCE.signer ? ` A world asks you to sign in there once, in a window from ${new URL(INSTANCE.signer).host}: until you do, people there see a guest.` : "";
-  } catch {
-    return "";
-  }
-};
+/** What to say about signing in: where it is done, and that a world asks once of its own. */
+const signingIn = (): string =>
+  ` You sign in at ${signInHost()}, in a window of its own: once for here, and once at each world you choose to be known in. Until you do, people there see a guest.${holdsReserved() ? "" : " At this address it signs no pass, so people in this room see a guest too."}`;
 
 export interface YouOptions {
   controls: Controls;
@@ -68,7 +64,7 @@ export function addYou(o: YouOptions): You {
     icon: "you",
     // The same card as in every world, so who they are looks the same wherever they stand.
     card: () => o.card?.() ?? null,
-    note: () => `Who you are and how you look are kept here, by ${location.host}. Your look is the same in every world you go to.${atWorlds()}${o.door ? ` When you are done, Back takes you to ${o.door.host || "the world you came from"}.` : ""}`,
+    note: () => `How you look is kept here, by ${location.host}, and is the same in every world you go to.${signingIn()}${o.door ? ` When you are done, Back takes you to ${o.door.host || "the world you came from"}.` : ""}`,
   });
   controls.add(
     { id: "figure", section: "you", icon: "look", label: "Change how you look", short: "Look", act: () => openLook() },
@@ -76,7 +72,7 @@ export function addYou(o: YouOptions): You {
       id: "identity",
       section: "you",
       icon: "you",
-      label: () => (o.signedInAs() ? `Signed in as ${o.signedInAs()}. Switch profile, or sign out` : "You are a guest. Sign in"),
+      label: () => (o.signedInAs() ? `Signed in as ${o.signedInAs()}. Be someone else, or sign out` : "You are a guest. Sign in"),
       short: () => (o.signedInAs() ? "You" : "Sign in"),
       act: () => o.goSignIn(),
     },

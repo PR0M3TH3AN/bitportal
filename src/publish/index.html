@@ -25,8 +25,9 @@
     <p id="who" role="status">Checking whether you're signed in.</p>
     <details id="identity" class="identity-box">
       <summary>Sign in, or use a different identity</summary>
-      <!-- BitLogin's element stays in this one place for its whole life. -->
-      <bitlogin-auth id="bitlogin"></bitlogin-auth>
+      <!-- Signing in is done at BitLogin's own address, in a window of its own. No password is typed on this page. -->
+      <p><button id="sign-in" class="button primary" type="button" disabled>Sign in</button></p>
+      <p id="sign-in-how" class="small">A window opens at <span id="sign-in-at">your sign-in address</span>. You sign in there, and it asks you once whether BitPortal may act as you. To announce as a different identity, sign out on the <a href="/account/">Who you are</a> page first.</p>
     </details>
   </section>
 
@@ -106,6 +107,5 @@
   </form>
 </main>
 <script type="module" src="/publish/main.js"></script>
-<script type="module" src="/vendor/bitlogin/bitlogin.js"></script>
 </body>
 </html>

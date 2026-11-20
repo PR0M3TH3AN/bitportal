@@ -51,7 +51,7 @@ function testVault(): Vault {
   const secret = Uint8Array.from(hex.match(/../g)!.map((h) => Number.parseInt(h, 16)));
   const pubkey = getPublicKey(secret);
   const key = getConversationKey(secret, pubkey);
-  return { pubkey, sign: async (t) => finalizeEvent(t, secret), seal: async (text) => nip44Encrypt(text, key), open: async (sealed) => nip44Decrypt(sealed, key) };
+  return { pubkey, sign: async (t) => finalizeEvent(t, secret), seal: async (text) => nip44Encrypt(text, key), open: async (note) => nip44Decrypt(note.content, key) };
 }
 const testShelf: Shelf = {
   async fetch(pubkey) {

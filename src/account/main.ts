@@ -2,10 +2,12 @@
  * Who you are: BitPortal's sign-in page.
  *
  * Three choices, each as easy as the others: stay anonymous, sign in, or
- * switch to another profile. Signing in is BitLogin, drawn in BitPortal's
- * colours (its own theme values, set in bitportal.css). BitPortal holds no
- * key and has no account server: the widget does the signing in, and this
- * page only says who it reports.
+ * be someone else. Signing in is done at BitLogin's own address, in a window
+ * of its own: this page has a button that opens it, and nothing to type
+ * into. BitPortal holds no key, no password and no account server. It is an
+ * application to BitLogin's signer: the window lists what BitPortal asks
+ * for, the visitor allows it once, and this page says who the signer
+ * reports (`shared/session.ts`).
  *
  * A visitor comes here from somewhere (the room, the lobby, the Airlock) and
  * goes back there when they are done: `?back=walk`, with `&xr=1` if they left
@@ -17,15 +19,15 @@
  * Airlock still checks the door before they go.
  */
 import { attachJumpList } from "../shared/jump.js";
-import { encodeNpub } from "@nswp/core";
-import { label, pictureOf, PROFILES_EVENT, wantProfiles } from "../shared/profiles.js";
-import { watchBitLogin, type Session } from "../shared/session.js";
+import { encodeNpub, toLocal } from "@nswp/core";
+import { label, pictureOf, profileOf, PROFILES_EVENT, wantProfiles } from "../shared/profiles.js";
+import { signIn, signInAddress, signInHost, signOut, watchSignIn, type Session } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { VERSION } from "../shared/version.js";
-import { INSTANCE, sendsPass } from "../shared/instance.js";
+import { sendsPass } from "../shared/instance.js";
 import { goesAsGuest, setGoesAsGuest } from "../shared/look.js";
 import { chooseOnce, readWhoDoor, tabStore } from "../shared/who.js";
-import { cannotSignInHere, wayBack } from "./back.js";
+import { wayBack } from "./back.js";
 import { createBooth } from "./booth.js";
 
 declare global {
@@ -89,58 +91,72 @@ if (!signsThere) {
   $("as-myself-words").textContent = "Go to worlds as myself";
   $("name-note").textContent =
     "Signed in here is signed in everywhere: you don't sign in to worlds one by one. Each world you visit that has proved who it is is told your public key, and so are the people in any room you join there. The pass that proves it lasts four hours and can't be taken back. Your key itself never leaves this browser. Untick this to visit worlds as a guest.";
-} else {
-  try {
-    $("name-note").textContent = ($("name-note").textContent ?? "").replace("your sign-in address", new URL(INSTANCE.signer!).host);
-  } catch {
-    /* said without its name */
-  }
 }
+// Said by its name, wherever this page says "your sign-in address".
+const host = signInHost();
+for (const id of ["name-note", "sign-in-how", "note-where"]) $(id).textContent = ($(id).textContent ?? "").replace("your sign-in address", host);
 if (door) document.title = `Who you are at ${door.host || "the world you were in"} · BitPortal`;
 
-// A browser gives a page its cryptography only at an https address, or at localhost on the same machine. Anywhere
-// else (a plain http address on a home network, as when a phone opens a development server) BitLogin finds the
-// account and can't open it, and says "Account not found or credentials incorrect", whatever was typed. That
-// sends people looking for a wrong password, so it is said plainly here, before they type.
-const cannot = cannotSignInHere({ secure: window.isSecureContext, subtle: !!globalThis.crypto?.subtle, host: location.host, protocol: location.protocol });
-if (cannot) {
-  $("cannot-sign-in").textContent = cannot;
-  $("cannot-sign-in").hidden = false;
-}
-
 const who = $("who");
-const widget = $("bitlogin") as HTMLElement & { logout?: () => Promise<void> };
-let settled = false;
+const signInButton = $<HTMLButtonElement>("sign-in");
+const said = $("sign-in-said");
+signInButton.textContent = `Sign in at ${host}`;
+/** They pressed "Be someone else": signed out here, and told how to be another profile. */
 let switching = false;
 /** They were a guest when the page came up, and have signed in since. */
 let wasGuest = false;
+/** The sign-in address, for a link to it: on a development server, the local copy. */
+let address = signInAddress();
+void toLocal(address).then((local) => (address = local));
+
+const say = (words: string) => {
+  said.textContent = words;
+  said.hidden = !words;
+};
 
 const show = (session: Session | null, message?: string) => {
   $("signed-in").hidden = !session;
   $("guest").hidden = !!session;
   // Signed in, the profile is the only card below, and takes the page's width.
   $("choices").classList.toggle("signed", !!session);
+  signInButton.hidden = !!session;
   $("sign-in-title").textContent = session ? "Your profile" : switching ? "Who would you like to be?" : "Sign in, or make a profile";
-  $("sign-in-why").textContent = session
-    ? "Everything about this profile is BitLogin's to show: its keys, its recovery, its other ways to sign in."
-    : switching
-      ? "Sign in as another profile, or make a new one. Or stay anonymous."
-      : "So people can know you by name from world to world, and the worlds you announce are yours.";
+  const why = $("sign-in-why");
+  if (session) {
+    // Its keys, its recovery, its other ways to sign in and the sites it has allowed are BitLogin's to show.
+    const link = document.createElement("a");
+    link.href = address;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = host;
+    why.replaceChildren("This profile is kept by BitLogin. Its keys, its recovery, its other ways to sign in and the sites you have allowed are at ", link, ".");
+  } else if (switching) {
+    const link = document.createElement("a");
+    link.href = address;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = `sign out at ${host}`;
+    why.replaceChildren("BitPortal is signed out. ", `${host} still remembers the profile you used, and its window signs you in as that one. To be someone else, `, link, " first, then sign in here.");
+  } else {
+    why.textContent = "So people can know you by name from world to world, and the worlds you announce are yours.";
+  }
+  $("sign-in-how").hidden = !!session;
   who.textContent =
     message ??
     (session
       ? door
-        ? `You're signed in. Go back to ${door.host || "the world you were in"} by name, or as a guest.`
+        ? `You're signed in. Go back to ${door.host || "the world you were in"}.`
         : "You're signed in."
       : switching
-        ? "You're signed out of that profile. Sign in as another, or carry on as a guest."
+        ? "You're signed out of BitPortal. Sign in as another profile, or carry on as a guest."
         : door
-          ? `You're a guest. Sign in below to go back to ${door.host || "the world you were in"} by name, or go back as you are.`
+          ? `You're a guest. Sign in below, or go back to ${door.host || "the world you were in"} as you are.`
           : "You're a guest. That is a fine way to be here: sign in only if you want to be known by name.");
   if (!session) {
     wasGuest = true;
     return;
   }
+  say("");
   // They came from a world to sign in, and have: the way back is the next thing, so it is put under their hand.
   if (door && wasGuest) {
     wasGuest = false;
@@ -148,10 +164,11 @@ const show = (session: Session | null, message?: string) => {
     $("carry-on").focus({ preventScroll: true });
   }
   // By the name they chose for themselves, with their picture: never a string of hex. Until their profile has
-  // been read, and for someone with no name, the short form of their public key stands in.
+  // been read, and for someone with no name, the name the sign-in address knows them by, or the short form of
+  // their public key, stands in.
   const sayWho = () => {
     if ($("signed-in").hidden) return;
-    $("you-name").textContent = label(session.pubkey);
+    $("you-name").textContent = profileOf(session.pubkey)?.name || session.name || label(session.pubkey);
     $("you-key").textContent = "";
     $("you-key").title = encodeNpub(session.pubkey);
     void pictureOf(session.pubkey).then((picture) => {
@@ -165,36 +182,42 @@ const show = (session: Session | null, message?: string) => {
   wantProfiles([session.pubkey], () => loadSettings().relays);
 };
 
-watchBitLogin(widget, (session, error) => {
-  settled = true;
+watchSignIn((session, error, state) => {
+  // The button works once the signer's frame is up: a window opens only for a press, and can't wait for one.
+  signInButton.disabled = false;
   if (session) switching = false;
-  show(session, error ? `${error.message} Try signing in again.` : undefined);
+  if (error) say(error.message);
+  else if (state?.needsMore) say(`You allowed BitPortal at ${host} before, for less than it asks for now. Sign in again and it will list the rest.`);
+  show(session, error ? "You're a guest for now." : undefined);
 });
 
-/** Sign this profile out of this browser. The widget does it: it is BitLogin's session to end. */
-const signOut = async (thenSwitch: boolean): Promise<void> => {
+signInButton.addEventListener("click", async () => {
+  say("");
+  signInButton.disabled = true;
+  const done = await signIn();
+  signInButton.disabled = false;
+  // Allowed: the signer says so itself, and the page is drawn from that.
+  if (!done) say(`You weren't signed in: the window at ${host} was closed before you allowed BitPortal, or your browser didn't let it open. Press the button to try again.`);
+});
+
+/** Sign BitPortal out: BitLogin's signer forgets this site. The sign-in address itself still remembers the profile. */
+const leave = async (thenSwitch: boolean): Promise<void> => {
   switching = thenSwitch;
   const buttons = [$<HTMLButtonElement>("switch"), $<HTMLButtonElement>("sign-out")];
   for (const b of buttons) b.disabled = true;
   try {
-    if (typeof widget.logout !== "function") throw new Error("no way to sign out from here");
-    await widget.logout();
-    // The widget says so itself. If it doesn't, say it for it.
+    await signOut();
+    // The signer says so itself. If it doesn't, say it for it.
     setTimeout(() => {
       if (!$("signed-in").hidden) show(null);
     }, 600);
-    if (thenSwitch) widget.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (thenSwitch) signInButton.scrollIntoView({ block: "center", behavior: "smooth" });
   } catch {
     switching = false;
-    who.textContent = "That couldn't be done from here. Use Log out in the BitLogin box below.";
+    who.textContent = `That couldn't be done from here: ${host} didn't answer. Try again in a moment.`;
   } finally {
     for (const b of buttons) b.disabled = false;
   }
 };
-$("switch").addEventListener("click", () => void signOut(true));
-$("sign-out").addEventListener("click", () => void signOut(false));
-
-// The widget announces a restored session by itself; if nothing arrives, they are a guest.
-setTimeout(() => {
-  if (!settled) show(null);
-}, 2500);
+$("switch").addEventListener("click", () => void leave(true));
+$("sign-out").addEventListener("click", () => void leave(false));
