@@ -1,4 +1,4 @@
-import { O as R, D as Ie, P as me, h as L, I as T, J as _, c as ce, y as ye, C as fe, u as W, v as $ } from "./bitlogin-shared-CFGY85HS.js";
+import { P as R, D as Ie, Q as me, h as L, I as T, J as _, c as ce, y as ye, C as fe, u as W, v as $ } from "./bitlogin-shared-Cj9s0_W_.js";
 const _e = 0, Ze = 5, We = 10002, $e = 10050, e3 = 22242, i3 = 24133, a3 = 30078, r3 = "bitlogin:password:v1", n3 = "bitlogin:recovery:v1", t3 = "bitlogin:bootstrap-relays:v1", s3 = "bitlogin.credential.v1", o3 = "bitlogin.recovery.v1", Ae = "bitlogin.recovery-export.v3";
 function l3(e) {
   return R.encodeFromBytes("npub", Ie(e));
