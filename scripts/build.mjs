@@ -99,6 +99,9 @@ writeFileSync(
             { key: "Permissions-Policy", value: "xr-spatial-tracking=(self), microphone=(self), camera=(), geolocation=()" },
           ],
         },
+        // Always the latest (NSWP-09): a browser asks before it uses a copy of a page or a script it kept. Said
+        // outright, and not left to the host's habit. Not for the fonts and previews, which have rules of their own.
+        { source: "/((?!fonts/|previews/).*)", headers: [{ key: "Cache-Control", value: "no-cache" }] },
         { source: "/fonts/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
         // Mirrored previews are named by their hash, so a file never changes.
         { source: "/previews/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
