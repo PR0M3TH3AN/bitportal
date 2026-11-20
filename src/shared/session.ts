@@ -70,14 +70,22 @@ export function checkedSigner(pubkey: string, raw: { signEvent(e: EventTemplate)
 export const RESERVED_KINDS: readonly number[] = [27300, 27302, 27303];
 
 /**
- * The addresses BitLogin's own site signs passes and grants for. It is BitLogin's list (`KNOWN_APPS` in its
- * `embedded/permissions.ts`), repeated here because a set that names a reserved kind from any other address is
- * dropped whole there, and nobody could sign in at all.
+ * The address BitLogin's own site knows BitPortal by, and signs passes and grants for (`KNOWN_APPS` in its
+ * `embedded/permissions.ts`). It is what is gone by only where the sign-in address can't be asked: one too old
+ * to say, or one that doesn't answer. Everywhere else the sign-in address is asked, and its answer stands.
  */
 const NAMED_ADDRESSES: readonly string[] = ["https://portal.bitblocks.network"];
+export const namedAddress = (origin: string): boolean => NAMED_ADDRESSES.includes(origin);
 
-/** Whether this address may have a pass or a grant signed: BitPortal at the address BitLogin knows it by. */
-export const holdsReserved = (origin: string = location.origin): boolean => NAMED_ADDRESSES.includes(origin);
+/** What the sign-in address said when it was asked whether it will have passes and grants signed here. Null until it has. */
+let said: boolean | null = null;
+
+/**
+ * Whether a pass or a grant can be signed at this address. The sign-in address decides, and says so when
+ * BitPortal tells it what it asks for: at BitPortal's own address, and at a local copy of BitPortal beside a
+ * local copy of the sign-in address. Before it has answered, it is taken to be so only at BitPortal's own.
+ */
+export const holdsReserved = (origin: string = location.origin): boolean => said ?? namedAddress(origin);
 
 export interface AppPermissions {
   name: string;
@@ -97,11 +105,13 @@ export interface AppPermissions {
  * - 30078 under `bitportal/`: their settings, sealed to their own key, and read back (`sync.ts`).
  * - 37300: a world they announce (`/publish/`).
  *
+ * `reserved` false leaves out the pass and the two grants: what is asked for at an address the sign-in address
+ * won't sign those for, where naming them would have the whole set turned down.
+ *
  * Adding to this is adding to what every visitor is asked to allow: it is the owner's to change.
  */
-export function permissionsFor(origin: string): AppPermissions {
-  const reserved = holdsReserved(origin) ? RESERVED_KINDS : [];
-  return { name: "BitPortal", sign: [1, ...reserved, 30004, 30078, 37300], appData: ["bitportal/"], read: [30078] };
+export function permissionsFor(reserved: boolean): AppPermissions {
+  return { name: "BitPortal", sign: [1, ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300], appData: ["bitportal/"], read: [30078] };
 }
 
 /** Where a visitor signs in when the host names nowhere: BitLogin's own site. */
@@ -128,6 +138,8 @@ export interface SignInState {
   until?: number;
   /** They allowed this site before, for less than it now asks: they have to be asked again. */
   needsMore?: boolean;
+  /** Whether the sign-in address will show a visitor what this site asked for. Left out by one too old to say. */
+  canAsk?: boolean;
 }
 
 /** BitLogin's client for an application (`bitlogin-client.js`), as far as BitPortal uses it. */
@@ -142,6 +154,8 @@ interface SignInClient {
   signEvent(e: EventTemplate): Promise<unknown>;
   nip44: { encrypt(peer: string, text: string): Promise<string> };
   decryptEvent(event: NostrEvent): Promise<string>;
+  /** Remove its frame and stop listening. */
+  destroy(): void;
 }
 
 const RECORD = "bitportal:signed-in";
@@ -190,7 +204,21 @@ function signInClient(): Promise<SignInClient | null> {
       const at = new URL(await toLocal(signInAddress())).origin;
       const url = "/vendor/bitlogin/bitlogin-client.js";
       const mod = (await import(/* @vite-ignore */ url)) as { createBitLoginClient(o: { at: string; permissions: unknown }): SignInClient };
-      made = mod.createBitLoginClient({ at, permissions: permissionsFor(location.origin) });
+      const asking = (reserved: boolean) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved) });
+      // Everything is asked for, and the sign-in address says whether it will show a visitor that. Where it won't
+      // (an address it signs no pass or grant for), the same is asked again without those, so signing in still
+      // works there and only what needs them is missing. One too old to say, or silent, is asked as before: for
+      // everything at BitPortal's own address, and for the rest elsewhere.
+      let c = asking(true);
+      const first = await answered(c);
+      const can = first?.canAsk;
+      const reserved = can ?? namedAddress(location.origin);
+      if (!reserved) {
+        c.destroy();
+        c = asking(false);
+      }
+      if (can !== undefined) said = can;
+      made = c;
       made.onChange(keepRecord);
       return made;
     } catch {
@@ -201,6 +229,16 @@ function signInClient(): Promise<SignInClient | null> {
 
 /** How long a page waits for the sign-in address to say who is signed in, before carrying on as nobody. */
 const ANSWER_MS = 8000;
+
+/** What the signer says to being told what is asked for, or null if it doesn't answer in time. Nothing is written down. */
+async function answered(c: SignInClient): Promise<SignInState | null> {
+  try {
+    const ok = await Promise.race([c.ready().then(() => true), new Promise<false>((done) => setTimeout(() => done(false), ANSWER_MS))]);
+    return ok ? c.state() : null;
+  } catch {
+    return null;
+  }
+}
 
 /** What the signer says now, or null if it doesn't answer in time. */
 async function settled(c: SignInClient): Promise<SignInState | null> {

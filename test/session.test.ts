@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { finalizeEvent, getPublicKey, type EventTemplate } from "@nswp/core";
-import { checkedSigner, holdsReserved, knownSignedIn, permissionsFor, RESERVED_KINDS, SITE_MARK, signInAddress, signInHost } from "../src/shared/session.js";
+import { checkedSigner, holdsReserved, knownSignedIn, namedAddress, permissionsFor, RESERVED_KINDS, SITE_MARK, signInAddress, signInHost } from "../src/shared/session.js";
 import { INSTANCE } from "../src/shared/instance.js";
 
 const secret = new Uint8Array(32).fill(7);
@@ -13,21 +13,32 @@ const adding = (...extra: string[][]) => ({ signEvent: async (t: EventTemplate) 
 
 describe("what BitPortal asks its sign-in address to let it do", () => {
   it("is one short list, shown to the visitor once, and it names nothing sensitive", () => {
-    const asked = permissionsFor(HERE);
+    const asked = permissionsFor(true);
     expect(asked).toEqual({ name: "BitPortal", sign: [1, 27300, 27302, 27303, 30004, 30078, 37300], appData: ["bitportal/"], read: [30078] });
     // Never a profile, a follow list, a deletion, a mute or relay list, a relay sign-in, or anyone's messages.
     for (const kind of [0, 3, 5, 10000, 10002, 10050, 22242, 4, 13, 1059]) expect([...asked.sign, ...asked.read]).not.toContain(kind);
     // Its own data only, under its own name: never every application's.
     expect(asked.appData).not.toContain("*");
   });
-  it("asks for a pass and a grant only at the address BitLogin signs them for", () => {
+  it("is the same without the pass and the grants, where the sign-in address won't sign those", () => {
+    const less = permissionsFor(false);
+    for (const kind of RESERVED_KINDS) expect(less.sign).not.toContain(kind);
+    expect(less).toEqual({ ...permissionsFor(true), sign: [1, 30004, 30078, 37300] });
+  });
+  it("takes a pass and a grant to be signable only at BitPortal's own address, until the sign-in address has said", () => {
+    expect(namedAddress(HERE)).toBe(true);
     expect(holdsReserved(HERE)).toBe(true);
     for (const elsewhere of ["https://192.168.68.84:4300", "https://bitportal.vercel.app", "https://portal.bitblocks.network.example", "http://portal.bitblocks.network"]) {
+      expect(namedAddress(elsewhere)).toBe(false);
       expect(holdsReserved(elsewhere)).toBe(false);
-      // Named anywhere else, BitLogin drops the whole set and nobody could sign in at all.
-      for (const kind of RESERVED_KINDS) expect(permissionsFor(elsewhere).sign).not.toContain(kind);
-      expect(permissionsFor(elsewhere).sign).toEqual([1, 30004, 30078, 37300]);
     }
+  });
+  it("asks the sign-in address for everything first, and only then for less: its answer decides, not an address", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const session = readFileSync(new URL("../src/shared/session.ts", import.meta.url), "utf8");
+    expect(session).toContain("let c = asking(true);");
+    expect(session).toContain("const reserved = can ?? namedAddress(location.origin);");
+    expect(session).toContain("c.destroy();");
   });
   it("is asked of the same address a world is told to sign in at: one sign-in", () => {
     expect(signInAddress()).toBe(INSTANCE.signer);

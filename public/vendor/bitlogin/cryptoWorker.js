@@ -1,8 +1,8 @@
 import { K as fi, b as pi, c as H, D as Lr, d as We, f as xt, w as _, u as Pt, g as Dt, h as dt, j as Cn, S as Wt, k as Gt, l as Xe, m as mt, B as hi, n as vi, o as Ht, q as ft, r as xn, s as Tn, a as lt, t as Dr, v as wi, x as gi } from "./bitlogin-shared-B1USaWR3.js";
 import { g as k, s as oe, v as M, b as pt, a as G, f as Qe, e as Ze, h as In, i as Ur, u as z, j as bi, k as zt, l as On, m as Mn, n as mi, o as ki, p as Ei, q as _i, t as Pi, w as Qt, x as cr, y as Ki, z as Ai, A as Ri, c as I, d as V, B as Ln, C as Si, D as Vr, E as pn, F as Kt } from "./bitlogin-shared-BZPITbpl.js";
 import { h as Jt, a as et, c as Ni, l as qr, s as Ci } from "./bitlogin-shared-DSv2Wjlg.js";
-import { b as kt, r as Ue, c as Ke, k as xi, i as Fe, d as lr, T as Zt, e as en, R as tn, n as ur, g as Ti, h as Ii, w as nn, t as Oi, m as Mi, N as hn, j as yr, l as Br } from "./bitlogin-shared-D0Tnl0qY.js";
-import { c as Li, i as ht, r as Dn, m as Un, A as Ut, k as Di, p as Ui, j as Vi, n as qi, o as Bi, M as Fi, q as $i } from "./bitlogin-shared-BGjrJsFT.js";
+import { b as kt, r as Ue, c as Ke, k as xi, i as Fe, d as lr, T as Zt, e as en, R as tn, n as ur, g as Ti, h as Ii, w as nn, t as Oi, m as Mi, N as hn, j as yr, l as Br } from "./bitlogin-shared-DJU9OZ1J.js";
+import { c as Li, j as ht, r as Dn, m as Un, A as Ut, k as Di, p as Ui, n as Vi, o as qi, q as Bi, M as Fi, t as $i } from "./bitlogin-shared-CCVHnhgs.js";
 function Fr(e) {
   const t = k(e.privateKey);
   return oe({
@@ -3104,7 +3104,7 @@ function lo(e) {
   }
 }
 function uo(e) {
-  return e.trim().normalize("NFKD").split(/\s+/u).join(" ");
+  return e.trim().normalize("NFKD").toLowerCase().split(/\s+/u).join(" ");
 }
 async function Wn(e) {
   return ja(uo(e), "");
