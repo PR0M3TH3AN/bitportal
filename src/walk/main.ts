@@ -64,6 +64,10 @@ interface Door {
   metal: Alloy;
   info: THREE.Sprite;
   hover: number;
+  /** The small tag beside the arch that saves this door, or takes it off the visitor's wall. Shown only to someone standing at the door. */
+  keep: THREE.Mesh;
+  /** How much of the tag is showing, 0 to 1. */
+  shown: number;
 }
 
 /** Anything in the room that can be pointed at and selected. */
@@ -81,7 +85,9 @@ interface Clickable {
 }
 
 interface TestHooks {
-  marks?: () => { ring: [number, number] | null; dot: [number, number] | null; dots: number };
+  marks?: () => { ring: [number, number] | null; dot: [number, number] | null; dots: number; turns: number };
+  /** The way they are walking: each spot still ahead. */
+  path?: () => number[][];
   everyDoor?: DoorList;
   /** Who the visitor is and how they look. */
   you?: You;
@@ -123,6 +129,8 @@ interface TestHooks {
   visit(id: string): void;
   roomInfo(): unknown;
   teleport(x: number, z: number): void;
+  /** Turn the visitor to face this way, in degrees. For tests. */
+  face?: (degrees: number) => void;
   device?: unknown;
   spot?: (name: string, u: number, v: number) => { local: number[]; screen: number[] } | null;
   computers?: Computers;
@@ -421,11 +429,32 @@ async function start(): Promise<void> {
     const took = ((e as CustomEvent).detail as { took?: string[] } | undefined)?.took ?? [];
     if (took.length) controls.say("Settings from your profile have arrived. They are used from your next door.");
   });
+  /** The door the visitor is standing at, or null. */
+  let atDoor: Door | null = null;
+  /** Save or remove a door: set once the walls are built (`toggle`). */
+  let keepDoor: (door: Door) => Promise<void> = async () => {};
+  /** Open the list of every door: set once there is a list to open. */
+  let openList = () => {};
+  controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choosing one leaves from where you stand, and your Airlock shows its real address next." });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
-    // Every door this copy shows, on a panel in the room: nobody is sent out of the room to read a list.
-    { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => everyDoor?.open() },
+    // Every door this copy shows, without leaving the room: in the menu on a flat screen, like every other list
+    // there, and on a panel hung in the room in a headset, where there is no menu to read.
+    { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => openList() },
+    // Offered at a door, to whoever is standing at it: the same thing its tag does.
+    {
+      id: "door-keep",
+      section: "travel",
+      icon: "save",
+      hotbar: true,
+      label: () => (atDoor ? (atDoor.wall === "yours" ? `Remove ${atDoor.entry.world.title} from your doors` : `Save ${atDoor.entry.world.title} to your doors`) : "Save this door"),
+      short: () => (atDoor?.wall === "yours" ? "Remove" : "Save"),
+      hidden: () => !atDoor || renderer.xr.isPresenting,
+      act: () => {
+        if (atDoor) void keepDoor(atDoor);
+      },
+    },
     // The front page still has what needs a page: signing in, settings, announcing a world. It can't be seen from a headset.
     { id: "front-page", section: "travel", icon: "list", label: "The front page: settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/") },
   );
@@ -479,6 +508,11 @@ async function start(): Promise<void> {
   // a metre wide, and stands clear of the door it belongs to.
   const pillGeo = new THREE.PlaneGeometry(1.0, 0.3);
   const widePillGeo = pillGeo;
+  // A door's own tag: half that size, at the height of a hand, on the jamb. It is there only for whoever is
+  // standing at the door, so a wall of doors is not a wall of buttons.
+  const keepGeo = new THREE.PlaneGeometry(0.4, 0.12);
+  /** How near a door they must stand for its tag, and the Save key, to be offered: about four steps. */
+  const KEEP_NEAR = 3.4;
   /** Frames standing where no door is yet: they are still, and their light is low. */
   const emptyMetals: Alloy[] = [];
   // Your wall is ahead of where a visitor first stands; the suggested wall is behind.
@@ -545,9 +579,11 @@ async function start(): Promise<void> {
     const { frame, metal } = doorFrame(ACCENT);
     const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device), transparent: true }));
     plate.position.set(0, DOOR_H + 0.74 + plateH / 2, 0);
-    // The door's one button, in a row of its own between the arch and the plate.
-    const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save);
-    button.position.set(0, DOOR_H + 0.52, 0.03);
+    // The door's one button: a small tag on the right jamb, at a hand's height, for whoever is standing at the door.
+    const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save, keepGeo);
+    button.position.set(DOOR_W / 2 + 0.1, 1.3, 0.3);
+    button.visible = false;
+    (button.material as THREE.MeshBasicMaterial).opacity = 0;
     // What a door says about itself, for a headset: low on the door, so the view through it stays clear, and
     // kept the same size in the visitor's view however near they stand (it is scaled every frame). On a flat
     // screen it isn't drawn at all: the same words are beside the controls, where they are never in the way.
@@ -558,7 +594,7 @@ async function start(): Promise<void> {
     info.renderOrder = 2;
     group.add(view, frame, plate, button, info);
     walls[wall].add(group);
-    const door: Door = { entry, why, wall, group, view, frame, metal, info, hover: 0 };
+    const door: Door = { entry, why, wall, group, view, frame, metal, info, hover: 0, keep: button, shown: 0 };
     clickables.push({ mesh: view, door, say: "", act: () => void visit(door) });
     clickables.push({
       mesh: button,
@@ -597,7 +633,7 @@ async function start(): Promise<void> {
     b.position.set(0, 0.9, 0.05);
     group.add(label, b);
     walls[wall].add(group);
-    clickables.push({ mesh: b, say: "Every door, as a list.", act: () => everyDoor?.open() });
+    clickables.push({ mesh: b, say: "Every door, as a list.", act: () => openList() });
   };
 
   const header = (wall: Wall, text: string) => {
@@ -664,6 +700,7 @@ async function start(): Promise<void> {
     // The list has all of them, however many fit on the walls. Each has passed what this copy shows (catalog.permits).
     listed = [...mine.map((entry) => ({ entry, saved: true })), ...ordered.map((x) => ({ entry: x.entry, saved: false }))].filter((x) => catalog.permits(x.entry.id, x.entry.world));
     everyDoor?.refresh();
+    fillDoorMenu();
     state.doorCount = doors.length;
     state.listed = listed.length;
     state.yours = mine.length;
@@ -696,6 +733,31 @@ async function start(): Promise<void> {
     saved = next;
     return storeSaved(saved);
   };
+  /** The list in the menu: a row for every door, in the order the panel in a headset shows them. */
+  let doorRows: string[] = [];
+  const fillDoorMenu = () => {
+    for (const id of doorRows) controls.remove(id);
+    doorRows = listed.map(({ entry, saved: mine }, i) => {
+      const id = `door-row-${i}`;
+      const host = hostParts(entry.world.url);
+      controls.add({
+        id,
+        section: "doors",
+        icon: mine ? "save" : "door",
+        label: `${entry.world.title}, at ${host.prefix}${host.domain}${mine ? ". One of yours" : ""}`,
+        short: entry.world.title,
+        // In a headset the list is the panel in the room.
+        hidden: () => renderer.xr.isPresenting,
+        act: () => {
+          hud.setOpen(false);
+          void visitEntry(entry, "chosen");
+        },
+      });
+      return id;
+    });
+  };
+  openList = () => (renderer.xr.isPresenting ? everyDoor?.open() : hud.setOpen(true, "doors"));
+
   const toggle = async (door: Door) => {
     const title = door.entry.world.title;
     if (door.wall === "yours") {
@@ -712,6 +774,7 @@ async function start(): Promise<void> {
     }
     await buildDoors();
   };
+  keepDoor = toggle;
   const putBack = async () => {
     if (!lastRemoved) return;
     const { place: removed, title } = lastRemoved;
@@ -826,14 +889,36 @@ async function start(): Promise<void> {
   const marks = createFloorMarks(ACCENT);
   scene.add(marks.group);
   hooks.marks = () => marks.info();
+  hooks.path = () => stroll.path.map(([x, z]) => [Math.round(x * 100) / 100, Math.round(z * 100) / 100]);
+  const pressed = new THREE.Vector3();
+  /**
+   * Where a press on the floor leads on a flat screen: from their feet when they are standing, and from the end
+   * of the path when they are walking one, so a path is pressed out as it is walked (the kit's stroll). Never
+   * further than one press reaches, and never outside the room.
+   */
+  const floorLed = (): [number, number] | null => {
+    if (!raycaster.ray.intersectPlane(floorPlane, pressed)) return null;
+    camera.getWorldPosition(headNow);
+    if (Math.hypot(pressed.x - headNow.x, pressed.z - headNow.z) < 0.3) return null;
+    let [x, z] = stroll.reach(pressed.x, pressed.z);
+    const out = Math.hypot(x, z);
+    const limit = RADIUS - 1.2;
+    if (out > limit) {
+      x *= limit / out;
+      z *= limit / out;
+    }
+    return [x, z];
+  };
   const stepToFloor = () => {
-    const to = floorSpot();
-    if (!to) return;
     // On a flat screen it is always a walk, on a phone as at a desk, with motion on or off: the walk the keys make.
     if (!renderer.xr.isPresenting) {
+      const led = floorLed();
+      if (!led) return;
       state.steps = ((state.steps as number | undefined) ?? 0) + 1;
-      return stroll.to(to.x, to.z);
+      return stroll.tap(led[0], led[1]);
     }
+    const to = floorSpot();
+    if (!to) return;
     // In a headset, where a slide turns stomachs, it is a step that lands at once, at the pace of someone running:
     // a press that comes too soon does nothing, and the ring on the floor is dim until one would.
     camera.getWorldPosition(headNow);
@@ -897,7 +982,8 @@ async function start(): Promise<void> {
     if (presence.personAt(raycaster)) return { mesh: null, say: "", act: () => void presence.pressAt(raycaster) };
     for (const hit of raycaster.intersectObjects(clickables.flatMap((c) => (c.mesh ? [c.mesh] : [])), false)) {
       const found = clickables.find((c) => c.mesh === hit.object);
-      if (!found) continue;
+      // What isn't showing can't be pressed: a door's tag is there only for someone standing at the door.
+      if (!found || !hit.object.visible) continue;
       // A door is its arch, not the rectangle the arch is drawn on. The corners
       // above the curve are empty wall, and they are right beside the door's button.
       if (found.door?.view === found.mesh && hit.uv) {
@@ -1335,6 +1421,7 @@ async function start(): Promise<void> {
     rig.position.x = x - camera.position.x;
     rig.position.z = z - camera.position.z;
   };
+  hooks.face = (degrees) => (rig.rotation.y = THREE.MathUtils.degToRad(degrees));
 
   await buildDoors();
   // Test aid: ?aim=2 starts with the third door pointed at.
@@ -1421,7 +1508,7 @@ async function start(): Promise<void> {
     presence.update(dt);
     let pointed: Clickable | null = null;
     let hover: [number, number] | null = null;
-    let going: readonly [number, number] | null = null;
+    let going: readonly (readonly [number, number])[] | null = null;
     reticle.visible = false;
     if (renderer.xr.isPresenting) {
       for (const c of controllers) {
@@ -1444,6 +1531,9 @@ async function start(): Promise<void> {
       else {
         walk(dt);
         stroll.update(dt);
+        // They face the way they walk, so a press ahead is a press where they are looking. Not while they are
+        // turning the view themselves.
+        if (stroll.going && !dragging) rig.rotation.y = stroll.face(rig.rotation.y, dt);
       }
       raycaster.setFromCamera(ndc, camera);
       pointed = under();
@@ -1452,13 +1542,12 @@ async function start(): Promise<void> {
       // The casual way, with a pointer that hovers: a ring on the floor where a press would take them. With a finger
       // there is nothing to hover with, so only where they are going is marked.
       if (!fps!.enabled && !dragging && !pointed && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1 && currentForm() !== "touch") {
-        const to = floorSpot();
-        if (to) hover = [to.x, to.z];
+        hover = floorLed();
       }
-      going = fps!.enabled ? null : stroll.target;
+      going = fps!.enabled ? null : stroll.path;
     }
     camera.getWorldPosition(headNow);
-    marks.update({ hover, from: [headNow.x, headNow.z], to: going, t });
+    marks.update({ hover, from: [headNow.x, headNow.z], path: going, t });
     if (aimed) pointed = clickables.find((c) => c.door?.entry.id === aimed && c.mesh === c.door.view) ?? pointed;
     // Moving the intense way, the pointer's picture is the kit's to hide: the middle of the view is what points.
     if (renderer.xr.isPresenting || !fps!.enabled) renderer.domElement.style.cursor = pointed ? "pointer" : "grab";
@@ -1480,7 +1569,29 @@ async function start(): Promise<void> {
       hint.visible = renderer.xr.isPresenting;
       if (hint.visible) hint.scale.copy(hint.userData.natural as THREE.Vector3).multiplyScalar(viewScale(hint.getWorldPosition(signAt).distanceTo(camera.getWorldPosition(eyeAt)), { at: 3.4, least: 0.3, most: 1.3 }));
     }
+    // The door they are standing at, if any: the nearest within a few steps. Its tag shows, and on a flat screen
+    // the controls offer the same thing. In a headset a door pointed at from further off shows its tag too.
+    camera.getWorldPosition(eyeAt);
+    let nearest: Door | null = null;
+    let nearestFar = KEEP_NEAR;
     for (const d of doors) {
+      // Where the door is in the room: its wall is turned, so its own place on the wall isn't that.
+      d.group.getWorldPosition(signAt);
+      const far = Math.hypot(signAt.x - eyeAt.x, signAt.z - eyeAt.z);
+      if (far < nearestFar) {
+        nearestFar = far;
+        nearest = d;
+      }
+    }
+    if (nearest !== atDoor) {
+      atDoor = nearest;
+      state.atDoor = nearest?.entry.id ?? null;
+    }
+    for (const d of doors) {
+      const offered = d === atDoor || (renderer.xr.isPresenting && d.hover > 0.5) || pointed?.mesh === d.keep;
+      d.shown += ((offered ? 1 : 0) - d.shown) * Math.min(1, dt * 9);
+      d.keep.visible = d.shown > 0.03;
+      (d.keep.material as THREE.MeshBasicMaterial).opacity = d.shown;
       // A door answers to being pointed at; its button answers on its own.
       const onDoor = pointed?.door === d && pointed.mesh === d.view;
       d.hover += ((onDoor ? 1 : 0) - d.hover) * Math.min(1, dt * 12);
