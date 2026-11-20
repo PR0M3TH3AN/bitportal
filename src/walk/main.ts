@@ -20,7 +20,7 @@ import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, 
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { addCameraControls, addPanelControls, addRoomControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -416,6 +416,7 @@ async function start(): Promise<void> {
     const sayWho = () => {
       signedInKey = who?.pubkey ?? null;
       signedInAs = who ? profileOf(who.pubkey)?.name || who.name || label(who.pubkey) : "";
+      refreshFollowing();
     };
     sayWho();
     // Settings kept with their profile: fetched behind the room, which has already started from this browser's own.
@@ -445,6 +446,9 @@ async function start(): Promise<void> {
   let keepDoor: (door: Door) => Promise<void> = async () => {};
   /** Open the list of every door: set once there is a list to open. */
   let openList = () => {};
+  /** Show a world's maker in Following, and draw Following again: set once the room's controls are there. */
+  let showMaker = (_pubkey: string) => {};
+  let refreshFollowing = () => {};
   // What the visitor thought of the place whose door they stand at. A rating is theirs, signed at their sign-in
   // address from here and never from inside the world it is of (NSWP-13).
   const STARS = ["", "Not for me", "It was all right", "Good", "Very good", "One of the best"];
@@ -474,6 +478,25 @@ async function start(): Promise<void> {
       },
     });
   }
+  // And who made it: followed from here, as from a person's card (NSWP-14). It is the key that announced the
+  // world, which is all "its maker" means: the name beside it is that key's own choice.
+  controls.add({
+    id: "door-maker",
+    section: "rate",
+    icon: "people",
+    label: () => {
+      const maker = atDoor?.entry.event.pubkey;
+      return maker ? `See who made it: ${profileOf(maker)?.name || label(maker)}` : "See who made this place";
+    },
+    short: "Maker",
+    hidden: () => !atDoor || !signedInKey || atDoor.entry.event.pubkey === signedInKey,
+    act: () => {
+      const maker = atDoor?.entry.event.pubkey;
+      if (!maker) return;
+      // Put them at the head of Following, where they can be followed or not: nobody is followed by one press on a door.
+      showMaker(maker);
+    },
+  });
   controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choosing one leaves from where you stand, and your Airlock shows its real address next." });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
@@ -533,7 +556,7 @@ async function start(): Promise<void> {
     id: "help",
     label: "Help",
     icon: "help",
-    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D, or point at the floor and select to step there: twice to run. Shift runs and Space jumps. The key left of 1 brings these controls up here and in any world, whatever is on screen; on a touch screen, hold two fingers still. Select a door, or walk through it, to see where it leads before you go.",
+    note: "Your doors are on one wall, and suggested ones on the wall behind it. Drag to look around. Walk with W, A, S, D or the up and down arrows; the left and right arrows turn you. Or point at the floor and select to step there: twice to run. Shift runs and Space jumps. The key left of 1 brings these controls up here and in any world, whatever is on screen; on a touch screen, hold two fingers still. Select a door, or walk through it, to see where it leads before you go.",
   });
   // The ground and the skyline come with the home (nswp-sdk/home), in the room's own colours.
   scene.background = new THREE.Color(0x04070b);
@@ -1379,7 +1402,14 @@ async function start(): Promise<void> {
     keepFollows(signedInKey, now);
     void retally();
   });
-  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, presenting: () => renderer.xr.isPresenting }));
+  let followingTab: ReturnType<typeof addRoomControls>["following"];
+  ({ refresh: refreshRoom, travelling, following: followingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, presenting: () => renderer.xr.isPresenting }));
+  refreshFollowing = () => followingTab.refresh();
+  showMaker = (pubkey) => {
+    followingTab.choose(pubkey);
+    hud.setOpen(true, "following");
+  };
+  refreshFollowing();
 
   // -------------------------------------------------------- walking
   const keys = new Set<string>();
@@ -1391,7 +1421,13 @@ async function start(): Promise<void> {
   const stepVec = new THREE.Vector3();
   const walk = (dt: number) => {
     const forward = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) - (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
-    const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
+    const strafe = (keys.has("KeyD") ? 1 : 0) - (keys.has("KeyA") ? 1 : 0);
+    // The left and right arrows turn (the owner's ask of 2026-11-20); A and D still step to the side.
+    const turn = (keys.has("ArrowLeft") ? 1 : 0) - (keys.has("ArrowRight") ? 1 : 0);
+    if (turn) {
+      stroll.stop(); // a walk a tap began turns them its own way
+      rig.rotation.y += turn * KEY_TURN * dt;
+    }
     if (!forward && !strafe) return;
     stroll.stop(); // the keys take over from a walk a tap began
     // The kit's own walking pace, and Shift runs, moving the casual way as it does the intense way.
