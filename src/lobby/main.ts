@@ -6,7 +6,7 @@
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
 import { forgetSync, setSyncOn, startSync, syncState, testing as syncTesting } from "../shared/sync-run.js";
-import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND } from "@nswp/core";
+import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND, type Tally } from "@nswp/core";
 import { loadBlockedEverywhere, loadPendingBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere, withoutBlockedEverywhere, type BlockedEverywhere } from "../shared/blocked.js";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type ListView, type StarterBundle } from "../shared/catalog.js";
@@ -19,6 +19,7 @@ import { decidePreview, loadedPreview, loadPreview, type PreviewDecision } from 
 import { attachJumpList } from "../shared/jump.js";
 import { saveRoomText, storedRoomText } from "../shared/room.js";
 import { addSaved, isSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, savedEntries, savedUrls, storeSaved, type SavedPlace } from "../shared/saved.js";
+import { countedFor, fetchRatings, followsOf, ratingMark, talliesFor } from "../shared/ratings.js";
 import { quietSigner, readSignedIn } from "../shared/session.js";
 import { label, pictureOf, profileOf, PROFILES_EVENT, wantProfiles } from "../shared/profiles.js";
 import { changedAllowList, isOperator, loadOperatorLists, publishAllowList, storeOperatorLists } from "../shared/operator.js";
@@ -64,8 +65,10 @@ let operatorKey: string | null = null;
 const makeCatalog = (): Catalog => buildCatalog(bundle, relayEvents, { followed, showStarter: settings.showStarter, taken: savedUrls(saved), operatorLists: loadOperatorLists(), operatorView: !!operatorKey });
 /** Whether worlds no list names are on the page: where a visitor asked, or for an operator of a copy that shows only its own list. */
 const showingUnlisted = (): boolean => settings.showUnlisted || (catalog.policy.allowListOnly && !!operatorKey);
-const AUDIENCE_WORDS = { kids: "For kids", general: "Not made for kids", adult: "Adults only", unrated: "Not rated by its maker" } as const;
+const AUDIENCE_WORDS = { kids: "For kids", general: "Not made for kids", adult: "Adults only", unrated: "Its maker doesn't say who it is for" } as const;
 let catalog: Catalog = makeCatalog();
+/** What the people this visitor has reason to trust thought of each world, by its coordinate (ratings.ts, NSWP-13). */
+let tallies = new Map<string, Tally>();
 /** What the visitor is looking for, if anything. */
 const find: Find = { query: "", topic: "" };
 let device: Device = { vr: false, tier: detectTier(navigator.userAgent, (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile) };
@@ -264,7 +267,7 @@ function door(entry: Entry, why: string): HTMLElement {
   const marks = el(
     "span",
     { class: "door-marks" },
-    ...plateMarks(entry.world, fit, verified).map((m) => el("span", { class: m.tone === "ok" ? "mark mark-verified" : m.tone === "warn" ? "mark mark-warn" : "mark" }, m.text)),
+    ...plateMarks(entry.world, fit, verified, ratingMark(tallies.get(entry.id))).map((m) => el("span", { class: m.tone === "ok" ? "mark mark-verified" : m.tone === "warn" ? "mark mark-warn" : "mark" }, m.text)),
   );
   const button = el(
     "button",
@@ -1195,6 +1198,17 @@ async function refresh(): Promise<void> {
     hero?.refresh();
   }
   draw();
+  // What people thought of these places, after they are on screen: asked of relays by world, never by person.
+  void (async () => {
+    const curators = [...new Set([catalog.curator.pubkey, ...INSTANCE.operators, ...catalog.lists.map((l) => l.pubkey)])];
+    const worlds = catalog.entries.map((e) => ({ id: e.id, url: e.world.url }));
+    const events = await fetchRatings(settings.relays, worlds.map((w) => w.id), curators).catch(() => []);
+    const follows = signedIn ? await followsOf(signedIn.pubkey, settings.relays) : [];
+    const next = talliesFor(events, worlds, countedFor(curators, follows), signedIn?.pubkey ?? null);
+    if (next.size === 0 && tallies.size === 0) return;
+    tallies = next;
+    draw();
+  })();
 }
 
 /**

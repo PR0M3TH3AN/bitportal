@@ -14,7 +14,7 @@ const adding = (...extra: string[][]) => ({ signEvent: async (t: EventTemplate) 
 describe("what BitPortal asks its sign-in address to let it do", () => {
   it("is one short list, shown to the visitor once, and it names nothing sensitive", () => {
     const asked = permissionsFor(true);
-    expect(asked).toEqual({ name: "BitPortal", sign: [1, 27300, 27302, 27303, 30004, 30078, 37300], appData: ["bitportal/"], read: [30078] });
+    expect(asked).toEqual({ name: "BitPortal", sign: [1, 27300, 27302, 27303, 30004, 30078, 37300, 37305], appData: ["bitportal/"], read: [30078] });
     // Never a profile, a follow list, a deletion, a mute or relay list, a relay sign-in, or anyone's messages.
     for (const kind of [0, 3, 5, 10000, 10002, 10050, 22242, 4, 13, 1059]) expect([...asked.sign, ...asked.read]).not.toContain(kind);
     // Its own data only, under its own name: never every application's.
@@ -23,7 +23,7 @@ describe("what BitPortal asks its sign-in address to let it do", () => {
   it("is the same without the pass and the grants, where the sign-in address won't sign those", () => {
     const less = permissionsFor(false);
     for (const kind of RESERVED_KINDS) expect(less.sign).not.toContain(kind);
-    expect(less).toEqual({ ...permissionsFor(true), sign: [1, 30004, 30078, 37300] });
+    expect(less).toEqual({ ...permissionsFor(true), sign: [1, 30004, 30078, 37300, 37305] });
   });
   it("takes a pass and a grant to be signable only at BitPortal's own address, until the sign-in address has said", () => {
     expect(namedAddress(HERE)).toBe(true);

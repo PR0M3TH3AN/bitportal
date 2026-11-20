@@ -444,6 +444,26 @@ After re-signing, publish each new event with the NSWP repo's CLI:
 node ../Nostr-Spatial-Web-Protocol--NSWP-/packages/cli/dist/nswp.mjs publish <event.json>
 ```
 
+## What people thought of a place
+
+A visitor who is signed in can rate a place from one to five stars
+([NSWP-13](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/13-ratings.md)).
+Standing at a door at home, **Rate** is on the bar, and opens the menu's Rate
+tab. The rating is signed with their own key at their sign-in address and
+sent to their relays. It is public, and the tab says so before the first one.
+
+A door's plate, the lobby and the Airlock show a tally: "★ 4.5 from 12".
+It counts the visitor, the people they follow, and the curators of the lists
+on show here, and nobody else: keys cost nothing, so an average of everyone's
+ratings would mean nothing. Signed out, only the curators are counted. A
+rating that was signed at the world it rates is left out, and so is the
+world's own publisher. With nobody counted there is no tally, never "0
+stars".
+
+Relays are asked about worlds, never about people. Who the visitor follows
+is asked for at home and kept on the device (`bitportal:follows`), so the
+Airlock asks nothing about them.
+
 ## What this copy shows, and who decides
 
 Whoever hosts a copy of BitPortal answers for what it shows. Their answers are

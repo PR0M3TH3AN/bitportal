@@ -10,7 +10,7 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { cleanName, isHex64, queryRelays, toLocal, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { cleanName, isHex64, queryRelays, RATING_KIND, toLocal, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
 import { INSTANCE } from "./instance.js";
 
 export interface Signer {
@@ -108,10 +108,11 @@ export interface AppPermissions {
  * `reserved` false leaves out the pass and the two grants: what is asked for at an address the sign-in address
  * won't sign those for, where naming them would have the whole set turned down.
  *
+ * A rating of a world (NSWP-13, kind 37305) was added on 2026-11-20, on the owner's word.
  * Adding to this is adding to what every visitor is asked to allow: it is the owner's to change.
  */
 export function permissionsFor(reserved: boolean): AppPermissions {
-  return { name: "BitPortal", sign: [1, ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300], appData: ["bitportal/"], read: [30078] };
+  return { name: "BitPortal", sign: [1, ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND], appData: ["bitportal/"], read: [30078] };
 }
 
 /** Where a visitor signs in when the host names nowhere: BitLogin's own site. */
