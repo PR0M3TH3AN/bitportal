@@ -1,5 +1,5 @@
-import { v as C } from "./bitlogin-shared-BZPITbpl.js";
-import { c as N, r as x, S as L, P as O } from "./bitlogin-shared-CCVHnhgs.js";
+import { v as C } from "./bitlogin-shared-CFGY85HS.js";
+import { c as N, r as x, S as L, P as O } from "./bitlogin-shared-U7Szz15o.js";
 class g extends Error {
   constructor(i) {
     super(`BitLogin refused to ${i}. The application may not be allowed to, or the user may have signed out.`), this.name = "BitLoginRefused";

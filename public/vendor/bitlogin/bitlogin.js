@@ -1,9 +1,8 @@
-import { e as Se, E as Ce, p as ye, R as $e, a as T, i as ie } from "./bitlogin-shared-B1USaWR3.js";
-import { r as ge, v as Ee } from "./bitlogin-shared-BZPITbpl.js";
-import "./bitlogin-shared-DSv2Wjlg.js";
-import { W as Re } from "./bitlogin-shared-BTQ8Ic9W.js";
-import { c as Et } from "./bitlogin-shared-BTQ8Ic9W.js";
-import { b as se, c as Le, e as oe, d as Pe, a as Qe, f as Ne, p as Be } from "./bitlogin-shared-DoFOySoz.js";
+import { e as Se, E as Ce, p as ye, R as $e, a as T, i as ie } from "./bitlogin-shared-CK86q_VY.js";
+import { r as ge, v as Ee } from "./bitlogin-shared-CFGY85HS.js";
+import { W as Re } from "./bitlogin-shared-CvOFcR_u.js";
+import { c as $t } from "./bitlogin-shared-CvOFcR_u.js";
+import { b as se, c as Le, e as oe, d as Pe, a as Qe, f as Ne, p as Be } from "./bitlogin-shared-D74d_dQp.js";
 import { readCachedSession as Ae } from "./bitlogin-session.js";
 const Me = 6, ae = 64;
 function G(o = Me) {
@@ -41,7 +40,7 @@ function K(o) {
     throw e.message.includes("No identity is unlocked") ? new Error(Ie) : e;
   });
 }
-function St(o, e) {
+function xt(o, e) {
   return {
     async getPublicKey() {
       const { publicKey: t } = await K(o.getPublicKey());
@@ -482,7 +481,7 @@ function Oe(o) {
       localStorage.removeItem(be);
     } catch {
     }
-    z = import("./bitlogin-shared-BbaKW9EI.js").then((e) => (e.init({
+    z = import("./bitlogin-shared-DTsFoqOu.js").then((e) => (e.init({
       appName: o,
       filters: ["nwc"],
       showBalance: !1,
@@ -3943,7 +3942,7 @@ window.bitlogin = {
 export {
   te as BitLoginAuthElement,
   Re as WorkerClient,
-  Et as createHeadlessSigner,
-  St as createNip07Provider,
+  $t as createHeadlessSigner,
+  xt as createNip07Provider,
   Ae as readCachedSession
 };

@@ -1,4 +1,4 @@
-class o {
+class u {
   worker;
   pending = /* @__PURE__ */ new Map();
   counter = 0;
@@ -20,13 +20,13 @@ class o {
         return;
       }
       if (typeof r.id != "string") return;
-      const s = this.pending.get(r.id);
-      if (s)
-        if (this.pending.delete(r.id), clearTimeout(s.timer), r.ok)
-          s.resolve(r.result);
+      const l = this.pending.get(r.id);
+      if (l)
+        if (this.pending.delete(r.id), clearTimeout(l.timer), r.ok)
+          l.resolve(r.result);
         else {
-          const c = new Error(r.error);
-          c.name = r.errorName ?? "Error", s.reject(c);
+          const s = new Error(r.error);
+          s.name = r.errorName ?? "Error", l.reject(s);
         }
     });
     const a = (t) => () => this.failAll(t);
@@ -47,12 +47,12 @@ class o {
       return Promise.reject(new Error(this.deadReason));
     const t = `${Date.now().toString(36)}-${(this.counter++).toString(36)}`;
     return new Promise((r, n) => {
-      const s = setTimeout(() => {
+      const l = setTimeout(() => {
         this.pending.delete(t), n(new Error(`BitLogin's ${e} call timed out.`));
       }, a);
-      this.pending.set(t, { resolve: r, reject: n, timer: s });
-      const c = { id: t, action: e, payload: i };
-      this.worker.postMessage(c);
+      this.pending.set(t, { resolve: r, reject: n, timer: l });
+      const s = { id: t, action: e, payload: i };
+      this.worker.postMessage(s);
     });
   }
   configure(e) {
@@ -175,6 +175,18 @@ class o {
   roomPass(e) {
     return this.call("roomPass", e);
   }
+  worldSave(e) {
+    return this.call("worldSave", e);
+  }
+  worldFind(e) {
+    return this.call("worldFind", e);
+  }
+  worldOpen(e) {
+    return this.call("worldOpen", e);
+  }
+  worldFollow(e) {
+    return this.call("worldFollow", e);
+  }
   signerKeep(e) {
     return this.call("signerKeep", e);
   }
@@ -255,18 +267,18 @@ class o {
     this.dead = !0, e && (this.deadReason = e), this.worker.terminate(), this.failAll(this.deadReason);
   }
 }
-const u = "BitLogin: no session is unlocked. Call restore() first, or have the user sign in once via <bitlogin-auth>.";
-async function p(l = {}) {
-  const e = new o();
+const p = "BitLogin: no session is unlocked. Call restore() first, or have the user sign in once via <bitlogin-auth>.";
+async function y(c = {}) {
+  const e = new u();
   await e.configure({
-    vaultRelayUrls: l.vaultRelays ?? [],
-    discoveryRelayUrls: l.discoveryRelays ?? []
+    vaultRelayUrls: c.vaultRelays ?? [],
+    discoveryRelayUrls: c.discoveryRelays ?? []
   });
   let i = null;
   const a = async () => {
     if (i) return i;
     const t = await e.getSessionStatus();
-    if (!t.unlocked || !t.everydayPublicKey) throw new Error(u);
+    if (!t.unlocked || !t.everydayPublicKey) throw new Error(p);
     return i = t.everydayPublicKey, i;
   };
   return {
@@ -304,8 +316,8 @@ async function p(l = {}) {
     async beginHandoff() {
       return (await e.handoffBegin()).recipientPublicKey;
     },
-    async exportHandoff(t, r, n, s, c) {
-      return await a(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...n ? { site: n } : {}, ...s ? { remember: !0 } : {}, ...c ? { family: c } : {} });
+    async exportHandoff(t, r, n, l, s, o) {
+      return await a(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...n ? { site: n } : {}, ...l ? { remember: !0 } : {}, ...s ? { family: s } : {}, ...o?.length ? { more: [...o] } : {} });
     },
     async lockStatus() {
       return e.lockStatus();
@@ -326,9 +338,21 @@ async function p(l = {}) {
     async roomPass(t) {
       return e.roomPass({ session: t });
     },
+    async worldSave(t, r) {
+      return e.worldSave({ slot: t, data: r });
+    },
+    async worldFind(t) {
+      return (await e.worldFind({ slot: t })).d;
+    },
+    async worldOpen(t) {
+      return e.worldOpen({ event: t });
+    },
+    async worldFollow(t, r) {
+      return e.worldFollow({ list: t, ...r });
+    },
     async acceptHandoff(t) {
       const r = await e.handoffAccept(t);
-      return i = r.everydayPublicKey, { pubkey: i, ...r.app ? { app: r.app } : {}, ...r.site ? { site: r.site } : {}, ...r.profile ? { profile: r.profile } : {}, ...r.remember ? { remember: !0 } : {}, ...r.family ? { family: r.family } : {} };
+      return i = r.everydayPublicKey, { pubkey: i, ...r.app ? { app: r.app } : {}, ...r.site ? { site: r.site } : {}, ...r.profile ? { profile: r.profile } : {}, ...r.remember ? { remember: !0 } : {}, ...r.family ? { family: r.family } : {}, ...r.more?.length ? { more: r.more } : {} };
     },
     async appEncrypt(t, r, n = "nip44") {
       return (await e.appEncrypt({ peerPublicKey: t, text: r, scheme: n })).text;
@@ -356,11 +380,12 @@ async function p(l = {}) {
         ...n.signedPass ? { signedPass: n.signedPass } : {},
         ...n.check ? { check: n.check } : {},
         ...n.family ? { family: n.family } : {},
+        ...n.more?.length ? { more: n.more } : {},
         ...n.permissions ? { permissions: n.permissions, signedSensitive: n.signedSensitive ?? [] } : {}
       });
     },
-    async touchSignerGrant(t, r, n, s) {
-      await e.signerTouch({ site: t, signed: r, ...n ? { signedSensitive: n } : {}, ...s ? { signedPass: s } : {} });
+    async touchSignerGrant(t, r, n, l) {
+      await e.signerTouch({ site: t, signed: r, ...n ? { signedSensitive: n } : {}, ...l ? { signedPass: l } : {} });
     },
     async forgetSignerGrant(t) {
       await e.signerForget({ site: t });
@@ -374,6 +399,6 @@ async function p(l = {}) {
   };
 }
 export {
-  o as W,
-  p as c
+  u as W,
+  y as c
 };
