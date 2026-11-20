@@ -33,7 +33,8 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
-import { countedFor, fetchRatings, followsOf, giveRating, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
+import { homeFollows } from "../shared/people.js";
+import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
 import { holdsReserved, quietSigner, readSignedIn } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
@@ -1369,7 +1370,16 @@ async function start(): Promise<void> {
   // Someone they blocked in a world, reported on the way home, is waiting for their answer.
   const waiting = loadPendingBlocks().length;
   if (waiting) setTimeout(() => controls.say(`You blocked ${waiting === 1 ? "1 person" : `${waiting} people`} in a world. To block them everywhere you go, say so in Settings on the front page, or at your next door.`), 3000);
-  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays }));
+  // Following someone from their card in this room (NSWP-14): their own follow list, changed by their own signer.
+  // What ratings are counted from follows at once.
+  const follows = homeFollows({ me: () => (goesAsGuest() ? null : signedInKey), relays: settings.relays, signerFor: quietSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });
+  follows.people.onChange(() => {
+    const now = follows.people.follows();
+    if (!now || !signedInKey) return;
+    keepFollows(signedInKey, now);
+    void retally();
+  });
+  ({ refresh: refreshRoom, travelling } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, presenting: () => renderer.xr.isPresenting }));
 
   // -------------------------------------------------------- walking
   const keys = new Set<string>();

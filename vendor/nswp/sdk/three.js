@@ -45,6 +45,7 @@ import {
   createKeyboard,
   createLibrary,
   createPanels,
+  createPeople,
   createPortalWindow,
   createPresence,
   createSaves,
@@ -98,10 +99,11 @@ import {
   visitorFov,
   watchFov,
   watchFresh,
+  worldPeople,
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-R7N6JRKB.js";
+} from "./shared-UKR2KHQN.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -175,6 +177,7 @@ export {
   createKeyboard,
   createLibrary,
   createPanels,
+  createPeople,
   createPortalWindow,
   createPresence,
   createSaves,
@@ -239,6 +242,7 @@ export {
   wasRefreshed,
   watchFov,
   watchFresh,
+  worldPeople,
   worldSaves,
   worldSigner,
   youCard

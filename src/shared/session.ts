@@ -10,7 +10,7 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { cleanName, isHex64, queryRelays, RATING_KIND, toLocal, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { cleanName, FOLLOWS_KIND, isHex64, queryRelays, RATING_KIND, toLocal, verifyEvent, type EventTemplate, type NostrEvent } from "@nswp/core";
 import { INSTANCE } from "./instance.js";
 
 export interface Signer {
@@ -110,10 +110,43 @@ export interface AppPermissions {
  *
  * A rating of a world (NSWP-13, kind 37305) was added on 2026-11-20, on the owner's word.
  * Adding to this is adding to what every visitor is asked to allow: it is the owner's to change.
+ *
+ * `more` is what is asked for only once a visitor has used the thing that needs it (`askFor`; the owner's
+ * decision of 2026-11-20: "only when someone first uses People or Messages"):
+ *
+ * - "people": 3, who they follow (NSWP-14). BitLogin lists it apart, under a warning.
+ *
+ * Nobody is asked for these at sign-in unless this device has already been let.
  */
-export function permissionsFor(reserved: boolean): AppPermissions {
-  return { name: "BitPortal", sign: [1, ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND], appData: ["bitportal/"], read: [30078] };
+export function permissionsFor(reserved: boolean, more: readonly Ask[] = []): AppPermissions {
+  const sign = [1, ...(more.includes("people") ? [FOLLOWS_KIND] : []), ...(reserved ? RESERVED_KINDS : []), 30004, 30078, 37300, RATING_KIND];
+  return { name: "BitPortal", sign, appData: ["bitportal/"], read: [30078] };
 }
+
+/** What BitPortal asks a visitor for only when they first use it, by name. */
+export type Ask = "people";
+const ASKS: readonly Ask[] = ["people"];
+const ASKS_KEY = "bitportal:asks";
+
+/**
+ * What has been asked for and allowed on this device, beyond what everyone is asked at sign-in. It is kept for
+ * the device, not the person: someone else who signs in here is asked for the same, and shown it.
+ */
+export function asks(): Ask[] {
+  try {
+    const kept = JSON.parse(localStorage.getItem(ASKS_KEY) ?? "[]") as unknown;
+    return Array.isArray(kept) ? ASKS.filter((a) => kept.includes(a)) : [];
+  } catch {
+    return [];
+  }
+}
+const keepAsks = (list: readonly Ask[]): void => {
+  try {
+    localStorage.setItem(ASKS_KEY, JSON.stringify(ASKS.filter((a) => list.includes(a))));
+  } catch {
+    /* a private window: asked again on the next page */
+  }
+};
 
 /** Where a visitor signs in when the host names nowhere: BitLogin's own site. */
 const SIGN_IN_ADDRESS = "https://bitlogin.network/";
@@ -191,6 +224,21 @@ export function knownSignedIn(now: number = Date.now()): { pubkey: string; name?
 let client: Promise<SignInClient | null> | null = null;
 /** The client once it is made, for a press: a window may only be opened while the press is still being handled. */
 let made: SignInClient | null = null;
+/** Make a client that asks for the usual and this much more. Set once the first is made. */
+let factory: ((more: readonly Ask[]) => SignInClient) | null = null;
+/**
+ * Everything on this page that is told when who is signed in changes. They are told by whichever client is the
+ * page's now, and by none while one is being changed for another (`askFor`): a visitor who is asked for more is
+ * not signed out and in again on the page behind the window.
+ */
+const hub = new Set<(state: SignInState) => void>();
+let changing = false;
+const attach = (c: SignInClient): void => {
+  c.onChange((state) => {
+    if (c !== made || changing) return;
+    for (const fn of hub) fn(state);
+  });
+};
 
 /**
  * BitLogin's client for this page: one unseen frame of the sign-in address's signer, told what BitPortal asks
@@ -205,7 +253,7 @@ function signInClient(): Promise<SignInClient | null> {
       const at = new URL(await toLocal(signInAddress())).origin;
       const url = "/vendor/bitlogin/bitlogin-client.js";
       const mod = (await import(/* @vite-ignore */ url)) as { createBitLoginClient(o: { at: string; permissions: unknown }): SignInClient };
-      const asking = (reserved: boolean) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved) });
+      const asking = (reserved: boolean, more: readonly Ask[] = asks()) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved, more) });
       // Everything is asked for, and the sign-in address says whether it will show a visitor that. Where it won't
       // (an address it signs no pass or grant for), the same is asked again without those, so signing in still
       // works there and only what needs them is missing. One too old to say, or silent, is asked as before: for
@@ -220,7 +268,9 @@ function signInClient(): Promise<SignInClient | null> {
       }
       if (can !== undefined) said = can;
       made = c;
-      made.onChange(keepRecord);
+      factory = (more) => asking(reserved, more);
+      hub.add(keepRecord);
+      attach(c);
       return made;
     } catch {
       return null;
@@ -265,8 +315,8 @@ export function watchSignIn(onChange: (session: Session | null, error?: SessionE
   void (async () => {
     const c = await signInClient();
     if (!c) return onChange(null, new SessionError("no_signer", `${signInHost()} couldn't be reached, so nobody can sign in just now.`, true));
-    const tell = (state: SignInState) => onChange(state.signedIn && isHex64(state.pubkey) ? { pubkey: state.pubkey, method: "bitlogin", signer: appSigner(c, state.pubkey), ...(state.name ? { name: state.name } : {}) } : null, undefined, state);
-    c.onChange(tell);
+    const tell = (state: SignInState) => onChange(state.signedIn && isHex64(state.pubkey) ? { pubkey: state.pubkey, method: "bitlogin", signer: appSigner(made ?? c, state.pubkey), ...(state.name ? { name: state.name } : {}) } : null, undefined, state);
+    hub.add(tell);
     const first = await settled(c);
     if (first) tell(first);
     else onChange(null, new SessionError("no_signer", `${signInHost()} didn't answer, so nobody can sign in just now.`, true));
@@ -286,6 +336,80 @@ export async function signIn(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** A window that was asked for and couldn't be opened while the press lasted: the next press opens it at once. */
+let waitingFor: Ask | null = null;
+
+/**
+ * Ask the visitor for one thing more, in BitLogin's window: what is needed by something they have just pressed
+ * (following someone). Call it from that press.
+ *
+ * - "allowed": they said yes. It is asked for on this device from now on, and nothing else changed for them.
+ * - "declined": they said no, or closed the window. They are signed in as they were, with what they had allowed.
+ * - "blocked": the window couldn't be opened while the press lasted (the sign-in address had to be loaded again
+ *   first, and some browsers only open a window at once). Press again: it is ready now.
+ *
+ * The sign-in address shows a site one question, for everything it asks. So this page's frame of it is put away
+ * and one that asks for the more is put in its place, before the window opens: two frames would be two questions,
+ * and the window would not know which to show. While that is done nothing on the page is told that anyone signed
+ * out, because nobody did.
+ */
+export async function askFor(what: Ask): Promise<"allowed" | "declined" | "blocked"> {
+  const old = made;
+  if (!old || !factory) return "declined";
+  const settle = (c: SignInClient): void => {
+    changing = false;
+    const state = c.state();
+    for (const fn of hub) fn(state);
+  };
+  const back = async (): Promise<void> => {
+    waitingFor = null;
+    made?.destroy();
+    const c = factory!(asks());
+    made = c;
+    client = Promise.resolve(c);
+    attach(c);
+    await answered(c);
+    settle(c);
+  };
+  if (!asks().includes(what) && waitingFor !== what) {
+    changing = true;
+    old.destroy();
+    const c = factory([...asks(), what]);
+    made = c;
+    client = Promise.resolve(c);
+    attach(c);
+  }
+  const c = made!;
+  const began = Date.now();
+  let ok = false;
+  try {
+    ok = await c.signIn();
+  } catch {
+    ok = false;
+  }
+  if (ok) {
+    waitingFor = null;
+    keepAsks([...asks(), what]);
+    settle(c);
+    return "allowed";
+  }
+  // Already asked for on this device, and they closed the window: nothing to put back.
+  if (asks().includes(what)) {
+    settle(c);
+    return "declined";
+  }
+  // No window at all, the first time: it stays ready for one more press, and is put back if none comes.
+  if (waitingFor !== what && Date.now() - began < 2500 && !c.state().signedIn) {
+    waitingFor = what;
+    setTimeout(() => {
+      if (waitingFor === what && made === c) void back();
+    }, 60_000);
+    return "blocked";
+  }
+  await back();
+  return "declined";
 }
 
 /**

@@ -444,6 +444,18 @@ After re-signing, publish each new event with the NSWP repo's CLI:
 node ../Nostr-Spatial-Web-Protocol--NSWP-/packages/cli/dist/nswp.mjs publish <event.json>
 ```
 
+## Following people
+
+Choose someone in your home room (People, in the menu, or the picture over their head) and their card has **Follow**
+on it, if they came by name and you are signed in. It changes your own Nostr follow list: the same one every other
+Nostr app reads, and the one ratings here are counted from. Who you follow is public.
+
+The first time you press it, your sign-in address asks whether BitPortal may change who you follow. It is not part of
+what you are asked when you sign in. Say no and nothing changes; you stay signed in.
+
+BitPortal changes one line of your list and keeps the rest. If none of your relays can be reached it changes nothing,
+so a list is never written over one it couldn't find.
+
 ## What people thought of a place
 
 A visitor who is signed in can rate a place from one to five stars
