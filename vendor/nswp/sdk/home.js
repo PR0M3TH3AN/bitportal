@@ -8,9 +8,9 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-HS7FEZGS.js";
-import "./shared-264RGM3S.js";
-import "./shared-U2U7QRDK.js";
+} from "./shared-3LHNIW3G.js";
+import "./shared-FY6RN3Q2.js";
+import "./shared-HSSLV2V4.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
