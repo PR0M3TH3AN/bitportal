@@ -110,7 +110,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-Q4ZSW3DV.js";
+} from "./shared-KNVDQZSA.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
