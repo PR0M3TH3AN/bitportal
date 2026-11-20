@@ -23,7 +23,7 @@ import type { Controls } from "nswp-sdk/ui";
 import type { TerminalPanel } from "nswp-sdk/terminal";
 import { addComputer, computersOf, loadComputers, pairingRequest, removeComputer, storeComputers, type Computer, type PairingRequest } from "../shared/computers.js";
 import { addMyWorld, cleanWorldUrl, loadMyWorlds, myWorldsOf, removeMyWorld, storeMyWorlds, type MyWorld } from "../shared/my-worlds.js";
-import { checkedSigner, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
+import { checkedSigner, holdsReserved, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
 
 const GUIDE = "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/browser/bridge.md";
 
@@ -172,6 +172,8 @@ export function addComputers(o: ComputersOptions): Computers {
   };
 
   const signer = async (owner: string): Promise<{ signer: Signer; close(): void } | null> => (test ? { signer: test.signer, close: () => {} } : quietSigner(owner));
+  /** A grant is one of the kinds BitLogin signs for BitPortal's own address and no other (session.ts). */
+  const NO_GRANT_HERE = `A grant for a computer can't be signed at this address: your sign-in signs one only for BitPortal's own.`;
 
   /** Note how each open terminal hangs. Kept for this tab, and only so a refresh can put them back. */
   const noteOpen = () => {
@@ -192,9 +194,10 @@ export function addComputers(o: ComputersOptions): Computers {
     };
     if (!panels) return null;
     if (open.filter((t) => t.pubkey === c.pubkey).length >= TERMINALS_EACH) return no(`${TERMINALS_EACH} terminals are open on ${c.name}. Put one away first.`);
+    if (!test && !holdsReserved()) return no(NO_GRANT_HERE);
     if ((await identify()) !== c.owner) return no("Sign in on the front page first, as the key this computer answers.");
     const quiet = await signer(c.owner);
-    if (!quiet) return no("Your sign-in is locked. Unlock it on the front page, then try again.");
+    if (!quiet) return no("Your sign-in has run out here. Sign in again on the front page, then try again.");
     try {
       // The terminal's code is fetched now, the first time one is opened, and not before.
       const { openTerminalPanel } = await import("nswp-sdk/terminal");
@@ -283,13 +286,14 @@ export function addComputers(o: ComputersOptions): Computers {
       controls.say(why);
       return null;
     };
+    if (!test && !holdsReserved()) return no(NO_GRANT_HERE);
     const owner = await identify();
     const world = owner ? myWorldsOf(loadMyWorlds(), owner).find((w) => w.origin === origin) : undefined;
     const computer = world && owner ? computersOf(loadComputers(), owner).find((c) => c.pubkey === world.computer) : undefined;
     if (!owner || !world) return no("That isn't one of the worlds you are building.");
     if (!computer) return no("The computer for that world has been forgotten. Name the world again.");
     const quiet = await signer(owner);
-    if (!quiet) return no("Your sign-in is locked. Unlock it on the front page, then try again.");
+    if (!quiet) return no("Your sign-in has run out here. Sign in again on the front page, then try again.");
     try {
       const secret = crypto.getRandomValues(new Uint8Array(32));
       const session = getPublicKey(secret);

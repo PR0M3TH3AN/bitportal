@@ -370,34 +370,7 @@ body.walk { overflow: hidden; background: var(--bitportal-paper); }
 .step h2, .notes h2 { font-size: 1.3rem; font-weight: 720; }
 .step p, .notes ul { margin-top: 8px; }
 .next-steps { margin-top: 20px; display: grid; gap: 10px; justify-items: start; }
-/* ---------- who you are: BitLogin, drawn as BitPortal's own ---------- */
-/* BitLogin is its own element with its own shadow. What it lets a page set, it sets with these values: so the
-   sign-in is BitLogin's in everything it does and BitPortal's in everything it looks like. Nothing inside it is
-   reached into or replaced. */
-bitlogin-auth {
-  --bl-bg: var(--bitportal-surface);
-  --bl-fg: var(--bitportal-ink);
-  --bl-muted: var(--bitportal-muted);
-  --bl-border: var(--bitportal-line);
-  --bl-input-bg: var(--bitportal-paper);
-  --bl-accent: var(--bitportal-accent);
-  --bl-accent-fg: var(--bitportal-accent-ink);
-  --bl-accent-hover: #74f7bd;
-  --bl-danger: var(--bitportal-bad);
-  --bl-danger-bg: #2a0f14;
-  --bl-warn: var(--bitportal-warn);
-  --bl-warn-bg: var(--bitportal-warn-ground);
-  --bl-radius: 0px;
-  --bl-font-family: "Ubuntu Sans V", system-ui, sans-serif;
-  --bl-max-width: 100%;
-  display: block;
-  margin-top: 16px;
-  color-scheme: dark;
-  /* BitLogin sets its own text at 12 to 14 pixels, for a small card. Here it is part of a page whose text is
-     larger, so the whole element is scaled to match. It is scaled from outside, as one thing: nothing in it is
-     reached into. */
-  zoom: 1.2;
-}
+/* ---------- who you are ---------- */
 .who .choices { display: grid; gap: 18px; margin-top: 28px; align-items: start; }
 @media (min-width: 880px) { .who .choices { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); } .page.who { max-width: 1040px; } }
 /* Signed in, the profile is the only card: it takes the page's width, as the card above it does, with its words
@@ -405,7 +378,6 @@ bitlogin-auth {
 .who .choices.signed { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 880px) {
   .who .choices.signed .sign-in { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 18px 36px; align-items: start; }
-  .who .choices.signed .sign-in-box bitlogin-auth { margin-top: 0; }
 }
 .who .sign-in-words > p { margin-top: 8px; color: rgba(233, 243, 242, 0.86); }
 .who .choice h2, .who .you h2 { font-size: 1.3rem; font-weight: 720; }

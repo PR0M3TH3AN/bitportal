@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cannotSignInHere, wayBack } from "../src/account/back.js";
+import { wayBack } from "../src/account/back.js";
 
 describe("the way back from signing in", () => {
   it("is the room for someone who came from the room", () => {
@@ -18,21 +18,5 @@ describe("the way back from signing in", () => {
   it("lets a guest carry on as a guest", () => {
     expect(wayBack("").guest).toBe("Carry on as a guest");
     expect(wayBack("?back=walk").guest).toContain("as a guest");
-  });
-});
-
-describe("saying when signing in can't work", () => {
-  it("says nothing at an address where a browser gives a page its cryptography", () => {
-    expect(cannotSignInHere({ secure: true, subtle: true, host: "portal.bitblocks.network", protocol: "https:" })).toBeNull();
-    expect(cannotSignInHere({ secure: true, subtle: true, host: "localhost:4300", protocol: "http:" })).toBeNull();
-  });
-  it("says so at a plain http address on a network, and names the message they would otherwise be shown", () => {
-    const note = cannotSignInHere({ secure: false, subtle: false, host: "192.168.68.84:4300", protocol: "http:" })!;
-    expect(note).toContain("192.168.68.84:4300");
-    expect(note).toContain("Account not found or credentials incorrect");
-    expect(note).toContain("https");
-  });
-  it("says so wherever the cryptography is missing, whatever the address looks like", () => {
-    expect(cannotSignInHere({ secure: true, subtle: false, host: "x.example", protocol: "https:" })).not.toBeNull();
   });
 });

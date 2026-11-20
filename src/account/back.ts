@@ -38,13 +38,3 @@ export function wayBack(search: string, door: WhoDoor | null = null): WayBack {
   }
   return { href: "/", label: "Back to the lobby", guest: "Carry on as a guest" };
 }
-
-/**
- * Why signing in can't work at this address, or null when it can. BitLogin opens an account with the browser's own
- * cryptography, and a browser gives a page that only at an https address or at localhost.
- */
-export function cannotSignInHere(o: { secure: boolean; subtle: boolean; host: string; protocol: string }): string | null {
-  if (o.secure && o.subtle) return null;
-  const where = o.protocol === "http:" ? `This page is at a plain http address (${o.host}), so` : "Here,";
-  return `${where} your browser has switched off the cryptography that signing in needs. Signing in will fail with "Account not found or credentials incorrect", whatever you type. It works at an https address, and at localhost on the computer that is serving this page. Everything else here works as a guest.`;
-}

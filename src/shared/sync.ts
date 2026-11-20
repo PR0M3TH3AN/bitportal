@@ -325,7 +325,8 @@ export interface Vault {
   sign(template: EventTemplate): Promise<NostrEvent>;
   /** Seal text so that only this same key can open it. */
   seal(text: string): Promise<string>;
-  open(sealed: string): Promise<string>;
+  /** What a whole signed note of the visitor's own says, opened. A signer opens a note it can check, never loose text. */
+  open(note: NostrEvent): Promise<string>;
 }
 
 /** Where the note is kept: the visitor's relays. */
@@ -365,7 +366,7 @@ export async function syncOnce(o: { store: Store | null; vault: Vault; shelf: Sh
   let theirs: Snapshot = {};
   try {
     const note = await o.shelf.fetch(o.vault.pubkey);
-    if (note && note.pubkey === o.vault.pubkey && note.kind === SETTINGS_KIND) theirs = readNote(await o.vault.open(note.content));
+    if (note && note.pubkey === o.vault.pubkey && note.kind === SETTINGS_KIND) theirs = readNote(await o.vault.open(note));
   } catch {
     // A note that can't be fetched or opened is not a reason to overwrite it: stop here, and try again another time.
     return { ...outcome, why: "unreadable" };

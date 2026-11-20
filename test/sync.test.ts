@@ -12,7 +12,7 @@ const profile = (seed: number): Vault => {
   const secret = new Uint8Array(32).fill(seed);
   const pubkey = getPublicKey(secret);
   const key = getConversationKey(secret, pubkey);
-  return { pubkey, sign: async (t) => finalizeEvent(t, secret), seal: async (text) => nip44Encrypt(text, key), open: async (sealed) => nip44Decrypt(sealed, key) };
+  return { pubkey, sign: async (t) => finalizeEvent(t, secret), seal: async (text) => nip44Encrypt(text, key), open: async (note) => nip44Decrypt(note.content, key) };
 };
 /** The relays, as one shelf that keeps the newest note for each key. */
 const relays = () => {
@@ -50,8 +50,8 @@ describe("keeping settings with a profile", () => {
     expect(note.tags).toEqual([["d", SETTINGS_D]]);
     for (const secret of ["airlock", "grove.example", "b".repeat(64), "blocked", "settings"]) expect(note.content).not.toContain(secret);
     // And only that key opens it.
-    await expect(profile(2).open(note.content)).rejects.toThrow();
-    expect(readNote(await me.open(note.content)).settings?.value).toBe('{"airlock":"ask"}');
+    await expect(profile(2).open(note)).rejects.toThrow();
+    expect(readNote(await me.open(note)).settings?.value).toBe('{"airlock":"ask"}');
   });
 
   it("brings a second device up to the first, and never the other way on its first sync", async () => {
@@ -110,7 +110,7 @@ describe("keeping settings with a profile", () => {
     const r = relays();
     const me = profile(1);
     await syncOnce({ store: a, vault: me, shelf: r.shelf, now: 1000 });
-    const text = await me.open(r.notes.get(me.pubkey)!.content);
+    const text = await me.open(r.notes.get(me.pubkey)!);
     for (const never of ["approved", "publisher", "airlock-ask", "travel-mic", "computers", "my-worlds", "go-as", "jukebox", "hearShared"]) expect(text).not.toContain(never);
     expect(SECTIONS.map((s) => s.key).filter((k) => Object.keys(local).includes(k))).toEqual([]);
     // Hearing other people's music stays as it was said on each device.
@@ -171,7 +171,7 @@ describe("saved doors", () => {
     expect(JSON.parse(b.getItem(WANTED_KEY)!)).toEqual([door("arcade", 2)]);
     // Asked again before the third is found: it doesn't tell the profile the door was taken down.
     expect((await syncOnce({ store: b, vault: me, shelf: r.shelf, now: 3000 })).sent).toBe(false);
-    expect(JSON.parse(readNote(await me.open(r.notes.get(me.pubkey)!.content)).saved!.value!)).toHaveLength(3);
+    expect(JSON.parse(readNote(await me.open(r.notes.get(me.pubkey)!)).saved!.value!)).toHaveLength(3);
     // Found: it joins the others, and nothing is wanted.
     expect(reconcileSaved(b, [door("tour", 0), door("grove", 1), door("arcade", 2)], (id) => (id === door("arcade", 2).id ? ({ id: "arcade-event" } as unknown as NostrEvent) : null))).toEqual([]);
     expect(b.getItem(WANTED_KEY)).toBeNull();
@@ -227,7 +227,7 @@ describe("the note", () => {
     on(a);
     await syncOnce({ store: a, vault: me, shelf: r.shelf, now: 1000 });
     expect(await emptyNote({ vault: me, shelf: r.shelf, now: 2000 })).toBe(true);
-    expect(readNote(await me.open(r.notes.get(me.pubkey)!.content))).toEqual({});
+    expect(readNote(await me.open(r.notes.get(me.pubkey)!))).toEqual({});
     expect(a.getItem(SYNC_KEY)).not.toBeNull();
   });
 });
