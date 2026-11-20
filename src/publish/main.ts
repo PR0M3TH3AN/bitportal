@@ -84,6 +84,7 @@ function readForm(): WorldForm {
     perf: text("perf"),
     topics: text("topics"),
     audience: text("audience"),
+    category: text("category"),
     status: text("status") || "live",
     rooms: data.get("rooms") !== null,
   };
@@ -94,7 +95,7 @@ function fillForm(f: WorldForm): void {
     const input = form.elements.namedItem(name);
     if (input instanceof HTMLInputElement || input instanceof HTMLSelectElement) input.value = value;
   };
-  for (const k of ["url", "id", "title", "summary", "locomotion", "intensity", "seated", "perf", "topics", "audience", "status"] as const) set(k, f[k]);
+  for (const k of ["url", "id", "title", "summary", "locomotion", "intensity", "seated", "perf", "topics", "audience", "category", "status"] as const) set(k, f[k]);
   for (const box of form.querySelectorAll<HTMLInputElement>('input[name="modes"]')) box.checked = f.modes.includes(box.value);
   $<HTMLInputElement>("f-rooms").checked = f.rooms;
   idTouched = true;

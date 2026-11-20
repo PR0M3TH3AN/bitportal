@@ -8,14 +8,14 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-IGGD5JAZ.js";
+} from "./shared-NYFHY4QP.js";
 import "./shared-HFQGPOTV.js";
 import "./shared-U2U7QRDK.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
 import * as THREE3 from "three";
-import { checkDestination, checkPictureBytes, encodeNaddr, LAYOUT_LIMITS, portalTarget, WORLD_KIND } from "@nswp/core";
+import { categoryWords, checkDestination, checkPictureBytes, encodeNaddr, LAYOUT_LIMITS, portalTarget, WORLD_KIND } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/environment.ts
 import * as THREE2 from "three";
@@ -807,10 +807,13 @@ function createEnvironment(accent, opts = {}) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
-function addressLine(dest) {
-  if (!dest.url) return "A world on Nostr";
+function addressLine(dest, category) {
+  const kind = categoryWords(category);
+  if (!dest.url) return kind ? `${kind} on Nostr` : "A world on Nostr";
   const chk = checkDestination(dest.url);
-  return chk.ok ? chk.value.registrableDomain ?? chk.value.hostname : "invalid address";
+  if (!chk.ok) return "invalid address";
+  const at = chk.value.registrableDomain ?? chk.value.hostname;
+  return kind ? `${kind} at ${at}` : at;
 }
 var archMask = null;
 function archMaskTexture() {
@@ -933,18 +936,21 @@ function createPortalGate(destination, opts = {}) {
   const glow = gateGlow(color);
   group.add(frame, target, glow.group);
   let sign = null;
+  let said = opts.label ?? "Portal";
+  let category = opts.category ?? null;
   const setLabel = (label) => {
+    said = label;
     if (sign) {
       group.remove(sign);
       sign.material.map?.dispose();
       sign.material.dispose();
     }
     sign = textSprite(`${label}
-${addressLine(destination)}`, textColor, 2.2);
+${addressLine(destination, category)}`, textColor, 2.2);
     sign.position.set(0, PORTAL_SIGN_HEIGHT, 0);
     group.add(sign);
   };
-  setLabel(opts.label ?? "Portal");
+  setLabel(said);
   let aim = 0;
   const gate = {
     group,
@@ -952,6 +958,11 @@ ${addressLine(destination)}`, textColor, 2.2);
     destination,
     aimed: 0,
     setLabel,
+    setCategory(next) {
+      if ((next ?? null) === category) return;
+      category = next ?? null;
+      setLabel(said);
+    },
     showThrough(pano) {
       const through = createPortalWindow(plane, pano, { mask: archMaskTexture() });
       through.position.z = 4e-3;

@@ -3,7 +3,7 @@
  * form into an announcement, writing the manifest a creator must host, and
  * choosing where to publish.
  */
-import { buildWorldEvent, checkDestination, getTags, SCHEMAS, WELL_KNOWN_PATH, type EventTemplate, type Manifest, type NostrEvent, type World, type WorldInput } from "@nswp/core";
+import { buildWorldEvent, CATEGORIES, checkDestination, getTags, SCHEMAS, WELL_KNOWN_PATH, type Category, type EventTemplate, type Manifest, type NostrEvent, type World, type WorldInput } from "@nswp/core";
 
 export interface WorldForm {
   url: string;
@@ -18,6 +18,8 @@ export interface WorldForm {
   topics: string;
   /** Who the world is for: "kids", "general" or "adult". "" until its maker says. */
   audience: string;
+  /** What kind of place it is: one of the core's `CATEGORIES`, or "" for not said. */
+  category: string;
   status: string;
   rooms: boolean;
 }
@@ -76,6 +78,7 @@ export function formToInput(f: WorldForm, createdAt: number): WorldInput {
     input.description = f.summary.trim();
   }
   if (f.audience === "kids" || f.audience === "general" || f.audience === "adult") input.audience = f.audience;
+  if ((CATEGORIES as readonly string[]).includes(f.category)) input.category = f.category as Category;
   if (f.perf) input.perf = f.perf;
   if (f.status && f.status !== "live") input.status = f.status;
   return input;
@@ -99,6 +102,7 @@ export function worldToForm(w: World): WorldForm {
     perf: w.perf ?? "",
     topics: w.topics.join(", "),
     audience: w.audience ?? "",
+    category: w.category ?? "",
     status: w.status,
     rooms: w.capabilities.includes("rooms"),
   };

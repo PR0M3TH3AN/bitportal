@@ -6,7 +6,7 @@
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
 import { forgetSync, setSyncOn, startSync, syncState, testing as syncTesting } from "../shared/sync-run.js";
-import { audienceOf, buildAirlockUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND } from "@nswp/core";
+import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, queryRelays, shortNpub, WORLD_KIND } from "@nswp/core";
 import { loadBlockedEverywhere, loadPendingBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere, withoutBlockedEverywhere, type BlockedEverywhere } from "../shared/blocked.js";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type ListView, type StarterBundle } from "../shared/catalog.js";
@@ -619,6 +619,9 @@ function openDetail(entry: Entry, why: string): void {
     });
     tags.append(b);
   }
+  // What kind of place it is, in its maker's own word, where they said.
+  const category = categoryWords(w.category);
+  if (category) chips.append(chip(category, ""));
   // Who it is for, in its maker's own word, or that they didn't say.
   const audience = audienceOf(w);
   chips.append(chip(AUDIENCE_WORDS[audience], audience === "adult" ? "chip-warn" : ""));

@@ -2,7 +2,7 @@
  * The marks on a door plate: what a visitor is told before they commit
  * (NSWP spec §6.7). The list and the walk-in hall draw the same marks.
  */
-import type { World } from "@nswp/core";
+import { categoryWords, type World } from "@nswp/core";
 
 export interface Mark {
   text: string;
@@ -19,8 +19,11 @@ export function placeKind(world: Pick<World, "modes">): string {
   return world.modes.includes("2d") ? "Web page" : "";
 }
 
-export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience">>, fit: { ok: boolean; reason: string }, verified: boolean): Mark[] {
+export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category">>, fit: { ok: boolean; reason: string }, verified: boolean): Mark[] {
   const marks: Mark[] = [];
+  // What kind of place its maker says it is (NSWP-01): a game, an experience, a place to meet, an app, a site.
+  const category = categoryWords(world.category);
+  if (category) marks.push({ text: category, tone: "plain" });
   const kind = placeKind(world);
   if (kind) marks.push({ text: kind, tone: "plain" });
   if (verified) marks.push({ text: "Verified", tone: "ok" });

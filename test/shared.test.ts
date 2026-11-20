@@ -168,6 +168,7 @@ describe("publishing a world", () => {
     perf: "standalone",
     topics: "Art, #museum art",
     audience: "general",
+    category: "",
     status: "beta",
     rooms: true,
   };
@@ -307,6 +308,10 @@ describe("door plate (spec §6.7)", () => {
     const marks = plateMarks({ modes: ["immersive-vr"], comfort: { intensity: "high" }, contentWarning: "" }, { ok: false, reason: "Needs a VR headset" }, true);
     expect(marks.map((m) => m.text)).toEqual(["VR", "Verified", "Needs a VR headset", "Intense", "Content warning"]);
     expect(marks.filter((m) => m.tone === "warn")).toHaveLength(3);
+  });
+  it("says first what kind of place its maker calls it, and nothing for a word it doesn't know", () => {
+    expect(plateMarks({ modes: ["inline-3d"], comfort: {}, contentWarning: undefined, category: "game" }, fit, false).map((m) => m.text)).toEqual(["A game", "3D"]);
+    expect(plateMarks({ modes: ["inline-3d"], comfort: {}, contentWarning: undefined, category: "casino" as never }, fit, false).map((m) => m.text)).toEqual(["3D"]);
   });
   it("states a gentle world's intensity without alarm", () => {
     expect(plateMarks({ modes: ["inline-3d"], comfort: { intensity: "low" }, contentWarning: undefined }, fit, false)).toEqual([
@@ -466,7 +471,7 @@ describe("the visitor's look", () => {
 });
 
 describe("who a world is for, on the Announce page", () => {
-  const base = { url: "https://w.example/", id: "my-world", title: "W", summary: "", modes: ["inline-3d"], locomotion: "", intensity: "", seated: "", perf: "", topics: "", status: "live", rooms: false };
+  const base = { url: "https://w.example/", id: "my-world", title: "W", summary: "", modes: ["inline-3d"], locomotion: "", intensity: "", seated: "", perf: "", topics: "", category: "", status: "live", rooms: false };
 
   it("has to be said: nothing is announced until its maker chooses", () => {
     expect(validateForm({ ...base, audience: "" }).map((i) => i.field)).toEqual(["audience"]);
@@ -479,6 +484,14 @@ describe("who a world is for, on the Announce page", () => {
     expect(tags("kids")).toEqual([["audience", "kids"]]);
     expect(tags("general")).toEqual([["audience", "general"]]);
     expect(tags("adult")).toEqual([["content-warning", "adult"], ["audience", "adult"]]);
+  });
+
+  it("says what kind of place it is only when its maker chose one from the list", () => {
+    const said = (category: string) => formToEvent({ ...base, audience: "general", category }, 1).tags.filter((t) => t[0] === "category");
+    expect(said("game")).toEqual([["category", "game"]]);
+    expect(said("")).toEqual([]);
+    expect(said("casino")).toEqual([]);
+    expect(validateForm({ ...base, audience: "general", category: "" })).toEqual([]);
   });
 });
 

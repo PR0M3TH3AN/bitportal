@@ -46,6 +46,7 @@ import {
   createPanels,
   createPortalWindow,
   createPresence,
+  createSaves,
   createSounds,
   createStepPace,
   createStroll,
@@ -93,9 +94,10 @@ import {
   visitorFov,
   watchFov,
   watchFresh,
+  worldSaves,
   worldSigner,
   youCard
-} from "./shared-IGGD5JAZ.js";
+} from "./shared-NYFHY4QP.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -170,6 +172,7 @@ export {
   createPanels,
   createPortalWindow,
   createPresence,
+  createSaves,
   createSounds,
   createStay,
   createStepPace,
@@ -228,6 +231,7 @@ export {
   wasRefreshed,
   watchFov,
   watchFresh,
+  worldSaves,
   worldSigner,
   youCard
 };
