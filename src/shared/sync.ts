@@ -90,6 +90,9 @@ export const SECTIONS: Section[] = [
     },
   },
   { name: "ui", key: "nswp:ui" },
+  // Which tabs of the menu they keep on their bar (the kit's pins): a preference like the size of their text,
+  // added on the owner's word of 2026-11-19. Read back by the kit through the check every pin goes through.
+  { name: "bar", key: "nswp:ui:pins" },
   { name: "comfort", key: "nswp:comfort" },
   { name: "moving", key: "bitportal:fps" },
   // What they prefer in every world: a filled screen, how fast the view turns, how wide they see (prefs.ts).

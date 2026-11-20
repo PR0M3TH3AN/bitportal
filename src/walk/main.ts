@@ -438,10 +438,13 @@ async function start(): Promise<void> {
   controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choosing one leaves from where you stand, and your Airlock shows its real address next." });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
-    { id: "doors", section: "travel", icon: "save", hotbar: true, label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
+    { id: "doors", section: "travel", icon: "save", label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
     // Every door this copy shows, without leaving the room: in the menu on a flat screen, like every other list
     // there, and on a panel hung in the room in a headset, where there is no menu to read.
-    { id: "list", section: "travel", icon: "list", hotbar: true, label: "Every door, as a list", short: "List", act: () => openList() },
+    // Neither list is on the bar: the bar is for what is done in the moment, and a list is a tab of the menu, which
+    // a visitor who wants it to hand can keep on their bar themselves (the kit's pins). In a headset, where there is
+    // no bar, both are on the wrist with everything else.
+    { id: "list", section: "travel", icon: "list", label: "Every door, as a list", short: "List", act: () => openList() },
     // Offered at a door, to whoever is standing at it: the same thing its tag does.
     {
       id: "door-keep",

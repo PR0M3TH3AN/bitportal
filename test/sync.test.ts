@@ -231,3 +231,12 @@ describe("the note", () => {
     expect(a.getItem(SYNC_KEY)).not.toBeNull();
   });
 });
+
+describe("what is on a visitor's bar, kept with their profile", () => {
+  it("travels as the kit keeps it, and is one of the things that may", () => {
+    expect(SECTIONS.find((s) => s.name === "bar")?.key).toBe("nswp:ui:pins");
+    // And still nothing that is said per device, or trusted by a computer of theirs.
+    const keys = SECTIONS.map((s) => s.key);
+    for (const never of ["bitportal:approved", "bitportal:publisher-pins", "bitportal:airlock-ask", "bitportal:travel-mic", "bitportal:go-as", "bitportal:computers", "bitportal:my-worlds", "bitportal:signed-in"]) expect(keys).not.toContain(never);
+  });
+});
