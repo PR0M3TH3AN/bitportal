@@ -90,10 +90,12 @@ import {
   keyIn,
   lookAfter,
   lookScale,
+  mayHold,
   onDeskChange,
   onHereAs,
   onItemsChange,
   ordinal,
+  paintHealth,
   panoramaTexture,
   prefersFullscreen,
   reachOf,
@@ -130,7 +132,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-NJ74YFEJ.js";
+} from "./shared-R33PVHOT.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -264,11 +266,13 @@ export {
   loadPicture,
   lookAfter,
   lookScale,
+  mayHold,
   onDeskChange,
   onHereAs,
   onItemsChange,
   onPicturesChange,
   ordinal,
+  paintHealth,
   panoramaTexture,
   prefersFullscreen,
   publishBacked,
