@@ -81,6 +81,7 @@ import {
   lookScale,
   onDeskChange,
   onHereAs,
+  ordinal,
   panoramaTexture,
   prefersFullscreen,
   reachOf,
@@ -94,6 +95,7 @@ import {
   setVisitorFov,
   signerAction,
   signerNamed,
+  someOf,
   speechSprite,
   startingForm,
   strideOf,
@@ -107,10 +109,11 @@ import {
   watchFov,
   watchFresh,
   worldPeople,
+  worldPersonLines,
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-EYIJ24XB.js";
+} from "./shared-QY2Y5HYN.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -129,7 +132,7 @@ import {
   sendWell,
   setShowsPictures,
   showsPictures
-} from "./shared-BXK7BRDP.js";
+} from "./shared-264RGM3S.js";
 import {
   browserVoice,
   computerVoice,
@@ -236,6 +239,7 @@ export {
   onDeskChange,
   onHereAs,
   onPicturesChange,
+  ordinal,
   panoramaTexture,
   prefersFullscreen,
   publishBacked,
@@ -258,6 +262,7 @@ export {
   showsPictures,
   signerAction,
   signerNamed,
+  someOf,
   speechSprite,
   startingForm,
   strideOf,
@@ -273,6 +278,7 @@ export {
   watchFov,
   watchFresh,
   worldPeople,
+  worldPersonLines,
   worldSaves,
   worldSigner,
   youCard

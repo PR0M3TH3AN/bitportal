@@ -37,6 +37,7 @@ import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
 import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
+import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
 import { holdsReserved, quietSigner, quietVault, readSignedIn } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
@@ -1414,9 +1415,16 @@ async function start(): Promise<void> {
     say: (text) => controls.say(text),
     presenting: () => renderer.xr.isPresenting,
   });
+  // What someone has done in the worlds this copy knows, on their card (NSWP-15, NSWP-16): asked of relays when
+  // the visitor opens the card, and shown only where it is marked with that world's own address.
+  const about = homePersonLines({
+    relays: settings.relays,
+    worlds: () => [...new Map([...catalog.entries, ...doors.map((d) => d.entry)].map((e) => [e.id, { id: e.id, title: e.world.title, url: e.world.url }])).values()],
+  });
+  about.onChange(() => refreshRoom());
   let followingTab: ReturnType<typeof addRoomControls>["following"];
   let messagingTab: ReturnType<typeof addRoomControls>["messaging"];
-  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, messages, presenting: () => renderer.xr.isPresenting }));
+  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, messages, about, presenting: () => renderer.xr.isPresenting }));
   refreshFollowing = () => {
     followingTab.refresh();
     messagingTab.refresh();

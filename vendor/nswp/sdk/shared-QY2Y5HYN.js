@@ -21,7 +21,7 @@ import {
   showsChat,
   showsPictures,
   wrapWords
-} from "./shared-BXK7BRDP.js";
+} from "./shared-264RGM3S.js";
 import {
   LiveKeys,
   TextEntry,
@@ -4803,7 +4803,8 @@ function addFollowingControls(controls, opts) {
           text: p?.about ?? "",
           picture: showsPictures() ? p?.picture ?? "" : "",
           color: "",
-          now: []
+          // What they have done, as they say: where they stand here, what they show.
+          now: opts.about?.lines(chosen) ?? []
         };
       }
     });
@@ -4882,6 +4883,7 @@ function addFollowingControls(controls, opts) {
   };
   profiles.onChange(soon2);
   f.people.onChange(soon2);
+  opts.about?.onChange(soon2);
   refresh();
   return {
     refresh,
@@ -6226,9 +6228,10 @@ function createWorldSigner(opts) {
       if (state !== "unlocked" || !frame || !more.includes("messages")) return Promise.resolve(null);
       return askAbout({ t: "reach", id: `m${++n}`, relays: [...relays] }, (reply) => reply.t === "signed" && isReachAsked(reply.event, { pubkey, relays }) ? reply.event : null);
     },
-    score(world, board, score) {
+    score(world, board, score, said = {}) {
       if (state !== "unlocked" || !frame) return Promise.resolve(null);
-      return askAbout({ t: "score", id: `c${++n}`, world, board, score }, (reply) => reply.t === "signed" && isScoreAsked(reply.event, { pubkey, world, board, score, origin: location.origin }) ? reply.event : null);
+      const more2 = { ...said.title ? { title: said.title } : {}, ...said.format === "time" ? { format: "time" } : {} };
+      return askAbout({ t: "score", id: `c${++n}`, world, board, score, ...more2 }, (reply) => reply.t === "signed" && isScoreAsked(reply.event, { pubkey, world, board, score, ...more2, origin: location.origin }) ? reply.event : null);
     },
     achieve(world, achievement, title) {
       if (state !== "unlocked" || !frame) return Promise.resolve(null);
@@ -9078,7 +9081,7 @@ function createScores(opts) {
       const kept2 = of(who);
       const had = cleanScore(kept2[id]?.posted);
       if (had !== null && !better(b, mine, had)) return { ok: true, said: `Your best, ${scoreWords(b, mine)}, is already on the board.` };
-      const signed = await opts.hand.sign(world, id, mine).catch(() => null);
+      const signed = await opts.hand.sign(world, id, mine, { title: b.title, format: b.format }).catch(() => null);
       if (!signed) return { ok: false, said: "It couldn't be signed, so nothing was posted. Your best is still kept on this device." };
       const sent = await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
       if (!sent || sent.took === 0) return { ok: false, said: "No relay took it. Your best is still kept on this device: try again in a moment." };
@@ -9094,6 +9097,12 @@ function createScores(opts) {
       await fetchAll(fresh);
       if (!answered && events.length === 0) return null;
       return rankScores(events, { world, board: id, order: b.order, worldUrl: opts.worldUrl, counted: opts.counted?.() ?? [], me: opts.hand.pubkey() });
+    },
+    standingOf(id, pubkey) {
+      const b = boardOf(id);
+      if (!world || !b || events.length === 0) return null;
+      const ranked = rankScores(events, { world, board: id, order: b.order, worldUrl: opts.worldUrl, me: pubkey });
+      return ranked.mine ? { score: ranked.mine.score, rank: ranked.mine.rank, of: ranked.count } : null;
     },
     words: (id, score) => {
       const b = boardOf(id);
@@ -9192,6 +9201,52 @@ function addScoreControls(controls, opts) {
   opts.profiles?.onChange(soon2);
   refresh();
   return { refresh };
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/person-lines.ts
+function ordinal(n) {
+  const tens = n % 100;
+  const last = n % 10;
+  return `${n}${tens >= 11 && tens <= 13 ? "th" : last === 1 ? "st" : last === 2 ? "nd" : last === 3 ? "rd" : "th"}`;
+}
+function someOf(names, most = 3) {
+  const shown = names.slice(0, most).join(", ");
+  const rest = names.length - most;
+  return rest > 0 ? `${shown} and ${rest} more` : shown;
+}
+function worldPersonLines(o) {
+  const watchers2 = /* @__PURE__ */ new Set();
+  const changed = () => {
+    for (const fn of watchers2) fn();
+  };
+  let asked = 0;
+  const read = () => {
+    if (asked && Date.now() - asked < 6e4) return;
+    asked = Date.now();
+    const reads = [];
+    for (const b of o.scores?.boards ?? []) reads.push(o.scores.standings(b.id, true).catch(() => null));
+    if (o.achievements?.list.length) reads.push(o.achievements.holders(true).catch(() => null));
+    void Promise.all(reads).then(changed);
+  };
+  o.scores?.onChange(changed);
+  o.achievements?.onChange(changed);
+  return {
+    lines(pubkey) {
+      read();
+      const out = [];
+      for (const b of o.scores?.boards ?? []) {
+        const at = o.scores.standingOf(b.id, pubkey);
+        if (at) out.push(`${b.title}: ${o.scores.words(b.id, at.score)}, ${ordinal(at.rank)} of ${at.of} here`);
+      }
+      const held = o.achievements?.heldBy(pubkey) ?? [];
+      if (held.length) out.push(`Shows ${held.length} of ${o.achievements.list.length} achievements here: ${someOf(held.map((a) => a.title))}`);
+      return out;
+    },
+    onChange(fn) {
+      watchers2.add(fn);
+      return () => void watchers2.delete(fn);
+    }
+  };
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/achievements.ts
@@ -9305,6 +9360,11 @@ function createAchievements(opts) {
       }
       if (!answered && events.length === 0) return null;
       return achievementsIn(events, { world, worldUrl: opts.worldUrl, counted: opts.counted?.() ?? [], me: opts.hand.pubkey() }).byId;
+    },
+    heldBy(pubkey) {
+      if (!world || events.length === 0) return [];
+      const theirs = new Set(achievementsIn(events, { world, worldUrl: opts.worldUrl }).held.filter((h) => h.by === pubkey).map((h) => h.id));
+      return list.filter((a) => theirs.has(a.id));
     },
     onChange(fn) {
       watchers2.add(fn);
@@ -11478,6 +11538,7 @@ function addRoomControls(controls, presence, opts = {}) {
     ...opts.noteRelays ? { relays: opts.noteRelays } : {},
     keyboard: () => opts.panels?.keyboard ?? null,
     ...opts.presenting ? { presenting: opts.presenting } : {},
+    ...opts.about ? { about: opts.about } : {},
     more: (who) => [{ id: "following-write", icon: "chat", label: `Write to ${who.name}, privately`, act: () => messaging.write(who.pubkey) }]
   });
   const messaging = addMessagingControls(controls, {
@@ -11640,6 +11701,8 @@ function addRoomControls(controls, presence, opts = {}) {
           picture: !who2.guest && showsPictures() ? who2.picture ?? "" : "",
           color: who2.look.light,
           now: [
+            // What they have done here, as they say. Only someone who came by name has anything to show.
+            ...who2.identity ? opts.about?.lines(who2.identity) ?? [] : [],
             ...who2.recording ? ["Recording what they see"] : [],
             ...who2.sharing ? ["Sharing their screen"] : [],
             ...who2.music ? ["Sharing music"] : [],
@@ -12565,6 +12628,9 @@ export {
   viewScale,
   createScores,
   addScoreControls,
+  ordinal,
+  someOf,
+  worldPersonLines,
   createAchievements,
   addAchievementControls,
   createSounds,
