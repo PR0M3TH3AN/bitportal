@@ -43,6 +43,7 @@ import {
   createChamber,
   createConsole,
   createCrossing,
+  createDoorRatings,
   createFigure,
   createFloorMarks,
   createFps,
@@ -113,7 +114,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-QY2Y5HYN.js";
+} from "./shared-F5V6WRZH.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -194,6 +195,7 @@ export {
   createChamber,
   createConsole,
   createCrossing,
+  createDoorRatings,
   createFigure,
   createFloorMarks,
   createFps,
