@@ -173,7 +173,7 @@ export function addComputers(o: ComputersOptions): Computers {
 
   const signer = async (owner: string): Promise<{ signer: Signer; close(): void } | null> => (test ? { signer: test.signer, close: () => {} } : quietSigner(owner));
   /** A grant is one of the kinds BitLogin signs for BitPortal's own address and no other (session.ts). */
-  const NO_GRANT_HERE = `A grant for a computer can't be signed at this address: your sign-in signs one only for BitPortal's own.`;
+  const NO_GRANT_HERE = `A grant for a computer can't be signed at this address: your sign-in address won't sign one here.`;
 
   /** Note how each open terminal hangs. Kept for this tab, and only so a refresh can put them back. */
   const noteOpen = () => {
@@ -194,8 +194,10 @@ export function addComputers(o: ComputersOptions): Computers {
     };
     if (!panels) return null;
     if (open.filter((t) => t.pubkey === c.pubkey).length >= TERMINALS_EACH) return no(`${TERMINALS_EACH} terminals are open on ${c.name}. Put one away first.`);
+    const signedInAs = await identify();
+    // Asked of the sign-in address by now: whether it signs a grant at this address at all.
     if (!test && !holdsReserved()) return no(NO_GRANT_HERE);
-    if ((await identify()) !== c.owner) return no("Sign in on the front page first, as the key this computer answers.");
+    if (signedInAs !== c.owner) return no("Sign in on the front page first, as the key this computer answers.");
     const quiet = await signer(c.owner);
     if (!quiet) return no("Your sign-in has run out here. Sign in again on the front page, then try again.");
     try {
@@ -286,8 +288,8 @@ export function addComputers(o: ComputersOptions): Computers {
       controls.say(why);
       return null;
     };
-    if (!test && !holdsReserved()) return no(NO_GRANT_HERE);
     const owner = await identify();
+    if (!test && !holdsReserved()) return no(NO_GRANT_HERE);
     const world = owner ? myWorldsOf(loadMyWorlds(), owner).find((w) => w.origin === origin) : undefined;
     const computer = world && owner ? computersOf(loadComputers(), owner).find((c) => c.pubkey === world.computer) : undefined;
     if (!owner || !world) return no("That isn't one of the worlds you are building.");

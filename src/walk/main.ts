@@ -394,10 +394,9 @@ async function start(): Promise<void> {
   hooks.notes = homeNotes;
   const nameMe = async (pubkey: string): Promise<void> => {
     if (goesAsGuest()) return void (roomIdentity = undefined);
-    // A pass is one of the kinds the sign-in address signs for BitPortal's own address and no other.
-    if (!holdsReserved()) return;
     const quiet = await quietSigner(pubkey);
-    if (!quiet) return;
+    // A pass is one of the kinds the sign-in address signs only where it says it will: asked of it by now.
+    if (!quiet || !holdsReserved()) return;
     try {
       const mine = profileOf(pubkey);
       roomIdentity = await issuePass(quiet.signer, { origin: location.origin, ...(mine?.name ? { name: mine.name } : {}), ...(mine?.picture ? { picture: mine.picture } : {}) });
