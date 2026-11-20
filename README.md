@@ -458,6 +458,15 @@ what you are asked when you sign in. Say no and nothing changes; you stay signed
 BitPortal changes one line of your list and keeps the rest. If none of your relays can be reached it changes nothing,
 so a list is never written over one it couldn't find.
 
+## What someone has done
+
+A person's card (in People and in Following) says what they have posted in the worlds BitPortal knows: a score on a
+world's board, and the achievements they show. "In The Arcade: Lantern Run, 41.2 s."
+
+- It is what they say of themselves. Nothing checks a score or an achievement yet, and the card doesn't pretend to.
+- Only what was posted from the world itself is shown: a score marked as coming from anywhere else is left out.
+- Relays are asked about a person when you open their card, and not before.
+
 ## Private messages
 
 The menu has a **Messages** tab: your private messages with one person at a time. They are Nostr's own (NIP-17), so
