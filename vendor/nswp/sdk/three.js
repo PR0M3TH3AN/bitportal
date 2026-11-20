@@ -23,6 +23,7 @@ import {
   PITCH_LIMIT,
   RUN,
   SPRINT,
+  TAP_MS,
   TAP_REACH,
   TOP_SPEED,
   WALK_SPEED,
@@ -129,7 +130,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-34CJENDL.js";
+} from "./shared-NJ74YFEJ.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -185,6 +186,7 @@ export {
   PITCH_LIMIT,
   RUN,
   SPRINT,
+  TAP_MS,
   TAP_REACH,
   TOP_SPEED,
   WALK_SPEED,
