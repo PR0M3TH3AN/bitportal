@@ -224,6 +224,13 @@ function plateTexture(entry: Entry, device: Device, rating: string = ""): THREE.
     let x = 10;
     for (const m of marks) {
       const tw = g.measureText(m.text).width;
+      // A mark that would run off the plate starts a second row, and one there is no room for at all is left
+      // off whole: never half a word.
+      if (x > 10 && x + tw + 40 > W) {
+        x = 10;
+        y += 78;
+      }
+      if (y + 70 > H) break;
       g.strokeStyle = m.color;
       g.lineWidth = 4;
       g.strokeRect(x + 2, y + 2, tw + 36, 66);
