@@ -1,108 +1,110 @@
-import { c as W } from "./bitlogin-shared-DgyxWBMr.js";
-import { c as T, a as o, b as m, s as B, d as j, m as z, p as J, e as K, l as Q, f as U, k as V, A as w, h as X } from "./bitlogin-shared-C4PaJAtm.js";
-function $(F = {}) {
+import { c as j } from "./bitlogin-shared-DNJrsC_6.js";
+import { k as z } from "./bitlogin-shared-C9zlLrai.js";
+import { f as T } from "./bitlogin-shared-BR-gO7UJ.js";
+import { c as B, a as c, b as m, s as F, d as J, m as K, p as Q, e as U, l as V, f as X, k as Y, A as w, h as Z } from "./bitlogin-shared-BvaZ0lb5.js";
+function re(O = {}) {
   if (typeof window > "u" || window.parent === window) return { embedded: !1, stop() {
   } };
   const L = location.origin;
-  let n = T(location.ancestorOrigins?.[0] ?? ""), a = null, s = null, f = null, u = null, d = 0, g = !1, y = o();
-  const D = { burst: m.passBurst, perMs: m.perMs, hourly: m.passHourly };
-  let M = o(D), l = null, E = null, k = { quiet: o(w.quiet), public: o(w.public), sensitive: o(w.sensitive), read: o(w.read) };
+  let n = B(location.ancestorOrigins?.[0] ?? ""), o = null, i = null, p = null, u = null, d = 0, g = !1, v = c();
+  const E = { burst: m.passBurst, perMs: m.perMs, hourly: m.passHourly };
+  let G = c(E), l = null, I = null, h = { quiet: c(w.quiet), public: c(w.public), sensitive: c(w.sensitive), read: c(w.read) };
   const P = (e = [], r = []) => ({
-    quiet: o(w.quiet),
-    public: o(w.public, e),
-    sensitive: o(w.sensitive, r),
-    read: o(w.read)
+    quiet: c(w.quiet),
+    public: c(w.public, e),
+    sensitive: c(w.sensitive, r),
+    read: c(w.read)
   });
   let b = null;
-  const I = async () => a ??= await W(F), N = () => {
-    const e = a;
-    a = null, s = null, f = null, u = null, d = 0, g = !1, l = null, e?.destroy();
-  }, q = async () => {
-    const e = a;
-    !e || !s || !g || !n || await e.checkTakenBack(n).catch(() => "ok") === "ok" || a !== e || (N(), p(v()));
+  const q = async () => o ??= await j(O), N = () => {
+    const e = o;
+    o = null, i = null, p = null, u = null, d = 0, g = !1, l = null, e?.destroy();
+  }, H = async () => {
+    const e = o;
+    !e || !i || !g || !n || await e.checkTakenBack(n).catch(() => "ok") === "ok" || o !== e || (N(), f(k()));
   }, S = () => {
-    const e = a, r = n;
-    a = null, s = null, f = null, u = null, d = 0, g = !1, l = null, e && (r ? e.forgetSignerGrant(r) : Promise.resolve()).catch(() => {
+    const e = o, r = n;
+    o = null, i = null, p = null, u = null, d = 0, g = !1, l = null, e && (r ? e.forgetSignerGrant(r) : Promise.resolve()).catch(() => {
     }).finally(() => e.destroy());
   };
-  let O = null;
-  const H = () => O ??= (async () => {
+  let _ = null;
+  const x = () => _ ??= (async () => {
     if (n)
       try {
-        const e = await (await I()).restoreSignerGrant(n);
+        const e = await (await q()).restoreSignerGrant(n, T(n) || void 0);
         if (!e) return;
-        s = e.pubkey, f = e.name ?? null, u = e.profile ?? null, d = e.until, g = !0, l = e.permissions ?? null, l ? k = P(e.signed, e.signedSensitive) : y = o(m, e.signed), e.check === "overdue" ? await q() : e.check === "due" && q(), M = o(D, e.signedPass);
+        i = e.pubkey, p = e.name ?? null, u = e.profile ?? null, d = e.until, g = !0, l = e.permissions ?? null, l ? h = P(e.signed, e.signedSensitive) : v = c(m, e.signed), e.check === "overdue" ? await H() : e.check === "due" && H(), G = c(E, e.signedPass);
       } catch {
       }
-  })(), p = (e) => {
-    n && window.parent.postMessage(B(e), n);
-  }, v = (e) => (s && Date.now() / 1e3 >= d && S(), {
+  })(), f = (e) => {
+    n && window.parent.postMessage(F(e), n);
+  }, k = (e) => (i && Date.now() / 1e3 >= d && S(), {
     t: "state",
     ...e ? { id: e } : {},
-    unlocked: !!s,
-    ...s ? { pubkey: s, until: d, remembered: g } : {},
+    unlocked: !!i,
+    ...i ? { pubkey: i, until: d, remembered: g } : {},
     // The name in their own signed profile, where they have one; else the name the sign-in address knew them by.
-    ...s && (u?.name || f) ? { name: u?.name || f } : {},
-    ...s && u?.picture ? { picture: u.picture } : {},
-    ...s && u?.about ? { about: u.about } : {},
+    ...i && (u?.name || p) ? { name: u?.name || p } : {},
+    ...i && u?.picture ? { picture: u.picture } : {},
+    ...i && u?.about ? { about: u.about } : {},
     // An application is told what it was approved for, so it can tell that from what it now wants.
-    ...s && l ? { permissions: l } : {}
-  }), _ = async (e) => {
-    const r = T(e.origin);
+    ...i && l ? { permissions: l } : {}
+  }), C = async (e) => {
+    const r = B(e.origin);
     if (!r || (n ||= r, r !== n)) return;
-    const t = j(e.data);
+    const t = J(e.data);
     if (!t) return;
-    if (await H(), t.t === "state") return p(v(t.id));
+    if (await x(), t.t === "state") return f(k(t.id));
     if (t.t === "lock")
-      return S(), p(v(t.id));
+      return S(), f(k(t.id));
     if (t.t === "want")
-      return E = z(n, t.permissions) ? t.permissions : null, p(v(t.id));
-    const i = () => p({ t: "refused", id: t.id });
-    if (s && Date.now() / 1e3 >= d && S(), !a || !s) return i();
+      return I = K(n, t.permissions) ? t.permissions : null, f(k(t.id));
+    const a = () => f({ t: "refused", id: t.id });
+    if (i && Date.now() / 1e3 >= d && S(), !o || !i) return a();
     if (t.t === "encrypt" || t.t === "decrypt" || t.t === "read") {
-      if (!l || t.t !== "encrypt" && !k.read.take(Date.now())) return i();
+      if (!l || t.t !== "encrypt" && !h.read.take(Date.now())) return a();
       try {
-        const h = t.t === "read" ? await a.appDecryptEvent(t.event) : t.t === "encrypt" ? await a.appEncrypt(t.peer, t.text, t.scheme) : await a.appDecrypt(t.peer, t.text, t.scheme);
-        return p({ t: "text", id: t.id, text: h });
+        const y = t.t === "read" ? await o.appDecryptEvent(t.event) : t.t === "encrypt" ? await o.appEncrypt(t.peer, t.text, t.scheme) : await o.appDecrypt(t.peer, t.text, t.scheme);
+        return f({ t: "text", id: t.id, text: y });
       } catch {
-        return i();
+        return a();
       }
     }
     if (t.t === "pass") {
-      if (l || t.session === s || !M.take(Date.now())) return i();
+      if (l || t.session === i || !G.take(Date.now())) return a();
       try {
-        const h = await a.roomPass(t.session);
-        if (h.pubkey !== s) return i();
-        p({ t: "signed", id: t.id, event: h }), a.touchSignerGrant(n, y.times(), void 0, M.times()).catch(() => {
+        const y = await o.roomPass(t.session);
+        if (y.pubkey !== i) return a();
+        f({ t: "signed", id: t.id, event: y }), o.touchSignerGrant(n, v.times(), void 0, G.times()).catch(() => {
         });
       } catch {
-        i();
+        a();
       }
       return;
     }
-    const c = Date.now(), x = l ? J(l, t.event, n, c / 1e3) : K(t.event, n, c / 1e3);
-    if (!x) return i();
-    const G = l ? Q(x.kind) : null;
-    if (!(G ? k[G] : y).take(c)) return i();
+    const s = Date.now(), M = l ? Q(l, t.event, n, s / 1e3) : U(t.event, n, s / 1e3);
+    if (!M) return a();
+    const D = l ? V(M.kind) : null;
+    if (!(D ? h[D] : v).take(s)) return a();
     try {
-      const h = await a.signEvent(x);
-      if (h.pubkey !== s) return i();
-      p({ t: "signed", id: t.id, event: h }), G ? G !== "quiet" && a.touchSignerGrant(n, k.public.times(), k.sensitive.times()).catch(() => {
-      }) : a.touchSignerGrant(n, y.times()).catch(() => {
+      const y = await o.signEvent(M);
+      if (y.pubkey !== i) return a();
+      f({ t: "signed", id: t.id, event: y }), D ? D !== "quiet" && o.touchSignerGrant(n, h.public.times(), h.sensitive.times()).catch(() => {
+      }) : o.touchSignerGrant(n, v.times()).catch(() => {
       });
     } catch {
-      i();
+      a();
     }
-  }, C = async (e) => {
-    const r = U(e.data);
+  }, R = async (e) => {
+    const r = X(e.data);
     if (!r || !e.source) return;
-    const t = (i) => e.source.postMessage(X(i), L);
+    const t = (a) => e.source.postMessage(Z(a), L);
     if (r.t === "hello") {
       if (!n) return;
-      await H();
+      await x();
       try {
-        const i = await (await I()).beginHandoff();
-        b = { nonce: r.nonce, from: e.source }, t({ t: "frame", nonce: r.nonce, world: n, recipient: i, ...E ? { wants: E } : {} });
+        const a = await (await q()).beginHandoff();
+        b = { nonce: r.nonce, from: e.source }, t({ t: "frame", nonce: r.nonce, world: n, recipient: a, ...I ? { wants: I } : {} });
       } catch {
       }
       return;
@@ -110,29 +112,32 @@ function $(F = {}) {
     if (r.t === "grant" && !(!b || b.nonce !== r.nonce || b.from !== e.source || r.world !== n)) {
       b = null;
       try {
-        const i = await I(), c = await i.acceptHandoff(r.sealed);
-        if (c.app && c.app.site !== n || c.site && c.site !== n) throw new Error("for another site");
-        u = c.profile ?? null, l = c.app?.permissions ?? null, k = P(), s = c.pubkey, f = r.name ?? null, y = o(), M = o(D), d = Math.floor(Date.now() / 1e3) + (c.remember ? V(n) !== null ? m.grantSec : m.unknownGrantSec : m.visitSec), g = c.remember === !0 && await i.keepSignerGrant({ site: n, until: d, ...f ? { name: f } : {} }).catch(() => !1), g || (d = Math.min(d, Math.floor(Date.now() / 1e3) + m.visitSec)), t({ t: "done", nonce: r.nonce, ok: !0 });
+        const a = await q(), s = await a.acceptHandoff(r.sealed);
+        if (s.app && s.app.site !== n || s.site && s.site !== n) throw new Error("for another site");
+        if (s.family && s.family !== T(n)) throw new Error("for another family");
+        u = s.profile ?? null, l = s.app?.permissions ?? null, h = P(), i = s.pubkey, p = r.name ?? null, v = c(), G = c(E);
+        const M = s.family ? z(s.family) : Y(n) !== null;
+        d = Math.floor(Date.now() / 1e3) + (s.remember ? M ? m.grantSec : m.unknownGrantSec : m.visitSec), g = s.remember === !0 && await a.keepSignerGrant({ site: n, until: d, ...p ? { name: p } : {} }).catch(() => !1), g || (d = Math.min(d, Math.floor(Date.now() / 1e3) + m.visitSec)), t({ t: "done", nonce: r.nonce, ok: !0 });
       } catch {
         S(), t({ t: "done", nonce: r.nonce, ok: !1 });
       }
-      p(v());
+      f(k());
     }
   }, A = (e) => {
-    if (e.source === window.parent) return void _(e);
-    e.origin === L && e.source !== window && C(e);
+    if (e.source === window.parent) return void C(e);
+    e.origin === L && e.source !== window && R(e);
   };
   window.addEventListener("message", A);
-  const R = setInterval(() => void q(), 36e5);
-  return n && (window.parent.postMessage(B({ t: "ready" }), n), H().then(() => {
-    s && p(v());
+  const W = setInterval(() => void H(), 36e5);
+  return n && (window.parent.postMessage(F({ t: "ready" }), n), x().then(() => {
+    i && f(k());
   })), {
     embedded: !0,
     stop() {
-      clearInterval(R), window.removeEventListener("message", A), S();
+      clearInterval(W), window.removeEventListener("message", A), S();
     }
   };
 }
 export {
-  $ as startEmbeddedSigner
+  re as startEmbeddedSigner
 };

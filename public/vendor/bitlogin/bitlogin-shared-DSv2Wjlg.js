@@ -1,38 +1,38 @@
-import { o as h, j as A, E as m, q as U, v as B, u as y, k as p, s as $, e as x } from "./bitlogin-shared-Cm1sH5zP.js";
+import { q as h, l as A, G as m, w as U, y as B, u as y, m as p, i as $, e as x } from "./bitlogin-shared-BZPITbpl.js";
 function C(t, n, r) {
   return h(t), r === void 0 && (r = new Uint8Array(t.outputLen)), A(t, m(r), m(n));
 }
-const l = /* @__PURE__ */ Uint8Array.from([0]), E = /* @__PURE__ */ Uint8Array.of();
+const l = /* @__PURE__ */ Uint8Array.from([0]), w = /* @__PURE__ */ Uint8Array.of();
 function N(t, n, r, e = 32) {
   h(t), U(e);
   const o = t.outputLen;
   if (e > 255 * o)
     throw new Error("Length should be <= 255*HashLen");
   const a = Math.ceil(e / o);
-  r === void 0 && (r = E);
-  const s = new Uint8Array(a * o), u = A.create(t, n), c = u._cloneInto(), f = new Uint8Array(u.outputLen);
-  for (let i = 0; i < a; i++)
-    l[0] = i + 1, c.update(i === 0 ? E : f).update(r).update(l).digestInto(f), s.set(f, o * i), u._cloneInto(c);
-  return u.destroy(), c.destroy(), B(f, l), s.slice(0, e);
+  r === void 0 && (r = w);
+  const s = new Uint8Array(a * o), i = A.create(t, n), c = i._cloneInto(), f = new Uint8Array(i.outputLen);
+  for (let u = 0; u < a; u++)
+    l[0] = u + 1, c.update(u === 0 ? w : f).update(r).update(l).digestInto(f), s.set(f, o * u), i._cloneInto(c);
+  return i.destroy(), c.destroy(), B(f, l), s.slice(0, e);
 }
 function z(t, n) {
   return C(p, n, t);
 }
-function v(t, n, r) {
+function O(t, n, r) {
   const e = typeof n == "string" ? y(n) : n;
   return N(p, t, e, r);
 }
 function F(t) {
   return p(y(t));
 }
-const O = $.CURVE.n;
-function g(t) {
+const g = $.CURVE.n;
+function v(t) {
   let n = 0n;
   for (const r of t)
     n = n << 8n | BigInt(r);
   return n;
 }
-function k(t) {
+function I(t) {
   const n = new Uint8Array(32);
   let r = t;
   for (let e = 31; e >= 0; e--)
@@ -42,18 +42,18 @@ function k(t) {
 function L(t, n) {
   const r = y(n);
   for (let e = 0; e <= 255; e++) {
-    const o = x(r, new Uint8Array([0, e])), a = v(t, o, 32), s = g(a);
-    if (s >= 1n && s < O)
-      return { scalar: k(s), counter: e };
+    const o = x(r, new Uint8Array([0, e])), a = O(t, o, 32), s = v(a);
+    if (s >= 1n && s < g)
+      return { scalar: I(s), counter: e };
   }
   throw new Error("ScalarExpand: exhausted 256 counters without a valid scalar (should not happen in practice).");
 }
-function I(t) {
+function R(t) {
   return t && t.__esModule && Object.prototype.hasOwnProperty.call(t, "default") ? t.default : t;
 }
-var d, w;
-function R() {
-  return w || (w = 1, d = function t(n) {
+var d, E;
+function T() {
+  return E || (E = 1, d = function t(n) {
     if (typeof n == "number" && isNaN(n))
       throw new Error("NaN is not allowed");
     if (typeof n == "number" && !isFinite(n))
@@ -66,12 +66,12 @@ function R() {
     }, "")}}`;
   }), d;
 }
-var T = R();
-const M = /* @__PURE__ */ I(T);
+var _ = T();
+const M = /* @__PURE__ */ R(_);
 export {
-  v as a,
+  O as a,
   M as c,
-  I as g,
+  R as g,
   z as h,
   F as l,
   L as s

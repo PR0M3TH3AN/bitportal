@@ -1,5 +1,5 @@
-import { u as c, a as i, b as u, c as a, d as f } from "./bitlogin-shared-Cm1sH5zP.js";
-import { h as b, a as l } from "./bitlogin-shared-DfKVXHi6.js";
+import { u as c, a as i, b as u, c as a, d as f } from "./bitlogin-shared-BZPITbpl.js";
+import { h as b, a as l } from "./bitlogin-shared-DSv2Wjlg.js";
 const p = c("bitlogin:passkey-credential:v1"), g = c("bitlogin:passkey-derive:v1"), k = "bitlogin passkey login-name v1", m = "bitlogin passkey password v1";
 function o(e) {
   return Uint8Array.from(e);

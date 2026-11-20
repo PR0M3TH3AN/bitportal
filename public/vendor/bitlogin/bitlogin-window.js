@@ -1,117 +1,162 @@
-import { k, c as P, r as T, f as x, m as H, h } from "./bitlogin-shared-C4PaJAtm.js";
-import { b as $, g as q } from "./bitlogin-shared-C4PaJAtm.js";
-import { a as B } from "./bitlogin-shared-Da_P-cjP.js";
-const A = "bitlogin:allowed-sites:v1", c = {
+import { k as I, c as Y, r as K, f as R, m as U, h as D } from "./bitlogin-shared-BvaZ0lb5.js";
+import { b as le, g as ue } from "./bitlogin-shared-BvaZ0lb5.js";
+import { r as m, f as W, k as L, i as b } from "./bitlogin-shared-C9zlLrai.js";
+import { f as $ } from "./bitlogin-shared-BR-gO7UJ.js";
+import { a as fe } from "./bitlogin-shared-DoFOySoz.js";
+const M = "bitlogin:allowed-sites:v1", c = {
   /** No more entries than this are kept: the oldest go first. */
   entries: 200,
   /** How long an entry is kept after it has ended, in seconds. */
-  keepEndedSec: 720 * 3600
-}, F = /^[0-9a-f]{64}$/u;
-function E(t) {
-  if (!t || typeof t != "object") return null;
-  const e = t, n = P(e.site);
-  if (!n || n !== e.site || typeof e.pubkey != "string" || !F.test(e.pubkey) || typeof e.at != "number" || typeof e.until != "number" || !Number.isFinite(e.at) || !Number.isFinite(e.until) || e.until < e.at) return null;
-  const r = e.wants === void 0 ? void 0 : T(e.wants);
-  return r === null ? null : { site: n, pubkey: e.pubkey, at: Math.floor(e.at), until: Math.floor(e.until), remembered: e.remembered === !0, ...r ? { wants: r } : {} };
+  keepEndedSec: 720 * 3600,
+  /** After "Just this one", a family is not offered again for this long, in seconds (docs/site-family.md SF4). */
+  familyDeclineSec: 720 * 3600,
+  /** No more sites than this are listed under a family. */
+  members: 20
+}, C = /^[0-9a-f]{64}$/u;
+function g(n) {
+  if (!n || typeof n != "object") return null;
+  const e = n, t = m(e.site), r = t || (typeof e.site == "string" && e.site.includes("*") ? "" : Y(e.site));
+  if (!r || r !== e.site || typeof e.pubkey != "string" || !C.test(e.pubkey) || typeof e.at != "number" || typeof e.until != "number" || !Number.isFinite(e.at) || !Number.isFinite(e.until) || e.until < e.at) return null;
+  const s = e.wants === void 0 ? void 0 : K(e.wants);
+  if (s === null || t && s) return null;
+  const i = t && Array.isArray(e.members) ? [...new Set(e.members.filter((a) => b(a, t)))].slice(0, c.members) : [];
+  return { site: r, ...i.length ? { members: i } : {}, pubkey: e.pubkey, at: Math.floor(e.at), until: Math.floor(e.until), remembered: e.remembered === !0, ...s ? { wants: s } : {} };
 }
-function _(t, e) {
-  if (!t) return [];
-  let n;
+function G(n, e) {
+  if (!n) return [];
+  let t;
   try {
-    n = JSON.parse(t);
+    t = JSON.parse(n);
   } catch {
     return [];
   }
-  return Array.isArray(n) ? n.slice(0, c.entries * 2).map(E).filter((r) => r !== null && r.until + c.keepEndedSec > e).sort((r, l) => l.at - r.at).slice(0, c.entries) : [];
+  return Array.isArray(t) ? t.slice(0, c.entries * 2).map(g).filter((r) => r !== null && r.until + c.keepEndedSec > e).sort((r, s) => s.at - r.at).slice(0, c.entries) : [];
 }
-function j(t, e) {
-  const n = E(e);
-  return n ? [n, ...t.filter((r) => !(r.site === n.site && r.pubkey === n.pubkey))].slice(0, c.entries) : [...t];
+function V(n, e) {
+  const t = g(e);
+  if (!t) return [...n];
+  const r = n.find((i) => i.site === t.site && i.pubkey === t.pubkey);
+  return [m(t.site) && r?.members ? g({ ...t, members: [...t.members ?? [], ...r.members] }) ?? t : t, ...n.filter((i) => !(i.site === t.site && i.pubkey === t.pubkey))].slice(0, c.entries);
 }
-function W(t, e, n) {
-  return t.filter((r) => !(r.site === e && r.pubkey === n));
+function Z(n, e, t, r) {
+  return !m(t) || !b(e, t) ? null : n.find((s) => s.pubkey === r && s.remembered && s.site !== e && b(s.site, t)) ?? null;
 }
-function G(t, e) {
-  const n = t.until <= e;
+function ee(n, e, t) {
+  return n.filter((r) => !(r.site === e && r.pubkey === t));
+}
+function te(n, e) {
+  const t = n.until <= e, r = W(n.site) || null;
   return {
-    known: k(t.site),
-    ended: n,
-    lasts: n ? "Ended." : t.remembered ? "Remembered on this device until then, unless you sign out there sooner." : "For one visit: it ended when that site's page was closed or loaded again, and by then at the latest."
+    known: r ? L(n.site) ? `every site at ${r}` : null : I(n.site),
+    family: r,
+    ended: t,
+    lasts: t ? "Ended." : n.remembered ? "Remembered on this device until then, unless you sign out there sooner." : "For one visit: it ended when that site's page was closed or loaded again, and by then at the latest."
   };
 }
-const w = () => {
+const d = () => {
   try {
     return typeof localStorage > "u" ? null : localStorage;
   } catch {
     return null;
   }
 };
-function J(t = Date.now() / 1e3, e = w()) {
+function X(n = Date.now() / 1e3, e = d()) {
   try {
-    return _(e?.getItem(A), t);
+    return G(e?.getItem(M), n);
   } catch {
     return [];
   }
 }
-function R(t, e = w()) {
+function q(n, e = d()) {
   try {
-    return e?.setItem(A, JSON.stringify(t)), !!e;
+    return e?.setItem(M, JSON.stringify(n)), !!e;
   } catch {
     return !1;
   }
 }
-function K(t, e = w()) {
-  return R(j(J(t.at, e), t), e);
+function ne(n, e = d()) {
+  return q(V(X(n.at, e), n), e);
 }
-function V(t = {}) {
+const O = "bitlogin:family-declined:v1", F = (n) => {
+  try {
+    const e = JSON.parse(n?.getItem(O) ?? "{}");
+    return e && typeof e == "object" && !Array.isArray(e) ? e : {};
+  } catch {
+    return {};
+  }
+};
+function re(n, e = Date.now() / 1e3, t = d()) {
+  if (!m(n)) return !1;
+  const r = Math.floor(e), s = Object.fromEntries(Object.entries(F(t)).filter(([i, a]) => m(i) && typeof a == "number" && a > r));
+  s[n] = r + c.familyDeclineSec;
+  try {
+    return t?.setItem(O, JSON.stringify(s)), !!t;
+  } catch {
+    return !1;
+  }
+}
+function se(n, e = Date.now() / 1e3, t = d()) {
+  const r = F(t)[n];
+  return typeof r == "number" && r > e;
+}
+function ie(n = {}) {
   const e = typeof window > "u" ? null : window.opener;
   if (!e) return Promise.resolve(null);
-  const n = location.origin, r = crypto.getRandomValues(new Uint8Array(12)), l = Array.from(r, (u) => u.toString(16).padStart(2, "0")).join("");
-  return new Promise((u) => {
-    let i = null, d = !1, p = null;
-    const g = () => {
-      if (!i)
+  const t = location.origin, r = crypto.getRandomValues(new Uint8Array(12)), s = Array.from(r, (i) => i.toString(16).padStart(2, "0")).join("");
+  return new Promise((i) => {
+    let a = null, p = !1, k = null;
+    const v = () => {
+      if (!a)
         try {
-          const o = e.frames;
-          for (let s = 0; s < o.length; s++) o[s].postMessage(h({ t: "hello", nonce: l }), n);
+          const l = e.frames;
+          for (let o = 0; o < l.length; o++) l[o].postMessage(D({ t: "hello", nonce: s }), t);
         } catch {
         }
-    }, y = setInterval(g, 350), S = setTimeout(() => {
-      clearInterval(y), d || (d = !0, window.removeEventListener("message", f), u(null));
-    }, t.timeoutMs ?? 6e3), f = (o) => {
-      if (o.origin !== n || !o.source || o.source === window) return;
-      const s = x(o.data);
-      if (!s || s.nonce !== l) return;
-      if (s.t === "done" && i && o.source === i) return void p?.(s.ok);
-      if (s.t !== "frame" || i) return;
-      i = o.source, clearInterval(y), clearTimeout(S), d = !0;
-      const { world: a, recipient: I } = s, m = s.wants && H(a, s.wants) ? s.wants : null;
-      u({
-        site: a,
-        wants: m,
-        known: k(a) !== null,
-        async grant(L, b, M) {
-          const N = await L.exportHandoff(I, m ? { site: a, permissions: m } : void 0, a, M === !0), D = new Promise((v) => {
-            p = v, setTimeout(() => v(!1), 8e3);
+    }, h = setInterval(v, 350), N = setTimeout(() => {
+      clearInterval(h), p || (p = !0, window.removeEventListener("message", w), i(null));
+    }, n.timeoutMs ?? 6e3), w = (l) => {
+      if (l.origin !== t || !l.source || l.source === window) return;
+      const o = R(l.data);
+      if (!o || o.nonce !== s) return;
+      if (o.t === "done" && a && l.source === a) return void k?.(o.ok);
+      if (o.t !== "frame" || a) return;
+      a = l.source, clearInterval(h), clearTimeout(N), p = !0;
+      const { world: u, recipient: j } = o, y = o.wants && U(u, o.wants) ? o.wants : null, f = y ? "" : $(u);
+      i({
+        site: u,
+        wants: y,
+        known: I(u) !== null,
+        family: f,
+        knownFamily: f ? L(f) : !1,
+        async grant(P, A, S, T) {
+          const _ = T === !0 && S === !0 && !!f, x = await P.exportHandoff(j, y ? { site: u, permissions: y } : void 0, u, S === !0, _ ? f : void 0), H = new Promise((E) => {
+            k = E, setTimeout(() => E(!1), 8e3);
           });
-          i.postMessage(h({ t: "grant", nonce: l, world: a, sealed: N, ...b ? { name: b } : {} }), n);
-          const O = await D;
-          return window.removeEventListener("message", f), O;
+          a.postMessage(D({ t: "grant", nonce: s, world: u, sealed: x, ...A ? { name: A } : {} }), t);
+          const J = await H;
+          return window.removeEventListener("message", w), J;
         }
       });
     };
-    window.addEventListener("message", f), g();
+    window.addEventListener("message", w), v();
   });
 }
 export {
-  $ as SIGN_LIMITS,
-  B as askLockDevice,
-  G as describeAllowed,
-  q as describePermissions,
-  V as findEmbeddedSigner,
-  k as knownAppName,
-  J as loadAllowed,
-  K as recordAllowed,
-  W as removeAllowed,
-  R as saveAllowed
+  le as SIGN_LIMITS,
+  fe as askLockDevice,
+  re as declineFamily,
+  te as describeAllowed,
+  ue as describePermissions,
+  se as familyDeclined,
+  W as familyDomain,
+  $ as familyOf,
+  Z as familyOffer,
+  ie as findEmbeddedSigner,
+  b as inFamily,
+  I as knownAppName,
+  L as knownFamily,
+  X as loadAllowed,
+  ne as recordAllowed,
+  ee as removeAllowed,
+  q as saveAllowed
 };

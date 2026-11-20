@@ -1,10 +1,9 @@
-import { e as ke, E as xe, p as Se, R as Ce, a as T, i as ie } from "./bitlogin-shared-QRwXh_V6.js";
-import { r as ye } from "./bitlogin-shared-Cm1sH5zP.js";
-import "./bitlogin-shared-DfKVXHi6.js";
-import { W as Qe } from "./bitlogin-shared-DgyxWBMr.js";
-import { c as Ct } from "./bitlogin-shared-DgyxWBMr.js";
-import { v as Ee } from "./bitlogin-shared-C0qJoVBo.js";
-import { b as se, c as $e, e as oe, d as Le, a as Pe, f as Re, p as Ne } from "./bitlogin-shared-Da_P-cjP.js";
+import { e as ke, E as xe, p as Se, R as Ce, a as T, i as ie } from "./bitlogin-shared-B1USaWR3.js";
+import { r as ye, v as Qe } from "./bitlogin-shared-BZPITbpl.js";
+import "./bitlogin-shared-DSv2Wjlg.js";
+import { W as Ee } from "./bitlogin-shared-DNJrsC_6.js";
+import { c as St } from "./bitlogin-shared-DNJrsC_6.js";
+import { b as se, c as $e, e as oe, d as Le, a as Pe, f as Re, p as Ne } from "./bitlogin-shared-DoFOySoz.js";
 import { readCachedSession as Be } from "./bitlogin-session.js";
 const Me = 6, ae = 64;
 function Y(o = Me) {
@@ -42,7 +41,7 @@ function K(o) {
     throw e.message.includes("No identity is unlocked") ? new Error(Te) : e;
   });
 }
-function kt(o, e) {
+function mt(o, e) {
   return {
     async getPublicKey() {
       const { publicKey: t } = await K(o.getPublicKey());
@@ -461,7 +460,7 @@ function Ue(o) {
       localStorage.removeItem(ge);
     } catch {
     }
-    G = import("./bitlogin-shared-Dizfd6mN.js").then((e) => (e.init({
+    G = import("./bitlogin-shared-BbaKW9EI.js").then((e) => (e.init({
       appName: o,
       filters: ["nwc"],
       showBalance: !1,
@@ -667,7 +666,7 @@ class Ze {
       tags: e.tags ?? [],
       created_at: e.created_at ?? Math.floor(Date.now() / 1e3)
     }, n = await F(this.provider.signEvent(t), "signEvent", this.timeoutMs);
-    if (!Ee(n))
+    if (!Qe(n))
       throw new Error("The extension returned an event that does not verify.");
     if (this.knownPublicKey && n.pubkey !== this.knownPublicKey)
       throw new Error("The extension signed with a different identity than this session's.");
@@ -1955,7 +1954,7 @@ class te extends HTMLElement {
   constructor() {
     super(), this.root = this.attachShadow({ mode: "open" });
     const e = new CSSStyleSheet();
-    e.replaceSync(De), this.root.adoptedStyleSheets = [e], this.worker = new Qe(), this.worker.onNotification = (t) => {
+    e.replaceSync(De), this.root.adoptedStyleSheets = [e], this.worker = new Ee(), this.worker.onNotification = (t) => {
       t.notify === "nip46-auth-url" && (this.bunkerAuthUrl = t.url, this.render());
     };
   }
@@ -3724,8 +3723,8 @@ window.bitlogin = {
 };
 export {
   te as BitLoginAuthElement,
-  Qe as WorkerClient,
-  Ct as createHeadlessSigner,
-  kt as createNip07Provider,
+  Ee as WorkerClient,
+  St as createHeadlessSigner,
+  mt as createNip07Provider,
   Be as readCachedSession
 };
