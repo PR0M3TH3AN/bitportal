@@ -58,19 +58,24 @@ lobby or a world would need to agree with it on is in
   you point, and B or Y opens the console; tracked hands work by pinching.
   Smooth walking is a choice under **Moving**. All of it is extra: pointing
   and selecting does everything. It has Turn around (the other wall is behind you), the room and
-  microphone, the list, and a Look section for its colours. Joining the room
+  microphone, the list, and a Display section for its colours. Any tab of
+  the Menu can be kept on the row of keys ("Keep this tab on your bar", four
+  at most), and the tabs you keep go with you into every world. Signed in,
+  "Send out a post" under Room opens "My public feed": your own Nostr posts,
+  and the place to write another. Joining the room
   shows your IP address to the others in it, so nothing connects before you
   ask.
 - **Opening a door** checks, at that moment, whether the world's site vouches
   for the key that announced it ("Verified").
-- **Going by name.** Signed in, you can go to a verified world as yourself:
-  the Airlock makes a throwaway key for the trip and has your own signer sign
-  a pass saying it speaks for you there for four hours
+- **Going by name.** A world is told nothing about who you are as you
+  arrive: the Airlock sends no pass and no key. To be known by name in a
+  world you sign in there, once: "Sign in, at bitlogin.network" under You in
+  its menu opens BitLogin's own window, and BitLogin's signer makes a pass
+  saying a throwaway key speaks for you there for four hours at most
   ([NSWP-10](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/protocol/10-identity.md)).
   The world never gets your key. People in a room there see your name, and
-  your mark with a frame round it. It is a choice on every trip, never the
-  first one offered, and the Airlock never asks you to sign in: if your
-  session can't sign just then, it says so and you choose again.
+  your mark with a frame round it. The Airlock never asks you to sign in and
+  never offers "by name": its line says that signing in is done there.
 - **Panels.** In the room you can hang notes, pictures and video from your
   own device in frames, move them by the bar, resize them and put them away.
   They are kept in this browser, with any file you hang, and are there next
@@ -131,9 +136,10 @@ lobby or a world would need to agree with it on is in
 - **The Airlock** (`/go/`) is the last stop before leaving: the real address,
   the verification result, comfort notes, and a button to continue. Worlds
   send visitors back here when they take a portal.
-- **Your identity** (`/account/`) is where you sign in, with
-  [BitLogin](https://login.bitblocks.network/) or any Nostr signer it supports.
-  It is the only place BitPortal ever asks you to sign in.
+- **Your identity** (`/account/`) is where you sign in to BitPortal. Its
+  button opens a window at [BitLogin](https://bitlogin.network/)'s own
+  address, and you sign in there: nothing is typed on a page of BitPortal.
+  Announce a world has the same button, and no other page asks.
 - **Announce a world** (`/publish/`) checks your site, builds the announcement,
   writes the manifest file your site needs to host to be shown as verified,
   and publishes to your own relays. Nothing is published until you press the
@@ -151,8 +157,9 @@ in, and whether to skip this screen next time. Opening it holds the crossing
 where it is, including the countdown to a world you have told it to skip
 for, so nobody is taken through while they are reading.
 
-One line always says what goes with you ("Going as a guest, with nothing of
-yours, staying in the room"), with Change beside it. A question that has to
+One line always says what goes with you ("Going with nothing of yours,
+staying in the room. Signing in is done there, with bitlogin.network."),
+with Change beside it. A question that has to
 be answered, such as whether to block someone everywhere, stays in front.
 
 The address is on one line, whole, sized to fit. It is never cut short.
@@ -209,15 +216,19 @@ only a software renderer or a made-up headset might get wrong.
 
 ## Who you are
 
-`/account/` is the one page where anyone signs in. It offers three things,
-each as easy as the others: stay anonymous, sign in or make a profile, and,
-once signed in, switch to another profile or sign out. Signing in is
-BitLogin, drawn in BitPortal's colours through the theme values BitLogin
-gives a page to set, with "Powered by BitLogin" under it. Nothing inside
-BitLogin is reached into or replaced.
+`/account/` is the one page where anyone starts signing in. It offers three
+things, each as easy as the others: stay anonymous, sign in or make a
+profile, and, once signed in, be someone else or sign out. Signing in is
+done at BitLogin's own address (bitlogin.network), in a window of its own
+that the page's button opens, with "Powered by BitLogin" under the button.
+The page has no sign-in form and no password field. BitPortal is an
+application to BitLogin's signer: it says what it asks for, the window
+lists it, you allow it once, and the signer signs that and nothing else.
+BitPortal holds no key and no session. "Be someone else" opens that window
+at BitLogin's account chooser.
 
 It is the same page on a phone, a computer and a headset's own screen. The
-room's menu leads to it ("You", then "Sign in, or stay anonymous"), and it
+room's menu leads to it ("You", then "You are a guest. Sign in"), and it
 leads back to the room. From inside VR the session is ended to show the
 page, and the way back takes you into VR again.
 
@@ -225,32 +236,22 @@ It is a place, not only a page. Behind the page is the room's own ground
 and sky, and the crossing's room is at both ends: it opens round you as you
 arrive from a world or from your room, and comes up again as you leave. The
 panel in front of you is still the page, at this site's address, and what
-you type is typed into it. In a headset it is seen on the headset's flat
+is on it is a button: what you type is typed in BitLogin's window, at
+BitLogin's address. In a headset it is seen on the headset's flat
 screen, because an immersive session can't show a page.
 
-A browser gives a page its cryptography only at an `https` address, or at
-`localhost` on the same machine. At a plain `http` address on a network (a
-phone opening a development server at `http://192.168…`), BitLogin finds
-the account, can't open it, and says "Account not found or credentials
-incorrect" whatever is typed. This page says so plainly at such an address,
-before anyone types. The deployed site is `https`, so this is only ever met
-in development, where the development server can answer `https` too
-(`serve-local.mjs --lan --https` in the NSWP repository): a phone or a
-headset on the same network then signs in and enters VR as on the real site.
+### Signed in at each world, once
 
-### Signed in everywhere
+You sign in to BitPortal once, here. A world is told nothing about who you
+are as you arrive: the Airlock sends no pass and no key, and offers no "by
+name". To be known by name in a world you sign in there, once, in
+BitLogin's window, as the same profile, and BitLogin's signer makes the
+pass. A world never has a sign-in form of its own.
 
-You sign in once, here, and you are signed in wherever you go. Each world
-that has proved it is the one its announcement names is told who you are as
-you arrive, with nothing to choose at each door. A world never has a sign-in
-of its own.
-
-"Go to worlds as myself" on this page is ticked until you untick it, with
-what it gives away written beside it: your public key, to each such world
-and to the people in a room there. Unticked, you stay signed in here and
-visit worlds as a guest. Choosing "a guest" at the Airlock does the same. A
-site that hasn't proved who it is is never told, and nothing on a link can
-make you signed in or send you by name.
+"Go by my name in my own room" on this page is ticked until you untick it.
+It is only about BitPortal's own room: unticked, you stay signed in here
+and are a guest in your room too. Nothing on a link can make you signed in
+or send you anywhere by name.
 
 ### Your look, changed in your room
 
@@ -269,24 +270,26 @@ your settings there, so another device starts from it.
 
 ### Signing in from inside a world
 
-Every world's menu has the same thing under "You": "You are a guest here.
-Sign in". A world never shows a sign-in of its own, so pressing it brings
-you here, to this page, and the page offers the way back: "Back to *that
-world*, by name" once you are signed in, with what going by name tells that
-site written under it, or "Go back as a guest". Either takes you through the
-Airlock, which checks the door as it checks any other, and you arrive in the
-same world.
+Every world's menu has one row for it under "You": "Sign in, at
+bitlogin.network". A world never shows a sign-in form of its own, so
+pressing it opens BitLogin's own window, which asks you once. Nothing is
+typed in the world, and you don't leave it. The row then reads "Signed in
+as" and your name, with "Sign out here"; your profile card is at the head of
+the You tab, and "Signed in as" shows at the top centre of the view when
+that changes. Signing out there makes you a guest in that world, and
+nowhere else.
 
-The world asks for this with `who=1` on a door back to itself (NSWP-10). A
-link is something anyone can write, so that request only ever shows you this
-page. It signs nobody in, and nobody goes anywhere by name without pressing
-the button that says so, here. The door is kept for the tab by the Airlock:
-this page never takes a way back from its own address. If you ask to go by
-name to a site that hasn't proved it is who it says, the Airlock stops and
-tells you.
+The older row, "You are a guest here. Sign in", left the world for this
+page. It is not shown where the client named a signer, and BitPortal does.
+A world can still ask for this page with `who=1` on a door back to itself
+(NSWP-10). A link is something anyone can write, so that request only ever
+shows you this page. It signs nobody in, and the page offers only the way
+back: "Back to *that world*", or "Go back as a guest" if you haven't signed
+in. Either takes you through the Airlock, which checks the door as it
+checks any other. The door is kept for the tab by the Airlock: this page
+never takes a way back from its own address.
 
-Signed in, your profile takes the width of the page, and BitLogin's own
-element is scaled as one piece so its text is the size of the page's.
+Signed in, your profile takes the width of the page.
 
 ## Names and pictures
 
@@ -301,9 +304,10 @@ Profiles are read from your own relays, kept in this browser, and asked for
 again in the background, so a page shows names at once. Your own picture is
 on the sign-in page and beside your name.
 
-When you go by name, the pass that says so carries your name and where your
-picture is, both from your Nostr profile, so the people in a room see who
-you are. Your own room here does the same: it signs a pass for itself, and
+When you sign in at a world, the pass BitLogin's signer makes carries your
+name and where your picture is, both from your Nostr profile, so the people
+in a room see who you are. Your own room here does the same: BitLogin's
+signer signs a pass for BitPortal's own room, and
 you see each other's names and pictures. A picture over someone's head is a
 button: press it to choose them, and the menu comes up on what you can do.
 
@@ -501,12 +505,17 @@ you were tapping, for a mouse and keys if you were at a desk, and offered the
 way back into your headset if you left one. The Airlock passes that on, and
 goes by how you pressed its own button when it can see that.
 
-Every door this copy shows is on a list inside the room: "List", in the row
-of controls, hangs it in front of you. It shows six doors at a time, with
+Every door this copy shows is on a list inside the room: "Every door, as a
+list", in the menu under Travel. On a flat screen it opens the Doors tab of
+the menu, with a row for every door, yours first. In a headset it hangs a
+panel in front of you, which shows six doors at a time, with
 Earlier and Later for the rest and Find to look for one by its name, its
-address or what it is. Pressing a door on it is choosing that door, as if it
-were on the wall. It works the same with a click, a tap or a headset's
-trigger, so nobody leaves the room to read a list. The front page is still
+address or what it is. Pressing a door on either is choosing that door, as
+if it were on the wall, so nobody leaves the room to read a list. Neither
+"Doors" nor "List" is on the row of controls: to have the Doors tab to
+hand, keep it on your bar. A door's Save is a small tag on the door, shown
+only while you stand at it, with a Save key in the row of controls for as
+long as you do. The front page is still
 there for what needs a page (signing in, settings, announcing a world), from
 the menu under Travel.
 
@@ -660,8 +669,11 @@ asking for the microphone. `/publish/?signer=test` signs with a throwaway key
 and never publishes, to try the form without an account.
 
 Trying it beside the worlds on your own machine: build it, then run
-`node scripts/serve-local.mjs` in the NSWP repository next to this one.
-BitPortal is served on port 4300 and the reference worlds beside it, and the
+`node scripts/serve-local.mjs --lan --https` in the NSWP repository next to
+this one. Each site is served at one `https` address on the machine's
+network address, never `localhost` or plain `http`: BitPortal on port 4300
+and the reference worlds beside it. Each device shows a warning about the
+certificate the first time, since it is made on your machine. The
 links between them lead to those copies: a door here goes through this
 Airlock to the local world, and the way home comes back here. The Airlock
 still checks the real site, and says on its card when it is sending you to a
@@ -677,7 +689,7 @@ file hashes in `vendor/integrity.json` (BitBlocks convention D7):
 | `@nswp/core` | the NSWP repo | `vendor/nswp/` |
 | BitFeed standalone | the BitFeed repo | `vendor/bitfeed/` |
 | `nswp-sdk/three` (avatars, voice, rooms, the headset console), `nswp-sdk/home` (the room's furniture), `nswp-sdk/ui` (the HUD) and `nswp-sdk/terminal` (the terminal panel, fetched only when one is opened) | the NSWP repo | `vendor/nswp/` |
-| BitLogin widget | the bitlogin repo's `release/` folder | `public/vendor/bitlogin/` |
+| BitLogin's build (BitPortal loads its client, `bitlogin-client.js`) | the bitlogin repo's `release/` folder | `public/vendor/bitlogin/` |
 | Ubuntu Sans fonts | the bitblocks repo | `public/fonts/` |
 
 ```bash
@@ -693,27 +705,39 @@ npm run vendor -- --only nswp   # one of them (nswp, bitfeed, bitlogin, fonts), 
 ```
 
 BitLogin is different from the others in one way: it is served as its own
-static files under `/vendor/bitlogin/`, never bundled, because the widget finds
-its worker relative to its own address. It runs same-origin with BitPortal, so
+static files under `/vendor/bitlogin/`, never bundled. Pages load only
+`/vendor/bitlogin/bitlogin-client.js`, which embeds BitLogin's signer from
+bitlogin.network in an unseen frame: no page loads the widget or shows a
+sign-in form. That file, and what it imports from the same folder, runs
+same-origin with BitPortal, so
 it is part of what BitPortal has to trust. The vendor script refuses a copy
 that doesn't match BitLogin's own `integrity.json`. Before vendoring, run
 `npm run release:artifacts` in the bitlogin checkout.
 
 ### Deploy
 
+BitPortal is deployed together with the worlds, from the NSWP repository
+next to this one, so that every site carries the same kit. Deploying
+BitPortal alone is not the way. The first command says what would be
+deployed and changes nothing. The second deploys.
+
 ```bash
-npm run build && npm run deploy
+npm run release:all
+```
+
+```bash
+npm run release:all -- --go
 ```
 
 ## Not built yet
 
-Going by name in BitPortal's own room (it works in worlds), profile pages,
-a feed, messages and notifications, shelves from the people you follow
+Profile pages,
+messages and notifications, shelves from the people you follow
 (it waits for names and profiles), making a list from inside BitPortal, search
 beyond what the page already holds, hashtags in the room (they are in the
 lobby), trust labels (BitGate) and paid entry
 (BitUnlock). Rooms are a first cut:
-guests only, no moderation. See the
+no moderation. See the
 NSWP spec's roadmap (§20).
 
 ## License

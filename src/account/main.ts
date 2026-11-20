@@ -14,9 +14,11 @@
  * a headset session to come, or `?back=history`.
  *
  * Or from inside a world, whose menu sent them here to say who they are
- * (`?back=door`, who.ts). They are offered the way back to it, by name or as
- * a guest. Which they press is their choice for that one trip, and the
- * Airlock still checks the door before they go.
+ * (`?back=door`, who.ts). They are offered the way back to it, and the
+ * Airlock still checks the door before they go. To be known by name in that
+ * world they sign in there, in BitLogin's window: this page sends no name
+ * with them (on a copy that names no sign-in address, it still offers the
+ * way back by name or as a guest, for that one trip).
  */
 import { attachJumpList } from "../shared/jump.js";
 import { encodeNpub, toLocal } from "@nswp/core";
