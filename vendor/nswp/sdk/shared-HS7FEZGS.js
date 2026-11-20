@@ -6633,7 +6633,7 @@ function addMessagingControls(controls, opts) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
-import { encodeNpub as encodeNpub2, getPublicKey as getPublicKey2, shortNpub as shortNpub5, signerAt as signerAt2 } from "@nswp/core";
+import { encodeNpub as encodeNpub2, getPublicKey as getPublicKey2, shortNpub as shortNpub5, signerAt as signerAt3 } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
 import {
@@ -6642,6 +6642,7 @@ import {
   buildArrivalUrl,
   buildWayUrl,
   checkDestination,
+  signerAt,
   decodeArrival,
   doorFor,
   fromLocal,
@@ -6664,6 +6665,7 @@ var LOOK_KEY = "nswp:look";
 var PASS_KEY = "nswp:pass";
 var HOME_KEY = "nswp:at-home";
 var defaultAirlock;
+var defaultSigner;
 var cached;
 function session() {
   try {
@@ -6789,15 +6791,21 @@ var arrival = {
     }
   },
   /**
-   * Where the visitor's client said their signer is, or undefined: then it
-   * is beside the Airlock (protocol/10-identity.md, "Signing from a world").
+   * Where the visitor's signer is. Their client's word first. A client that
+   * brought them and named none keeps its own beside its Airlock
+   * (protocol/10-identity.md, "Signing from a world"): undefined. And for
+   * someone no client brought, who opened this world's address themselves,
+   * the one this world offers (`configure({ defaultSigner })`), so that
+   * signing in is the same however they came ("One sign-in").
    */
   signer() {
     try {
-      return session()?.getItem(SIGNER_KEY) ?? void 0;
+      const named = session()?.getItem(SIGNER_KEY);
+      if (named) return named;
+      if (session()?.getItem(RETURN_KEY)) return void 0;
     } catch {
-      return void 0;
     }
+    return defaultSigner;
   },
   returnAirlock() {
     try {
@@ -7196,7 +7204,7 @@ function createSaves(opts = {}) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/signer.ts
-import { isAchievementAsked, cleanMessage, cleanMore, cleanOrigin, cleanSlot as cleanSlot2, fitsInSave as fitsInSave2, isFollowAsked as isFollowAsked2, isHex64 as isHex644, isReachAsked, isScoreAsked, isSealAsked, looksLikeWrap as looksLikeWrap2, isWhatWasAsked, looksLikeSave, readSignerReply, signerAddresses, signerAt, signerMessage, toLocal as toLocal2, verifyEvent as verifyEvent5, verifyRoomPass as verifyRoomPass3, WORLD_TAG } from "@nswp/core";
+import { isAchievementAsked, cleanMessage, cleanMore, cleanOrigin, cleanSlot as cleanSlot2, fitsInSave as fitsInSave2, isFollowAsked as isFollowAsked2, isHex64 as isHex644, isReachAsked, isScoreAsked, isSealAsked, looksLikeWrap as looksLikeWrap2, isWhatWasAsked, looksLikeSave, readSignerReply, signerAddresses, signerAt as signerAt2, signerMessage, toLocal as toLocal2, verifyEvent as verifyEvent5, verifyRoomPass as verifyRoomPass3, WORLD_TAG } from "@nswp/core";
 var NONE = {
   state: "none",
   pubkey: null,
@@ -7244,7 +7252,7 @@ function namedAddresses(at) {
   }
 }
 function createWorldSigner(opts) {
-  const real = opts.at ? namedAddresses(opts.at) : signerAt(opts.under) ?? signerAddresses(opts.airlock);
+  const real = opts.at ? namedAddresses(opts.at) : signerAt2(opts.under) ?? signerAddresses(opts.airlock);
   if (!real || typeof document === "undefined") return NONE;
   const test = new URLSearchParams(opts.search ?? location.search).get("signer") === "test";
   const watchers3 = /* @__PURE__ */ new Set();
@@ -7270,7 +7278,7 @@ function createWorldSigner(opts) {
   let windowAt = "";
   let frame = null;
   let disposed = false;
-  const named = !!opts.at || !!signerAt(opts.under);
+  const named = !!opts.at || !!signerAt2(opts.under);
   let waited = false;
   let asking = false;
   let again = 0;
@@ -7547,7 +7555,7 @@ function createWorldSigner(opts) {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
 function signerNamed() {
-  if (!signerAt2(arrival.signer())) return false;
+  if (!signerAt3(arrival.signer())) return false;
   try {
     const airlock = portal.airlockFor();
     if (airlock && new URL(airlock).origin === location.origin) return false;
