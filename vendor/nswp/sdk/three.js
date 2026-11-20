@@ -56,6 +56,7 @@ import {
   dotsBetween,
   figureAction,
   formFor,
+  freshAction,
   fullscreenWaiting,
   heldKey,
   hereAs,
@@ -91,9 +92,10 @@ import {
   viewScale,
   visitorFov,
   watchFov,
+  watchFresh,
   worldSigner,
   youCard
-} from "./shared-LVDFMRV2.js";
+} from "./shared-IGGD5JAZ.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -181,6 +183,7 @@ export {
   dotsBetween,
   figureAction,
   formFor,
+  freshAction,
   fullscreenWaiting,
   heldKey,
   hereAs,
@@ -224,6 +227,7 @@ export {
   visitorFov,
   wasRefreshed,
   watchFov,
+  watchFresh,
   worldSigner,
   youCard
 };
