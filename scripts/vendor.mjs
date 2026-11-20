@@ -123,7 +123,10 @@ if (take("bitfeed", "bitfeed")) {
 // same-origin with BitPortal, so it is part of what BitPortal must trust: the
 // copy is checked against BitLogin's own integrity manifest before it is taken.
 if (take("bitlogin", "@bitlogin/widget")) {
-  const repo = join(siblings, "bitlogin");
+  // Beside this repo, or wherever BITLOGIN_CHECKOUT says: someone may be working in the checkout beside this one,
+  // and a copy is only ever taken from a clean checkout at the commit its release was built from. Whichever it
+  // is, everything below is checked the same way.
+  const repo = process.env.BITLOGIN_CHECKOUT || join(siblings, "bitlogin");
   const src = sourceInfo(repo);
   const version = JSON.parse(readFileSync(join(repo, "packages/widget/package.json"), "utf8")).version;
   const rel = join(repo, "release", `bitlogin-widget-v${version}`);

@@ -1,13 +1,12 @@
-import { v as C } from "./bitlogin-shared-C0qJoVBo.js";
-import "./bitlogin-shared-Cm1sH5zP.js";
-import { c as N, r as x, S as I, P as L } from "./bitlogin-shared-C4PaJAtm.js";
+import { v as C } from "./bitlogin-shared-BZPITbpl.js";
+import { c as N, r as x, S as I, P as L } from "./bitlogin-shared-BvaZ0lb5.js";
 class g extends Error {
   constructor(r) {
     super(`BitLogin refused to ${r}. The application may not be allowed to, or the user may have signed out.`), this.name = "BitLoginRefused";
   }
 }
 const A = (i, r) => !!i && r.sign.every((s) => i.sign.includes(s)) && r.read.every((s) => i.read.includes(s)) && r.appData.every((s) => i.appData.includes(s) || i.appData.includes("*")) && r.proofs.every((s) => i.proofs.includes(s)) && r.peers.every((s) => i.peers.includes(s));
-function $(i) {
+function W(i) {
   const r = N(i.at);
   if (!r) throw new Error("`at` must be the sign-in address's origin, such as https://bitlogin.network");
   const s = x(i.permissions);
@@ -112,5 +111,5 @@ function $(i) {
 }
 export {
   g as BitLoginRefused,
-  $ as createBitLoginClient
+  W as createBitLoginClient
 };

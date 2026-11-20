@@ -1,7 +1,6 @@
-import { h as Ve, k as Ye, e as Oe, u as pe } from "./bitlogin-shared-Cm1sH5zP.js";
-import { g as je, h as ne, l as te, s as oe, a as Fe } from "./bitlogin-shared-DfKVXHi6.js";
-import { v as he } from "./bitlogin-shared-C0qJoVBo.js";
-const E3 = 0, D3 = 5, F3 = 10002, S3 = 10050, U3 = 22242, x3 = 24133, G3 = 30078, J3 = "bitlogin:password:v1", K3 = "bitlogin:recovery:v1", H3 = "bitlogin:bootstrap-relays:v1", z3 = "bitlogin.credential.v1", N3 = "bitlogin.recovery.v1", Se = "bitlogin.recovery-export.v3";
+import { h as Ve, m as Ye, e as Oe, u as pe, v as he } from "./bitlogin-shared-BZPITbpl.js";
+import { g as je, h as ne, l as te, s as oe, a as Fe } from "./bitlogin-shared-DSv2Wjlg.js";
+const B3 = 0, E3 = 5, D3 = 10002, F3 = 10050, S3 = 22242, U3 = 24133, x3 = 30078, G3 = "bitlogin:password:v1", J3 = "bitlogin:recovery:v1", K3 = "bitlogin:bootstrap-relays:v1", H3 = "bitlogin.credential.v1", z3 = "bitlogin.recovery.v1", Se = "bitlogin.recovery-export.v3";
 /*! scure-base - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 function G(e) {
   return e instanceof Uint8Array || ArrayBuffer.isView(e) && e.constructor.name === "Uint8Array";
@@ -216,7 +215,7 @@ function qe(e, i) {
     }
   };
 }
-const V3 = {
+const N3 = {
   alphabet: ce,
   chain: le,
   checksum: qe,
@@ -232,7 +231,7 @@ const V3 = {
   if (e.length > 0 && !r.test(e))
     throw new Error("invalid base64");
   return Uint8Array.fromBase64(e, { alphabet: n, lastChunkHandling: "strict" });
-}, Y3 = Xe ? {
+}, V3 = Xe ? {
   encode(e) {
     return Me(e), e.toBase64();
   },
@@ -318,13 +317,13 @@ function Le(e) {
   };
 }
 const Ae = /* @__PURE__ */ Le("bech32");
-function O3(e) {
+function Y3(e) {
   return Ae.encodeFromBytes("npub", Ve(e));
 }
-function j3(e) {
+function O3(e) {
   return Ae.encodeFromBytes("nsec", e);
 }
-function M3(e) {
+function j3(e) {
   const { prefix: i, bytes: r } = Ae.decodeToBytes(e);
   if (i !== "nsec" || r.length !== 32)
     throw new Error("Not a valid nsec.");
@@ -8548,10 +8547,10 @@ var f3 = m3();
 const Qe = /* @__PURE__ */ je(f3), R = Object.keys(Qe).sort().map((e) => Qe[e]);
 if (R.length !== 7776)
   throw new Error(`EFF long wordlist must contain 7776 entries, found ${R.length}.`);
-function P3() {
+function M3() {
   return R;
 }
-const q3 = Math.log2(R.length);
+const P3 = Math.log2(R.length);
 class N extends Error {
   constructor(i) {
     super(i), this.name = "LoginNameError";
@@ -8573,7 +8572,7 @@ function C3(e) {
     throw new N("Login name must not contain consecutive punctuation.");
   return i;
 }
-function X3(e) {
+function q3(e) {
   try {
     return C3(e), !0;
   } catch {
@@ -8583,19 +8582,19 @@ function X3(e) {
 function k3(e) {
   return Ye(Oe(pe("bitlogin/password-salt/v1"), new Uint8Array([0]), pe(e))).slice(0, 16);
 }
-async function R3(e, i) {
+async function X3(e, i) {
   const r = k3(i), n = I3(e), t = await h3(n, r), a = ne(te("bitlogin/password-root/v1"), t), o = oe(a, "bitlogin/password-locator-signing/v1"), s = Fe(a, "bitlogin/password-capsule-encryption/v1", 32);
   return de(n, t, a), { locatorPrivateKey: o.scalar, capsuleKey: s };
 }
-function L3(e) {
+function R3(e) {
   const i = ne(te("bitlogin/recovery-root/v1"), e), r = oe(i, "bitlogin/everyday-identity/v1");
   return de(i), r.scalar;
 }
-function T3(e) {
+function L3(e) {
   const i = ne(te("bitlogin/recovery-root/v1"), e), r = oe(i, "bitlogin/recovery-signing/v1"), n = Fe(i, "bitlogin/recovery-capsule-encryption/v1", 32);
   return de(i), { recoveryPrivateKey: r.scalar, capsuleKey: n };
 }
-function _3(e) {
+function T3(e) {
   return {
     schema: Se,
     recovery_public_key: e.recoveryPublicKeyHex,
@@ -8610,7 +8609,7 @@ class Q extends Error {
     super(i), this.name = "RecoveryExportParseError";
   }
 }
-function Z3(e) {
+function _3(e) {
   if (typeof e != "object" || e === null)
     throw new Q("Recovery export must be a JSON object.");
   const i = e;
@@ -8636,33 +8635,33 @@ function Z3(e) {
 }
 export {
   O as B,
-  H3 as D,
-  q3 as E,
-  D3 as K,
+  K3 as D,
+  P3 as E,
+  E3 as K,
   Q as R,
-  N3 as S,
-  O3 as a,
-  U3 as b,
-  G3 as c,
-  Y3 as d,
-  P3 as e,
-  x3 as f,
-  E3 as g,
-  F3 as h,
-  X3 as i,
-  S3 as j,
-  z3 as k,
-  J3 as l,
-  K3 as m,
-  M3 as n,
+  z3 as S,
+  Y3 as a,
+  S3 as b,
+  x3 as c,
+  V3 as d,
+  M3 as e,
+  U3 as f,
+  B3 as g,
+  D3 as h,
+  q3 as i,
+  F3 as j,
+  H3 as k,
+  G3 as l,
+  J3 as m,
+  j3 as n,
   C3 as o,
-  Z3 as p,
-  R3 as q,
-  T3 as r,
-  L3 as s,
+  _3 as p,
+  X3 as q,
+  L3 as r,
+  R3 as s,
   h3 as t,
-  V3 as u,
-  _3 as v,
+  N3 as u,
+  T3 as v,
   de as w,
-  j3 as x
+  O3 as x
 };
