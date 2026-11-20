@@ -16,7 +16,7 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
-import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, queryRelays, WORLD_KIND } from "@nswp/core";
+import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, queryRelays, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
@@ -33,6 +33,7 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
+import { countedFor, fetchRatings, followsOf, giveRating, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
 import { holdsReserved, quietSigner, readSignedIn } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
@@ -64,6 +65,8 @@ interface Door {
   metal: Alloy;
   info: THREE.Sprite;
   hover: number;
+  /** The plate over the arch: name, address and marks. Drawn again when a rating arrives. */
+  plate: THREE.Mesh;
   /** The small tag beside the arch that saves this door, or takes it off the visitor's wall. Shown only to someone standing at the door. */
   keep: THREE.Mesh;
   /** How much of the tag is showing, 0 to 1. */
@@ -181,13 +184,13 @@ function wrap(g: CanvasRenderingContext2D, text: string, maxWidth: number, maxLi
 }
 
 /** The door plate: name, address and marks, as on the list. */
-function plateTexture(entry: Entry, device: Device): THREE.CanvasTexture {
+function plateTexture(entry: Entry, device: Device, rating: string = ""): THREE.CanvasTexture {
   const W = 1024;
   const H = 420;
   const host = hostParts(entry.world.url);
   const fit = deviceFit(entry.world, device);
   const verified = cachedVerification(entry.id, entry.world.createdAt)?.state === "verified";
-  const marks = plateMarks(entry.world, fit, verified).map((m) => ({
+  const marks = plateMarks(entry.world, fit, verified, rating).map((m) => ({
     text: m.tone === "ok" ? `✓ ${m.text}` : m.text,
     color: m.tone === "ok" ? "#6fdc9b" : m.tone === "warn" ? "#ffcf70" : "#8b91a0",
   }));
@@ -243,13 +246,14 @@ function pillTexture(text: string): THREE.CanvasTexture {
   });
 }
 
-function infoLines(entry: Entry, why: string, vr: boolean): string {
+function infoLines(entry: Entry, why: string, vr: boolean, rated: string = ""): string {
   const host = hostParts(entry.world.url);
   const g = document.createElement("canvas").getContext("2d")!;
   g.font = "44px system-ui, sans-serif";
   const lines = [`${host.prefix}${host.domain}`];
   if (entry.world.summary) lines.push(...wrap(g, entry.world.summary, 900, 3));
   if (why) lines.push(...wrap(g, why, 900, 2));
+  if (rated) lines.push(...wrap(g, `Rated ${rated}`, 900, 2));
   lines.push(vr ? "Pull the trigger or pinch to visit" : "Click to visit");
   return lines.join("\n");
 }
@@ -430,10 +434,45 @@ async function start(): Promise<void> {
   });
   /** The door the visitor is standing at, or null. */
   let atDoor: Door | null = null;
+  /** What the people this visitor has reason to trust thought of each world, by its coordinate (ratings.ts). */
+  let tallies = new Map<string, Tally>();
+  /** Give the door they stand at a rating: set once the walls are built. */
+  let rateDoor: (door: Door, stars: number) => Promise<void> = async () => {};
+  /** Ask relays what people thought of the places on show, and draw it: set once the walls are built. */
+  let refreshRatings: () => Promise<void> = async () => {};
   /** Save or remove a door: set once the walls are built (`toggle`). */
   let keepDoor: (door: Door) => Promise<void> = async () => {};
   /** Open the list of every door: set once there is a list to open. */
   let openList = () => {};
+  // What the visitor thought of the place whose door they stand at. A rating is theirs, signed at their sign-in
+  // address from here and never from inside the world it is of (NSWP-13).
+  const STARS = ["", "Not for me", "It was all right", "Good", "Very good", "One of the best"];
+  controls.addSection({
+    id: "rate",
+    label: "Rate",
+    icon: "check",
+    note: () => {
+      if (!signedInKey) return "Sign in to say what you thought of a place. A rating is yours: it is signed with your own key.";
+      if (!atDoor) return "Stand at a door to say what you thought of the place behind it.";
+      const tally = tallies.get(atDoor.entry.id);
+      const yours = tally?.mine ? `You gave ${atDoor.entry.world.title} ${tally.mine} of 5.` : `What did you think of ${atDoor.entry.world.title}?`;
+      const theirs = tally && tally.count > (tally.mine ? 1 : 0) ? ratingWords(tally, true) : "";
+      return `${yours}${theirs ? ` It is rated ${theirs}.` : ""} A rating is public: anyone can see that you rated this place, and how. Choosing another replaces it.`;
+    },
+  });
+  for (let n = 5; n >= 1; n--) {
+    controls.add({
+      id: `rate-${n}`,
+      section: "rate",
+      icon: "check",
+      label: () => `${"★".repeat(n)}${"☆".repeat(5 - n)}  ${STARS[n]}${atDoor && tallies.get(atDoor.entry.id)?.mine === n ? ". Yours" : ""}`,
+      short: `${n}`,
+      hidden: () => !atDoor || !signedInKey,
+      act: () => {
+        if (atDoor) void rateDoor(atDoor, n);
+      },
+    });
+  }
   controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choosing one leaves from where you stand, and your Airlock shows its real address next." });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
@@ -456,6 +495,18 @@ async function start(): Promise<void> {
       act: () => {
         if (atDoor) void keepDoor(atDoor);
       },
+    },
+    // Offered at a door, to someone signed in: what they thought of the place. It opens the menu's own tab for it,
+    // where the stars are, and where it says a rating is public.
+    {
+      id: "door-rate",
+      section: "travel",
+      icon: "check",
+      hotbar: true,
+      label: () => (atDoor ? `Rate ${atDoor.entry.world.title}` : "Rate this place"),
+      short: "Rate",
+      hidden: () => !atDoor || !signedInKey || renderer.xr.isPresenting,
+      act: () => hud.setOpen(true, "rate"),
     },
     // The front page still has what needs a page: signing in, settings, announcing a world. It can't be seen from a headset.
     { id: "front-page", section: "travel", icon: "list", label: "The front page: settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => location.assign("/") },
@@ -579,7 +630,7 @@ async function start(): Promise<void> {
     const view = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: viewTexture(entry.id), transparent: true, alphaTest: 0.5 }));
     view.position.y = DOOR_H / 2;
     const { frame, metal } = doorFrame(ACCENT);
-    const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device), transparent: true }));
+    const plate = new THREE.Mesh(plateGeo, new THREE.MeshBasicMaterial({ map: plateTexture(entry, device, ratingMark(tallies.get(entry.id))), transparent: true }));
     plate.position.set(0, DOOR_H + 0.74 + plateH / 2, 0);
     // The door's one button: a small tag on the right jamb, at a hand's height, for whoever is standing at the door.
     const button = pill(wall === "yours" ? pillMaps.remove : pillMaps.save, keepGeo);
@@ -589,14 +640,14 @@ async function start(): Promise<void> {
     // What a door says about itself, for a headset: low on the door, so the view through it stays clear, and
     // kept the same size in the visitor's view however near they stand (it is scaled every frame). On a flat
     // screen it isn't drawn at all: the same words are beside the controls, where they are never in the way.
-    const info = textSprite(infoLines(entry, why, vr), INK, 2.6);
+    const info = textSprite(infoLines(entry, why, vr, ratingWords(tallies.get(entry.id), !!signedInKey)), INK, 2.6);
     info.position.set(0, 0.95, 0.45);
     info.userData.natural = info.scale.clone();
     info.visible = false;
     info.renderOrder = 2;
     group.add(view, frame, plate, button, info);
     walls[wall].add(group);
-    const door: Door = { entry, why, wall, group, view, frame, metal, info, hover: 0, keep: button, shown: 0 };
+    const door: Door = { entry, why, wall, group, view, frame, metal, plate, info, hover: 0, keep: button, shown: 0 };
     clickables.push({ mesh: view, door, say: "", act: () => void visit(door) });
     clickables.push({
       mesh: button,
@@ -777,6 +828,50 @@ async function start(): Promise<void> {
     await buildDoors();
   };
   keepDoor = toggle;
+
+  // ---- Ratings (NSWP-13). What the people this visitor has reason to trust thought of each place: the curators
+  // of the lists on show, the people the visitor follows, and the visitor. Asked of relays by world, never by
+  // person. A door's plate is drawn again when a tally for it arrives or changes.
+  let ratingEvents: NostrEvent[] = [];
+  const curators = () => [...new Set([catalog.curator.pubkey, ...INSTANCE.operators, ...catalog.lists.map((l) => l.pubkey)])];
+  const retally = async () => {
+    const follows = signedInKey ? await followsOf(signedInKey, settings.relays) : [];
+    const worlds = [...new Map([...catalog.entries, ...doors.map((d) => d.entry)].map((e) => [e.id, { id: e.id, url: e.world.url }])).values()];
+    const next = talliesFor(ratingEvents, worlds, countedFor(curators(), follows), signedInKey);
+    const said = (m: Map<string, Tally>, id: string) => `${ratingMark(m.get(id))}|${m.get(id)?.mine ?? 0}`;
+    const changed = doors.filter((d) => said(tallies, d.entry.id) !== said(next, d.entry.id));
+    tallies = next;
+    state.rated = tallies.size;
+    for (const d of changed) {
+      const material = d.plate.material as THREE.MeshBasicMaterial;
+      material.map?.dispose();
+      material.map = plateTexture(d.entry, device, ratingMark(tallies.get(d.entry.id)));
+      material.needsUpdate = true;
+    }
+    if (changed.length) state.pointed = "";
+  };
+  refreshRatings = async () => {
+    const ids = [...new Set([...catalog.entries.map((e) => e.id), ...doors.map((d) => d.entry.id)])];
+    ratingEvents = await fetchRatings(settings.relays, ids, curators()).catch(() => ratingEvents);
+    await retally();
+  };
+  rateDoor = async (door, stars) => {
+    const title = door.entry.world.title;
+    if (!signedInKey) return say("Sign in to rate a place.");
+    const quiet = await quietSigner(signedInKey);
+    if (!quiet) return say("Your sign-in didn't answer.\nNothing was sent.");
+    try {
+      const given = await giveRating(quiet.signer, settings.relays, door.entry.id, stars);
+      if (!given) return say("Your sign-in said no.\nNothing was sent.");
+      // Theirs is counted at once, whatever the relays do: it replaces any they gave before.
+      ratingEvents = [...ratingEvents.filter((e) => !(e.pubkey === given.event.pubkey && e.tags.some((t) => t[0] === "d" && t[1] === door.entry.id))), given.event];
+      await retally();
+      say(given.took ? `You gave ${title} ${stars} of 5` : `You gave ${title} ${stars} of 5\nNo relay took it: only you can see it for now`);
+      hud.setOpen(false);
+    } finally {
+      quiet.close();
+    }
+  };
   const putBack = async () => {
     if (!lastRemoved) return;
     const { place: removed, title } = lastRemoved;
@@ -1564,7 +1659,8 @@ async function start(): Promise<void> {
         const host = hostParts(w.url);
         // Beside the controls, at a size that doesn't depend on where the visitor stands: what it is, why it is
         // here, and how to go.
-        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`, [w.summary ?? "", hovered.why, fps?.enabled ? "Walk in to visit" : "Click, or walk in, to visit"]);
+        const rated = ratingWords(tallies.get(hovered.entry.id), !!signedInKey);
+        controls.setTarget(`${w.title}, at ${host.prefix}${host.domain}`, [w.summary ?? "", hovered.why, ...(rated ? [`Rated ${rated}`] : []), fps?.enabled ? "Walk in to visit" : "Click, or walk in, to visit"]);
       } else controls.setTarget("");
     }
     if (hint) {
@@ -1636,6 +1732,8 @@ async function start(): Promise<void> {
     }, 200);
   }
   state.ready = true;
+  // What people thought of these places, behind the room: nothing waits for it.
+  void refreshRatings();
 
   // Newer announcements from relays, after the bundled set is on screen.
   try {
@@ -1659,7 +1757,10 @@ async function start(): Promise<void> {
     }
     const fresher = refreshSaved(saved, res.events);
     if (fresher !== saved) keep(fresher);
-    if (before !== shown()) await buildDoors();
+    if (before !== shown()) {
+      await buildDoors();
+      void refreshRatings();
+    }
     state.relays = Object.values(res.relays).filter((x) => x === "eose").length;
   } catch {
     /* the bundled set stands */

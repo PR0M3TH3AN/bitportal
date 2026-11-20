@@ -19,11 +19,14 @@ export function placeKind(world: Pick<World, "modes">): string {
   return world.modes.includes("2d") ? "Web page" : "";
 }
 
-export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category">>, fit: { ok: boolean; reason: string }, verified: boolean): Mark[] {
+export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category">>, fit: { ok: boolean; reason: string }, verified: boolean, rating: string = ""): Mark[] {
   const marks: Mark[] = [];
   // What kind of place its maker says it is (NSWP-01): a game, an experience, a place to meet, an app, a site.
   const category = categoryWords(world.category);
   if (category) marks.push({ text: category, tone: "plain" });
+  // What the people this visitor has reason to trust thought of it (NSWP-13): "★ 4.5 from 12". Never a count of
+  // strangers; with nobody counted there is no mark.
+  if (rating) marks.push({ text: rating, tone: "plain" });
   const kind = placeKind(world);
   if (kind) marks.push({ text: kind, tone: "plain" });
   if (verified) marks.push({ text: "Verified", tone: "ok" });

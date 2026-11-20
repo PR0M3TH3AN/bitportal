@@ -26,6 +26,7 @@ import {
   parseAirlockFragment,
   parseWorldEvent,
   queryRelays,
+  tallyRatings,
   verifyOrigin,
   WORLD_KIND,
   type Issue,
@@ -42,6 +43,8 @@ import { buildCatalog, type Catalog, type StarterBundle } from "../shared/catalo
 import { placeKind } from "../shared/plate.js";
 import { homeOf, loadHome, type HomeChoice } from "../shared/home.js";
 import { INSTANCE, sendsPass } from "../shared/instance.js";
+import { followedAuthors, loadFollowed } from "../shared/lists.js";
+import { countedFor, fetchRatings, keptFollows, ratingWords } from "../shared/ratings.js";
 import { crossingFor } from "../shared/crossing.js";
 import { checkedFor, fitFor, formOf } from "../shared/fit.js";
 import { goesAsGuest, goMode, inlineLook, loadLook, setGoesAsGuest, setGoMode, startingMode, type GoMode } from "../shared/look.js";
@@ -458,7 +461,27 @@ async function render(): Promise<void> {
   if (w?.contentWarning !== undefined) chips.append(chip(`Content warning${w.contentWarning ? `: ${w.contentWarning}` : ""}`, "bad"));
   if (w?.audience === "kids") chips.append(chip("For kids", "ok"));
   else if (w?.audience === "general") chips.append(chip("Not made for kids"));
-  else if (w) chips.append(chip("Not rated by its maker"));
+  else if (w) chips.append(chip("Its maker doesn't say who it is for"));
+  // What the people this visitor has reason to trust thought of it (NSWP-13): the curators of the lists they use
+  // and, from what this device kept at home, the people they follow. Relays are asked about the world, as they
+  // were for its announcement, and about nobody.
+  if (w?.coordinate) {
+    const coordinate = w.coordinate;
+    const me = knownSignedIn()?.pubkey ?? null;
+    let own: string[] = [];
+    try {
+      own = [buildCatalog(bundleJson as unknown as StarterBundle).curator.pubkey];
+    } catch {
+      /* a broken bundle: only the lists they follow, then */
+    }
+    const curators = [...new Set([...own, ...INSTANCE.operators, ...followedAuthors(loadFollowed())])];
+    void fetchRatings(loadSettings().relays, [coordinate], curators)
+      .then((events) => {
+        const words = ratingWords(tallyRatings(events, { world: coordinate, counted: countedFor(curators, keptFollows(me)), me, worldUrl: w.url }), !!me);
+        if (words) chips.prepend(chip(`Rated ${words}`));
+      })
+      .catch(() => {});
+  }
 
   const device = el("p", { class: "muted" }, vr ? "This device can enter VR. You'll press Enter VR again on arrival." : "This device can't enter VR; the world opens in your browser.");
 
