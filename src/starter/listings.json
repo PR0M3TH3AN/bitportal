@@ -3,7 +3,7 @@
   "set": {
     "d": "bitportal-starter-test",
     "title": "BitPortal's starter set",
-    "description": "The first doors in BitPortal's room: eight worlds made for it, each for a reason, and four existing WebXR sites."
+    "description": "The first doors in BitPortal's room: nine worlds made for it, each for a reason, and four existing WebXR sites."
   },
   "referenceWorlds": [
     "tour",
@@ -13,6 +13,7 @@
     "observatory",
     "workshop",
     "library",
+    "foundry",
     "starter"
   ],
   "listings": [

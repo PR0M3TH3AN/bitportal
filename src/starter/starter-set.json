@@ -2,7 +2,7 @@
   "curator": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
   "set": {
     "kind": 30004,
-    "created_at": 1795030843,
+    "created_at": 1795187090,
     "tags": [
       [
         "d",
@@ -14,7 +14,7 @@
       ],
       [
         "description",
-        "The first doors in BitPortal's room: eight worlds made for it, each for a reason, and four existing WebXR sites."
+        "The first doors in BitPortal's room: nine worlds made for it, each for a reason, and four existing WebXR sites."
       ],
       [
         "a",
@@ -46,6 +46,10 @@
       ],
       [
         "a",
+        "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:foundry"
+      ],
+      [
+        "a",
         "37300:546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c:starter"
       ],
       [
@@ -67,13 +71,13 @@
     ],
     "content": "",
     "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-    "id": "b157f455097689ff569251af7bf4ff882b01f67cbf5e82ad18ef9eaa481da25e",
-    "sig": "735cb5171a011acd5da3c89df8e6e000ab4df49745de23fd3dd24ef133485ba87dd1ff8de254168e2207e44ee6f2a830f6d18944be848c2a5f1078cf93dbe9bc"
+    "id": "87e42ef2dc5a4d1f4c5ebbbb70e8fb79319a2b9629c5e63b540b156982bebf54",
+    "sig": "2c15ddff61ee6b0458762b47cf500480895b88490879c47cf8481bd9adb65e11000d33660a252c06f130a34b083f5bbd04e221740beda3012a90eeb24ac859ab"
   },
   "worlds": [
     {
       "kind": 37300,
-      "created_at": 1795030676,
+      "created_at": 1795157455,
       "tags": [
         [
           "d",
@@ -183,6 +187,10 @@
           "general"
         ],
         [
+          "category",
+          "experience"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -193,12 +201,12 @@
       ],
       "content": "A short path with five stops for someone's first minute on the spatial web: looking round, moving, doors, the page between places, and getting home.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "6231ef160d9730601c9064d7ed7c019791fc45cb8dd7372087b4011fa0a78141",
-      "sig": "78a71df1fbf823b8241160ae378e67a7d2eebad5fd48352bfe66e0605431f77a83840a1b5e594ce10f8b4cc8a574126b81f05cdbf13850ce7aba1bfa511075c3"
+      "id": "0c30d724cc34ad155dcdeece70079adf319057aec5ee7ce30e9614d750ae8ce4",
+      "sig": "73a9d37a4e5146359aba74b1886d51895a5efb68a760f2b459dfc88cc7f4cf338a53c56dfdea4d3d1eff5c14e0ed59bca900f8e359f4da525d893813d9b1fd81"
     },
     {
       "kind": 37300,
-      "created_at": 1795030674,
+      "created_at": 1795157454,
       "tags": [
         [
           "d",
@@ -308,6 +316,10 @@
           "general"
         ],
         [
+          "category",
+          "experience"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -318,12 +330,12 @@
       ],
       "content": "Six sculptures, each a few lines of code turned into a shape, on plinths down a long hall. Doors lead to the Grove and the Workshop.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "8512a2d7c649587e9273a2854b246a757b281ebf4e43e8dc6786e9e265c66dab",
-      "sig": "9438c79e0bb951fafe0c1be1752e89e92b223249691fdd100d821cb6723b88f601cafe97372ab6486b1d98329f66aa76c53a9e1897bfc714c2660441ae15f7ab"
+      "id": "828e30d58f268ae8d68e251aadcbc375ad0a92c090c70ed713524a589a36d8b1",
+      "sig": "546ec4fb1c5531a1856f53110b64da7299421caca7dd180087aca13388577086a059994ee6273472e185237a2e52a707410ca3415d40031d409be50f867b80b3"
     },
     {
       "kind": 37300,
-      "created_at": 1795030675,
+      "created_at": 1795157455,
       "tags": [
         [
           "d",
@@ -433,6 +445,10 @@
           "general"
         ],
         [
+          "category",
+          "social"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -443,12 +459,12 @@
       ],
       "content": "A ring of seats round a hearth in a clearing of lantern trees. Press Join to see and hear whoever else is there.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "0a710538849b1049d7f24ef30f53d1cdab437622b5eaecc05aa8221dda2213f6",
-      "sig": "287f9fe418c75e765925cbe491aefbaf9cf94492ef4a37c35b38afe4b1c4ab077792ab155275b199d138ff3f28e20b5e02bafe9a812272c61ce12bba8d5852db"
+      "id": "d01563e8f45c924b9e00f0908814a8032e26cfa5ba9d330c74644fc8cfefb065",
+      "sig": "954f7da199c234cec01e389dc077104ecadcca1989cac23cfafca96c8d900081c9572ea9962402b3eda152c7f2ec280a736367139eff4511024422d0ad9a32fc"
     },
     {
       "kind": 37300,
-      "created_at": 1795030677,
+      "created_at": 1795157455,
       "tags": [
         [
           "d",
@@ -558,6 +574,10 @@
           "general"
         ],
         [
+          "category",
+          "game"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -568,12 +588,12 @@
       ],
       "content": "A small game: walk into twelve lanterns drifting over a field while a clock runs. The best time stays on your own device.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "2b000836f82cd687589f87d9ea997b90bd18c0b31dc6fffa92d1a1cc4ba9fb1b",
-      "sig": "a0040917df15497f492c206d4ca7ce77cc5bb4286f26834da367e85aa833c35839ebb9fe0aa01bfc21f241fa9af1ed8553fe0ef63eef27f27a4a17d80283ebce"
+      "id": "ba29fc8d71a133e3366877cc675d2f04815a547521c69ef27de2b6da8c9a3a33",
+      "sig": "ee50cc01f352629e573d1c395480d9e1e084dc31fad277b20b5709d903d8f79e2a365aed1abd9af9a525a091dba6ac04fa9d38eb4f9634ed0100ddda351f61a3"
     },
     {
       "kind": 37300,
-      "created_at": 1795030678,
+      "created_at": 1795157455,
       "tags": [
         [
           "d",
@@ -683,6 +703,10 @@
           "general"
         ],
         [
+          "category",
+          "experience"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -693,12 +717,12 @@
       ],
       "content": "A round terrace with an orrery turning at its middle, under a sky with a ringed world and constellations drawn like a network.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "b4bcddcdc079260aedb96f5b6ad8fcc263b9059ab616eb53be11a9cb37f4bc06",
-      "sig": "ebcf3b2225abce9ca4db1f4c3fc2ac0f4f6b5d56e6658cc392750eb06c31eb5fc9577d075c2217f72f0fe39cff8161e92e7601dde642b8c76812b9120668612a"
+      "id": "156c8b8513936eeef03874f22acc055d5e6aedc9e3ddfdc9b14d18acbbb4e1db",
+      "sig": "c72198e61914cf8ea8a60067dd6421b357a245a766c36ca8249809958de99e67bca9b8c12cdabc026382666d3b270e05788d03af0ebc2fc8c41206898c2855e4"
     },
     {
       "kind": 37300,
-      "created_at": 1795030679,
+      "created_at": 1795157455,
       "tags": [
         [
           "d",
@@ -808,6 +832,10 @@
           "general"
         ],
         [
+          "category",
+          "experience"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -818,12 +846,12 @@
       ],
       "content": "For people who want to build a world: the ready-made parts and the four ways of making a shape, each labelled with the name it has in code.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "6b3c6236b046974643ef660a24c770269377de9ee4e0a6b4af7379a72d1c682e",
-      "sig": "1421b0932899891468cf53bc8277533e6cffdd1cc8faf300fafebc994a929f8616eefd59a2b8eb58b927c215e2c82c6ffef3204fc8209e3fcb45565cb84a80ba"
+      "id": "bb441300ee128da7bbe85ea64787c59c4e49bfa76880bd9b903d97d785000185",
+      "sig": "aafc7a83818e5fd0710fb3641c2edae1a92985600b4d00294b30ef809a34142411fe63a8d8395bcb59d3cb51337e2dad5e864b59d37d4f0cda20fdaf0db52875"
     },
     {
       "kind": 37300,
-      "created_at": 1795030680,
+      "created_at": 1795157455,
       "tags": [
         [
           "d",
@@ -933,6 +961,10 @@
           "general"
         ],
         [
+          "category",
+          "site"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -943,12 +975,110 @@
       ],
       "content": "A reading room. Eight notes on its walls explain worlds, doors, the page between them, signing, verifying, and what stays private.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "7c24ca27d9841326f11974c834087bae3baf58f3cd977f3d0e26e5d44d53c5de",
-      "sig": "bcbd83c8f9f17e3cb36ef9d6f2274aa6ec4c202b8fb53c5a25d3ee0b34f97ad8a64b1b0c0697e9951b76fad52db8cd4ff180e030ac553b2f154ebe2879512052"
+      "id": "321675e70080ca2cd0bd73e5eb3b92c7e63a88485a094c1a5a4821ab2f082eb1",
+      "sig": "2fd60406ba60791b86b07dbe7579debc704a3abdf1b86c70daf1c9d1efde5d11cee464afc8c9cef9192b09e309bd63ebee99fdecf2c34957a8a36cabb55d93b5"
     },
     {
       "kind": 37300,
-      "created_at": 1795030815,
+      "created_at": 1795157455,
+      "tags": [
+        [
+          "d",
+          "foundry"
+        ],
+        [
+          "title",
+          "The Foundry"
+        ],
+        [
+          "summary",
+          "A world made in Godot, with the same doors, menu and sign-in as every other."
+        ],
+        [
+          "r",
+          "https://foundry.bitblocks.network/"
+        ],
+        [
+          "mode",
+          "inline-3d"
+        ],
+        [
+          "capability",
+          "spatial-portals"
+        ],
+        [
+          "comfort",
+          "locomotion",
+          "teleport"
+        ],
+        [
+          "comfort",
+          "intensity",
+          "low"
+        ],
+        [
+          "comfort",
+          "seated",
+          "supported"
+        ],
+        [
+          "input",
+          "keyboard-mouse"
+        ],
+        [
+          "input",
+          "touch"
+        ],
+        [
+          "perf",
+          "desktop"
+        ],
+        [
+          "t",
+          "godot"
+        ],
+        [
+          "t",
+          "engines"
+        ],
+        [
+          "t",
+          "building"
+        ],
+        [
+          "L",
+          "ISO-639-1"
+        ],
+        [
+          "l",
+          "en",
+          "ISO-639-1"
+        ],
+        [
+          "audience",
+          "general"
+        ],
+        [
+          "category",
+          "experience"
+        ],
+        [
+          "status",
+          "beta"
+        ],
+        [
+          "alt",
+          "Spatial world listing: The Foundry"
+        ]
+      ],
+      "content": "For people who build with another engine: a small place made in Godot 4 with the NSWP addon. You arrive in the same room you left the last world from, move the same way, and sign in in the same window. It is about forty megabytes, since the engine comes with it.",
+      "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
+      "id": "f6912123cf7a5b16a677a151e08a15990e505ae8d9d9dd1a8d7e585edd2020c5",
+      "sig": "bec8caa7d76a10c2b63f3928c993ba3ff61fa0326395f3f77a7c3e823be195460bfeaab98dc9012bf616e6a64cb27a531ce7f49ac60343d22339d1fbeb51b247"
+    },
+    {
+      "kind": 37300,
+      "created_at": 1795157448,
       "tags": [
         [
           "d",
@@ -1058,6 +1188,10 @@
           "general"
         ],
         [
+          "category",
+          "experience"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -1068,12 +1202,12 @@
       ],
       "content": "The NSWP world template, deployed unchanged: a hall, some furniture, and two doors. It is where a world of your own begins.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "192da36c7e0ab902cfa124d3eac5d4d96b6534a7698feb1e23ffc415e878ddec",
-      "sig": "e0163270625ac0cc704d5cd47412a1c983c5ee7c52110ce991e4ba5c1430b3d110d26bdddb587aa12975449d7da8ddbdccd065cc2fba351d7f5456a1df8b4c0e"
+      "id": "8f6b854f69296ab09f75b1888fa63cb88eaa045da6aef78dd44de2d9a26f520a",
+      "sig": "33692132b4297f99f3a96e941e8fa6b612f5975bb4d2fb44df3b8a00ee5de48558bf818165768ac1a6accfcd026879b631f88b1fc46118bc0a7f5fc9dc1c2ec6"
     },
     {
       "kind": 37300,
-      "created_at": 1795030843,
+      "created_at": 1795187090,
       "tags": [
         [
           "d",
@@ -1141,12 +1275,12 @@
       ],
       "content": "The classic A-Frame starter scene: a box, a sphere and a cylinder on a plane. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "ea73d3c706d008d917ca0482e4c21bd75848540216d3b64f12554c3476555c7c",
-      "sig": "5dc4ba474576e3609e2b666e302bb12a3f3dc1de8273158a500b4b05d8ef2d86a2c6aecff2158fb6a81d14b95ad2eba116a9c6907ad663498b5c46e59b9180b3"
+      "id": "7712ac0bb72d23edefedf8237cfa9fccd5e14e99ab4bafd2b86b270660eb5053",
+      "sig": "bd06460c75a2d03bb21249be36d7ee8a4c2c45c37a42f5aaa28cd92fe37159bf9e4fcb71c327e0afee39226478969e5de2e6e43360072d102c1c8ef5ec94eb82"
     },
     {
       "kind": 37300,
-      "created_at": 1795030843,
+      "created_at": 1795187090,
       "tags": [
         [
           "d",
@@ -1214,12 +1348,12 @@
       ],
       "content": "A minimal sample from the Immersive Web working group that starts a basic VR session. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "c3fbc5b3bf43c888f0b65076f8e242bea10c471e2cf366e5e65c33153f11219b",
-      "sig": "b283d5b9ee709166bc7042e30158789931a6e62a7e9a3ee73d41eb04a4c43b090863963d3c63ec12f5569a6c03400fc9b361703ed46e60707bc29611f62cbab0"
+      "id": "1c6034de1aabd2631c1907b3a8f2fdb8ccddb800df84201bc731e818de06c052",
+      "sig": "f5c31f344c52217228f8fe0af0d528396eacf8fbd4103b9851c12f155daec88863ff4284fce9efc91e311dd2731fe82b857da9064a390782a56c8a5a2a60a8b8"
     },
     {
       "kind": 37300,
-      "created_at": 1795030843,
+      "created_at": 1795187090,
       "tags": [
         [
           "d",
@@ -1287,12 +1421,12 @@
       ],
       "content": "A roller-coaster ride from the three.js examples. You are moved along the track. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "90b7a1b885fa0774641c9db4cad3ec13d43f2ee50daeee4517be5341c7a23f0a",
-      "sig": "692de1c0aa12112236b0ea3dbd00205b0209e2edb68010eee83e16dc873dd81f5fa88aaef386550437f7881d2ef8f4134f348ea002d8a9f756175003dba78017"
+      "id": "099efed85b3191933a067e58a326c5d2ccc9e14575e254bba0eeb6129821a553",
+      "sig": "0d86059f72f10c326e218d503dcef7990d1d5728d3529266e0546838ba0ea57d91d7855cedb8fea75b8bc0fcc33009245c595d97cd88641d94deb5f892ee0487"
     },
     {
       "kind": 37300,
-      "created_at": 1795030843,
+      "created_at": 1795187090,
       "tags": [
         [
           "d",
@@ -1350,8 +1484,8 @@
       ],
       "content": "A music and rhythm game that runs in the browser. Listed by the BitPortal starter set; this site has not announced itself.",
       "pubkey": "4bf82a939a396155e66e53ec978391093ce785170cfbda38ad777fde6e4537a0",
-      "id": "3c2d1e9d584f0ed2559a030efe07dc31f964af170d824e315f31ad71edb90fa9",
-      "sig": "99254d024e541d68e40db463b4ccf1e2ebf404fb73ab2dc092411768677ed0a3ee12d80c21159e74ef4a691c60e7fc4814603474970967698f39c7c723a50932"
+      "id": "9005890fc5290907f49e0b02845bff1c80e2d48ee92de174b24fc3d1ef490e49",
+      "sig": "da084f6f0e45a52b6a6ed253aaaf782819b62355a693b0575a42dad31ca32850e3fca0f61b3eeb767391a2abeb63cdfa6e5f887a6df85ae835252a9b2dd44e88"
     }
   ]
 }

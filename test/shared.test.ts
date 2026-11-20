@@ -19,9 +19,9 @@ const starter = bundle as unknown as StarterBundle;
 describe("catalogue", () => {
   it("builds from the bundled starter set, in the curator's order", () => {
     const c = buildCatalog(starter);
-    // Eight worlds made for BitPortal and four existing sites the curator lists.
-    expect(c.entries.length).toBe(12);
-    expect(c.entries.map((e) => e.rank)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    // Nine worlds made for BitPortal and four existing sites the curator lists.
+    expect(c.entries.length).toBe(13);
+    expect(c.entries.map((e) => e.rank)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(c.entries[0]!.world.title).toBe("The Tour");
     expect(c.curator.title).toContain("starter set");
     expect(c.entries.filter((e) => e.curatorListing).length).toBe(4);
@@ -35,13 +35,13 @@ describe("catalogue", () => {
 
   it("drops tampered world events and keeps the rest", () => {
     const worlds = starter.worlds.map((w, i) => (i === 0 ? { ...w, content: "changed" } : w));
-    expect(buildCatalog({ ...starter, worlds }).entries.length).toBe(11);
+    expect(buildCatalog({ ...starter, worlds }).entries.length).toBe(12);
   });
 
   it("ignores a relay 'set' signed by anyone but the curator, and separates unlisted worlds", () => {
     const stranger = starter.worlds[0]!; // a valid event by another key, wrong kind for a set
     const c = buildCatalog(starter, [stranger, { kind: 30004, tags: [], content: "", pubkey: "f".repeat(64), id: "0".repeat(64), sig: "0".repeat(128), created_at: 9e9 }]);
-    expect(c.entries.length).toBe(12);
+    expect(c.entries.length).toBe(13);
     expect(c.curator.updatedAt).toBe(starter.set.created_at);
   });
 });
