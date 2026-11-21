@@ -97,6 +97,26 @@ describe("the page that keeps the screen filled", () => {
     }
   });
 
+  it("draws the panel as tall as its content where it says, within what can be read and what the screen has", () => {
+    const desk = { width: 1440, height: 900 };
+    const phone = { width: 390, height: 844 };
+    const menu = { left: 330, width: 780, bottom: 132 };
+    // As tall as its content, whichever size it also asked for.
+    expect(placePanel("tall", desk, menu, 540)).toEqual({ left: 330, width: 780, bottom: 132, height: 540 });
+    expect(placePanel("menu", desk, menu, 700)).toEqual({ left: 330, width: 780, bottom: 132, height: 700 });
+    // Never more than the screen has above where it stands, and never too short to read.
+    expect(placePanel("tall", desk, menu, 4000).height).toBe(758);
+    expect(placePanel("menu", desk, menu, 5).height).toBe(240);
+    expect(placePanel("menu", desk, menu, -300).height).toBe(240);
+    // On a phone the tall one still stands at the foot of the screen, and is only as tall as it needs.
+    expect(placePanel("tall", phone, { left: 10, width: 370, bottom: 118 }, 600)).toEqual({ left: 10, width: 370, bottom: 10, height: 600 });
+    expect(placePanel("tall", phone, null, 2000).height).toBe(824);
+    // Nothing said, or nonsense: as before.
+    expect(placePanel("menu", desk, menu, null).height).toBe(640);
+    expect(placePanel("tall", desk, menu, NaN).height).toBe(758);
+    expect(placePanel("tall", desk, menu, Infinity).height).toBe(758);
+  });
+
   it("takes from a world only a mode it knows and three numbers", () => {
     expect(["ask", "switch", "account"].every(isPanelMode)).toBe(true);
     for (const not of ["", "ASK", "everything", 1, null, undefined, {}]) expect(isPanelMode(not), String(not)).toBe(false);

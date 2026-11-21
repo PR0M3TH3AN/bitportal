@@ -47,7 +47,7 @@ export function readMenuPlace(said: unknown): MenuPlace | null {
  * Whatever the world said is held within the screen, and never so small that the panel couldn't be read: a world
  * doesn't get to hide the question or shrink it.
  */
-export function placePanel(size: "menu" | "tall", screen: { width: number; height: number }, menu: MenuPlace | null): { left: number; width: number; bottom: number; height: number } {
+export function placePanel(size: "menu" | "tall", screen: { width: number; height: number }, menu: MenuPlace | null, wished?: number | null): { left: number; width: number; bottom: number; height: number } {
   const edge = 10;
   const phone = screen.width < 640;
   const most = Math.max(200, screen.width - edge * 2);
@@ -56,8 +56,16 @@ export function placePanel(size: "menu" | "tall", screen: { width: number; heigh
   // A phone has no room to spare: the tall panel takes the whole screen, less a margin.
   const bottom = size === "tall" && phone ? edge : Math.round(Math.min(screen.height * 0.4, Math.max(edge, menu?.bottom ?? (phone ? 118 : 132))));
   const room = Math.max(160, screen.height - bottom - edge);
+  // How tall its content is, where the panel says: as tall as that and no taller, so nothing of the world is
+  // covered by an empty panel. Never shorter than can be read, and never more than the screen has.
+  if (typeof wished === "number" && Number.isFinite(wished)) return { left: Math.max(0, left), width, bottom, height: Math.round(Math.min(room, Math.max(Math.min(PANEL_FLOOR, room), wished))) };
   return { left: Math.max(0, left), width, bottom, height: Math.round(size === "tall" ? room : Math.min(640, room)) };
 }
+
+/** The least a panel is ever drawn, whatever it says of its height: enough for its bar and a question. */
+const PANEL_FLOOR = 240;
+/** The box's own top and bottom edges (its border, in public/bitportal.css), which its height includes. */
+const PANEL_EDGES = 2;
 
 export interface Panel {
   /** Whether it is up. */
@@ -73,10 +81,11 @@ export interface Panel {
  * a development server, a local copy's). `told` is called as it comes up and as it goes.
  */
 export function createPanel(o: { at: string; told(open: boolean, more?: { failed?: boolean; allowed?: boolean }): void }): Panel {
-  let up: { box: HTMLElement; scrim: HTMLElement; frame: HTMLIFrameElement; size: "menu" | "tall"; menu: MenuPlace | null; ready: boolean; hello: ReturnType<typeof setInterval> | null; giveUp: ReturnType<typeof setTimeout> } | null = null;
+  let up: { box: HTMLElement; scrim: HTMLElement; frame: HTMLIFrameElement; size: "menu" | "tall"; wished: number | null; menu: MenuPlace | null; ready: boolean; hello: ReturnType<typeof setInterval> | null; giveUp: ReturnType<typeof setTimeout> } | null = null;
   const place = (): void => {
     if (!up) return;
-    const p = placePanel(up.size, { width: innerWidth, height: innerHeight }, up.menu);
+    // What it wishes is its content's height; the box is that and its own two edges.
+    const p = placePanel(up.size, { width: innerWidth, height: innerHeight }, up.menu, up.wished === null ? null : up.wished + PANEL_EDGES);
     // Set as properties, one by one: this page's rules allow no style written into the page.
     up.box.style.setProperty("--panel-left", `${p.left}px`);
     up.box.style.setProperty("--panel-width", `${p.width}px`);
@@ -96,7 +105,7 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
   addEventListener("message", (e: MessageEvent) => {
     // Only BitLogin's own page, in the frame this page made for it, at BitLogin's own address.
     if (!up || e.source !== up.frame.contentWindow || e.origin !== o.at) return;
-    const said = e.data as { bitlogin?: unknown; v?: unknown; t?: unknown; size?: unknown; allowed?: unknown } | null;
+    const said = e.data as { bitlogin?: unknown; v?: unknown; t?: unknown; size?: unknown; height?: unknown; allowed?: unknown } | null;
     if (!said || typeof said !== "object" || said.bitlogin !== PROTOCOL || said.v !== VERSION) return;
     if (said.t === "ready") {
       if (up.ready) return;
@@ -108,8 +117,10 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
       up.frame.focus();
       o.told(true);
     } else if (said.t === "size" && (said.size === "menu" || said.size === "tall")) {
-      // A wish: what it gets is this page's to say, and stays on the screen.
+      // A wish: what it gets is this page's to say, and stays on the screen. With it, how tall its content is
+      // (said again whenever that changes): the panel is then drawn that tall, within the same bounds.
       up.size = said.size;
+      up.wished = num(said.height);
       place();
     } else if (said.t === "close") {
       end({ allowed: said.allowed === true });
@@ -158,7 +169,7 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
           /* said again in a moment */
         }
       };
-      up = { box, scrim, frame, size: "menu", menu, ready: false, hello: null, giveUp: setTimeout(() => end({ failed: true }), READY_MS) };
+      up = { box, scrim, frame, size: "menu", wished: null, menu, ready: false, hello: null, giveUp: setTimeout(() => end({ failed: true }), READY_MS) };
       // It is told once its page has loaded, and again until it says it heard: it can't speak first, since it only
       // learns who is above it from being spoken to.
       frame.addEventListener("load", () => {
