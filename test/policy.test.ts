@@ -186,6 +186,11 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
       expect(origin).toMatch(/^https:\/\/[a-z0-9.-]+$/);
       expect(new URL(origin).origin).toBe(origin);
     }
+    // What the frame is handed goes to whatever is in it, since it goes from place to place: so it is this page's
+    // own rules that say which places may have a headset or a microphone, by name, and the frame is never handed the screen.
+    const page = readFileSync(new URL("../src/shell/index.html", import.meta.url), "utf8");
+    expect(page).toContain(`allow="xr-spatial-tracking *; microphone *; autoplay *; gamepad *; clipboard-write *; fullscreen 'none'"`);
+    expect(build).toContain('const handsOn = (to = []) => `xr-spatial-tracking=(self${to.map((o) => ` "${o}"`).join("")}), microphone=(self${to.map((o) => ` "${o}"`).join("")}), camera=(), geolocation=()`;');
     // And each is a world this copy itself shows a door to: it frames nothing it doesn't already send people to.
     const shown = new Set((JSON.parse(readFileSync(new URL("../src/starter/starter-set.json", import.meta.url), "utf8")) as { worlds: { tags: string[][] }[] }).worlds.map((w) => new URL(w.tags.find((t) => t[0] === "r")![1]!).origin));
     for (const origin of named) expect(shown.has(origin), origin).toBe(true);
