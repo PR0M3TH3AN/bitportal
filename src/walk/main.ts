@@ -1295,9 +1295,12 @@ async function start(): Promise<void> {
   let travelling = (): { joined: boolean; mic: boolean } => ({ joined: false, mic: false });
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
   let myLook = loadLook();
-  // The home draws nothing anyone carries: its rule is "none", said here in so many words, since a place that
-  // says nothing has items (kit 0.58.0). Turning them on at home is the owner's decision.
-  const presence = createPresence({ scene, camera, rig, renderer, controllers, itemsRule: () => "none", labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
+  // What visitors carry is drawn here, as in any world that hasn't turned items off (the owner, 2026-11-20: "Yes
+  // turn it on in home and the portal main world too"): the one thing each person holds, in their colours. What
+  // an item does of its own doesn't run here: that needs the locked box, a page of BitPortal's own framed by this
+  // one, and no page of BitPortal may frame anything but the sign-in address until the owner says so.
+  const carriedItems = createItems({ relays: settings.relays });
+  const presence = createPresence({ scene, camera, rig, renderer, controllers, items: carriedItems, itemsRule: () => "allowed", sounds, theme: () => ({ accent: controls.theme.accent, motion: controls.theme.motion }), labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
   // And they can see it too: their own figure stands to one side, as others will see it.
   // It is drawn again whenever they change it, which they do from the menu, standing here (you.ts).
   let mirror: Figure | null = null;
@@ -1425,18 +1428,24 @@ async function start(): Promise<void> {
     say: (text) => controls.say(text),
     presenting: () => renderer.xr.isPresenting,
   });
-  // Their bag (NSWP-17): looked through and changed here, at home. Nothing carried is drawn in this room.
+  // Their bag (NSWP-17): looked through and changed here, at home, and the one thing they hold is taken from it.
   const carried = homeBag({ me: () => (goesAsGuest() ? null : signedInKey), relays: settings.relays, signerFor: quietSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });
   const baggingTab = addBagControls(controls, {
     bag: carried.bag,
-    // A bag shows the things in it, each drawn from its own model (NSWP-17): so a model is fetched for the Bag
-    // tab's pictures, once the tab is looked at, and for nothing else. Nothing held is drawn in this room.
-    items: createItems({ relays: settings.relays }),
+    // A bag shows the things in it, each drawn from its own model (NSWP-17), and what is held is drawn from the
+    // same one: fetched from wherever its maker keeps it, and checked against the hash its description gives.
+    items: carriedItems,
     place: () => "your home",
     me: () => (goesAsGuest() ? null : signedInKey),
-    rule: () => "none",
-    holding: () => "",
-    hold: async () => ({ ok: false, said: "Nothing carried is drawn or works in this place." }),
+    rule: () => "allowed",
+    holding: () => presence.holding,
+    hold: async (item, tints) => {
+      const done = await presence.setHolding(item, tints);
+      state.holding = presence.holding || null;
+      // Said, so that a thing which fires elsewhere isn't taken to be broken here.
+      return done.ok && item && carriedItems.known(item)?.script ? { ...done, said: `${done.said} What it does of its own doesn't run at home yet.` } : done;
+    },
+    tinted: (item, tints) => void (presence.holding === item && presence.setTints(tints)),
     allowed: carried.allowed,
     ask: carried.ask,
     offered: () => [...STARTER_ITEMS],

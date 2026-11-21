@@ -1,6 +1,6 @@
 // Builds BitPortal into dist/ as plain static files.
 import { build } from "esbuild";
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -119,4 +119,12 @@ writeFileSync(
   join(out, "version.json"),
   `${JSON.stringify({ bitportal: pkg.version, kit, nswp: vendored["@nswp/core"]?.source?.commit ?? null, bitlogin: vendored["@bitlogin/widget"]?.source?.commit ?? null }, null, 1)}\n`,
 );
+// Every page is marked with the kit, this BitPortal and everything it is served with, so that a page changes
+// whenever any of them does. A host answers "not modified" for a page whose HTML is the same, and a browser then
+// keeps the content rules it first had with that page: a change to the rules above would never reach anyone who
+// had been here before (NSWP-09; the kit's `stampPage`).
+const { stampPage } = await import(join(root, "vendor/nswp/nswp-core.js"));
+const served = readFileSync(join(out, "vercel.json"), "utf8");
+const pages = (dir) => readdirSync(dir).flatMap((name) => (statSync(join(dir, name)).isDirectory() ? pages(join(dir, name)) : name.endsWith(".html") ? [join(dir, name)] : []));
+for (const page of pages(out)) writeFileSync(page, stampPage(readFileSync(page, "utf8"), `${kit ?? "0"} bitportal ${pkg.version}`, served));
 console.log(`built dist/ (BitPortal ${pkg.version})`);
