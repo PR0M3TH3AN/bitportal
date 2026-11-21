@@ -563,6 +563,54 @@ function createConsole(controls, opts) {
   return con;
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/client-frame.ts
+var framed = () => {
+  try {
+    return typeof window !== "undefined" && window.parent !== window;
+  } catch {
+    return false;
+  }
+};
+var holds = false;
+var filled = false;
+var met = false;
+var watchers = /* @__PURE__ */ new Set();
+var clientHoldsScreen = () => holds;
+var clientScreenFilled = () => holds && filled;
+function onClientScreen(fn) {
+  watchers.add(fn);
+  return () => void watchers.delete(fn);
+}
+var say = (words) => {
+  try {
+    window.parent.postMessage({ nswp: words.nswp, ...words }, "*");
+  } catch {
+  }
+};
+function askClientForScreen(fill) {
+  if (framed()) say({ nswp: "screen", fill });
+}
+function meetClient() {
+  if (met || !framed()) return;
+  met = true;
+  addEventListener("message", (e) => {
+    if (e.source !== window.parent) return;
+    const said = e.data;
+    if (!said || typeof said !== "object" || said.nswp !== "screen" || typeof said.holds !== "boolean") return;
+    const was = `${holds}${filled}`;
+    holds = said.holds;
+    filled = said.filled === true;
+    if (was !== `${holds}${filled}`) for (const fn of watchers) fn();
+  });
+  let at = "/";
+  try {
+    at = `${location.pathname}${location.search}`.slice(0, 300);
+  } catch {
+  }
+  say({ nswp: "here", at });
+}
+meetClient();
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
 var resumed = false;
 var waiting = false;
@@ -593,43 +641,58 @@ function resumeFullscreen(presenting = () => false) {
   if (came === void 0) prefers = kept2;
   else keepFull(came);
   reportSettings("screen", () => ({ full: prefers }));
-  waiting = prefers && document.fullscreenEnabled && !document.fullscreenElement;
+  meetClient();
+  const mayAsk = framed();
+  waiting = prefers && (document.fullscreenEnabled && !document.fullscreenElement || mayAsk);
   if (!waiting) return;
   const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
   const stop = () => {
     waiting = false;
     for (const type of presses) removeEventListener(type, onPress, true);
     document.removeEventListener("fullscreenchange", onChange);
+    forget();
   };
   const onChange = () => {
-    if (document.fullscreenElement) stop();
+    if (document.fullscreenElement || clientScreenFilled()) stop();
   };
+  const forget = onClientScreen(onChange);
   const onPress = (e) => {
     if (e.code === "Escape" || held || presenting() || document.fullscreenElement) return;
+    if (clientHoldsScreen()) return void (clientScreenFilled() ? stop() : askClientForScreen(true));
+    if (!document.fullscreenEnabled) return;
     void document.documentElement.requestFullscreen().then(stop, () => {
     });
   };
   for (const type of presses) addEventListener(type, onPress, true);
   document.addEventListener("fullscreenchange", onChange);
+  onChange();
 }
-var fullscreenWaiting = () => waiting;
+var isFilled = () => clientHoldsScreen() ? clientScreenFilled() : !!document.fullscreenElement;
+var canFill = () => clientHoldsScreen() || document.fullscreenEnabled;
+var fullscreenWaiting = () => waiting && canFill() && !isFilled();
 function fullscreenAction(controls, presenting) {
   resumeFullscreen(presenting);
   setTimeout(() => {
-    if (waiting && !held && !presenting()) controls.say("Press any key, or click, to fill the screen again.");
+    if (waiting && !held && !presenting() && canFill() && !isFilled()) controls.say("Press any key, or click, to fill the screen again.");
   }, 600);
+  onClientScreen(() => controls.setTarget(""));
   return {
     id: "fullscreen",
     section: "view",
     icon: "size",
     on: () => prefers,
     // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
-    hidden: () => !document.fullscreenEnabled || presenting(),
+    hidden: () => !canFill() || presenting(),
     // It says what they prefer, in every world, and whether the screen is filled just now.
-    label: () => !prefers ? "Fullscreen: off" : document.fullscreenElement ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
+    label: () => !prefers ? "Fullscreen: off" : isFilled() ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
     act: async () => {
-      const fill = !document.fullscreenElement;
+      const fill = !isFilled();
       if (!fill) keepFull(false);
+      if (clientHoldsScreen()) {
+        if (fill) keepFull(true);
+        askClientForScreen(fill);
+        return void controls.setTarget("");
+      }
       try {
         if (fill) {
           await document.documentElement.requestFullscreen();
@@ -875,7 +938,7 @@ var FOV_STEPS = [null, 60, 70, 80, 90, 100, 110];
 var clampLook = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(LOOK_RANGE[1], Math.max(LOOK_RANGE[0], v)) * 100) / 100 : 1;
 var clampFov = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(FOV_RANGE[1], Math.max(FOV_RANGE[0], v))) : null;
 var prefs = null;
-var watchers = /* @__PURE__ */ new Set();
+var watchers2 = /* @__PURE__ */ new Set();
 var keep = (p) => {
   try {
     localStorage.setItem(DESK_PREFS_KEY, JSON.stringify(p));
@@ -898,7 +961,7 @@ function load() {
 var change = (next) => {
   prefs = next;
   keep(next);
-  for (const w of watchers) w();
+  for (const w of watchers2) w();
 };
 var lookScale = () => load().look;
 var aimScaleNow = 1;
@@ -908,8 +971,8 @@ var setLookScale = (v) => change({ ...load(), look: clampLook(v) });
 var visitorFov = () => currentForm() === "desk" ? load().fov : null;
 var setVisitorFov = (v) => change({ ...load(), fov: v === null ? null : clampFov(v) });
 function onDeskChange(cb) {
-  watchers.add(cb);
-  return () => void watchers.delete(cb);
+  watchers2.add(cb);
+  return () => void watchers2.delete(cb);
 }
 var after = (steps, at) => steps[(at + 1) % steps.length];
 function addDeskControls(controls, o) {
@@ -3632,7 +3695,7 @@ var RoomSession = class {
   introduce(ch) {
     if (!this.look && !this.pass && !this.held) return;
     let left = 4;
-    const say = () => {
+    const say2 = () => {
       if (this.closed || ch.readyState !== "open") return;
       try {
         if (this.look) ch.send(`look:${this.look}`);
@@ -3641,9 +3704,9 @@ var RoomSession = class {
         if (this.held && this.tints) ch.send(this.tints);
       } catch {
       }
-      if (--left > 0) setTimeout(say, 1500);
+      if (--left > 0) setTimeout(say2, 1500);
     };
-    say();
+    say2();
   }
   async gathered(pc) {
     if (pc.iceGatheringState !== "complete") {
@@ -3756,10 +3819,10 @@ var RoomSession = class {
     this.tune = track;
     this.self.music = !!track;
     clearInterval(this.tuneTimer);
-    const say = () => this.tellAll(this.tune ? "mus:1" : "mus:0");
-    say();
-    if (track) this.tuneTimer = setInterval(say, 2e3);
-    else setTimeout(say, 400);
+    const say2 = () => this.tellAll(this.tune ? "mus:1" : "mus:0");
+    say2();
+    if (track) this.tuneTimer = setInterval(say2, 2e3);
+    else setTimeout(say2, 400);
     await Promise.all(
       [...this.peers.values()].map(async (peer) => {
         peer.tuned = false;
@@ -3810,10 +3873,10 @@ var RoomSession = class {
     this.screen = track;
     this.self.sharing = !!track;
     clearInterval(this.screenTimer);
-    const say = () => this.tellAll(this.screen ? "scr:1" : "scr:0");
-    say();
-    if (track) this.screenTimer = setInterval(say, 2e3);
-    else setTimeout(say, 400);
+    const say2 = () => this.tellAll(this.screen ? "scr:1" : "scr:0");
+    say2();
+    if (track) this.screenTimer = setInterval(say2, 2e3);
+    else setTimeout(say2, 400);
     await Promise.all(
       [...this.peers.values()].map(async (peer) => {
         peer.fed = false;
@@ -3869,7 +3932,7 @@ var RoomSession = class {
     if (next) this.self.holding = next;
     else delete this.self.holding;
     let left = 3;
-    const say = () => {
+    const say2 = () => {
       if (this.closed || this.held !== next) return;
       for (const peer of this.peers.values()) {
         if (!peer.open || peer.pose?.readyState !== "open") continue;
@@ -3878,9 +3941,9 @@ var RoomSession = class {
         } catch {
         }
       }
-      if (--left > 0) setTimeout(say, 700);
+      if (--left > 0) setTimeout(say2, 700);
     };
-    say();
+    say2();
   }
   /**
    * Say something of an item in play to everyone: a thing sent out, a hit, a sound, this visitor's state
@@ -3896,7 +3959,7 @@ var RoomSession = class {
     if (on === this.self.recording) return;
     this.self.recording = on;
     clearInterval(this.recordingTimer);
-    const say = () => {
+    const say2 = () => {
       for (const peer of this.peers.values()) {
         if (!peer.open || peer.pose?.readyState !== "open") continue;
         try {
@@ -3905,9 +3968,9 @@ var RoomSession = class {
         }
       }
     };
-    say();
-    if (on) this.recordingTimer = setInterval(say, 2e3);
-    else setTimeout(say, 400);
+    say2();
+    if (on) this.recordingTimer = setInterval(say2, 2e3);
+    else setTimeout(say2, 400);
   }
   drop(pubkey, announce) {
     const peer = this.peers.get(pubkey);
@@ -4360,9 +4423,9 @@ function createPeople(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:follows:${who}`;
   const readKept = (who) => {
@@ -4461,8 +4524,8 @@ function createPeople(opts) {
     follow: (pubkey, name = "") => change2(pubkey, true, name),
     unfollow: (pubkey, name = "") => change2(pubkey, false, name),
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -4611,7 +4674,7 @@ function createWorldSigner(opts) {
   const real = opts.at ? namedAddresses(opts.at) : signerAt2(opts.under) ?? signerAddresses(opts.airlock);
   if (!real || typeof document === "undefined") return NONE;
   const test = new URLSearchParams(opts.search ?? location.search).get("signer") === "test";
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const pending = /* @__PURE__ */ new Map();
   const kept2 = /* @__PURE__ */ new Map();
   const askAbout = (request, read) => new Promise((done) => {
@@ -4663,7 +4726,7 @@ function createWorldSigner(opts) {
   const firstAnswer = /* @__PURE__ */ new Set();
   let n = 0;
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const tell = (message) => frame?.contentWindow?.postMessage(signerMessage(message), origin);
   const onMessage = (e) => {
@@ -4872,8 +4935,8 @@ function createWorldSigner(opts) {
       return askAbout({ t: "achieve", id: `a${++n}`, world, achievement, title }, (reply) => reply.t === "signed" && isAchievementAsked(reply.event, { pubkey, world, id: achievement, title, origin: location.origin }) ? reply.event : null);
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     whenAnswered(ms) {
       if (answered || disposed) return Promise.resolve();
@@ -6028,7 +6091,7 @@ var ITEM_BUDGET = {
   sound: 15e4
 };
 var ITEMS_KEY = "nswp:items";
-var watchers2 = /* @__PURE__ */ new Set();
+var watchers3 = /* @__PURE__ */ new Set();
 var shown = null;
 var keep2 = (on) => {
   try {
@@ -6054,11 +6117,11 @@ function setShowsItems(on) {
   showsItems();
   shown = on;
   keep2(on);
-  for (const fn of watchers2) fn();
+  for (const fn of watchers3) fn();
 }
 function onItemsChange(fn) {
-  watchers2.add(fn);
-  return () => void watchers2.delete(fn);
+  watchers3.add(fn);
+  return () => void watchers3.delete(fn);
 }
 var FETCH_MS = 3e4;
 var AGAIN_MS = 4e3;
@@ -6320,7 +6383,7 @@ function runInBox(script, on, opts = {}) {
     let over = false;
     let began = 0;
     let ticking;
-    const say = (m) => frame.contentWindow?.postMessage({ nswpItemBox: 1, ...m }, "*");
+    const say2 = (m) => frame.contentWindow?.postMessage({ nswpItemBox: 1, ...m }, "*");
     const end = (why) => {
       if (over) return;
       over = true;
@@ -6335,7 +6398,7 @@ function runInBox(script, on, opts = {}) {
     };
     const run = {
       tell(event, arg) {
-        if (running) say({ t: "event", name: event, ...arg === void 0 ? {} : { arg } });
+        if (running) say2({ t: "event", name: event, ...arg === void 0 ? {} : { arg } });
       },
       stop: () => end("asked"),
       get running() {
@@ -6346,7 +6409,7 @@ function runInBox(script, on, opts = {}) {
       if (e.source !== frame.contentWindow) return;
       const m = e.data;
       if (!m || m.nswpItemBox !== 1) return;
-      if (m.t === "ready") say({ t: "run", script });
+      if (m.t === "ready") say2({ t: "run", script });
       else if (m.t === "started" && !running && !over) {
         running = true;
         began = performance.now();
@@ -8277,7 +8340,7 @@ function createProfiles(opts = {}) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   let kept2 = null;
   const all = () => {
     if (kept2) return kept2;
@@ -8318,11 +8381,11 @@ function createProfiles(opts = {}) {
       }
       if (answered) for (const k of wanted) book[k] = { ...book[k] ?? { name: "", picture: "", about: "", at: 0 }, asked: now() };
       save();
-      for (const fn of watchers3) fn();
+      for (const fn of watchers4) fn();
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -8348,21 +8411,21 @@ function addFollowingControls(controls, opts) {
   let wasMe = null;
   let looked = false;
   const nameOf = (pubkey) => profiles.get(pubkey)?.name || shortNpub4(pubkey);
-  const say = (text) => controls.say(text);
+  const say2 = (text) => controls.say(text);
   const press = (pubkey, name, adding) => {
     const now = async () => {
       const done = await (adding ? f.people.follow(pubkey, name) : f.people.unfollow(pubkey, name));
-      say(done.said);
+      say2(done.said);
       if (done.ok && adding) void profiles.fetch([pubkey]);
       refresh();
     };
-    if (!f.pubkey()) return say("Sign in to follow people: it is under You.");
+    if (!f.pubkey()) return say2("Sign in to follow people: it is under You.");
     if (f.allowed()) return void now();
-    say(f.ask(() => void now()));
+    say2(f.ask(() => void now()));
   };
   const byKey = async () => {
     const me = f.pubkey();
-    if (!me) return say("Sign in to follow people: it is under You.");
+    if (!me) return say2("Sign in to follow people: it is under You.");
     let text = "";
     const keyboard = opts.presenting?.() ? opts.keyboard?.() ?? null : null;
     if (keyboard) text = await keyboard.ask({ title: "Their key: npub1\u2026 Paste it, or type it. Done follows them.", maxLength: 80 }).catch(() => null) ?? "";
@@ -8370,12 +8433,12 @@ function addFollowingControls(controls, opts) {
       try {
         text = await (opts.copied ? opts.copied() : navigator.clipboard.readText());
       } catch {
-        return say("What you copied couldn't be read here. Copy their key (it starts npub1), allow this site to read what you copy, and press again.");
+        return say2("What you copied couldn't be read here. Copy their key (it starts npub1), allow this site to read what you copy, and press again.");
       }
     }
     const key = keyIn(text);
-    if (!key) return say(keyboard ? "That isn't a key. A key starts npub1 and is 63 characters long." : "What you copied isn't a key. Copy their key (it starts npub1) and press again.");
-    if (key === me) return say("That is your own key.");
+    if (!key) return say2(keyboard ? "That isn't a key. A key starts npub1 and is 63 characters long." : "What you copied isn't a key. Copy their key (it starts npub1) and press again.");
+    if (key === me) return say2("That is your own key.");
     chosen = key;
     await profiles.fetch([key]);
     press(key, nameOf(key), true);
@@ -8426,7 +8489,7 @@ function addFollowingControls(controls, opts) {
         icon: "check",
         tone: "primary",
         label: "Show who I follow, and let me change it here",
-        act: () => say(f.ask(() => void f.people.load().then(refresh)))
+        act: () => say2(f.ask(() => void f.people.load().then(refresh)))
       });
       return;
     }
@@ -8526,10 +8589,10 @@ function createMessages(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const newcomers = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   let who = null;
   let state = "off";
@@ -8700,8 +8763,8 @@ function createMessages(opts) {
       return n;
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     onNew(fn) {
       newcomers.add(fn);
@@ -8726,7 +8789,7 @@ function addMessagingControls(controls, opts) {
   let wasMe = null;
   let fetching = false;
   const nameOf = (pubkey) => profiles.get(pubkey)?.name || shortNpub5(pubkey);
-  const say = (text) => controls.say(text);
+  const say2 = (text) => controls.say(text);
   const inHeadset = () => !!opts.presenting?.() && !!opts.panels;
   let panel = null;
   const closePanel = () => {
@@ -8824,7 +8887,7 @@ function addMessagingControls(controls, opts) {
             const view = controls.letters.view();
             void opts.panels.keyboard.ask({ title: `Write to ${view.with}. Only they can read it. Done sends it.`, maxLength: MESSAGE_LIMITS.chars, multiline: true }).then((text) => {
               const trouble = text ? controls.letters.send(text) : null;
-              if (trouble) say(trouble);
+              if (trouble) say2(trouble);
             });
           },
           onClose: () => {
@@ -8838,7 +8901,7 @@ function addMessagingControls(controls, opts) {
       drawPanel();
     } catch (err) {
       texture.dispose();
-      say(err instanceof Error ? err.message.replace(/^nswp-sdk: /, "") : "The conversation couldn't be opened.");
+      say2(err instanceof Error ? err.message.replace(/^nswp-sdk: /, "") : "The conversation couldn't be opened.");
     }
   };
   controls.subscribe(drawPanel);
@@ -8859,11 +8922,11 @@ function addMessagingControls(controls, opts) {
   };
   const write = (pubkey) => {
     const me = hand.pubkey();
-    if (!me) return say("Sign in to write to people: it is under You.");
+    if (!me) return say2("Sign in to write to people: it is under You.");
     if (pubkey === me) return;
     const go = () => void m.load().then(() => open(pubkey));
     if (hand.allowed()) return go();
-    say(hand.ask(go));
+    say2(hand.ask(go));
   };
   const refresh = () => {
     for (const id of shown2) controls.remove(id);
@@ -8899,7 +8962,7 @@ function addMessagingControls(controls, opts) {
     });
     if (!me) return;
     if (!allowed) {
-      add({ id: "messages-let", icon: "check", tone: "primary", label: "Let me send and read private messages here", act: () => say(hand.ask(() => void m.load().then(refresh))) });
+      add({ id: "messages-let", icon: "check", tone: "primary", label: "Let me send and read private messages here", act: () => say2(hand.ask(() => void m.load().then(refresh))) });
       return;
     }
     if (state === "no-inbox") {
@@ -8911,7 +8974,7 @@ function addMessagingControls(controls, opts) {
         label: `Have messages reach me at ${hosts.join(", ")}`,
         act: async () => {
           const done = await m.setUp();
-          say(done.said);
+          say2(done.said);
           refresh();
         }
       });
@@ -8958,7 +9021,7 @@ function addMessagingControls(controls, opts) {
     const from = message.from;
     if (from === withWhom) return;
     if (m.conversations().find((c) => c.with === from)?.known) {
-      say(`${nameOf(from)} wrote to you privately. It is in Messages.`);
+      say2(`${nameOf(from)} wrote to you privately. It is in Messages.`);
       controls.signal("message");
     }
   });
@@ -9617,15 +9680,15 @@ function addRoomControls(controls, presence, opts = {}) {
     g.fillText("Send out a post", CHAT_W / 2, FEED_LEAD + (WRITE_H - 32) / 2);
     g.textAlign = "left";
     let y = FEED_LEAD + WRITE_H;
-    const say = (text) => {
+    const say2 = (text) => {
       g.font = "italic 30px system-ui, sans-serif";
       g.globalAlpha = 0.7;
       wrapWords(text, measure, CHAT_W - 56, 3).forEach((row, r) => g.fillText(row, 28, y + ROW * (r + 0.5)));
       g.globalAlpha = 1;
       y += ROW * 2;
     };
-    if (view.said) say(view.said);
-    if (!view.posts.length) say(view.loading ? "Fetching your posts\u2026" : "Nothing here yet. What you send out appears here, and on Nostr for anyone to read.");
+    if (view.said) say2(view.said);
+    if (!view.posts.length) say2(view.loading ? "Fetching your posts\u2026" : "Nothing here yet. What you send out appears here, and on Nostr for anyone to read.");
     const nowSec = Math.floor(Date.now() / 1e3);
     for (const post of view.posts) {
       g.font = "33px system-ui, sans-serif";
@@ -10824,7 +10887,7 @@ function createKeyboard(o) {
   let live = null;
   const voice = o.voice ?? createVoice();
   let notice = "";
-  const say = (message) => {
+  const say2 = (message) => {
     notice = message;
     stale = true;
   };
@@ -11008,7 +11071,7 @@ function createKeyboard(o) {
         const what2 = live.keys.press(hit.slice(3), keys);
         if (what2 && "close" in what2) return closeLive();
         const to = live.o;
-        if (what2 && "mic" in what2) voice.toggle({ onText: (text) => to.onKey(`${text} `), say });
+        if (what2 && "mic" in what2) voice.toggle({ onText: (text) => to.onKey(`${text} `), say: say2 });
         lay();
         if (what2 && "send" in what2) live.o.onKey(what2.send);
         return;
@@ -11022,7 +11085,7 @@ function createKeyboard(o) {
             into.type(into.value && !/\s$/.test(into.value) ? ` ${text}` : text);
             stale = true;
           },
-          say
+          say: say2
         });
       }
       if (what === "done") return finish(entry.value);
@@ -12478,9 +12541,9 @@ function createScores(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:scores:${world}:${who ?? "guest"}`;
   const read = (who) => {
@@ -12582,8 +12645,8 @@ function createScores(opts) {
       return b ? scoreWords(b, score) : String(score);
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -12692,9 +12755,9 @@ function createBag(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:bag:${who}`;
   const readKept = (who) => {
@@ -12834,8 +12897,8 @@ function createBag(opts) {
     add: (item, title = "") => change2(item, true, title),
     remove: (item, title = "") => change2(item, false, title),
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -12848,7 +12911,7 @@ import * as THREE17 from "three";
 var KEPT = 36;
 function createItemPreviews(o) {
   const size = o.size ?? 256;
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const ready = /* @__PURE__ */ new Map();
   let stage;
   const keyOf = (item, tints) => `${item.id}|${item.model.sha256}|${JSON.stringify(tints ?? {})}`;
@@ -12924,7 +12987,7 @@ function createItemPreviews(o) {
         const ball = box.getBoundingSphere(new THREE17.Sphere());
         if (!Number.isFinite(ball.radius) || ball.radius <= 0) return void ready.delete(key);
         ready.set(key, { object, middle: ball.center.clone(), radius: ball.radius, still: null, live: null });
-        for (const fn of watchers3) fn();
+        for (const fn of watchers4) fn();
       },
       () => void again(key)
     );
@@ -12939,7 +13002,7 @@ function createItemPreviews(o) {
     setTimeout(() => {
       if (ready.get(key) !== null) return;
       ready.delete(key);
-      for (const fn of watchers3) fn();
+      for (const fn of watchers4) fn();
     }, AGAIN_MS2 * n);
   }
   return {
@@ -12955,7 +13018,7 @@ function createItemPreviews(o) {
       return made.live = draw(made, angle, made.live);
     },
     onChange(fn) {
-      watchers3.add(fn);
+      watchers4.add(fn);
     }
   };
 }
@@ -12999,7 +13062,7 @@ function addBagControls(controls, opts) {
   let looked = false;
   let asking = "";
   let taking = "";
-  const say = (text) => controls.say(text);
+  const say2 = (text) => controls.say(text);
   const model = items.model;
   const previews = opts.previews === void 0 ? model ? createItemPreviews({ model: (item, tints) => model(item, tints) }) : null : opts.previews;
   const still = (item) => () => {
@@ -13010,11 +13073,11 @@ function addBagControls(controls, opts) {
   const change2 = (item, adding) => {
     const now = async () => {
       const done = await (adding ? bag.add(item, titleOf(item)) : bag.remove(item, titleOf(item)));
-      say(done.said);
+      say2(done.said);
       refresh();
     };
-    if (!bag.canChange()) return say("Your bag is changed at your home, not from here.");
-    if (opts.allowed && !opts.allowed() && opts.ask) return say(opts.ask(() => void now()));
+    if (!bag.canChange()) return say2("Your bag is changed at your home, not from here.");
+    if (opts.allowed && !opts.allowed() && opts.ask) return say2(opts.ask(() => void now()));
     void now();
   };
   const fromCopy = async () => {
@@ -13025,13 +13088,13 @@ function addBagControls(controls, opts) {
       try {
         text = await (opts.copied ? opts.copied() : navigator.clipboard.readText());
       } catch {
-        return say("What you copied couldn't be read here. Copy an item's address, allow this site to read what you copy, and press again.");
+        return say2("What you copied couldn't be read here. Copy an item's address, allow this site to read what you copy, and press again.");
       }
     }
     const item = itemIn(text);
-    if (!item) return say("That isn't an item's address. Copy one from the place that keeps the item, and press again.");
+    if (!item) return say2("That isn't an item's address. Copy one from the place that keeps the item, and press again.");
     const described = await items.describe(item);
-    if (!described) return say("No description of that item could be found, so it wasn't put in your bag.");
+    if (!described) return say2("No description of that item could be found, so it wasn't put in your bag.");
     chosen = item;
     change2(item, true);
   };
@@ -13056,7 +13119,7 @@ function addBagControls(controls, opts) {
     } catch {
     }
     taking = "";
-    if (done.ok) say(`${items.known(came.item)?.title ?? "What you were holding"} is still in your hand.`);
+    if (done.ok) say2(`${items.known(came.item)?.title ?? "What you were holding"} is still in your hand.`);
     refresh();
   };
   let drawnHolding = "";
@@ -13125,7 +13188,7 @@ function addBagControls(controls, opts) {
         act: () => {
           setShowsItems(!showsItems());
           if (!showsItems() && opts.holding()) void opts.hold("");
-          say(showsItems() ? "Items are drawn, here and in the next world that allows them." : "No item is fetched, drawn or run for you, here or in the next world.");
+          say2(showsItems() ? "Items are drawn, here and in the next world that allows them." : "No item is fetched, drawn or run for you, here or in the next world.");
           refresh();
         }
       });
@@ -13157,7 +13220,7 @@ function addBagControls(controls, opts) {
       short: "Away",
       act: async () => {
         putAway = true;
-        say((await opts.hold("")).said);
+        say2((await opts.hold("")).said);
         refresh();
       }
     });
@@ -13165,14 +13228,14 @@ function addBagControls(controls, opts) {
     if (chosen && has.includes(chosen)) {
       const item = chosen;
       if (taking === item)
-        add({ id: "bag-taking", icon: "check", label: `Taking ${titleOf(item)} in hand\u2026`, act: () => say("It is on its way: its files are being fetched and checked.") });
+        add({ id: "bag-taking", icon: "check", label: `Taking ${titleOf(item)} in hand\u2026`, act: () => say2("It is on its way: its files are being fetched and checked.") });
       else if (holding === item) add(away());
       else if (rule === "none") {
         add({
           id: "bag-nohold",
           icon: "close",
           label: `Can't be held here: ${opts.place?.() || "this place"} doesn't have items`,
-          act: () => say("Each place says whether things can be carried in it. Most let them; this one has turned them off.")
+          act: () => say2("Each place says whether things can be carried in it. Most let them; this one has turned them off.")
         });
       } else if (!showsItems()) {
         add({
@@ -13204,7 +13267,7 @@ function addBagControls(controls, opts) {
             }
             taking = "";
             asking = !done.ok && /Press Hold again/.test(done.said) ? item : "";
-            say(done.said);
+            say2(done.said);
             refresh();
           }
         });
@@ -13224,7 +13287,7 @@ function addBagControls(controls, opts) {
             const chosen2 = { ...bag.tints(item), [tint.slot]: next.color };
             bag.setTints(item, chosen2);
             opts.tinted?.(item, chosen2);
-            say(`${tint.label}: ${next.name}. ${bag.canChange() ? "It goes with it to every world." : "For this place. Choose it at your home to keep it everywhere."}`);
+            say2(`${tint.label}: ${next.name}. ${bag.canChange() ? "It goes with it to every world." : "For this place. Choose it at your home to keep it everywhere."}`);
             refresh();
           }
         });
@@ -13396,7 +13459,7 @@ function createDoorRatings(opts) {
   const now = opts.now ?? (() => Date.now());
   const query = opts.query ?? queryRelays8;
   const doors = new Map(opts.doors.map((d) => [worldCoordinate2(d.world), d.url]).filter(([world]) => world));
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   let events = [];
   let asked = 0;
   let askedFor = null;
@@ -13416,7 +13479,7 @@ function createDoorRatings(opts) {
           events = [];
           askedFor = null;
           asked = 0;
-          for (const fn of watchers3) fn();
+          for (const fn of watchers4) fn();
         }
         return;
       }
@@ -13427,7 +13490,7 @@ function createDoorRatings(opts) {
       if (opts.me() !== me) return;
       const byId = new Map((got?.events ?? []).filter((e) => e.kind === RATING_KIND).map((e) => [e.id, e]));
       events = [...byId.values()];
-      for (const fn of watchers3) fn();
+      for (const fn of watchers4) fn();
     },
     tally,
     mark: (world) => tallyMark(tally(world)),
@@ -13441,8 +13504,8 @@ function createDoorRatings(opts) {
       return `Rated ${stars}, by ${t.mine ? `you and ${them}` : them}`;
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -13459,9 +13522,9 @@ function someOf(names, most = 3) {
   return rest > 0 ? `${shown2} and ${rest} more` : shown2;
 }
 function worldPersonLines(o) {
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   let asked = 0;
   const read = () => {
@@ -13487,8 +13550,8 @@ function worldPersonLines(o) {
       return out;
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -13511,10 +13574,10 @@ function createAchievements(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const earners = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:achievements:${world}:${who ?? "guest"}`;
   const held2 = /* @__PURE__ */ new Map();
@@ -13611,8 +13674,8 @@ function createAchievements(opts) {
       return list.filter((a) => theirs.has(a.id));
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     onEarn(fn) {
       earners.add(fn);

@@ -55,7 +55,7 @@ import { checkedSigner, knownSignedIn, quietSigner, type Signer } from "../share
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
-import { goFrom, linksLeaveWhole } from "../shared/shell.js";
+import { enterShell, goFrom, helloShell, linksLeaveWhole } from "../shared/shell.js";
 import { keptSettings, settingsToCarry } from "../shared/prefs.js";
 import { kitNote } from "../shared/kit.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
@@ -308,6 +308,10 @@ function carriedSettings(said: TravelSettings | undefined): { settings?: TravelS
 }
 
 async function render(): Promise<void> {
+  // Opened as a page of its own at a desk, it is opened again inside the page that keeps the screen filled from
+  // world to world (shared/shell.ts): the same address, and everything below happens there instead.
+  if (enterShell()) return;
+  helloShell();
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
   // Asked, from inside a world, for something of their own first: to say who they are, or to change how they look
