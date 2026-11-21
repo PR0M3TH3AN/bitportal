@@ -36,7 +36,7 @@ describe("the page that keeps the screen filled", () => {
     for (const other of [`${SHELL_WORLDS[0]}.evil.example/`, SHELL_WORLDS[0]!.replace("https:", "http:") + "/", "https://threejs.org/examples/", "about:blank", "not an address at all ://"]) expect(showsInShell(other, HERE), other).toBe(false);
   });
 
-  it("is the way in at a desk, and not where it hasn't been tried or has been turned down", () => {
+  it("is the way in on every device, and not where it has been turned down", () => {
     const DESK = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
     const tab = (o: { search?: string; agent?: string; canFill?: boolean; mouse?: boolean; framed?: boolean; kept?: Record<string, string> } = {}) => {
       const kept = new Map(Object.entries(o.kept ?? {}));
@@ -51,17 +51,19 @@ describe("the page that keeps the screen filled", () => {
       return { w: w as Window, kept };
     };
     expect(shellWanted(tab().w)).toBe(true);
+    // A phone, a headset's browser, a browser that can't fill a screen: all of them, since the owner tried it on
+    // a phone and asked for it everywhere ("Make it the default for all modes. Including VR").
+    expect(shellWanted(tab({ mouse: false }).w)).toBe(true);
+    expect(shellWanted(tab({ canFill: false }).w)).toBe(true);
+    for (const agent of ["Mozilla/5.0 (X11; Linux x86_64; Quest 3S) AppleWebKit/537.36 OculusBrowser/40.0 Chrome/138.0.0.0 VR Safari/537.36", "Mozilla/5.0 (Linux; Android 12; Pico 4) Chrome/120 Safari/537.36", "Mozilla/5.0 (Android 12; Mobile VR; rv:121.0) Gecko/121.0 Firefox/121.0 Wolvic/1.6", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"]) expect(shellWanted(tab({ agent, mouse: false }).w), agent).toBe(true);
     // Already in a frame (the page that keeps the screen, or anyone's): never a frame inside a frame.
     expect(shellWanted(tab({ framed: true }).w)).toBe(false);
-    // A phone, a headset's browser, a browser that can't fill a screen: the ordinary way, as before.
-    expect(shellWanted(tab({ mouse: false }).w)).toBe(false);
-    expect(shellWanted(tab({ canFill: false }).w)).toBe(false);
-    for (const agent of ["Mozilla/5.0 (X11; Linux x86_64; Quest 3S) AppleWebKit/537.36 OculusBrowser/40.0 Chrome/138.0.0.0 VR Safari/537.36", "Mozilla/5.0 (Linux; Android 12; Pico 4) Chrome/120 Safari/537.36", "Mozilla/5.0 (Android 12; Mobile VR; rv:121.0) Gecko/121.0 Firefox/121.0 Wolvic/1.6"]) expect(shellWanted(tab({ agent }).w), agent).toBe(false);
-    // Told to go the ordinary way: that tab stays so, until it is told otherwise.
+    // Told to go the ordinary way: that tab stays so, until it is told otherwise. On any device.
     const told = tab({ search: "?plain=1" });
     expect(shellWanted(told.w)).toBe(false);
     expect(told.kept.get(PLAIN_KEY)).toBe("1");
     expect(shellWanted(tab({ kept: { [PLAIN_KEY]: "1" } }).w)).toBe(false);
+    expect(shellWanted(tab({ kept: { [PLAIN_KEY]: "1" }, mouse: false }).w)).toBe(false);
     const back = tab({ search: "?plain=0", kept: { [PLAIN_KEY]: "1" } });
     expect(shellWanted(back.w)).toBe(true);
     expect(back.kept.has(PLAIN_KEY)).toBe(false);
