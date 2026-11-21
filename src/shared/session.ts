@@ -10,7 +10,7 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { BAG_KIND, cleanName, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { BAG_KIND, cleanName, cleanTip, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { INSTANCE } from "./instance.js";
@@ -202,6 +202,13 @@ interface SignInClient {
    * opens the window. Left out by a client too old to have it.
    */
   propose?(event: { kind: number; content: string; tags: string[][] }, o?: { show?: () => boolean | Promise<boolean> }): Promise<NostrEvent | null>;
+  /**
+   * Ask for a tip to be sent to a person, by their key (BitLogin `docs/paying.md`). BitPortal names no invoice and
+   * no address: BitLogin's own page finds where that person is paid, shows who it is for, and pays from the
+   * visitor's own wallet at their press. Resolves with something if it went, or null. `show` as for `propose`.
+   * Left out by a client too old to have it.
+   */
+  tip?(tip: { to?: string; sats: number }, o?: { show?: () => boolean | Promise<boolean> }): Promise<{ preimage?: string } | null>;
   /** Remove its frame and stop listening. */
   destroy(): void;
 }
@@ -506,16 +513,39 @@ export async function proposeToPerson(note: { kind: number; content: string; tag
   const c = made;
   if (!c?.propose) return null;
   try {
-    return await c.propose(note, {
-      show: () => {
-        if (!panel?.offered()) return false;
-        // Asked for and not waited on: BitLogin's client is what hears the answer.
-        void panel.ask("ask").catch(() => undefined);
-        return true;
-      },
-    });
+    return await c.propose(note, { show: showAsking });
   } catch {
     return null;
+  }
+}
+
+/** Have BitLogin's page shown in its panel, where there is one: true if it was asked for, so the client opens no window. */
+function showAsking(): boolean {
+  if (!panel?.offered()) return false;
+  // Asked for and not waited on: BitLogin's client is what hears the answer.
+  void panel.ask("ask").catch(() => undefined);
+  return true;
+}
+
+/**
+ * Ask the visitor's sign-in address to send a tip to a person in the room, by their key. Call it from the
+ * visitor's press, on a page that is already watching (`watchSignIn`). BitLogin's own page says who it is for and
+ * how much, and pays from the visitor's own wallet only at their press there: its panel inside the page that
+ * keeps the screen, its window otherwise. True if it went. Never why not: they said no, it took too long, the
+ * person has nowhere to be paid, or this sign-in address can't.
+ *
+ * BitPortal names a key and an amount and nothing else: no invoice, no address, no wallet. It takes no share,
+ * and it gates nothing on the answer, which is only something to tell the visitor. Only ever to a person: the
+ * room is no world and has no address of its own to be tipped at.
+ */
+export async function tipPerson(o: { to?: string; sats: number }): Promise<boolean> {
+  const c = made;
+  const sats = cleanTip(o.sats);
+  if (!c?.tip || !sats || !isHex64(o.to)) return false;
+  try {
+    return (await c.tip({ to: o.to, sats }, { show: showAsking })) !== null;
+  } catch {
+    return false;
   }
 }
 

@@ -1,82 +1,82 @@
-import { v as B } from "./bitlogin-shared-Cj9s0_W_.js";
-import { c as K, r as M, A as W, S as N, P as R, a as J, b as U } from "./bitlogin-shared-BqDMTUOp.js";
-import { c as j } from "./bitlogin-shared-19Ribcs2.js";
-class h extends Error {
+import { v as $ } from "./bitlogin-shared-CvPtgHf2.js";
+import { c as J, r as C, i as V, b as q, A as z, S as N, P as D, a as F, d as H } from "./bitlogin-shared-BkM-XX5B.js";
+import { l as Q, r as M, j as X, c as Y, b as _, d as Z, U } from "./bitlogin-shared-BK8HgLxP.js";
+class v extends Error {
   constructor(r) {
     super(`BitLogin refused to ${r}. The application may not be allowed to, or the user may have signed out.`), this.name = "BitLoginRefused";
   }
 }
-const G = (s, r) => !!s && r.sign.every((o) => s.sign.includes(o)) && r.read.every((o) => s.read.includes(o)) && r.appData.every((o) => s.appData.includes(o) || s.appData.includes("*")) && r.proofs.every((o) => s.proofs.includes(o)) && r.peers.every((o) => s.peers.includes(o));
-function F(s) {
-  const r = K(s.at);
+const ee = (s, r) => !!s && r.sign.every((a) => s.sign.includes(a)) && r.read.every((a) => s.read.includes(a)) && r.appData.every((a) => s.appData.includes(a) || s.appData.includes("*")) && r.proofs.every((a) => s.proofs.includes(a)) && r.peers.every((a) => s.peers.includes(a));
+function re(s) {
+  const r = J(s.at);
   if (!r) throw new Error("`at` must be the sign-in address's origin, such as https://bitlogin.network");
-  const o = M(s.permissions);
-  if (!o) throw new Error("`permissions` is not a permission set BitLogin will show a user. See docs/sign-in-window.md §SW9.2.");
-  const _ = s.timeoutMs ?? 2e4, c = document.createElement("iframe");
+  const a = C(s.permissions);
+  if (!a) throw new Error("`permissions` is not a permission set BitLogin will show a user. See docs/sign-in-window.md §SW9.2.");
+  const K = s.timeoutMs ?? 2e4, E = V(r) ? Q(s.localUnlockService) : null, L = (e) => Z(e, E ? [...U, E] : U), c = document.createElement("iframe");
   c.src = `${r}/signer/`, c.title = "BitLogin signer", c.setAttribute("aria-hidden", "true"), c.tabIndex = -1, c.style.cssText = "position:absolute;width:1px;height:1px;left:-9999px;top:0;border:0;opacity:0;pointer-events:none";
-  let u = { signedIn: !1 }, y = { unlocked: !1 }, k;
-  const l = /* @__PURE__ */ new Set(), d = /* @__PURE__ */ new Map();
-  let E = !1;
-  const S = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (e) => e.toString(16).padStart(2, "0")).join(""), $ = (e) => {
+  let u = { signedIn: !1 }, y = { unlocked: !1 }, b;
+  const d = /* @__PURE__ */ new Set(), l = /* @__PURE__ */ new Map();
+  let O = !1;
+  const T = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (e) => e.toString(16).padStart(2, "0")).join(""), W = (e) => {
     const t = e.unlocked === !0 && typeof e.pubkey == "string";
-    typeof e.taken == "boolean" && (k = e.taken);
-    const n = t ? M(e.permissions) ?? void 0 : void 0, i = t && G(n, o);
+    typeof e.taken == "boolean" && (b = e.taken);
+    const n = t ? C(e.permissions) ?? void 0 : void 0, i = t && ee(n, a);
     y = { unlocked: t, ...t ? { pubkey: e.pubkey } : {} };
-    const a = {
+    const o = {
       signedIn: i,
       ...i ? { pubkey: e.pubkey } : {},
       ...i && typeof e.name == "string" ? { name: e.name } : {},
       ...i && typeof e.until == "number" ? { until: e.until } : {},
       ...t && !i ? { needsMore: !0 } : {},
-      ...k !== void 0 ? { canAsk: k } : {}
-    }, w = JSON.stringify(a) !== JSON.stringify(u);
-    if (u = a, w) for (const p of l) p(u);
-  }, T = (e) => {
+      ...b !== void 0 ? { canAsk: b } : {}
+    }, w = JSON.stringify(o) !== JSON.stringify(u);
+    if (u = o, w) for (const g of d) g(u);
+  }, x = (e) => {
     if (e.source !== c.contentWindow || e.origin !== r) return;
     const t = e.data;
-    if (!t || typeof t != "object" || t.nswp !== N || t.v !== R) return;
-    if (t.t === "ready") return void v();
-    if (t.t === "state" && $(t), typeof t.id != "string") return;
-    const n = d.get(t.id);
-    n && (d.delete(t.id), clearTimeout(n.timer), n.resolve(t));
-  }, x = (e) => c.contentWindow?.postMessage({ nswp: N, v: R, ...e }, r), f = (e) => new Promise((t, n) => {
-    if (E) return n(new Error("This BitLogin client was destroyed."));
-    const i = S(), a = setTimeout(() => {
-      d.delete(i), n(new Error("BitLogin's signer did not answer."));
-    }, _);
-    d.set(i, { resolve: t, reject: n, timer: a }), L.then(() => x({ ...e, id: i }));
+    if (!t || typeof t != "object" || t.nswp !== N || t.v !== D) return;
+    if (t.t === "ready") return void k();
+    if (t.t === "state" && W(t), typeof t.id != "string") return;
+    const n = l.get(t.id);
+    n && (l.delete(t.id), clearTimeout(n.timer), n.resolve(t));
+  }, A = (e) => c.contentWindow?.postMessage({ nswp: N, v: D, ...e }, r), p = (e) => new Promise((t, n) => {
+    if (O) return n(new Error("This BitLogin client was destroyed."));
+    const i = T(), o = setTimeout(() => {
+      l.delete(i), n(new Error("BitLogin's signer did not answer."));
+    }, K);
+    l.set(i, { resolve: t, reject: n, timer: o }), P.then(() => A({ ...e, id: i }));
   });
-  let v = () => {
+  let k = () => {
   };
-  const L = new Promise((e) => {
-    v = e;
+  const P = new Promise((e) => {
+    k = e;
   });
-  let O = null;
-  const g = () => O ??= (async () => (await L, await f({ t: "want", permissions: o }), u))().catch((e) => {
-    throw O = null, e;
+  let R = null;
+  const f = () => R ??= (async () => (await P, await p({ t: "want", permissions: a }), u))().catch((e) => {
+    throw R = null, e;
   });
-  window.addEventListener("message", T), c.addEventListener("load", () => v()), (s.mount ?? document.body).append(c), g().catch(() => {
+  window.addEventListener("message", x), c.addEventListener("load", () => k()), (s.mount ?? document.body).append(c), f().catch(() => {
   });
-  const b = async (e, t) => {
-    const n = await f(e);
-    if (n.t !== "text" || typeof n.text != "string") throw new h(t);
+  const I = async (e, t) => {
+    const n = await p(e);
+    if (n.t !== "text" || typeof n.text != "string") throw new v(t);
     return n.text;
-  }, P = (e) => ({
-    encrypt: (t, n) => b({ t: "encrypt", peer: t, text: n, scheme: e }, "encrypt that"),
-    decrypt: (t, n) => b({ t: "decrypt", peer: t, text: n, scheme: e }, "decrypt that")
+  }, B = (e) => ({
+    encrypt: (t, n) => I({ t: "encrypt", peer: t, text: n, scheme: e }, "encrypt that"),
+    decrypt: (t, n) => I({ t: "decrypt", peer: t, text: n, scheme: e }, "decrypt that")
   });
   return {
-    ready: () => g(),
+    ready: () => f(),
     state: () => u,
     onChange(e) {
-      return l.add(e), () => l.delete(e);
+      return d.add(e), () => d.delete(e);
     },
     async signIn() {
-      await g();
+      await f();
       const e = window.open(`${r}/connect/`, "bitlogin-connect", "popup,width=480,height=760");
       return e ? new Promise((t) => {
-        const n = C((a) => a.signedIn ? (clearInterval(i), t(!0), !0) : !1), i = setInterval(() => {
-          e.closed && (clearInterval(i), f({ t: "state" }).catch(() => {
+        const n = j((o) => o.signedIn ? (clearInterval(i), t(!0), !0) : !1), i = setInterval(() => {
+          e.closed && (clearInterval(i), p({ t: "state" }).catch(() => {
           }).then(() => {
             n(), t(u.signedIn);
           }));
@@ -84,82 +84,100 @@ function F(s) {
       }) : !1;
     },
     async switchAccount() {
-      await g();
+      await f();
       const e = window.open(`${r}/connect/#switch`, "bitlogin-connect", "popup,width=480,height=760");
       return e ? new Promise((t) => {
         const n = setInterval(() => {
-          e.closed && (clearInterval(n), f({ t: "state" }).catch(() => {
+          e.closed && (clearInterval(n), p({ t: "state" }).catch(() => {
           }).then(() => t(u.signedIn)));
         }, 400);
       }) : !1;
     },
     async signOut() {
-      await f({ t: "lock" });
+      await p({ t: "lock" });
     },
     async propose(e, t) {
-      if (!W.includes(e.kind)) return null;
-      const n = await A({ t: "propose", event: { kind: e.kind, content: e.content, tags: e.tags } }, t), i = n?.event;
-      if (n?.t !== "signed" || !B(i)) return null;
-      const a = (w) => JSON.stringify(w.filter((p) => p[0] !== J));
-      return i.pubkey !== y.pubkey || i.kind !== e.kind || i.content !== e.content || a(i.tags) !== a(e.tags) ? null : i;
+      if (!z.includes(e.kind)) return null;
+      const n = await m({ t: "propose", event: { kind: e.kind, content: e.content, tags: e.tags } }, t), i = n?.event;
+      if (n?.t !== "signed" || !$(i)) return null;
+      const o = (w) => JSON.stringify(w.filter((g) => g[0] !== F));
+      return i.pubkey !== y.pubkey || i.kind !== e.kind || i.content !== e.content || o(i.tags) !== o(e.tags) ? null : i;
     },
     async pay(e, t) {
-      const n = j(e);
+      const n = Y(e);
       if (!n) return null;
-      const i = await A({ t: "pay", invoice: n }, t);
+      const i = await m({ t: "pay", invoice: n }, t);
       return i?.t !== "paid" ? null : typeof i.preimage == "string" && /^[0-9a-f]{64}$/u.test(i.preimage) ? { preimage: i.preimage } : {};
     },
+    async tip(e, t) {
+      const n = X(e.sats);
+      if (!n || e.to !== void 0 && !/^[0-9a-f]{64}$/u.test(e.to)) return null;
+      const i = await m({ t: "tip", sats: n, ...e.to ? { to: e.to } : {} }, t);
+      return i?.t !== "paid" ? null : typeof i.preimage == "string" && /^[0-9a-f]{64}$/u.test(i.preimage) ? { preimage: i.preimage } : {};
+    },
+    async buy(e, t) {
+      const n = _(e);
+      if (!n || !q(r)) return null;
+      const i = await m({ t: "buy", listing: n }, t), o = i?.t === "bought" ? L(i.receipt) : null;
+      return M(o, { buyer: y.pubkey ?? "", listing: n, now: Date.now() / 1e3 }) ? { receipt: o.event, ...typeof i.delivery == "string" ? { delivery: i.delivery } : {} } : null;
+    },
+    async have(e) {
+      const t = _(e);
+      if (!t) return null;
+      const n = await p({ t: "have", listing: t }).catch(() => null), i = n?.t === "receipt" ? L(n.receipt) : null;
+      return M(i, { buyer: y.pubkey ?? "", listing: t, now: Date.now() / 1e3 }) ? i.event : null;
+    },
     async getPublicKey() {
-      if (!u.signedIn || !u.pubkey) throw new h("say who is signed in");
+      if (!u.signedIn || !u.pubkey) throw new v("say who is signed in");
       return u.pubkey;
     },
     async signEvent(e) {
-      const t = await f({ t: "sign", event: e }), n = t.event;
-      if (t.t !== "signed" || !B(n)) throw new h("sign that");
-      if (n.pubkey !== y.pubkey || n.kind !== e.kind || n.content !== e.content) throw new h("sign that");
+      const t = await p({ t: "sign", event: e }), n = t.event;
+      if (t.t !== "signed" || !$(n)) throw new v("sign that");
+      if (n.pubkey !== y.pubkey || n.kind !== e.kind || n.content !== e.content) throw new v("sign that");
       return n;
     },
-    nip44: P("nip44"),
-    nip04: P("nip04"),
-    decryptEvent: (e) => b({ t: "read", event: e }, "read that"),
+    nip44: B("nip44"),
+    nip04: B("nip04"),
+    decryptEvent: (e) => I({ t: "read", event: e }, "read that"),
     destroy() {
-      E = !0, window.removeEventListener("message", T);
-      for (const e of d.values())
+      O = !0, window.removeEventListener("message", x);
+      for (const e of l.values())
         clearTimeout(e.timer), e.reject(new Error("This BitLogin client was destroyed."));
-      d.clear(), l.clear(), c.remove();
+      l.clear(), d.clear(), c.remove();
     }
   };
-  async function A(e, t) {
+  async function m(e, t) {
     if (!y.unlocked) return null;
-    await g();
-    const n = S(), i = (m) => new Promise((I) => {
-      const D = setTimeout(() => {
-        d.delete(n), I(null);
-      }, m);
-      d.set(n, { resolve: I, reject: () => I(null), timer: D });
-    }), a = i(8e3);
-    if (x({ ...e, id: n }), (await a)?.t !== "asking") return null;
-    const w = i(U + 1e4);
-    let p = !1;
+    await f();
+    const n = T(), i = (h) => new Promise((S) => {
+      const G = setTimeout(() => {
+        l.delete(n), S(null);
+      }, h);
+      l.set(n, { resolve: S, reject: () => S(null), timer: G });
+    }), o = i(8e3);
+    if (A({ ...e, id: n }), (await o)?.t !== "asking") return null;
+    const w = i(H + 1e4);
+    let g = !1;
     try {
-      p = await t?.show?.() === !0;
+      g = await t?.show?.() === !0;
     } catch {
-      p = !1;
+      g = !1;
     }
-    if (!p && !window.open(`${r}/connect/`, "bitlogin-connect", "popup,width=480,height=760")) {
-      const m = d.get(n);
-      return m && (clearTimeout(m.timer), d.delete(n)), null;
+    if (!g && !window.open(`${r}/connect/`, "bitlogin-connect", "popup,width=480,height=760")) {
+      const h = l.get(n);
+      return h && (clearTimeout(h.timer), l.delete(n)), null;
     }
     return w;
   }
-  function C(e) {
+  function j(e) {
     const t = (n) => {
-      e(n) && l.delete(t);
+      e(n) && d.delete(t);
     };
-    return l.add(t), () => l.delete(t);
+    return d.add(t), () => d.delete(t);
   }
 }
 export {
-  h as BitLoginRefused,
-  F as createBitLoginClient
+  v as BitLoginRefused,
+  re as createBitLoginClient
 };

@@ -41,7 +41,7 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, proposeToPerson, quietSigner, quietVault, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, usePanel } from "../shared/session.js";
+import { holdsReserved, proposeToPerson, quietSigner, quietVault, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -1525,7 +1525,7 @@ async function start(): Promise<void> {
   about.onChange(() => refreshRoom());
   let followingTab: ReturnType<typeof addRoomControls>["following"];
   let messagingTab: ReturnType<typeof addRoomControls>["messaging"];
-  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, tip: null, noteRelays: settings.relays, follows, messages, about, presenting: () => renderer.xr.isPresenting }));
+  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, tip: tipPerson, tipsWorld: false, noteRelays: settings.relays, follows, messages, about, presenting: () => renderer.xr.isPresenting }));
   refreshFollowing = () => {
     followingTab.refresh();
     messagingTab.refresh();

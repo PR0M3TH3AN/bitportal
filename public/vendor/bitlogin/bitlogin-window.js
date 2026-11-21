@@ -1,8 +1,8 @@
-import { c as P, t as F, o as J, r as ee, u as B, k as te, m as ne, q as O, v as se, R as re } from "./bitlogin-shared-BqDMTUOp.js";
-import { e as Pe, w as je } from "./bitlogin-shared-BqDMTUOp.js";
-import { r as g, f as oe, k as H, i as v } from "./bitlogin-shared-AdzLHSV8.js";
-import { f as ie } from "./bitlogin-shared-B_Tl4qF0.js";
-import { a as _e } from "./bitlogin-shared-D6Hzbnis.js";
+import { c as P, i as F, u as J, r as ee, w as B, o as te, m as ne, v as $, x as se, R as re } from "./bitlogin-shared-BkM-XX5B.js";
+import { f as Pe, y as Me } from "./bitlogin-shared-BkM-XX5B.js";
+import { r as g, f as oe, k as H, i as v } from "./bitlogin-shared-DkdmxQvn.js";
+import { f as ie } from "./bitlogin-shared-B-Mf8qJ5.js";
+import { a as _e } from "./bitlogin-shared-95Wz26ke.js";
 const V = "bitlogin-panel", K = 1, le = ["https://portal.bitblocks.network"];
 function ge(t, e) {
   const n = P(t);
@@ -16,7 +16,7 @@ function ke(t) {
   const e = t;
   if (e.bitlogin !== V || e.v !== K || e.t !== "hello") return null;
   const n = e.mode === void 0 ? e.world === void 0 ? "account" : "ask" : e.mode;
-  if (n !== "ask" && n !== "switch" && n !== "account" && n !== "files" && n !== "wallet") return null;
+  if (n !== "ask" && n !== "switch" && n !== "account" && n !== "files" && n !== "wallet" && n !== "library") return null;
   let s;
   return e.world !== void 0 && (s = P(e.world), !s) || (n === "ask" || n === "switch") && !s ? null : { t: "hello", mode: n, ...s ? { world: s } : {} };
 }
@@ -35,7 +35,7 @@ function ae(t) {
   }
   return e;
 }
-const Y = "bitlogin:allowed-sites:v1", y = {
+const Y = "bitlogin:allowed-sites:v1", w = {
   /** No more entries than this are kept: the oldest go first. */
   entries: 200,
   /** How long an entry is kept after it has ended, in seconds. */
@@ -51,7 +51,7 @@ function D(t) {
   if (!s || s !== e.site || typeof e.pubkey != "string" || !ue.test(e.pubkey) || typeof e.at != "number" || typeof e.until != "number" || !Number.isFinite(e.at) || !Number.isFinite(e.until) || e.until < e.at) return null;
   const r = e.wants === void 0 ? void 0 : ee(e.wants);
   if (r === null || n && r) return null;
-  const o = n && Array.isArray(e.members) ? [...new Set(e.members.filter((i) => v(i, n)))].slice(0, y.members) : [];
+  const o = n && Array.isArray(e.members) ? [...new Set(e.members.filter((i) => v(i, n)))].slice(0, w.members) : [];
   return { site: s, ...o.length ? { members: o } : {}, pubkey: e.pubkey, at: Math.floor(e.at), until: Math.floor(e.until), remembered: e.remembered === !0, ...r ? { wants: r } : {} };
 }
 function ce(t, e) {
@@ -62,13 +62,13 @@ function ce(t, e) {
   } catch {
     return [];
   }
-  return Array.isArray(n) ? n.slice(0, y.entries * 2).map(D).filter((s) => s !== null && s.until + y.keepEndedSec > e).sort((s, r) => r.at - s.at).slice(0, y.entries) : [];
+  return Array.isArray(n) ? n.slice(0, w.entries * 2).map(D).filter((s) => s !== null && s.until + w.keepEndedSec > e).sort((s, r) => r.at - s.at).slice(0, w.entries) : [];
 }
 function de(t, e) {
   const n = D(e);
   if (!n) return [...t];
   const s = t.find((o) => o.site === n.site && o.pubkey === n.pubkey);
-  return [g(n.site) && s?.members ? D({ ...n, members: [...n.members ?? [], ...s.members] }) ?? n : n, ...t.filter((o) => !(o.site === n.site && o.pubkey === n.pubkey))].slice(0, y.entries);
+  return [g(n.site) && s?.members ? D({ ...n, members: [...n.members ?? [], ...s.members] }) ?? n : n, ...t.filter((o) => !(o.site === n.site && o.pubkey === n.pubkey))].slice(0, w.entries);
 }
 function Ae(t, e, n, s) {
   return !g(n) || !v(e, n) ? null : t.find((r) => r.pubkey === s && r.remembered && r.site !== e && v(r.site, n)) ?? null;
@@ -120,7 +120,7 @@ const U = "bitlogin:family-declined:v1", W = (t) => {
 function $e(t, e = Date.now() / 1e3, n = b()) {
   if (!g(t)) return !1;
   const s = Math.floor(e), r = Object.fromEntries(Object.entries(W(n)).filter(([o, i]) => g(o) && typeof i == "number" && i > s));
-  r[t] = s + y.familyDeclineSec;
+  r[t] = s + w.familyDeclineSec;
   try {
     return n?.setItem(U, JSON.stringify(r)), !!n;
   } catch {
@@ -135,7 +135,7 @@ const u = (t, e = 200) => {
   if (typeof t != "string") return "";
   const n = (r) => r < 32 || r >= 127 && r <= 159 || r >= 8203 && r <= 8207 || r >= 8232 && r <= 8238 || r >= 8288 && r <= 8297 || r === 65279, s = Array.from(t, (r) => n(r.codePointAt(0) ?? 0) ? " " : r).join("").split(" ").filter(Boolean).join(" ");
   return [...s].length > e ? `${[...s].slice(0, e).join("")}…` : s;
-}, $ = [
+}, N = [
   ["name", "Name"],
   ["display_name", "Display name"],
   ["about", "About"],
@@ -152,13 +152,13 @@ const u = (t, e = 200) => {
   } catch {
   }
   return {};
-}, C = new Map($), T = (t, e) => t === "name" || t === "display_name" ? B(e) || u(e, 48) : typeof e == "string" ? u(e) : e == null ? "" : u(JSON.stringify(e), 120);
+}, C = new Map(N), T = (t, e) => t === "name" || t === "display_name" ? B(e) || u(e, 48) : typeof e == "string" ? u(e) : e == null ? "" : u(JSON.stringify(e), 120);
 function he(t, e) {
-  const n = (i) => C.get(i) ?? `"${u(i, 40)}"`, s = [...$.map(([i]) => i), ...[.../* @__PURE__ */ new Set([...Object.keys(e), ...Object.keys(t)])].filter((i) => !C.has(i)).sort()], r = [];
+  const n = (i) => C.get(i) ?? `"${u(i, 40)}"`, s = [...N.map(([i]) => i), ...[.../* @__PURE__ */ new Set([...Object.keys(e), ...Object.keys(t)])].filter((i) => !C.has(i)).sort()], r = [];
   let o = 0;
   for (const i of s) {
-    const a = T(i, e[i]), d = T(i, t[i]);
-    !a && !d || (a === d && JSON.stringify(e[i]) === JSON.stringify(t[i]) ? o += 1 : a ? d ? r.push(`${n(i)}: ${d}. It was: ${a}`) : r.push(`${n(i)}, removed. It was: ${a}`) : r.push(`${n(i)}, added: ${d}`));
+    const a = T(i, e[i]), f = T(i, t[i]);
+    !a && !f || (a === f && JSON.stringify(e[i]) === JSON.stringify(t[i]) ? o += 1 : a ? f ? r.push(`${n(i)}: ${f}. It was: ${a}`) : r.push(`${n(i)}, removed. It was: ${a}`) : r.push(`${n(i)}, added: ${f}`));
   }
   return r.length === 0 && r.push("Nothing would change: it says what your profile says now."), o > 0 && r.push(`${o} other ${o === 1 ? "field stays" : "fields stay"} as ${o === 1 ? "it is" : "they are"}.`), {
     title: "Change your Nostr profile?",
@@ -169,7 +169,7 @@ function he(t, e) {
 function Oe(t, e) {
   if (t.kind === 0 && typeof e == "string") return he(I(t.content), I(e));
   if (t.kind === 0) {
-    const n = I(t.content), s = $.filter(([o]) => u(n[o])).map(([o, i]) => `${i}: ${o === "name" || o === "display_name" ? B(n[o]) || u(n[o], 48) : u(n[o])}`), r = Object.keys(n).filter((o) => !$.some(([i]) => i === o));
+    const n = I(t.content), s = N.filter(([o]) => u(n[o])).map(([o, i]) => `${i}: ${o === "name" || o === "display_name" ? B(n[o]) || u(n[o], 48) : u(n[o])}`), r = Object.keys(n).filter((o) => !N.some(([i]) => i === o));
     return r.length && s.push(`And ${r.length} other ${r.length === 1 ? "field" : "fields"}: ${u(r.join(", "), 120)}`), s.length === 0 && s.push("An empty profile: no name, no picture, nothing about you."), e === null && s.push("Your profile as it is now couldn't be read, so this is the whole new one, not only what changes."), {
       title: "Replace your Nostr profile?",
       warning: "This replaces your whole profile, everywhere you use this account. Anything not listed here is removed from it. A lightning address is where people send you money: check it.",
@@ -200,54 +200,57 @@ function Ie(t = {}) {
   if (t.inClient ? window.parent === window : !e) return Promise.resolve(null);
   const n = () => t.inClient ? ae(window) : Array.from({ length: e.frames.length }, (i, a) => e.frames[a]), s = location.origin, r = crypto.getRandomValues(new Uint8Array(12)), o = Array.from(r, (i) => i.toString(16).padStart(2, "0")).join("");
   return new Promise((i) => {
-    let a = null, d = !1, N = null;
-    const j = () => {
+    let a = null, f = !1, O = null;
+    const M = () => {
       if (!a)
         try {
-          for (const m of n()) m.postMessage(O({ t: "hello", nonce: o }), s);
+          for (const h of n()) h.postMessage($({ t: "hello", nonce: o }), s);
         } catch {
         }
-    }, M = setInterval(j, 350), q = setTimeout(() => {
-      clearInterval(M), d || (d = !0, window.removeEventListener("message", k), i(null));
-    }, t.timeoutMs ?? 6e3), k = (m) => {
-      if (m.origin !== s || !m.source || m.source === window) return;
-      const l = te(m.data);
+    }, j = setInterval(M, 350), x = setTimeout(() => {
+      clearInterval(j), f || (f = !0, window.removeEventListener("message", k), i(null));
+    }, t.timeoutMs ?? 6e3), k = (h) => {
+      if (h.origin !== s || !h.source || h.source === window) return;
+      const l = te(h.data);
       if (!l || l.nonce !== o) return;
-      if (l.t === "done" && a && m.source === a) return void N?.(l.ok);
+      if (l.t === "done" && a && h.source === a) return void O?.(l.ok);
       if (l.t !== "frame" || a || t.world && l.world !== t.world) return;
-      a = m.source, clearInterval(M), clearTimeout(q), d = !0;
-      const { world: f, recipient: x } = l, c = l.wants && ne(f, l.wants) ? l.wants : null, G = l.turnedDown === !0 || !!l.wants && !c, w = c ? [] : l.has ?? [], A = c ? [] : (l.more ?? []).filter((h) => !w.includes(h)), p = c || A.length || w.length ? "" : ie(f);
+      a = h.source, clearInterval(j), clearTimeout(x), f = !0;
+      const { world: c, recipient: G } = l, d = l.wants && ne(c, l.wants) ? l.wants : null, X = l.turnedDown === !0 || !!l.wants && !d, y = d ? [] : l.has ?? [], A = d ? [] : (l.more ?? []).filter((m) => !y.includes(m)), p = d || A.length || y.length ? "" : ie(c);
       i({
-        site: f,
-        wants: c,
-        known: J(f) !== null,
+        site: c,
+        wants: d,
+        known: J(c) !== null,
         family: p,
         knownFamily: p ? H(p) : !1,
-        turnedDown: G,
+        turnedDown: X,
         more: A,
-        has: w,
-        local: !!c && se(f) && [...c.sign, ...c.read].some((h) => re.includes(h)),
+        has: y,
+        local: !!d && se(c) && [...d.sign, ...d.read].some((m) => re.includes(m)),
         ask: l.ask ?? null,
         askedAs: l.ask ? l.pubkey ?? null : null,
-        async answer(h) {
+        async answer(m) {
           const L = new Promise((E) => {
-            N = E, setTimeout(() => E(!1), 8e3);
+            O = E, setTimeout(() => E(!1), 8e3);
           });
-          a.postMessage(O({ t: "answer", nonce: o, world: f, ...h ?? {} }), s);
+          a.postMessage($({ t: "answer", nonce: o, world: c, ...m ?? {} }), s);
           const S = await L;
           return window.removeEventListener("message", k), S;
         },
-        async grant(h, L, S, E, X) {
-          const _ = E === !0 && S === !0 && !!p, z = await h.exportHandoff(x, c ? { site: f, permissions: c } : void 0, f, S === !0, _ ? p : void 0, _ ? void 0 : X === !0 && A.length ? [...w, ...A] : w.length ? w : void 0), Q = new Promise((R) => {
-            N = R, setTimeout(() => R(!1), 8e3);
+        hold(m) {
+          a.postMessage($({ t: "held", nonce: o, world: c, receipts: m }), s);
+        },
+        async grant(m, L, S, E, q) {
+          const _ = E === !0 && S === !0 && !!p, z = await m.exportHandoff(G, d ? { site: c, permissions: d } : void 0, c, S === !0, _ ? p : void 0, _ ? void 0 : q === !0 && A.length ? [...y, ...A] : y.length ? y : void 0), Q = new Promise((R) => {
+            O = R, setTimeout(() => R(!1), 8e3);
           });
-          a.postMessage(O({ t: "grant", nonce: o, world: f, sealed: z, ...L ? { name: L } : {} }), s);
+          a.postMessage($({ t: "grant", nonce: o, world: c, sealed: z, ...L ? { name: L } : {} }), s);
           const Z = await Q;
           return window.removeEventListener("message", k), Z;
         }
       });
     };
-    window.addEventListener("message", k), j();
+    window.addEventListener("message", k), M();
   });
 }
 export {
@@ -257,7 +260,7 @@ export {
   $e as declineFamily,
   Se as describeAllowed,
   Oe as describeAsked,
-  je as describePermissions,
+  Me as describePermissions,
   Ne as familyDeclined,
   oe as familyDomain,
   ie as familyOf,

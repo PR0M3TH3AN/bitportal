@@ -1,5 +1,5 @@
-import { v as k } from "./bitlogin-shared-Cj9s0_W_.js";
-import { c as p } from "./bitlogin-shared-BqDMTUOp.js";
+import { v as k } from "./bitlogin-shared-CvPtgHf2.js";
+import { c as p } from "./bitlogin-shared-BkM-XX5B.js";
 function d(e) {
   const t = e.split(".");
   if (t.length !== 4 || t.some((s) => !/^\d{1,3}$/u.test(s)))
