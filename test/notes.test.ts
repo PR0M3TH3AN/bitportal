@@ -98,3 +98,72 @@ describe("posting from your own room", () => {
     expect(asked).toEqual([]);
   });
 });
+
+describe("deleting one of your own posts, from your own room", () => {
+  const ID = "ab".repeat(32);
+  const deletion = (over: Partial<{ kind: number; content: string; tags: string[][] }> = {}) => ({ kind: 5, content: "", tags: [["e", ID], ["k", "1"]], ...over });
+  const asking = (o: { answer?: (asked: { kind: number; content: string; tags: string[][] }) => ReturnType<typeof finalizeEvent> | null; asGuest?: boolean } = {}) => {
+    const put: { kind: number; content: string; tags: string[][] }[] = [];
+    const notes = createHomeNotes({
+      asGuest: () => !!o.asGuest,
+      signerFor: async () => null,
+      host: () => "signin.example",
+      // The sign-in address, standing in: it signs what was put to the person, marked with this site, as BitLogin does.
+      propose: async (asked) => (put.push(asked), o.answer ? o.answer(asked) : finalizeEvent({ ...asked, tags: [...asked.tags, ["nswp:world", "https://portal.example"]], created_at: 1_794_500_000 }, KEY)),
+    });
+    notes.setWho(ME);
+    return { notes, put };
+  };
+
+  it("puts exactly that to them at their sign-in address, and hands back what they signed", async () => {
+    const { notes, put } = asking();
+    const signed = await notes.propose(deletion());
+    expect(put).toEqual([{ kind: 5, content: "", tags: [["e", ID], ["k", "1"]] }]);
+    expect(signed && verifyEvent(signed)).toBe(true);
+    expect([signed?.kind, signed?.pubkey, signed?.tags.filter((t) => t[0] === "e")]).toEqual([5, ME, [["e", ID]]]);
+    expect(notes.host()).toBe("signin.example");
+  });
+
+  it("puts nothing else to them: no other kind, no words, no second note, no address, nothing malformed", async () => {
+    const { notes, put } = asking();
+    for (const not of [
+      deletion({ kind: 0 }),
+      deletion({ kind: 1 }),
+      deletion({ kind: 3 }),
+      deletion({ kind: 10002 }),
+      deletion({ content: "and a word" }),
+      deletion({ tags: [["e", ID], ["k", "1"], ["e", "cd".repeat(32)]] }),
+      deletion({ tags: [["e", ID]] }),
+      deletion({ tags: [["a", `30023:${ME}:essay`], ["k", "30023"]] }),
+      deletion({ tags: [["e", "not an id"], ["k", "1"]] }),
+      deletion({ tags: [["e", ID, "wss://relay.example"], ["k", "1"]] }),
+      deletion({ tags: [["e", ID], ["k", "30078"]] }),
+      deletion({ tags: [] }),
+    ])
+      expect(await notes.propose(not), JSON.stringify(not)).toBeNull();
+    expect(put).toEqual([]);
+  });
+
+  it("is nothing for a guest, for nobody, and where nothing can ask them", async () => {
+    expect(await asking({ asGuest: true }).notes.propose(deletion())).toBeNull();
+    const nobody = createHomeNotes({ asGuest: () => false, signerFor: async () => null, propose: async () => null });
+    expect(await nobody.propose(deletion())).toBeNull();
+    const cannot = createHomeNotes({ asGuest: () => false, signerFor: async () => null });
+    cannot.setWho(ME);
+    expect(await cannot.propose(deletion())).toBeNull();
+    expect(cannot.host()).toBeNull();
+  });
+
+  it("takes back only a deletion of that note, by them", async () => {
+    const other = new Uint8Array(32).fill(6);
+    const sign = (asked: { kind: number; content: string; tags: string[][] }, by: Uint8Array = KEY) => finalizeEvent({ ...asked, created_at: 1_794_500_000 }, by);
+    for (const answer of [
+      () => null,
+      (asked: { kind: number; content: string; tags: string[][] }) => sign(asked, other),
+      (asked: { kind: number; content: string; tags: string[][] }) => sign({ ...asked, tags: [["e", "cd".repeat(32)], ["k", "1"]] }),
+      (asked: { kind: number; content: string; tags: string[][] }) => sign({ ...asked, tags: [...asked.tags, ["e", "cd".repeat(32)]] }),
+      (asked: { kind: number; content: string; tags: string[][] }) => sign({ ...asked, kind: 1 }),
+    ])
+      expect(await asking({ answer }).notes.propose(deletion())).toBeNull();
+  });
+});
