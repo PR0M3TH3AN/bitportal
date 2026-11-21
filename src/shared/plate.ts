@@ -2,7 +2,7 @@
  * The marks on a door plate: what a visitor is told before they commit
  * (NSWP spec §6.7). The list and the walk-in hall draw the same marks.
  */
-import { categoryWords, cleanItemsRule, itemsWords, type World } from "@nswp/core";
+import { categoryWords, cleanItemsRule, itemsWords, worldOffers, type Offer, type World } from "@nswp/core";
 
 export interface Mark {
   text: string;
@@ -19,7 +19,26 @@ export function placeKind(world: Pick<World, "modes">): string {
   return world.modes.includes("2d") ? "Web page" : "";
 }
 
-export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category" | "items">>, fit: { ok: boolean; reason: string }, verified: boolean, rating: string = ""): Mark[] {
+/**
+ * What a door's tiles say its world offers (NSWP-01, "What a world offers"): the kit's own list, read from the
+ * world's own announcement. A place a list's curator described for its maker has said nothing itself, so its door
+ * has no tiles at all: lit or dark, they would be someone else's word about it.
+ */
+export function doorOffers(entry: { world: World; curatorListing: boolean }): Offer[] | null {
+  return entry.curatorListing ? null : worldOffers(entry.world);
+}
+
+/**
+ * What kind of place this is, for a plate whose door has tiles beside it: only what the tiles don't already say.
+ * The headset tile says "VR", and a world in 3D is what a door is expected to lead to, so those are left to the
+ * tiles; a page of text and a place in AR are still worth a word.
+ */
+export function placeKindBesideTiles(world: Pick<World, "modes">): string {
+  if (world.modes.includes("immersive-ar")) return "AR";
+  return world.modes.includes("2d") && !world.modes.some((m) => m === "immersive-vr" || m === "inline-3d") ? "Web page" : "";
+}
+
+export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarning"> & Partial<Pick<World, "audience" | "category" | "items">>, fit: { ok: boolean; reason: string }, verified: boolean, rating: string = "", tiles = false): Mark[] {
   const marks: Mark[] = [];
   // What kind of place its maker says it is (NSWP-01): a game, an experience, a place to meet, an app, a site.
   const category = categoryWords(world.category);
@@ -27,7 +46,8 @@ export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarn
   // What the people this visitor has reason to trust thought of it (NSWP-13): "★ 4.5 from 12". Never a count of
   // strangers; with nobody counted there is no mark.
   if (rating) marks.push({ text: rating, tone: "plain" });
-  const kind = placeKind(world);
+  // A door with tiles beside it doesn't say on its plate what its tiles say.
+  const kind = tiles ? placeKindBesideTiles(world) : placeKind(world);
   if (kind) marks.push({ text: kind, tone: "plain" });
   if (verified) marks.push({ text: "Verified", tone: "ok" });
   if (!fit.ok) marks.push({ text: fit.reason, tone: "warn" });

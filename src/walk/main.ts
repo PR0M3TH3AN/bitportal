@@ -16,13 +16,14 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
+import type { Offer } from "@nswp/core";
 import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { enterShell, goFrom } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
-import { createHome, type Alloy } from "nswp-sdk/home";
+import { createDoorOffers, createHome, type Alloy, type DoorOffers } from "nswp-sdk/home";
 import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
@@ -48,7 +49,7 @@ import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { startSync } from "../shared/sync-run.js";
 import { createJumpList } from "../shared/jump.js";
 import { addComputers, type Computers } from "./computers.js";
-import { plateMarks } from "../shared/plate.js";
+import { doorOffers, plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 import { loadRoom } from "../shared/room.js";
 import { addSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, restoreSaved, savedEntries, storeSaved, WALL_DOORS, type SavedPlace } from "../shared/saved.js";
@@ -75,6 +76,8 @@ interface Door {
   hover: number;
   /** The plate over the arch: name, address and marks. Drawn again when a rating arrives. */
   plate: THREE.Mesh;
+  /** The kit's tiles beside the arch that say what the world offers (NSWP-01). Null for a place whose maker has said nothing. */
+  offers: DoorOffers | null;
   /** The small tag beside the arch that saves this door, or takes it off the visitor's wall. Shown only to someone standing at the door. */
   keep: THREE.Mesh;
   /** How much of the tag is showing, 0 to 1. */
@@ -93,6 +96,8 @@ interface Clickable {
   say: string;
   act(): void;
   door?: Door;
+  /** One of the tiles beside a door: pointed at, it says what it means. It is never something to press. */
+  tile?: Offer;
 }
 
 interface TestHooks {
@@ -197,7 +202,7 @@ function plateTexture(entry: Entry, device: Device, rating: string = ""): THREE.
   const host = hostParts(entry.world.url);
   const fit = deviceFit(entry.world, device);
   const verified = cachedVerification(entry.id, entry.world.createdAt)?.state === "verified";
-  const marks = plateMarks(entry.world, fit, verified, rating).map((m) => ({
+  const marks = plateMarks(entry.world, fit, verified, rating, !!doorOffers(entry)).map((m) => ({
     text: m.tone === "ok" ? `✓ ${m.text}` : m.text,
     color: m.tone === "ok" ? "#6fdc9b" : m.tone === "warn" ? "#ffcf70" : "#8b91a0",
   }));
@@ -685,8 +690,13 @@ async function start(): Promise<void> {
     info.visible = false;
     info.renderOrder = 2;
     group.add(view, frame, plate, button, info);
+    // What the world offers, as its own announcement says: the kit's tiles, the same beside every door anywhere.
+    const offered = doorOffers(entry);
+    const offers = offered ? createDoorOffers(offered, { color: ACCENT, textColor: INK }) : null;
+    if (offers) group.add(offers.group);
     walls[wall].add(group);
-    const door: Door = { entry, why, wall, group, view, frame, metal, plate, info, hover: 0, keep: button, shown: 0 };
+    const door: Door = { entry, why, wall, group, view, frame, metal, plate, offers, info, hover: 0, keep: button, shown: 0 };
+    for (const mesh of offers?.targets ?? []) clickables.push({ mesh, door, tile: offers!.offerOf(mesh)!, say: "", act: () => {} });
     clickables.push({ mesh: view, door, say: "", act: () => void visit(door) });
     clickables.push({
       mesh: button,
@@ -1822,11 +1832,16 @@ async function start(): Promise<void> {
     // Moving the intense way, the pointer's picture is the kit's to hide: the middle of the view is what points.
     if (renderer.xr.isPresenting || !fps!.enabled) renderer.domElement.style.cursor = pointed ? "pointer" : "grab";
     const hovered = pointed?.door ?? null;
-    const key = pointed ? `${hovered?.entry.id ?? ""}|${pointed.say}` : null;
+    const tile = pointed?.tile ?? null;
+    // The tile pointed at is drawn brighter, and in a headset says what it means in front of its door.
+    for (const d of doors) d.offers?.point(tile && d === hovered ? tile : null, renderer.xr.isPresenting);
+    const key = pointed ? `${hovered?.entry.id ?? ""}|${pointed.say}|${tile?.id ?? ""}` : null;
     if (key !== state.pointed) {
       state.pointed = key;
-      state.hovered = hovered?.entry.id ?? null;
+      state.hovered = tile ? null : (hovered?.entry.id ?? null);
       if (pointed?.say) controls.setTarget(pointed.say);
+      // On a flat screen what a tile means goes in the card over the controls, never on a sign in front of the door.
+      else if (tile && hovered) controls.setTarget(`${tile.name}: ${hovered.entry.world.title}`, [tile.words]);
       else if (hovered) {
         const w = hovered.entry.world;
         const host = hostParts(w.url);
