@@ -104,15 +104,14 @@ async function fetchWanted(all: DoorPointer[], missing: DoorPointer[]): Promise<
 
 let running: Promise<SyncOutcome> | null = null;
 /**
- * One round, if the visitor has asked for their settings to be kept with
- * their profile and that profile is unlocked here. Tells the page what
+ * One round, if someone is signed in here: their settings are kept with their
+ * profile, sealed, with nothing to turn on (sync.ts). Tells the page what
  * arrived (`bitportal:synced`) so it can say so.
  */
 export function runSync(): Promise<SyncOutcome> {
   if (running) return running;
   running = (async (): Promise<SyncOutcome> => {
     const nothing: SyncOutcome = { took: [], sent: false, wanted: null };
-    if (!loadSync(store()).on) return { ...nothing, why: "off" };
     const vault = await vaultNow();
     if (!vault) return { ...nothing, why: "locked" };
     try {

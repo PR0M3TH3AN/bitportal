@@ -5,7 +5,7 @@
  * own site is contacted when the visitor opens its door, never before. The
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
-import { forgetSync, setSyncOn, startSync, syncState, testing as syncTesting } from "../shared/sync-run.js";
+import { startSync } from "../shared/sync-run.js";
 import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, shortNpub, WORLD_KIND, type Tally } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
@@ -736,45 +736,6 @@ function openSettings(): void {
   if (!LOOK_CHOICES.some((c) => c.value === prefs.look)) lookPick.append(el("option", { value: String(prefs.look), selected: "" }, `${prefs.look} times normal`));
   const fovPick = el("select", { id: "set-fov" }, ...FOV_CHOICES.map((f) => el("option", { value: f === null ? "" : String(f), ...(f === prefs.fov ? { selected: "" } : {}) }, f === null ? "Each world's own" : `${f}°`))) as HTMLSelectElement;
   if (prefs.fov !== null && !FOV_CHOICES.includes(prefs.fov)) fovPick.append(el("option", { value: String(prefs.fov), selected: "" }, `${prefs.fov}°`));
-  // Keeping settings with the visitor's profile, sealed, so they follow them to another device (sync.ts). Off until
-  // they turn it on. It acts when pressed, not when the sheet is saved: it is a thing done, not a preference noted.
-  const syncBox = el("input", { type: "checkbox", id: "set-sync" }) as HTMLInputElement;
-  syncBox.checked = syncState().on;
-  const syncStatus = el("p", { class: "small", id: "sync-status", role: "status" });
-  const syncForget = el("button", { class: "link", type: "button", id: "sync-forget" }, "Take my settings off the relays, and stop");
-  const when = (ms: number) => (ms ? new Date(ms).toLocaleString() : "not yet");
-  const saySync = (words?: string) => {
-    const state = syncState();
-    syncForget.hidden = !state.on;
-    syncStatus.textContent = words ?? (state.on ? `On. Last kept in step ${when(state.syncedAt)}.` : "Off. Everything stays in this browser.");
-  };
-  saySync();
-  const signedInNow = () => !!signedIn || syncTesting();
-  syncBox.addEventListener("change", () => {
-    if (syncBox.checked && !signedInNow()) {
-      syncBox.checked = false;
-      return saySync("Sign in first: your settings are kept with a profile, sealed with its key. A guest's stay in this browser.");
-    }
-    const round = setSyncOn(syncBox.checked);
-    if (!round) return saySync();
-    saySync("Sealing your settings and looking for a copy on your relays.");
-    void round.then((out) => {
-      if (out.why === "locked") {
-        syncBox.checked = false;
-        setSyncOn(false);
-        return saySync("Your sign-in has run out here, so nothing could be sealed. Sign in again and turn this on again.");
-      }
-      if (out.why === "unreadable") return saySync("On, but your relays couldn't be reached or the copy there couldn't be opened just now. Nothing was changed. It is tried again each time a page opens.");
-      saySync(out.took.length ? `On. Settings from your profile arrived (${out.took.join(", ")}). Reload to use them.` : out.sent ? "On. Your settings are kept with your profile now." : undefined);
-    });
-  });
-  syncForget.addEventListener("click", () => {
-    saySync("Asking your relays to replace the copy with an empty one.");
-    void forgetSync().then((done) => {
-      syncBox.checked = syncState().on;
-      saySync(done ? "Off. The copy on your relays was replaced with an empty one. A relay may still hold the old one for a while: none of them can read it." : "That couldn't be done just now. Your profile may be locked, or no relay answered.");
-    });
-  });
   const relays = el("textarea", { id: "set-relays", rows: "4", spellcheck: "false" });
   relays.value = settings.relays.join("\n");
   const roomBox = el("textarea", { id: "set-room", rows: "5", spellcheck: "false", placeholder: '{"room": {"template": "open", "color": "#101217", "accent": "#3df2a0"}, "items": [{"type": "bench", "position": [-3, 0, 0], "rotation": 90}]}' });
@@ -905,7 +866,6 @@ function openSettings(): void {
       "These are what you prefer, not what you last did. Every world you enter starts this way, and pressing Escape or switching for a moment in one world doesn't change the next. Each has a control in any world's menu too, and changing it there changes it everywhere. A browser fills the screen only on a press, so it happens at your first key or click in each world. In a headset none of these apply.",
     ),
     el("h3", {}, "Your settings, on your other devices"),
-    el("label", { class: "check", for: "set-sync" }, syncBox, " Keep my settings with my profile, sealed, so they follow me to other devices"),
     el(
       "p",
       { class: "small" },
@@ -916,8 +876,6 @@ function openSettings(): void {
       { class: "small" },
       "Never kept there: where you have been and which sites you have checked (a new device is shown the Airlock once), whether your microphone may travel, your computers, the worlds you are building, and your own music. A relay can see that you use BitPortal and when you last changed something, and nothing else.",
     ),
-    syncStatus,
-    syncForget,
     el("h3", {}, "Ranking"),
     el("label", { class: "check", for: "set-ranking" }, rankBox, " Rank shelves with BitFeed and say why each world is there"),
     el("p", { class: "small" }, "Off shows one list in date order, with no ranking code loaded."),

@@ -15,8 +15,13 @@
  *
  * What this is careful about:
  *
- * - **It is off until the visitor turns it on.** Putting anything of theirs
- *   on a relay, sealed or not, is theirs to decide.
+ * - **It is kept for everyone who is signed in, with nothing to turn on.**
+ *   They allowed it by name, in the sign-in address's own window, before
+ *   BitPortal could do anything as them ("your settings, sealed to your own
+ *   key"): a second switch for it here asked again for what they had said
+ *   yes to, and took room in Settings (the owner, 2026-11-20: "a setting we
+ *   dont need is clutter"). A guest has no profile, and theirs stay in the
+ *   browser. Signing out stops it.
  * - **Only their own client reads it.** A world never does: it couldn't open
  *   it, and a world asking relays about its visitors would be a way to follow
  *   them. A world is told a visitor's settings the way it always is, by the
@@ -368,7 +373,6 @@ export async function syncOnce(o: { store: Store | null; vault: Vault; shelf: Sh
   const now = o.now ?? Date.now();
   const state = loadSync(o.store);
   const outcome: SyncOutcome = { took: [], sent: false, wanted: null };
-  if (!state.on) return { ...outcome, why: "off" };
   const first = state.who !== o.vault.pubkey;
   const fresh: SyncState = first ? { ...NO_SYNC, on: true, who: o.vault.pubkey } : state;
   const mine = snapshot(o.store, fresh, now);

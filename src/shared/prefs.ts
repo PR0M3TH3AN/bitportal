@@ -9,8 +9,8 @@
  * nothing else changes them.
  *
  * They are kept where the kit keeps them, so the room, this page and the
- * Airlock read the same thing: one small entry each in this browser. With
- * "Keep my settings with my profile" on, they go in that note too (sync.ts).
+ * Airlock read the same thing: one small entry each in this browser. For
+ * someone signed in they go in the sealed note kept with their profile too (sync.ts).
  *
  * `keptSettings` is everything of the visitor's that travels, as this browser
  * has it. The Airlock starts from it, so a door opened from the front page or
