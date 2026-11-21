@@ -157,13 +157,38 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
   it("may embed that one address and no other, runs no WebAssembly, and still may be embedded by nobody", async () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
     const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
-    expect(build).toContain("`frame-src ${signInOrigin}`");
+    // One place writes what a page may embed: the sign-in address, after whatever a page is given by name. Left
+    // to itself a page is given nothing, and may be embedded by nobody.
+    expect(build).toContain('`frame-src ${[...frames, signInOrigin].join(" ")}`');
     expect(build.split("frame-src").length - 1).toBe(1);
+    expect(build).toContain(`const rulesFor = ({ frames = [], framedBy = "'none'" } = {}) =>`);
+    expect(build).toContain("const csp = rulesFor();");
     expect(build).toContain(`"script-src 'self'"`);
     expect(build).not.toContain("wasm-unsafe-eval");
-    expect(build).toContain(`"frame-ancestors 'none'"`);
+    // Every page but three is under those rules, and each path is under one set of rules only.
+    expect(build).toContain('{ source: "/((?!(?:walk|go|shell)(?:/|$)).*)", headers: guards(csp) },');
     // The address in the policy is read from this instance's own settings, as the one named to worlds.
     expect(/^\s*signer:\s*"(https:\/\/[^"]+)"/m.exec(readFileSync(new URL("../src/shared/instance.ts", import.meta.url), "utf8"))?.[1]).toBe(INSTANCE.signer);
+  });
+  it("lets one page keep the screen, framing only its own room, its Airlock and the worlds it names (a trial, 2026-11-20)", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    // The three exceptions, and no fourth: the page that holds the screen, and the two it shows of this site's own.
+    expect(build.split("rulesFor(").length - 1).toBe(3);
+    expect(build).toContain(`const cspFramed = rulesFor({ framedBy: "'self'" });`);
+    expect(build).toContain(`const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });`);
+    expect(build).toContain('{ source: "/(walk|go)(/.*)?", headers: guards(cspFramed) },');
+    expect(build).toContain('{ source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds) },');
+    // The worlds it names are sites, each by its own address and nothing wider: never a whole scheme, never a star.
+    const named = JSON.parse(readFileSync(new URL("../src/shared/shell-worlds.json", import.meta.url), "utf8")) as string[];
+    expect(named.length).toBeGreaterThan(0);
+    for (const origin of named) {
+      expect(origin).toMatch(/^https:\/\/[a-z0-9.-]+$/);
+      expect(new URL(origin).origin).toBe(origin);
+    }
+    // And each is a world this copy itself shows a door to: it frames nothing it doesn't already send people to.
+    const shown = new Set((JSON.parse(readFileSync(new URL("../src/starter/starter-set.json", import.meta.url), "utf8")) as { worlds: { tags: string[][] }[] }).worlds.map((w) => new URL(w.tags.find((t) => t[0] === "r")![1]!).origin));
+    for (const origin of named) expect(shown.has(origin), origin).toBe(true);
   });
   it("leaves the Airlock waiting on nobody: it reads this browser's own note, and loads nothing from the sign-in address to do it", async () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };

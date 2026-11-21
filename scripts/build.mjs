@@ -25,6 +25,7 @@ await build({
     "account/main": join(root, "src/account/main.ts"),
     "publish/main": join(root, "src/publish/main.ts"),
     "look/main": join(root, "src/look/main.ts"),
+    "shell/main": join(root, "src/shell/main.ts"),
   },
   bundle: true,
   splitting: true, // keeps the headset emulator out of the page until asked for
@@ -53,7 +54,7 @@ cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: t
 cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
-for (const page of ["account", "publish", "look"]) {
+for (const page of ["account", "publish", "look", "shell"]) {
   mkdirSync(join(out, page), { recursive: true });
   cpSync(join(root, `src/${page}/index.html`), join(out, page, "index.html"));
 }
@@ -66,21 +67,44 @@ for (const page of ["account", "publish", "look"]) {
 const instance = readFileSync(join(root, "src/shared/instance.ts"), "utf8");
 const named = /^\s*signer:\s*"(https:\/\/[^"]+)"/m.exec(instance)?.[1] ?? "https://bitlogin.network/";
 const signInOrigin = new URL(named).origin;
-const csp = [
-  "default-src 'self'",
-  // No page of BitPortal runs WebAssembly or takes a password: signing in is done at the sign-in address.
-  "script-src 'self'",
-  "worker-src 'self'",
-  `frame-src ${signInOrigin}`,
-  "style-src 'self'",
-  "font-src 'self'",
-  "img-src 'self' data: blob:",
-  "media-src 'self' blob: mediastream:",
-  "connect-src 'self' https: wss:",
-  "base-uri 'none'",
-  "form-action 'none'",
-  "frame-ancestors 'none'",
-].join("; ");
+/**
+ * A page's content rules. Every page of BitPortal may embed the one sign-in address and nothing else, and may be
+ * embedded by nobody: with two exceptions, both for the page that keeps the screen filled from world to world
+ * (src/shared/shell.ts; a trial, on the owner's word of 2026-11-20).
+ *
+ * - `/shell/` may also frame this site's own room and Airlock, and the worlds named in `shell-worlds.json`: each
+ *   of which says, in its own rules, that BitPortal may frame it. Nothing else, and never `https:`.
+ * - `/walk/` and `/go/` may be framed by this site itself, which is `/shell/` framing them. By nobody else.
+ */
+const shellWorlds = JSON.parse(readFileSync(join(root, "src/shared/shell-worlds.json"), "utf8"));
+if (!Array.isArray(shellWorlds) || shellWorlds.some((o) => typeof o !== "string" || new URL(o).origin !== o || !o.startsWith("https://"))) throw new Error("src/shared/shell-worlds.json must be a list of https origins, each written as an origin and nothing more.");
+const rulesFor = ({ frames = [], framedBy = "'none'" } = {}) =>
+  [
+    "default-src 'self'",
+    // No page of BitPortal runs WebAssembly or takes a password: signing in is done at the sign-in address.
+    "script-src 'self'",
+    "worker-src 'self'",
+    `frame-src ${[...frames, signInOrigin].join(" ")}`,
+    "style-src 'self'",
+    "font-src 'self'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob: mediastream:",
+    "connect-src 'self' https: wss:",
+    "base-uri 'none'",
+    "form-action 'none'",
+    `frame-ancestors ${framedBy}`,
+  ].join("; ");
+const csp = rulesFor();
+const cspFramed = rulesFor({ framedBy: "'self'" });
+const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });
+/** What a page may use, and hand on to what it frames: `/shell/` hands a headset and a microphone to the worlds it may frame, by name. */
+const handsOn = (to = []) => `xr-spatial-tracking=(self${to.map((o) => ` "${o}"`).join("")}), microphone=(self${to.map((o) => ` "${o}"`).join("")}), camera=(), geolocation=()`;
+const guards = (policy, to) => [
+  { key: "Content-Security-Policy", value: policy },
+  { key: "Referrer-Policy", value: "no-referrer" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Permissions-Policy", value: handsOn(to) },
+];
 writeFileSync(
   join(out, "vercel.json"),
   `${JSON.stringify(
@@ -90,15 +114,11 @@ writeFileSync(
       // BitPortal's first address sends visitors on to the one it lives at now.
       redirects: [{ source: "/(.*)", has: [{ type: "host", value: "bitportal.vercel.app" }], destination: "https://portal.bitblocks.network/$1", permanent: false }],
       headers: [
-        {
-          source: "/(.*)",
-          headers: [
-            { key: "Content-Security-Policy", value: csp },
-            { key: "Referrer-Policy", value: "no-referrer" },
-            { key: "X-Content-Type-Options", value: "nosniff" },
-            { key: "Permissions-Policy", value: "xr-spatial-tracking=(self), microphone=(self), camera=(), geolocation=()" },
-          ],
-        },
+        // One set of rules for each path, and no path under two: where two rules set the same header a browser
+        // holds a page to both, and the page that frames worlds would be held to the rule that frames none.
+        { source: "/((?!(?:walk|go|shell)(?:/|$)).*)", headers: guards(csp) },
+        { source: "/(walk|go)(/.*)?", headers: guards(cspFramed) },
+        { source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds) },
         // Always the latest (NSWP-09): a browser asks before it uses a copy of a page or a script it kept. Said
         // outright, and not left to the host's habit. Not for the fonts and previews, which have rules of their own.
         { source: "/((?!fonts/|previews/).*)", headers: [{ key: "Cache-Control", value: "no-cache" }] },
