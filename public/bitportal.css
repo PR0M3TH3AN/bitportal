@@ -554,3 +554,11 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 .passing .host { font-size: clamp(1.2rem, 4vw, 1.8rem); }
 .checking .button { margin-left: 12px; vertical-align: middle; }
 .from-vr .passing .button, .from-vr .checking .button { min-height: 60px; font-size: 1.15rem; }
+
+/* ---------- the notice that this is an early prototype (src/shared/notice.ts) ---------- */
+.sheet.notice { margin: auto; width: min(520px, calc(100vw - 24px)); border: 1px solid rgba(var(--bitportal-accent-rgb), 0.5); background: var(--bitportal-paper); color: var(--bitportal-ink); }
+.sheet.notice p { font-size: 1.05rem; line-height: 1.5; }
+.sheet.notice .button { margin-top: 22px; width: 100%; min-height: 54px; font-size: 1.08rem; }
+/* Read on a headset's flat panel with a controller's ray: everything to press is larger. */
+.sheet.notice.large .button { min-height: 76px; font-size: 1.3rem; }
+.sheet.notice.large p { font-size: 1.2rem; }
