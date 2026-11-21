@@ -324,7 +324,9 @@ async function render(): Promise<void> {
       } catch {
         /* the place they arrive keeps what it had */
       }
-      location.replace(req.who === "look" ? `/walk/#look${req.immersive ? "&xr=1" : ""}` : `/account/?back=door${req.immersive ? "&xr=1" : ""}`);
+      // To the room, either way, with its menu up on what they came for: their look, or who they are. Signing
+      // in is done there as in every world, in the sign-in address's own window. No other place is gone to.
+      location.replace(`/walk/#${req.who === "look" ? "look" : "back&you"}${req.immersive ? "&xr=1" : ""}`);
       return;
     }
   }
