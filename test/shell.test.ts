@@ -120,7 +120,7 @@ describe("the page that keeps the screen filled", () => {
   });
 
   it("takes from a world only a mode it knows and three numbers", () => {
-    expect(["ask", "switch", "account", "files", "wallet"].every(isPanelMode)).toBe(true);
+    expect(["ask", "switch", "account", "files", "wallet", "library"].every(isPanelMode)).toBe(true);
     for (const not of ["", "ASK", "everything", 1, null, undefined, {}]) expect(isPanelMode(not), String(not)).toBe(false);
     expect(readMenuPlace({ left: 1, width: 2, bottom: 3, more: "ignored" })).toEqual({ left: 1, width: 2, bottom: 3 });
     for (const not of [null, "menu", {}, { left: 1, width: 2 }, { left: "1", width: 2, bottom: 3 }, { left: NaN, width: 2, bottom: 3 }, { left: Infinity, width: 2, bottom: 3 }]) expect(readMenuPlace(not), JSON.stringify(not)).toBeNull();

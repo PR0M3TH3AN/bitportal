@@ -50,6 +50,8 @@ export interface YouOptions {
   canAccount?(): boolean;
   /** Show their own files, kept by the sign-in address, the same way. */
   files?(): void;
+  /** Show what they have bought, kept by the sign-in address, the same way. */
+  library?(): void;
   /** Their look as it is kept, or null while they have none. */
   look(): KeptLook | null;
   /** Their look has changed, or been forgotten: draw it. */
@@ -97,6 +99,8 @@ export function addYou(o: YouOptions): You {
     { id: "account", section: "you", icon: "key", label: () => `Your account, at ${signInHost()}`, short: "Account", hidden: () => !(o.account && o.canAccount?.()), act: () => o.account?.() },
     // And their own files (the kit's `filesAction`): the sign-in address's file browser, over the room.
     { id: "files", section: "you", icon: "list", label: () => `Your files, at ${signInHost()}`, short: "Files", hidden: () => !(o.files && o.canAccount?.()), act: () => o.files?.() },
+    // And what they have bought (the kit's `libraryAction`): the receipts the sign-in address keeps for them.
+    { id: "library", section: "you", icon: "save", label: () => `Your purchases, at ${signInHost()}`, short: "Purchases", hidden: () => !(o.library && o.canAccount?.()), act: () => o.library?.() },
   );
   if (o.door) {
     const where = o.door.host || "the world you came from";

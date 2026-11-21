@@ -1443,6 +1443,9 @@ async function start(): Promise<void> {
     files: () => {
       if (windowed() && !askClientForSignIn("files")) controls.say(`${signInHost()} couldn't be shown here just now.`);
     },
+    library: () => {
+      if (windowed() && !askClientForSignIn("library")) controls.say(`${signInHost()} couldn't be shown here just now.`);
+    },
     look: () => myLook,
     onLook: (kept: KeptLook | null) => {
       myLook = kept;
@@ -1522,7 +1525,7 @@ async function start(): Promise<void> {
   about.onChange(() => refreshRoom());
   let followingTab: ReturnType<typeof addRoomControls>["following"];
   let messagingTab: ReturnType<typeof addRoomControls>["messaging"];
-  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, noteRelays: settings.relays, follows, messages, about, presenting: () => renderer.xr.isPresenting }));
+  ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, tip: null, noteRelays: settings.relays, follows, messages, about, presenting: () => renderer.xr.isPresenting }));
   refreshFollowing = () => {
     followingTab.refresh();
     messagingTab.refresh();
