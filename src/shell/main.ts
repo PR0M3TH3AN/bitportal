@@ -19,7 +19,7 @@
 import { fromLocal, toLocal } from "@nswp/core";
 import { INSTANCE } from "../shared/instance.js";
 import { PLAIN_KEY, showsInShell } from "../shared/shell.js";
-import { createPanel, isPanelMode, readMenuPlace, type Panel } from "./panel.js";
+import { createPanel, isPanelMode, readMenuPlace, type Panel, type PanelMode } from "./panel.js";
 
 const view = document.getElementById("view") as HTMLIFrameElement;
 /** Where this tab keeps the place that is in the frame. */
@@ -112,7 +112,7 @@ addEventListener("message", (e: MessageEvent) => {
   } else if (said.nswp === "sign-in" && isPanelMode((said as { mode?: unknown }).mode)) {
     // Only at the visitor's own press in the frame: a world doesn't get to put a sign-in in front of someone.
     if (!panel || panel.open || !pressed()) return;
-    const mode = (said as { mode: "ask" | "switch" | "account" }).mode;
+    const mode = (said as { mode: PanelMode }).mode;
     const menu = readMenuPlace((said as { menu?: unknown }).menu);
     const asker = e.origin;
     // And only for a place that may be shown here: this site's own pages, and the worlds named.
