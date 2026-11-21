@@ -313,6 +313,16 @@ describe("door plate (spec §6.7)", () => {
     expect(plateMarks({ modes: ["inline-3d"], comfort: {}, contentWarning: undefined, category: "game" }, fit, false).map((m) => m.text)).toEqual(["A game", "3D"]);
     expect(plateMarks({ modes: ["inline-3d"], comfort: {}, contentWarning: undefined, category: "casino" as never }, fit, false).map((m) => m.text)).toEqual(["3D"]);
   });
+  it("says what a place does with the things visitors carry only where it isn't the ordinary rule", () => {
+    const of = (items?: "none" | "allowed" | "play") => plateMarks({ modes: ["inline-3d"], comfort: {}, contentWarning: undefined, ...(items ? { items } : {}) }, fit, false);
+    // Items work everywhere that hasn't said otherwise, so that is no mark at all.
+    expect(of().map((m) => m.text)).toEqual(["3D"]);
+    expect(of("allowed").map((m) => m.text)).toEqual(["3D"]);
+    expect(of("play")).toContainEqual({ text: "Items in play", tone: "warn" });
+    expect(of("none")).toContainEqual({ text: "No items", tone: "plain" });
+    // A rule nobody knows is a place that turned them off, never one where they are the game.
+    expect(of("anything-goes" as never)).toContainEqual({ text: "No items", tone: "plain" });
+  });
   it("states a gentle world's intensity without alarm", () => {
     expect(plateMarks({ modes: ["inline-3d"], comfort: { intensity: "low" }, contentWarning: undefined }, fit, false)).toEqual([
       { text: "3D", tone: "plain" },
