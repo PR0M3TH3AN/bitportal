@@ -59,13 +59,13 @@ describe("the way back to a world from the sign-in page", () => {
     expect(back).toMatchObject({ label: "Back to garden.example", guest: "Go back as a guest", named: "Back to garden.example, by name" });
   });
   it("is the lobby when no door was kept, whatever the link says", () => {
-    expect(wayBack("?back=door").href).toBe("/");
-    expect(wayBack("?back=door&to=https://evil.example/").href).toBe("/");
-    expect(wayBack("?back=door#to=https://evil.example/").href).toBe("/");
+    expect(wayBack("?back=door").href).toBe("/doors/");
+    expect(wayBack("?back=door&to=https://evil.example/").href).toBe("/doors/");
+    expect(wayBack("?back=door#to=https://evil.example/").href).toBe("/doors/");
   });
   it("is not offered for any other way of coming here", () => {
     expect(wayBack("?back=walk", door).href).toBe("/walk/#back");
-    expect(wayBack("", door).href).toBe("/");
+    expect(wayBack("", door).href).toBe("/doors/");
     expect(wayBack("", door).door).toBeUndefined();
   });
 });
