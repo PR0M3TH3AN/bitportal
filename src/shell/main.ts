@@ -173,8 +173,10 @@ const begin = async (): Promise<string> => {
   if (asked) {
     // Taken off the address at once, so loading this page again doesn't arrive a second time.
     history.replaceState(history.state, "", location.pathname);
-    // Only a page of this site, by its path: this is never a way to have something else shown here.
+    // A page of this site, by its path; or a page of one of the worlds named, by its address, shown here as a door
+    // to that world would show it. Never anything else: this is not a way to have some other site shown here.
     if (asked.startsWith("/") && !asked.startsWith("//") && showsInShell(asked)) return asked;
+    if (/^https:\/\//.test(asked) && asked.length <= 6000 && (await mayShow(asked))) return asked;
   }
   try {
     const kept = sessionStorage.getItem(AT_KEY);
