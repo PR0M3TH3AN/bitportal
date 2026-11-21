@@ -4,6 +4,7 @@ import {
   CUES,
   DEFAULT_COMFORT,
   DOOR_REACH,
+  DOOR_SPACING,
   DOUBLE_TAP,
   DRAG_LOOK,
   FACE_RATE,
@@ -73,6 +74,10 @@ import {
   createXrInput,
   currentForm,
   deviceForms,
+  doorArcStep,
+  doorRow,
+  doorsOnArc,
+  doorsTooClose,
   dotsBetween,
   figureAction,
   fitToSize,
@@ -132,7 +137,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-RWG7G7IJ.js";
+} from "./shared-ONBIN4Z7.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -172,6 +177,7 @@ export {
   CUES,
   DEFAULT_COMFORT,
   DOOR_REACH,
+  DOOR_SPACING,
   DOUBLE_TAP,
   DRAG_LOOK,
   FACE_RATE,
@@ -253,6 +259,10 @@ export {
   currentForm,
   currentSettings,
   deviceForms,
+  doorArcStep,
+  doorRow,
+  doorsOnArc,
+  doorsTooClose,
   dotsBetween,
   figureAction,
   fitToSize,
