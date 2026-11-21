@@ -137,7 +137,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-ONBIN4Z7.js";
+} from "./shared-GBUGM24O.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
@@ -160,7 +160,7 @@ import {
   sendWell,
   setShowsPictures,
   showsPictures
-} from "./shared-KEPMF2F4.js";
+} from "./shared-YMP44EJS.js";
 import {
   browserVoice,
   computerVoice,
