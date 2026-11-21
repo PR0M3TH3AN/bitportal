@@ -23,13 +23,13 @@ const HELLO_EVERY_MS = 200;
 /** How long it has to say so. After that the world is told, and its next press opens the window, as before. */
 const READY_MS = 6000;
 
-export type PanelMode = "ask" | "switch" | "account" | "files" | "wallet";
-export const isPanelMode = (mode: unknown): mode is PanelMode => mode === "ask" || mode === "switch" || mode === "account" || mode === "files" || mode === "wallet";
+export type PanelMode = "ask" | "switch" | "account" | "files" | "wallet" | "library";
+export const isPanelMode = (mode: unknown): mode is PanelMode => mode === "ask" || mode === "switch" || mode === "account" || mode === "files" || mode === "wallet" || mode === "library";
 /** The modes that are a page of the person's own, for no world in particular: no world is named with them. */
-const ownPage = (mode: PanelMode): boolean => mode === "account" || mode === "files" || mode === "wallet";
+const ownPage = (mode: PanelMode): boolean => mode === "account" || mode === "files" || mode === "wallet" || mode === "library";
 /**
  * How many times a page of their own is asked for by its name before it is asked for as their account page: a
- * panel older than "files" and "wallet" says nothing to those, and its account page leads to both.
+ * panel older than "files", "wallet" and "library" says nothing to those, and its account page leads to them.
  */
 const OWN_PAGE_TRIES = 8;
 
@@ -172,7 +172,7 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
       const hello = (): void => {
         // A panel that doesn't know "files" or "wallet" leaves them unanswered: after a moment it is asked for
         // the account page instead, which every panel has, and which leads to both.
-        const as: PanelMode = (mode === "files" || mode === "wallet") && said++ >= OWN_PAGE_TRIES ? "account" : mode;
+        const as: PanelMode = (mode === "files" || mode === "wallet" || mode === "library") && said++ >= OWN_PAGE_TRIES ? "account" : mode;
         // Addressed to BitLogin's origin: nothing else that might be in the frame hears who is asking.
         try {
           frame.contentWindow?.postMessage({ bitlogin: PROTOCOL, v: VERSION, t: "hello", mode: as, ...(ownPage(as) ? {} : { world: asker }) }, o.at);
