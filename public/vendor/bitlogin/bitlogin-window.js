@@ -1,12 +1,12 @@
-import { c as P, i as F, u as J, r as ee, w as B, o as te, m as ne, v as $, x as se, R as re } from "./bitlogin-shared-BkM-XX5B.js";
-import { f as Pe, y as Me } from "./bitlogin-shared-BkM-XX5B.js";
-import { r as g, f as oe, k as H, i as v } from "./bitlogin-shared-DkdmxQvn.js";
-import { f as ie } from "./bitlogin-shared-B-Mf8qJ5.js";
-import { a as _e } from "./bitlogin-shared-95Wz26ke.js";
+import { y as P, A as R, _ as J, z as ee, a1 as B, X as te, O as ne, a0 as $, a2 as se, a3 as re } from "./bitlogin-shared-D4lxvcOu.js";
+import { I as Pe, a4 as Me } from "./bitlogin-shared-D4lxvcOu.js";
+import { r as g, f as oe, k as H, i as v } from "./bitlogin-shared-AERJbEy6.js";
+import { f as ie } from "./bitlogin-shared-B-2-3O_E.js";
+import { a as je } from "./bitlogin-shared-D6Hzbnis.js";
 const V = "bitlogin-panel", K = 1, le = ["https://portal.bitblocks.network"];
 function ge(t, e) {
   const n = P(t);
-  return n ? F(e) ? F(n) : le.includes(n) : !1;
+  return n ? R(e) ? R(n) : le.includes(n) : !1;
 }
 function be(t) {
   return { bitlogin: V, v: K, ...t };
@@ -207,23 +207,23 @@ function Ie(t = {}) {
           for (const h of n()) h.postMessage($({ t: "hello", nonce: o }), s);
         } catch {
         }
-    }, j = setInterval(M, 350), x = setTimeout(() => {
-      clearInterval(j), f || (f = !0, window.removeEventListener("message", k), i(null));
+    }, _ = setInterval(M, 350), X = setTimeout(() => {
+      clearInterval(_), f || (f = !0, window.removeEventListener("message", k), i(null));
     }, t.timeoutMs ?? 6e3), k = (h) => {
       if (h.origin !== s || !h.source || h.source === window) return;
       const l = te(h.data);
       if (!l || l.nonce !== o) return;
       if (l.t === "done" && a && h.source === a) return void O?.(l.ok);
       if (l.t !== "frame" || a || t.world && l.world !== t.world) return;
-      a = h.source, clearInterval(j), clearTimeout(x), f = !0;
-      const { world: c, recipient: G } = l, d = l.wants && ne(c, l.wants) ? l.wants : null, X = l.turnedDown === !0 || !!l.wants && !d, y = d ? [] : l.has ?? [], A = d ? [] : (l.more ?? []).filter((m) => !y.includes(m)), p = d || A.length || y.length ? "" : ie(c);
+      a = h.source, clearInterval(_), clearTimeout(X), f = !0;
+      const { world: c, recipient: x } = l, d = l.wants && ne(c, l.wants) ? l.wants : null, z = l.turnedDown === !0 || !!l.wants && !d, y = d ? [] : l.has ?? [], A = d ? [] : (l.more ?? []).filter((m) => !y.includes(m)), p = d || A.length || y.length ? "" : ie(c);
       i({
         site: c,
         wants: d,
         known: J(c) !== null,
         family: p,
         knownFamily: p ? H(p) : !1,
-        turnedDown: X,
+        turnedDown: z,
         more: A,
         has: y,
         local: !!d && se(c) && [...d.sign, ...d.read].some((m) => re.includes(m)),
@@ -240,11 +240,11 @@ function Ie(t = {}) {
         hold(m) {
           a.postMessage($({ t: "held", nonce: o, world: c, receipts: m }), s);
         },
-        async grant(m, L, S, E, q) {
-          const _ = E === !0 && S === !0 && !!p, z = await m.exportHandoff(G, d ? { site: c, permissions: d } : void 0, c, S === !0, _ ? p : void 0, _ ? void 0 : q === !0 && A.length ? [...y, ...A] : y.length ? y : void 0), Q = new Promise((R) => {
-            O = R, setTimeout(() => R(!1), 8e3);
+        async grant(m, L, S, E, G) {
+          const j = E === !0 && S === !0 && !!p, q = await m.exportHandoff(x, d ? { site: c, permissions: d } : void 0, c, S === !0, j ? p : void 0, j ? void 0 : G === !0 && A.length ? [...y, ...A] : y.length ? y : void 0), Q = new Promise((F) => {
+            O = F, setTimeout(() => F(!1), 8e3);
           });
-          a.postMessage($({ t: "grant", nonce: o, world: c, sealed: z, ...L ? { name: L } : {} }), s);
+          a.postMessage($({ t: "grant", nonce: o, world: c, sealed: q, ...L ? { name: L } : {} }), s);
           const Z = await Q;
           return window.removeEventListener("message", k), Z;
         }
@@ -256,7 +256,7 @@ function Ie(t = {}) {
 export {
   le as PANEL_CLIENTS,
   Pe as SIGN_LIMITS,
-  _e as askLockDevice,
+  je as askLockDevice,
   $e as declineFamily,
   Se as describeAllowed,
   Oe as describeAsked,
