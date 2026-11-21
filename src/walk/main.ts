@@ -23,7 +23,7 @@ import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/trav
 import { enterShell, goFrom } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
-import { addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -41,7 +41,7 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, quietSigner, quietVault, readSignedIn, signIn, signInHost, signOut, switchAccount } from "../shared/session.js";
+import { holdsReserved, quietSigner, quietVault, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, usePanel } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -1374,16 +1374,48 @@ async function start(): Promise<void> {
     }
     location.reload();
   };
-  /** A window can't be opened from inside a headset: said, in place of a press that does nothing. */
+  // Shown inside the page that keeps the screen, BitLogin's own panel is drawn over the room in place of its window
+  // (src/shell/panel.ts; the owner: "Keep all of it in app and not in a separate window"). The room asks for it in
+  // the kit's words, as a world does, and learns who is signed in from the signer, as it always did.
+  const panelHere = (): boolean => {
+    try {
+      return clientSignsInAt() === new URL(signInAddress()).origin;
+    } catch {
+      return false;
+    }
+  };
+  usePanel({
+    offered: panelHere,
+    ask: (mode) =>
+      new Promise((done) => {
+        let up = false;
+        const finish = (said: { up: boolean; allowed: boolean }): void => {
+          clearTimeout(quiet);
+          stop();
+          done(said);
+        };
+        const stop = onClientSignIn((open, failed, allowed) => {
+          if (open) return void (up = true);
+          finish({ up: up && !failed, allowed });
+        });
+        // A page above that says nothing at all (it took the press for no press): given up on, like a window that didn't open.
+        const quiet = setTimeout(() => !up && finish({ up: false, allowed: false }), 8000);
+        if (!askClientForSignIn(mode)) finish({ up: false, allowed: false });
+      }),
+  });
+  /** Neither a window nor a panel can be seen from inside a headset: said, in place of a press that does nothing. */
   const windowed = (): boolean => {
     if (!renderer.xr.isPresenting) return true;
-    controls.say(`Signing in is done in a window at ${signInHost()}. Leave VR for a moment to do it.`);
+    controls.say(panelHere() ? `${signInHost()} has to ask you this itself, and that can't be seen from inside a headset. Leave VR for a moment to do it.` : `Signing in is done in a window at ${signInHost()}. Leave VR for a moment to do it.`);
     return false;
   };
   const signInHere = async (): Promise<void> => {
     if (!windowed()) return;
+    const here = panelHere();
     if (await signIn()) return readAgain();
-    controls.say(`You weren't signed in: the window at ${signInHost()} was closed before you allowed BitPortal, or your browser didn't let it open. Press Sign in to try again.`);
+    // A panel that never came up is said by the menu itself, with what to do next.
+    if (here && !panelHere()) return;
+    controls.say(here ? `You weren't signed in: ${signInHost()} was closed before you allowed BitPortal. Press Sign in to try again.` : `You weren't signed in: the window at ${signInHost()} was closed before you allowed BitPortal, or your browser didn't let it open. Press Sign in to try again.`);
   };
   const signOutHere = async (): Promise<void> => {
     await signOut();
@@ -1391,8 +1423,10 @@ async function start(): Promise<void> {
   };
   const beSomeoneElse = async (): Promise<void> => {
     if (!windowed()) return;
+    const here = panelHere();
     if (await switchAccount()) return readAgain();
-    controls.say(`Nothing changed: the window at ${signInHost()} was closed, or your browser didn't let it open.`);
+    if (here && !panelHere()) return;
+    controls.say(here ? `Nothing changed: ${signInHost()} was closed.` : `Nothing changed: the window at ${signInHost()} was closed, or your browser didn't let it open.`);
   };
   const you: You = addYou({
     controls,
@@ -1402,6 +1436,10 @@ async function start(): Promise<void> {
     signIn: () => void signInHere(),
     signOut: () => void signOutHere(),
     another: () => void beSomeoneElse(),
+    canAccount: panelHere,
+    account: () => {
+      if (windowed() && !askClientForSignIn("account")) controls.say(`${signInHost()} couldn't be shown here just now.`);
+    },
     look: () => myLook,
     onLook: (kept: KeptLook | null) => {
       myLook = kept;

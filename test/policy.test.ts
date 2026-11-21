@@ -178,7 +178,7 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     expect(build).toContain(`const cspFramed = rulesFor({ framedBy: "'self'" });`);
     expect(build).toContain(`const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });`);
     expect(build).toContain('{ source: "/(walk|go)(/.*)?", headers: guards(cspFramed) },');
-    expect(build).toContain('{ source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds) },');
+    expect(build).toContain('{ source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },');
     // The worlds it names are sites, each by its own address and nothing wider: never a whole scheme, never a star.
     const named = JSON.parse(readFileSync(new URL("../src/shared/shell-worlds.json", import.meta.url), "utf8")) as string[];
     expect(named.length).toBeGreaterThan(0);
@@ -194,6 +194,36 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     // And each is a world this copy itself shows a door to: it frames nothing it doesn't already send people to.
     const shown = new Set((JSON.parse(readFileSync(new URL("../src/starter/starter-set.json", import.meta.url), "utf8")) as { worlds: { tags: string[][] }[] }).worlds.map((w) => new URL(w.tags.find((t) => t[0] === "r")![1]!).origin));
     for (const origin of named) expect(shown.has(origin), origin).toBe(true);
+  });
+  it("shows the sign-in address's panel from the page that keeps the screen, and from nowhere else", async () => {
+    const { readFileSync, readdirSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string; readdirSync(path: URL, o: { recursive: true }): string[] };
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    // A passkey may be used and made by the sign-in address in that page's frame of it: by that one address, on
+    // that one page, and never by BitPortal itself, which signs nobody in.
+    expect(build).toContain('const passkeysTo = (origin) => `publickey-credentials-get=(self "${origin}"), publickey-credentials-create=(self "${origin}")`;');
+    // BitPortal itself never asks for one: the page is named only because a browser lets a page hand on what it may use.
+    for (const file of readdirSync(new URL("../src/", import.meta.url), { recursive: true }).filter((f) => /\.ts$/.test(f))) expect(readFileSync(new URL(file, new URL("../src/", import.meta.url)), "utf8"), file).not.toMatch(/navigator\.credentials|PublicKeyCredential/);
+    expect(build).toContain("{ key: \"Permissions-Policy\", value: passkeys ? `${handsOn(to)}, ${passkeysTo(passkeys)}` : handsOn(to) },");
+    expect(build.match(/guards\([^)]*signInOrigin\)/g)).toEqual(["guards(cspShell, shellWorlds, signInOrigin)"]);
+    // The frame is BitLogin's panel page and nothing else, handed passkeys and nothing else, and it is made in one
+    // file: a frame of this page directly, beside the world's, which is where BitLogin's panel looks for the signer.
+    const panel = readFileSync(new URL("../src/shell/panel.ts", import.meta.url), "utf8");
+    expect(panel).toContain("frame.allow = `publickey-credentials-get ${o.at}; publickey-credentials-create ${o.at}`;");
+    expect(panel).toContain("frame.src = `${o.at}/connect/panel/`;");
+    expect(panel).toContain("document.body.append(scrim, box);");
+    // It listens only to that frame, at that address; and tells it who is asking at that address only.
+    expect(panel).toContain("if (!up || e.source !== up.frame.contentWindow || e.origin !== o.at) return;");
+    expect(panel).not.toMatch(/postMessage\([^)]*,\s*"\*"\)/);
+    // The address is the instance's own sign-in address, as it is reached from here.
+    const shell = readFileSync(new URL("../src/shell/main.ts", import.meta.url), "utf8");
+    expect(shell).toContain('const SIGN_IN = new URL(INSTANCE.signer ?? "https://bitlogin.network/").origin;');
+    expect(shell).toContain("void toLocal(`${SIGN_IN}/`)");
+    // Shown only at a press, and only for a place that may be in the frame.
+    expect(shell).toContain("if (!panel || panel.open || !pressed()) return;");
+    expect(shell).toContain("void (asker === location.origin ? Promise.resolve(true) : mayShow(asker)).then((may) => {");
+    // No other file of BitPortal's makes a frame of the sign-in address's pages with an interface.
+    const src = new URL("../src/", import.meta.url);
+    for (const file of readdirSync(src, { recursive: true }).filter((f) => /\.(ts|html)$/.test(f) && !/shell[\\/]panel\.ts$/.test(f))) expect(readFileSync(new URL(file, src), "utf8"), file).not.toContain("/connect/panel");
   });
   it("leaves the Airlock waiting on nobody: it reads this browser's own note, and loads nothing from the sign-in address to do it", async () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };

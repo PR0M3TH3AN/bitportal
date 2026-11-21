@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inShell, PLAIN_KEY, SHELL_WORLDS, shellWanted, showsInShell } from "../src/shared/shell.js";
+import { isPanelMode, placePanel, readMenuPlace } from "../src/shell/panel.js";
 
 const HERE = "https://portal.example";
 const page = (path: string, top?: { origin: string; pathname: string } | "elsewhere" | "self") => {
@@ -68,5 +69,38 @@ describe("the page that keeps the screen filled", () => {
     const refused = tab();
     (refused.w as unknown as { sessionStorage: unknown }).sessionStorage = { getItem: () => { throw new Error("refused"); } };
     expect(shellWanted(refused.w)).toBe(false);
+  });
+
+  it("draws the sign-in panel where the menu is, and never off the screen or too small to read", () => {
+    const desk = { width: 1440, height: 900 };
+    const phone = { width: 390, height: 844 };
+    // Where the world said its menu is.
+    expect(placePanel("menu", desk, { left: 330, width: 780, bottom: 132 })).toEqual({ left: 330, width: 780, bottom: 132, height: 640 });
+    expect(placePanel("tall", desk, { left: 330, width: 780, bottom: 132 })).toEqual({ left: 330, width: 780, bottom: 132, height: 758 });
+    expect(placePanel("menu", phone, { left: 10, width: 370, bottom: 118 })).toEqual({ left: 10, width: 370, bottom: 118, height: 640 });
+    // The tall one takes a phone's whole screen, less a margin.
+    expect(placePanel("tall", phone, { left: 10, width: 370, bottom: 118 })).toEqual({ left: 10, width: 370, bottom: 10, height: 824 });
+    // A world that said nothing: where a menu would be.
+    expect(placePanel("menu", desk, null)).toEqual({ left: 330, width: 780, bottom: 132, height: 640 });
+    expect(placePanel("menu", phone, null)).toEqual({ left: 10, width: 370, bottom: 118, height: 640 });
+    // A world that said something absurd doesn't get to hide the question, shrink it, or push it off the screen.
+    for (const absurd of [{ left: -5000, width: 1, bottom: -900 }, { left: 99999, width: 99999, bottom: 99999 }, { left: 700, width: 4, bottom: 0 }]) {
+      for (const screen of [desk, phone]) {
+        const p = placePanel("menu", screen, absurd);
+        expect(p.width, JSON.stringify(absurd)).toBeGreaterThanOrEqual(320);
+        expect(p.left).toBeGreaterThanOrEqual(0);
+        expect(p.left + p.width).toBeLessThanOrEqual(screen.width);
+        expect(p.bottom).toBeGreaterThanOrEqual(10);
+        expect(p.bottom + p.height).toBeLessThanOrEqual(screen.height);
+        expect(p.height).toBeGreaterThanOrEqual(400);
+      }
+    }
+  });
+
+  it("takes from a world only a mode it knows and three numbers", () => {
+    expect(["ask", "switch", "account"].every(isPanelMode)).toBe(true);
+    for (const not of ["", "ASK", "everything", 1, null, undefined, {}]) expect(isPanelMode(not), String(not)).toBe(false);
+    expect(readMenuPlace({ left: 1, width: 2, bottom: 3, more: "ignored" })).toEqual({ left: 1, width: 2, bottom: 3 });
+    for (const not of [null, "menu", {}, { left: 1, width: 2 }, { left: "1", width: 2, bottom: 3 }, { left: NaN, width: 2, bottom: 3 }, { left: Infinity, width: 2, bottom: 3 }]) expect(readMenuPlace(not), JSON.stringify(not)).toBeNull();
   });
 });

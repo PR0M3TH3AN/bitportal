@@ -11,11 +11,15 @@
  * - **It remembers where they are,** so loading this page again comes back to the same place and not to the room.
  * - **It goes the ordinary way when the frame fails.** A place that doesn't say it came up is opened as a page
  *   of its own, as it always was.
+ * - **It shows the sign-in address's panel when the place in its frame asks,** at the visitor's press there, over
+ *   the world and in place of a window (panel.ts). So signing in doesn't give up the screen either.
  *
- * It can't see into a world it frames and doesn't try to.
+ * It can't see into a world it frames, or into the panel, and doesn't try to.
  */
-import { fromLocal } from "@nswp/core";
+import { fromLocal, toLocal } from "@nswp/core";
+import { INSTANCE } from "../shared/instance.js";
 import { PLAIN_KEY, showsInShell } from "../shared/shell.js";
+import { createPanel, isPanelMode, readMenuPlace, type Panel } from "./panel.js";
 
 const view = document.getElementById("view") as HTMLIFrameElement;
 /** Where this tab keeps the place that is in the frame. */
@@ -29,11 +33,31 @@ const AT_KEY = "bitportal:shell-at";
 const HELLO_MS = 4000;
 const AT_MOST_MS = 15_000;
 
+/** The sign-in address: the real one, which is what a world knows its own signer by. */
+const SIGN_IN = new URL(INSTANCE.signer ?? "https://bitlogin.network/").origin;
 const filled = (): boolean => !!document.fullscreenElement;
 const tell = (): void => {
-  // To whatever is in the frame: whether the screen is filled is nobody's secret.
-  view.contentWindow?.postMessage({ nswp: "screen", holds: true, filled: filled() }, "*");
+  // To whatever is in the frame: whether the screen is filled is nobody's secret, nor that this page can show the
+  // sign-in address's panel, and whose.
+  view.contentWindow?.postMessage({ nswp: "screen", holds: true, filled: filled(), signIn: SIGN_IN }, "*");
 };
+/** The panel, once it is known where the sign-in address is reached from here (a local copy, on a development server). */
+let panel: Panel | null = null;
+void toLocal(`${SIGN_IN}/`)
+  .then((at) => new URL(at).origin)
+  .catch(() => SIGN_IN)
+  .then((at) => {
+    panel = createPanel({
+      at,
+      told: (open, more) => {
+        view.contentWindow?.postMessage({ nswp: "sign-in", open, ...(more?.failed ? { failed: true } : {}), ...(more?.allowed ? { allowed: true } : {}) }, "*");
+        // The keys go back to the world as the panel goes.
+        if (!open) view.focus();
+      },
+    });
+  });
+/** Whether the visitor has only just pressed something, by the browser's own account (a press in a frame counts for this page). */
+const pressed = (): boolean => (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation?.isActive !== false;
 
 /** An address as a secure web address, or null: nothing else is ever gone to from here. */
 const webAddress = (address: string): string | null => {
@@ -85,6 +109,17 @@ addEventListener("message", (e: MessageEvent) => {
   } else if (said.nswp === "screen" && typeof said.fill === "boolean") {
     // Asked at the visitor's own press in the frame, which a browser counts for this page too.
     void (said.fill ? document.documentElement.requestFullscreen() : document.exitFullscreen()).catch(() => tell());
+  } else if (said.nswp === "sign-in" && isPanelMode((said as { mode?: unknown }).mode)) {
+    // Only at the visitor's own press in the frame: a world doesn't get to put a sign-in in front of someone.
+    if (!panel || panel.open || !pressed()) return;
+    const mode = (said as { mode: "ask" | "switch" | "account" }).mode;
+    const menu = readMenuPlace((said as { menu?: unknown }).menu);
+    const asker = e.origin;
+    // And only for a place that may be shown here: this site's own pages, and the worlds named.
+    void (asker === location.origin ? Promise.resolve(true) : mayShow(asker)).then((may) => {
+      // Still the same place in the frame: the answer is for whoever asked.
+      if (may && e.source === view.contentWindow) panel?.show(asker, mode, menu);
+    });
   } else if (said.nswp === "going" && e.origin === location.origin && typeof said.to === "string") {
     // This site's own Airlock is sending the frame on: if the place doesn't come up here, it is gone to whole.
     // Only ever to a web address: what is kept here is what this whole page may be sent to.
@@ -98,6 +133,8 @@ document.addEventListener("fullscreenchange", () => {
   view.focus();
 });
 view.addEventListener("load", () => {
+  // A panel that was up was for the place that has gone.
+  panel?.close();
   // Each place that comes into the frame is given the keys as it arrives: a visitor walks on with no press.
   view.focus();
   // Its page has loaded, so it has had its chance to say so: a little longer, and then the ordinary way.

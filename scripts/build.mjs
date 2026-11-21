@@ -99,11 +99,17 @@ const cspFramed = rulesFor({ framedBy: "'self'" });
 const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });
 /** What a page may use, and hand on to what it frames: `/shell/` hands a headset and a microphone to the worlds it may frame, by name. */
 const handsOn = (to = []) => `xr-spatial-tracking=(self${to.map((o) => ` "${o}"`).join("")}), microphone=(self${to.map((o) => ` "${o}"`).join("")}), camera=(), geolocation=()`;
-const guards = (policy, to) => [
+/**
+ * And `/shell/` alone hands the use and the making of a passkey to the sign-in address, whose panel it shows over
+ * the world (src/shell/panel.ts): to that one address. The page has to be named too (`self`), because a browser
+ * lets a page hand on only what it may use itself; no page of BitPortal asks for a passkey, here or anywhere.
+ */
+const passkeysTo = (origin) => `publickey-credentials-get=(self "${origin}"), publickey-credentials-create=(self "${origin}")`;
+const guards = (policy, to, passkeys) => [
   { key: "Content-Security-Policy", value: policy },
   { key: "Referrer-Policy", value: "no-referrer" },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Permissions-Policy", value: handsOn(to) },
+  { key: "Permissions-Policy", value: passkeys ? `${handsOn(to)}, ${passkeysTo(passkeys)}` : handsOn(to) },
 ];
 writeFileSync(
   join(out, "vercel.json"),
@@ -118,7 +124,7 @@ writeFileSync(
         // holds a page to both, and the page that frames worlds would be held to the rule that frames none.
         { source: "/((?!(?:walk|go|shell)(?:/|$)).*)", headers: guards(csp) },
         { source: "/(walk|go)(/.*)?", headers: guards(cspFramed) },
-        { source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds) },
+        { source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },
         // Always the latest (NSWP-09): a browser asks before it uses a copy of a page or a script it kept. Said
         // outright, and not left to the host's habit. Not for the fonts and previews, which have rules of their own.
         { source: "/((?!fonts/|previews/).*)", headers: [{ key: "Cache-Control", value: "no-cache" }] },

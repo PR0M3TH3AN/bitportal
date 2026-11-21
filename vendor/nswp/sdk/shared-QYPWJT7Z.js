@@ -213,6 +213,101 @@ function rgb(hex) {
   return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
 }
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/client-frame.ts
+var framed = () => {
+  try {
+    return typeof window !== "undefined" && window.parent !== window;
+  } catch {
+    return false;
+  }
+};
+var holds = false;
+var filled = false;
+var met = false;
+var watchers2 = /* @__PURE__ */ new Set();
+var signInAt = null;
+var panelOpen = false;
+var panelFailed = false;
+var panelWatchers = /* @__PURE__ */ new Set();
+var menuPlace = null;
+function setMenuPlace(fn) {
+  menuPlace = fn;
+}
+var clientHoldsScreen = () => holds;
+var clientScreenFilled = () => holds && filled;
+function onClientScreen(fn) {
+  watchers2.add(fn);
+  return () => void watchers2.delete(fn);
+}
+var say = (words) => {
+  try {
+    window.parent.postMessage({ nswp: words.nswp, ...words }, "*");
+  } catch {
+  }
+};
+function askClientForScreen(fill) {
+  if (framed()) say({ nswp: "screen", fill });
+}
+var clientSignsInAt = () => signInAt;
+var clientPanelOpen = () => panelOpen;
+function onClientSignIn(fn) {
+  panelWatchers.add(fn);
+  return () => void panelWatchers.delete(fn);
+}
+function askClientForSignIn(mode = "ask") {
+  if (!framed() || !signInAt) return false;
+  let menu = null;
+  try {
+    menu = menuPlace?.() ?? null;
+  } catch {
+  }
+  say({ nswp: "sign-in", mode, ...menu ? { menu } : {} });
+  return true;
+}
+var secureOrigin = (address) => {
+  if (typeof address !== "string" || address.length > 200) return null;
+  try {
+    const u = new URL(address);
+    return u.protocol === "https:" && u.origin === address.replace(/\/$/, "") ? u.origin : null;
+  } catch {
+    return null;
+  }
+};
+function meetClient() {
+  if (met || !framed()) return;
+  met = true;
+  addEventListener("message", (e) => {
+    if (e.source !== window.parent) return;
+    const said = e.data;
+    if (!said || typeof said !== "object") return;
+    if (said.nswp === "sign-in" && typeof said.open === "boolean") {
+      const failed = !said.open && said.failed === true;
+      if (failed) {
+        panelFailed = true;
+        signInAt = null;
+      }
+      if (panelOpen === said.open && !failed) return;
+      panelOpen = said.open;
+      for (const fn of panelWatchers) fn(panelOpen, failed, !said.open && said.allowed === true);
+      if (failed) for (const fn of watchers2) fn();
+      return;
+    }
+    if (said.nswp !== "screen" || typeof said.holds !== "boolean") return;
+    const was = `${holds}${filled}${signInAt}`;
+    holds = said.holds;
+    filled = said.filled === true;
+    if (said.signIn !== void 0 && !panelFailed) signInAt = secureOrigin(said.signIn);
+    if (was !== `${holds}${filled}${signInAt}`) for (const fn of watchers2) fn();
+  });
+  let at = "/";
+  try {
+    at = `${location.pathname}${location.search}`.slice(0, 300);
+  } catch {
+  }
+  say({ nswp: "here", at });
+}
+meetClient();
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/relay-book.ts
 import { DISCOVERY, DISCOVERY_RELAYS, learnRelays, pickDiscovered, pickRelays, publishEvent, queryRelays, RELAY_DISCOVERY_KIND, WRAP_KIND } from "@nswp/core";
 var KEY2 = "nswp:relays";
@@ -351,7 +446,7 @@ async function publishBacked(relays, event, o = {}) {
 import { CHAT_LIMITS, cleanChat } from "@nswp/core";
 var CHAT_KEY = "nswp:chat";
 var shown2 = null;
-var watchers2 = /* @__PURE__ */ new Set();
+var watchers3 = /* @__PURE__ */ new Set();
 function showsChat() {
   if (shown2 !== null) return shown2;
   const came = arrivedSettings().chat;
@@ -376,11 +471,11 @@ function setShowsChat(on) {
   showsChat();
   shown2 = on;
   keep2(on);
-  for (const w of watchers2) w();
+  for (const w of watchers3) w();
 }
 function onChatChange(cb) {
-  watchers2.add(cb);
-  return () => void watchers2.delete(cb);
+  watchers3.add(cb);
+  return () => void watchers3.delete(cb);
 }
 function createUiChat(changed) {
   let send = null;
@@ -631,6 +726,17 @@ export {
   saveVisitorTheme,
   resolveTheme,
   rgb,
+  framed,
+  setMenuPlace,
+  clientHoldsScreen,
+  clientScreenFilled,
+  onClientScreen,
+  askClientForScreen,
+  clientSignsInAt,
+  clientPanelOpen,
+  onClientSignIn,
+  askClientForSignIn,
+  meetClient,
   learnFrom,
   relaysWell,
   sendWell,

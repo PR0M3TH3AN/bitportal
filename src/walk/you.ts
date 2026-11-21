@@ -23,7 +23,7 @@ import type { WhoDoor } from "../shared/who.js";
 
 /** What to say about signing in: where it is done, and that a world asks once of its own. */
 const signingIn = (): string =>
-  ` You sign in at ${signInHost()}, in a window of its own: once for here, and once at each world you choose to be known in. Until you do, people there see a guest.${holdsReserved() ? "" : " At this address it signs no pass, so people in this room see a guest too."}`;
+  ` You sign in at ${signInHost()}, which asks you itself: once for here, and once at each world you choose to be known in. Until you do, people there see a guest.${holdsReserved() ? "" : " At this address it signs no pass, so people in this room see a guest too."}`;
 
 export interface YouOptions {
   controls: Controls;
@@ -40,8 +40,14 @@ export interface YouOptions {
   signIn(): void;
   /** Sign them out of this site, here. */
   signOut(): void;
-  /** Let them be someone else: the sign-in address's window, to choose another account. */
+  /** Let them be someone else: the sign-in address asks, to choose another account. */
   another(): void;
+  /**
+   * Show their account at the sign-in address, here: its own pages, in the panel drawn over the room. Left out,
+   * or `canAccount` false, where there is no panel: the room shows none of that itself.
+   */
+  account?(): void;
+  canAccount?(): boolean;
   /** Their look as it is kept, or null while they have none. */
   look(): KeptLook | null;
   /** Their look has changed, or been forgotten: draw it. */
@@ -85,6 +91,8 @@ export function addYou(o: YouOptions): You {
       act: () => (o.signedInAs() ? o.signOut() : o.signIn()),
     },
     { id: "identity-another", section: "you", icon: "you", label: "Be someone else", short: "Other", hidden: () => !o.signedInAs(), act: () => o.another() },
+    // The same row every world has (the kit's `accountAction`): everything the sign-in address does, without leaving.
+    { id: "account", section: "you", icon: "key", label: () => `Your account, at ${signInHost()}`, short: "Account", hidden: () => !(o.account && o.canAccount?.()), act: () => o.account?.() },
   );
   if (o.door) {
     const where = o.door.host || "the world you came from";
