@@ -84,10 +84,15 @@ export const PLAIN_KEY = "bitportal:plain";
  * Whether a page of BitPortal opened by its own address should be shown inside the page that keeps the screen
  * instead (the owner, 2026-11-21: "should be our new default process and the old method should be our fall back").
  *
- * Where a screen can be filled and there is a mouse: a desk. Not in a headset's browser or on a phone, where it
- * hasn't been tried and there is less to gain: they go the ordinary way, as before, until someone has. And not
- * in a tab that has been told to go the ordinary way (`?plain=1`, or the page that holds the screen having found
- * that what it showed didn't come up).
+ * On every device (the owner, later that day, having tried it on a phone: "works well on mobile. Make it the
+ * default for all modes. Including VR"). It began as a desk's alone, since a desk is where a filled screen is
+ * lost at every door; but it is also what draws the sign-in address's panel over the world, so a phone and a
+ * headset's browser want it as much. Where a screen can't be filled at all the page says so, and worlds offer no
+ * control for it (`holds` in src/shell/main.ts).
+ *
+ * Not in a frame already, and not in a tab that has been told to go the ordinary way (`?plain=1`, or the page
+ * that holds the screen having found that what it showed didn't come up). That stays: it is the way back for a
+ * browser this turns out not to work in.
  */
 export function shellWanted(w: Window = window): boolean {
   try {
@@ -95,10 +100,7 @@ export function shellWanted(w: Window = window): boolean {
     const asked = new URLSearchParams(w.location.search).get("plain");
     if (asked === "1") w.sessionStorage.setItem(PLAIN_KEY, "1");
     if (asked === "0") w.sessionStorage.removeItem(PLAIN_KEY);
-    if (w.sessionStorage.getItem(PLAIN_KEY) === "1") return false;
-    if (!w.document.fullscreenEnabled) return false;
-    if (/OculusBrowser|Quest|Pico|Wolvic|VisionOS/i.test(w.navigator.userAgent)) return false;
-    return w.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    return w.sessionStorage.getItem(PLAIN_KEY) !== "1";
   } catch {
     return false;
   }

@@ -39,7 +39,9 @@ const filled = (): boolean => !!document.fullscreenElement;
 const tell = (): void => {
   // To whatever is in the frame: whether the screen is filled is nobody's secret, nor that this page can show the
   // sign-in address's panel, and whose.
-  view.contentWindow?.postMessage({ nswp: "screen", holds: true, filled: filled(), signIn: SIGN_IN }, "*");
+  // `holds` is whether this page can fill a screen at all: where a browser can't (a phone's, some of them), the
+  // place in the frame is told so and offers no control for it, as it wouldn't as a page of its own.
+  view.contentWindow?.postMessage({ nswp: "screen", holds: document.fullscreenEnabled === true, filled: filled(), signIn: SIGN_IN }, "*");
 };
 /** The panel, once it is known where the sign-in address is reached from here (a local copy, on a development server). */
 let panel: Panel | null = null;
