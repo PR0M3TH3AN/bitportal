@@ -6,6 +6,7 @@
  * previews on the doors come from BitPortal's own mirror (spec §5.8).
  */
 import { startSync } from "../shared/sync-run.js";
+import { prototypeNotice } from "../shared/notice.js";
 import { audienceOf, buildAirlockUrl, categoryWords, checkDestination, CURATION_SET_KIND, encodeNaddr, encodeNpub, shortNpub, WORLD_KIND, type Tally } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
@@ -1204,6 +1205,8 @@ async function startHero(): Promise<void> {
 }
 
 async function start(): Promise<void> {
+  // Someone arriving is told once that this is an early prototype (shared/notice.ts).
+  prototypeNotice({ large: device.tier === "standalone" });
   $("open-settings").addEventListener("click", openSettings);
   const q = $<HTMLInputElement>("find-q");
   q.addEventListener("input", () => {
