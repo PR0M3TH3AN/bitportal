@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "gate": "node scripts/gate.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "vendor": "node scripts/vendor.mjs",
