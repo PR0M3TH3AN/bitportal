@@ -7529,6 +7529,16 @@ function cleanAsk(name, args) {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/core/src/item-box.ts
 var ITEM_BOX_CSP = "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; frame-ancestors 'self'";
+function itemBoxCsp(client) {
+  if (typeof client !== "string") return ITEM_BOX_CSP;
+  let origin = "";
+  try {
+    const at = new URL(client);
+    if (at.protocol === "https:" && at.origin === client && /^https:\/\/[a-z0-9.-]+(:\d+)?$/.test(client)) origin = at.origin;
+  } catch {
+  }
+  return origin ? `${ITEM_BOX_CSP} ${origin}` : ITEM_BOX_CSP;
+}
 var WORKER_HEAD = `"use strict";
 const __on = Object.create(null);
 let __timers = [];
@@ -8536,6 +8546,7 @@ export {
   isSealAsked,
   isWhatWasAsked,
   isWssUrl,
+  itemBoxCsp,
   itemCoordinate,
   itemsWords,
   kitAge,
