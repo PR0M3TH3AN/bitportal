@@ -8,11 +8,9 @@
  * - **A look** is a handful of choices from short lists. They are in the
  *   room's menu, which is the same on a phone, at a desk and on a headset's
  *   wrist, and the visitor's own figure stands in the room to show them.
- * - **Signing in** is done at BitLogin's own address, in a window of its own.
- *   The button that opens it is on one page of BitPortal's (`/account/`),
- *   which is a place too: it is stepped into from the crossing's room, and
- *   left by it. So the room's control leads there, by the same room every
- *   door leads through.
+ * - **Signing in** is done at BitLogin's own address, in a window of its own,
+ *   which the room's own control opens at the visitor's press: the same row,
+ *   in the same words, as in every world. Nowhere else is gone to for it.
  * - **The way back** to the world they came from is the door this site's own
  *   Airlock kept for the tab (who.ts). It leads to the Airlock, which checks
  *   it as it checks any door.
@@ -35,8 +33,15 @@ export interface YouOptions {
   door: WhoDoor | null;
   /** Take them back there, by the crossing's room. */
   goBack(): void;
-  /** Take them to the place they sign in, by the crossing's room. */
-  goSignIn(): void;
+  /**
+   * Sign them in, here: the sign-in address's own window opens at their press, as it does in every world. No
+   * other place is gone to for it.
+   */
+  signIn(): void;
+  /** Sign them out of this site, here. */
+  signOut(): void;
+  /** Let them be someone else: the sign-in address's window, to choose another account. */
+  another(): void;
   /** Their look as it is kept, or null while they have none. */
   look(): KeptLook | null;
   /** Their look has changed, or been forgotten: draw it. */
@@ -72,10 +77,14 @@ export function addYou(o: YouOptions): You {
       id: "identity",
       section: "you",
       icon: "you",
-      label: () => (o.signedInAs() ? `Signed in as ${o.signedInAs()}. Be someone else, or sign out` : "You are a guest. Sign in"),
-      short: () => (o.signedInAs() ? "You" : "Sign in"),
-      act: () => o.goSignIn(),
+      // The same row, in the same words, as in every world (the kit's `signerAction`): it says whose window will
+      // open before anything is pressed, and signing out is the same row once they are in.
+      label: () => (o.signedInAs() ? `Signed in as ${o.signedInAs()}. Sign out here` : `Sign in, at ${signInHost()}`),
+      short: () => (o.signedInAs() ? "Sign out" : "Sign in"),
+      on: () => !!o.signedInAs(),
+      act: () => (o.signedInAs() ? o.signOut() : o.signIn()),
     },
+    { id: "identity-another", section: "you", icon: "you", label: "Be someone else", short: "Other", hidden: () => !o.signedInAs(), act: () => o.another() },
   );
   if (o.door) {
     const where = o.door.host || "the world you came from";

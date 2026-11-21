@@ -40,7 +40,7 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, quietSigner, quietVault, readSignedIn } from "../shared/session.js";
+import { holdsReserved, quietSigner, quietVault, readSignedIn, signIn, signInHost, signOut, switchAccount } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -1354,34 +1354,50 @@ async function start(): Promise<void> {
     // They go back as they are now: what they set here goes with them, and the room they were in there is theirs to rejoin.
     location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, dest, { immersive, ...(req.joined ? { joined: true, ...(req.mic ? { mic: true } : {}) } : {}), ...(req.blocked ? { blocked: req.blocked } : {}), ...movingFlag(), form: currentForm(), settings: currentSettings() }));
   };
-  // Signing in is a place of its own (`/account/`), reached by the crossing's room like anywhere else.
-  const goSignIn = async () => {
+  // Signing in is done here, as in every world: the sign-in address's own window opens at their press, and the
+  // room is then read again as whoever they now are, with them put back where they stood. (It used to be a place
+  // of its own, gone to by the crossing's room. The owner: "i want every world to function the same for login".)
+  // What they have set, and the room they were in, go on with them across that reading-again.
+  const readAgain = (): void => {
     if (leaving) return;
     leaving = true;
-    state.leaving = "account";
-    everyDoor?.close();
-    sounds.play("cross");
-    await crossing.leave({ title: "Who you are", address: location.host });
-    document.body.classList.add("leaving");
-    const fromHeadset = renderer.xr.isPresenting;
-    try {
-      await renderer.xr.getSession()?.end();
-    } catch {
-      /* already ended */
-    }
     try {
       sessionStorage.setItem(ARRIVED_SETTINGS, JSON.stringify(currentSettings()));
+      const now = travelling();
+      if (now.joined) sessionStorage.setItem(ARRIVED_JOINED, now.mic ? "mic" : "joined");
     } catch {
       /* the page keeps what it had */
     }
-    location.assign(`/account/?back=${whoDoor ? "door" : "walk"}${fromHeadset ? "&xr=1" : ""}`);
+    location.reload();
+  };
+  /** A window can't be opened from inside a headset: said, in place of a press that does nothing. */
+  const windowed = (): boolean => {
+    if (!renderer.xr.isPresenting) return true;
+    controls.say(`Signing in is done in a window at ${signInHost()}. Leave VR for a moment to do it.`);
+    return false;
+  };
+  const signInHere = async (): Promise<void> => {
+    if (!windowed()) return;
+    if (await signIn()) return readAgain();
+    controls.say(`You weren't signed in: the window at ${signInHost()} was closed before you allowed BitPortal, or your browser didn't let it open. Press Sign in to try again.`);
+  };
+  const signOutHere = async (): Promise<void> => {
+    await signOut();
+    readAgain();
+  };
+  const beSomeoneElse = async (): Promise<void> => {
+    if (!windowed()) return;
+    if (await switchAccount()) return readAgain();
+    controls.say(`Nothing changed: the window at ${signInHost()} was closed, or your browser didn't let it open.`);
   };
   const you: You = addYou({
     controls,
     openMenu: (section) => hud.setOpen(true, section),
     door: whoDoor,
     goBack: () => void goBack(),
-    goSignIn: () => void goSignIn(),
+    signIn: () => void signInHere(),
+    signOut: () => void signOutHere(),
+    another: () => void beSomeoneElse(),
     look: () => myLook,
     onLook: (kept: KeptLook | null) => {
       myLook = kept;
@@ -1528,11 +1544,13 @@ async function start(): Promise<void> {
   const back = location.hash.replace(/^#/, "").split("&");
   // Brought here from a world to change their look: they step out of the crossing's room too.
   const cameForLook = back.includes("look");
+  // Or to sign in: the menu comes up on who they are, where the one press that opens the sign-in window is.
+  const cameToSignIn = back.includes("you");
   const cameBack = back.includes("back") || cameForLook;
   const cameFromHeadset = cameBack && back.includes("xr=1");
   // A link the Bridge printed asks to add a computer. It is taken off the address too, so a reload doesn't ask again.
   const pairing = computers.fromAddress(location.hash);
-  if (cameBack || pairing) history.replaceState(history.state, "", location.pathname + location.search);
+  if (cameBack || pairing || cameToSignIn) history.replaceState(history.state, "", location.pathname + location.search);
   // A refresh is not an arrival. Whoever was here is put back where they stood (further down), and if the refresh
   // ended a headset session, the way back into one is offered first, as it is to someone coming home.
   const stay = createStay();
@@ -1832,11 +1850,12 @@ async function start(): Promise<void> {
     crossing.arrive({ title: "BitPortal", address: location.host, hold: () => offered });
   }
   // What they came for is put in front of them once the crossing's room has opened.
-  if (cameForLook) {
+  if (cameForLook || cameToSignIn) {
     const wait = setInterval(() => {
       if (crossing.state !== "none") return;
       clearInterval(wait);
-      you.openLook();
+      if (cameForLook) you.openLook();
+      else hud.setOpen(true, "you");
     }, 200);
   }
   state.ready = true;
