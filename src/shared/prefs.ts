@@ -30,6 +30,8 @@ const SOUND_KEY = "bitportal:sound";
 const UI_KEY = "nswp:ui";
 /** The tabs of the menu they keep on their bar, as the kit keeps them here. */
 const PINS_KEY = "nswp:ui:pins";
+/** What they last held here, as the kit keeps it (its `HELD_KEY`): an item, its colours and its script's mark, or "" for put away. */
+export const HELD_KEY = "nswp:holding";
 
 export interface Prefs {
   full: boolean;
@@ -104,7 +106,11 @@ export function keptSettings(store: Reader | null): TravelSettings {
   const ui = (json(store?.getItem(UI_KEY) ?? null) ?? {}) as { scale?: unknown; motion?: unknown; wrist?: unknown };
   // Said only once they have chosen: an empty list is them taking every tab off, and nothing kept is no choice.
   const pins = json(store?.getItem(PINS_KEY) ?? null);
+  // What was in their hand in their own room: it goes on through a door opened from here. Read through the same
+  // check as one said on a link, and the world they arrive in takes it in hand only if it is in their own bag.
+  const held = json(store?.getItem(HELD_KEY) ?? null);
   return cleanSettings({
+    ...(held === "" || (held && typeof held === "object") ? { holding: held } : {}),
     ...(Array.isArray(pins) ? { pins } : {}),
     ...(sound && typeof sound === "object" ? { sound } : {}),
     ...(typeof ui.scale === "number" ? { text: ui.scale } : {}),

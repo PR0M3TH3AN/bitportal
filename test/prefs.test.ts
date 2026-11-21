@@ -42,6 +42,15 @@ describe("what goes through a door", () => {
     expect(s).toEqual({ sound: { music: 0.2, effects: 0.6 }, text: 1.25, motion: false, full: true, intense: true, look: 2, fov: 100, pictures: true, chat: true, items: true });
     // Someone who turned every item off, in the Bag tab of any menu, has them off in the next world too.
     expect(keptSettings(store({ "nswp:items": "off" })).items).toBe(false);
+    // What was last in their hand here goes on through a door opened from here; put away by their own hand, that
+    // is said; and anything that isn't an item's address is as if nothing were kept.
+    const item = `37303:${"a".repeat(64)}:dart-blaster`;
+    expect(keptSettings(store({ "nswp:holding": JSON.stringify({ item, tints: { accent: "#8b5cf6" } }) })).holding).toEqual({ item, tints: { accent: "#8b5cf6" } });
+    expect(keptSettings(store({ "nswp:holding": JSON.stringify("") })).holding).toBe("");
+    expect(keptSettings(store({ "nswp:holding": JSON.stringify({ item: "https://evil.example/x" }) })).holding).toBeUndefined();
+    expect(keptSettings(store({})).holding).toBeUndefined();
+    // What the world they left says is the newer word: it put the thing away, so nothing is taken out for them.
+    expect(settingsToCarry(keptSettings(store({ "nswp:holding": JSON.stringify({ item }) })), { holding: "" }).holding).toBe("");
     // Hearing other people's music is a consent, not a setting: it never goes on a link.
     expect(JSON.stringify(s)).not.toContain("hearShared");
   });

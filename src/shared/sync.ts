@@ -102,6 +102,12 @@ export const SECTIONS: Section[] = [
   { name: "pictures", key: "nswp:pictures" },
   // Whether they see what people write in a room: the same.
   { name: "chat", key: "nswp:chat" },
+  // What they carry: whether anything carried is drawn for them at all, and what was last in their hand, with the
+  // colours they chose for it (the owner, 2026-11-20: "walking from one world to the next should keep the item i
+  // had equipped. That stuff should be synced across nostr notes"). Read back by the kit through the check a held
+  // thing on a link goes through, and taken in hand only if it is in their own bag.
+  { name: "items", key: "nswp:items" },
+  { name: "holding", key: "nswp:holding" },
   { name: "blocked", key: "bitportal:blocked" },
   { name: "home", key: "bitportal:home" },
   { name: "lists", key: "bitportal:lists" },
