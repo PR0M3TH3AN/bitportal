@@ -32,11 +32,12 @@ const door = (d: string, slot: number) => ({ id: `37300:${"a".repeat(64)}:${d}`,
 const savedWith = (...doors: { id: string; slot: number; savedAt: number }[]) => JSON.stringify(doors.map((p) => ({ ...p, event: { id: p.id, fake: true } })));
 
 describe("keeping settings with a profile", () => {
-  it("does nothing until the visitor turns it on", async () => {
+  it("keeps them for anyone signed in, with nothing to turn on", async () => {
+    // A browser that never heard of a switch: its settings are sealed and sent the first time a round is made.
     const b = browser({ "bitportal:settings": '{"airlock":"ask"}' });
     const r = relays();
-    expect(await syncOnce({ store: b, vault: profile(1), shelf: r.shelf })).toMatchObject({ sent: false, why: "off" });
-    expect(r.notes.size).toBe(0);
+    expect(await syncOnce({ store: b, vault: profile(1), shelf: r.shelf })).toMatchObject({ sent: true });
+    expect(r.notes.size).toBe(1);
   });
 
   it("sends what a browser has, sealed so that nothing in it can be read off the relay", async () => {

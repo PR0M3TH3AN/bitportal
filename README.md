@@ -349,8 +349,7 @@ Everything BitPortal knows about you is kept in the browser you are using.
 That is fast, works with no network, and means nothing about you is anywhere
 else. It also means a second device starts from nothing.
 
-So, signed in, you can turn on **Keep my settings with my profile** in
-Settings. It is off until you do. Then one note is kept on your relays,
+So, once you are signed in, one note is kept on your relays,
 sealed with your own key (NIP-44) so that nobody else can open it, relays
 included. It is ordinary Nostr application data (NIP-78, kind 30078), named
 `bitportal/settings`.
@@ -395,9 +394,10 @@ and BitPortal never holds your key.
 - Destinations travel in the URL fragment, which servers never see.
 - A site that hasn't adopted NSWP gets a plain visit, with nothing added to
   its address.
-- Everything BitPortal knows about you stays in this browser, unless you
-  turn on "Keep my settings with my profile" (below). Then one copy is kept
-  on your relays, sealed so that only your own key can open it.
+- Everything BitPortal knows about you stays in this browser. Once you sign
+  in, one copy of your settings is also kept on your relays, sealed so that
+  only your own key can open it (below): the sign-in window lists it before
+  you allow anything.
 - Saved doors and the room's layout stay in this browser. The room draws only
   built-in furniture from a layout: no pictures and nothing else that would
   contact another site.
