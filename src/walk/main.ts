@@ -41,7 +41,7 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, quietSigner, quietVault, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, usePanel } from "../shared/session.js";
+import { holdsReserved, proposeToPerson, quietSigner, quietVault, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, usePanel } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -411,7 +411,7 @@ async function start(): Promise<void> {
   // share the room with see who they are. Not for someone who has said to go about as a guest.
   let roomIdentity: Awaited<ReturnType<typeof issuePass>> | undefined;
   // And they can send out a post from their own room, signed with this same sign-in (notes.ts).
-  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest, nameOf: (pubkey) => profileOf(pubkey)?.name || (pubkey === signedInKey ? signedInAs : "") || null, marked: () => location.host });
+  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest, nameOf: (pubkey) => profileOf(pubkey)?.name || (pubkey === signedInKey ? signedInAs : "") || null, marked: () => location.host, propose: proposeToPerson, host: signInHost });
   hooks.notes = homeNotes;
   const nameMe = async (pubkey: string): Promise<void> => {
     if (goesAsGuest()) return void (roomIdentity = undefined);

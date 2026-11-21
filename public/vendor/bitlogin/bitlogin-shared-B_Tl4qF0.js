@@ -1,4 +1,4 @@
-import { a as m, F as c } from "./bitlogin-shared-Bz2TyEFe.js";
+import { a as m, F as c } from "./bitlogin-shared-AdzLHSV8.js";
 const p = `ac
 com.ac
 edu.ac
