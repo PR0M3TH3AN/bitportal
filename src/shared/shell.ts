@@ -1,5 +1,5 @@
 /**
- * A filled screen that stays filled from world to world (a trial; NSWP-02, "A client that keeps the screen").
+ * A filled screen that stays filled from world to world (NSWP-02, "A client that keeps the screen").
  *
  * A browser gives up a filled screen whenever the page changes. `/shell/` is one page of BitPortal's that fills the
  * screen once and never changes: the room, the Airlock and each world are shown in a frame inside it, so going
@@ -47,6 +47,15 @@ export function showsInShell(address: string, here: string = location.origin): b
  */
 export function goFrom(address: string, o: { real?: string; replace?: boolean } = {}): void {
   const whole = inShell() && !showsInShell(o.real ?? address);
+  // The page that holds the screen is told where its frame is being sent, so that if the place doesn't come up
+  // there (it has changed who may frame it, or can't be reached) it is gone to the ordinary way instead.
+  if (inShell() && !whole) {
+    try {
+      window.parent.postMessage({ nswp: "going", to: new URL(address, location.href).href }, location.origin);
+    } catch {
+      /* it goes all the same */
+    }
+  }
   const where = whole ? window.top!.location : location;
   if (o.replace && !whole) where.replace(address);
   else where.assign(address);
@@ -64,4 +73,79 @@ export function linksLeaveWhole(): void {
     e.preventDefault();
     window.top!.location.assign(link.href);
   });
+}
+
+// ---------------------------------------------------------------- every way in goes through it
+
+/** Where this tab keeps that it is to go the ordinary way: the page that holds the screen didn't work here. */
+export const PLAIN_KEY = "bitportal:plain";
+
+/**
+ * Whether a page of BitPortal opened by its own address should be shown inside the page that keeps the screen
+ * instead (the owner, 2026-11-21: "should be our new default process and the old method should be our fall back").
+ *
+ * Where a screen can be filled and there is a mouse: a desk. Not in a headset's browser or on a phone, where it
+ * hasn't been tried and there is less to gain: they go the ordinary way, as before, until someone has. And not
+ * in a tab that has been told to go the ordinary way (`?plain=1`, or the page that holds the screen having found
+ * that what it showed didn't come up).
+ */
+export function shellWanted(w: Window = window): boolean {
+  try {
+    if (w.top !== w) return false;
+    const asked = new URLSearchParams(w.location.search).get("plain");
+    if (asked === "1") w.sessionStorage.setItem(PLAIN_KEY, "1");
+    if (asked === "0") w.sessionStorage.removeItem(PLAIN_KEY);
+    if (w.sessionStorage.getItem(PLAIN_KEY) === "1") return false;
+    if (!w.document.fullscreenEnabled) return false;
+    if (/OculusBrowser|Quest|Pico|Wolvic|VisionOS/i.test(w.navigator.userAgent)) return false;
+    return w.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Called first thing by the room and the Airlock: opened as a page of its own where the other way is wanted, it
+ * is opened again inside the page that keeps the screen, at the same address, and this page does nothing more.
+ * Returns whether it is going.
+ */
+export function enterShell(): boolean {
+  if (!shellWanted()) return false;
+  location.replace(`${SHELL_PATH}#to=${encodeURIComponent(`${location.pathname}${location.search}${location.hash}`)}`);
+  return true;
+}
+
+const say = (words: Record<string, unknown>): void => {
+  try {
+    if (inShell()) window.parent.postMessage(words, location.origin);
+  } catch {
+    /* nobody to tell */
+  }
+};
+
+/**
+ * For a page of BitPortal's that isn't made with the kit (the Airlock): say it came up, as a world's page says
+ * (the kit's client-frame.ts), and ask for the screen at the visitor's first press if they prefer it filled.
+ */
+export function helloShell(): void {
+  if (!inShell()) return;
+  let isFilled = false;
+  addEventListener("message", (e) => {
+    if (e.source !== window.parent || e.origin !== location.origin) return;
+    const said = e.data as { nswp?: unknown; filled?: unknown } | null;
+    if (said && typeof said === "object" && said.nswp === "screen") isFilled = said.filled === true;
+  });
+  say({ nswp: "here", at: location.pathname });
+  let prefers = false;
+  try {
+    prefers = localStorage.getItem("nswp:full") === "1";
+  } catch {
+    /* nothing kept */
+  }
+  if (!prefers) return;
+  const onPress = (e: Event): void => {
+    if ((e as KeyboardEvent).code === "Escape" || isFilled) return;
+    say({ nswp: "screen", fill: true });
+  };
+  for (const type of ["keydown", "pointerup", "touchend"] as const) addEventListener(type, onPress, true);
 }

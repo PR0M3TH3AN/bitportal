@@ -20,7 +20,7 @@ import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, 
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
-import { goFrom } from "../shared/shell.js";
+import { enterShell, goFrom } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createHome, type Alloy } from "nswp-sdk/home";
 import { addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
@@ -310,6 +310,9 @@ async function orderEntries(entries: Entry[], device: Device, ranking: boolean):
 }
 
 async function start(): Promise<void> {
+  // Opened as a page of its own at a desk, the room is opened again inside the page that keeps the screen filled
+  // from world to world (shared/shell.ts): the same address, and nothing more is done here.
+  if (enterShell()) return;
   const settings = loadSettings();
   const params = new URLSearchParams(location.search);
   const emulate = params.get("xr") === "emulate";

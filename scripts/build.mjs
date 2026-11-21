@@ -70,7 +70,7 @@ const signInOrigin = new URL(named).origin;
 /**
  * A page's content rules. Every page of BitPortal may embed the one sign-in address and nothing else, and may be
  * embedded by nobody: with two exceptions, both for the page that keeps the screen filled from world to world
- * (src/shared/shell.ts; a trial, on the owner's word of 2026-11-20).
+ * (src/shared/shell.ts; on the owner's word of 2026-11-20; the way in at a desk since 2026-11-21).
  *
  * - `/shell/` may also frame this site's own room and Airlock, and the worlds named in `shell-worlds.json`: each
  *   of which says, in its own rules, that BitPortal may frame it. Nothing else, and never `https:`.

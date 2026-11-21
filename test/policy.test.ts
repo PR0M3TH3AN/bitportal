@@ -170,7 +170,7 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     // The address in the policy is read from this instance's own settings, as the one named to worlds.
     expect(/^\s*signer:\s*"(https:\/\/[^"]+)"/m.exec(readFileSync(new URL("../src/shared/instance.ts", import.meta.url), "utf8"))?.[1]).toBe(INSTANCE.signer);
   });
-  it("lets one page keep the screen, framing only its own room, its Airlock and the worlds it names (a trial, 2026-11-20)", async () => {
+  it("lets one page keep the screen, framing only its own room, its Airlock and the worlds it names (2026-11-20)", async () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
     const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
     // The three exceptions, and no fourth: the page that holds the screen, and the two it shows of this site's own.
