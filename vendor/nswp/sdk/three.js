@@ -132,7 +132,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-ATXICYZ6.js";
+} from "./shared-TMOZICGG.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
