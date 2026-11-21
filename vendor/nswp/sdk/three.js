@@ -132,16 +132,20 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-OYTMURB4.js";
+} from "./shared-ZRPF2VRJ.js";
 import {
   PICTURE_LIMITS,
   arriveWith,
   arrivedSettings,
+  askClientForSignIn,
   askWell,
+  clientPanelOpen,
+  clientSignsInAt,
   currentSettings,
   foundRelays,
   learnFrom,
   loadPicture,
+  onClientSignIn,
   onPicturesChange,
   publishBacked,
   queryBacked,
@@ -151,7 +155,7 @@ import {
   sendWell,
   setShowsPictures,
   showsPictures
-} from "./shared-FY6RN3Q2.js";
+} from "./shared-QYPWJT7Z.js";
 import {
   browserVoice,
   computerVoice,
@@ -208,11 +212,14 @@ export {
   allowScript,
   arriveWith,
   arrivedSettings,
+  askClientForSignIn,
   askWell,
   browserVoice,
   byName,
   canRecord,
   capturePanorama,
+  clientPanelOpen,
+  clientSignsInAt,
   computerVoice,
   createAchievements,
   createBag,
@@ -267,6 +274,7 @@ export {
   lookAfter,
   lookScale,
   mayHold,
+  onClientSignIn,
   onDeskChange,
   onHereAs,
   onItemsChange,

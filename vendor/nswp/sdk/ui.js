@@ -22,6 +22,7 @@ import {
   loadPicture,
   loadVisitorTheme,
   onChatChange,
+  onClientSignIn,
   onPicturesChange,
   publishBacked,
   queryBacked,
@@ -32,11 +33,12 @@ import {
   rgb,
   saveVisitorTheme,
   sendWell,
+  setMenuPlace,
   setShowsChat,
   setShowsPictures,
   showsChat,
   showsPictures
-} from "./shared-FY6RN3Q2.js";
+} from "./shared-QYPWJT7Z.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
@@ -1221,6 +1223,23 @@ function mountHud(controls, opts = {}) {
     if (back?.isConnected && back !== document.body && getComputedStyle(back).display !== "none") back.focus({ preventScroll: true });
     else focused()?.blur();
   };
+  setMenuPlace(() => {
+    if (!open || sheet.hidden) return null;
+    const r = sheet.getBoundingClientRect();
+    return r.width > 0 ? { left: Math.round(r.left), width: Math.round(r.width), bottom: Math.round(innerHeight - r.bottom) } : null;
+  });
+  let asideFor = null;
+  onClientSignIn((up, failed) => {
+    if (failed) controls.say("The sign-in panel didn't come up. Press that again, and a window opens instead.");
+    if (up) {
+      asideFor = open ? section : null;
+      if (open) setOpen(false);
+    } else if (asideFor !== null) {
+      const back = asideFor;
+      asideFor = null;
+      setOpen(true, back);
+    }
+  });
   menu.addEventListener("click", () => setOpen(!open));
   quiet.addEventListener("click", () => setOpen(!open));
   close.addEventListener("click", () => setOpen(false));

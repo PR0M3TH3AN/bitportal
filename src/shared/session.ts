@@ -228,6 +228,57 @@ export function knownSignedIn(now: number = Date.now()): { pubkey: string; name?
   }
 }
 
+/**
+ * A panel in place of the window: where this page is shown inside the page that keeps the screen, BitLogin's own
+ * panel is drawn over it there, and no window opens (src/shell/panel.ts). The page says whether there is one and
+ * asks for it (the room does, with the kit's words for it); this file only chooses between the two.
+ */
+export interface SignInPanel {
+  /** Whether a panel would be shown just now, for BitLogin's address. */
+  offered(): boolean;
+  /**
+   * Ask for it, from the visitor's press. Resolves once it has gone: `up` is whether it ever came up, and
+   * `allowed` whether the sign-in address said the visitor said yes (a hint for not waiting on a no).
+   */
+  ask(mode: "ask" | "switch"): Promise<{ up: boolean; allowed: boolean }>;
+}
+let panel: SignInPanel | null = null;
+/** For a page that can be shown a panel: say so. */
+export function usePanel(p: SignInPanel | null): void {
+  panel = p;
+}
+/** How long the signer is given to say who is signed in, once the panel has gone having been told yes. */
+const SAID_YES_MS = 4000;
+/**
+ * The window's question, in the panel if there is one: the same answer either way. The signer is what says who is
+ * signed in; the panel only says when to look.
+ */
+async function ask(c: SignInClient, mode: "ask" | "switch"): Promise<boolean> {
+  if (!panel?.offered()) return mode === "switch" && c.switchAccount ? c.switchAccount() : c.signIn();
+  const yes = (): boolean => {
+    const state = c.state();
+    return mode === "switch" ? state.signedIn : state.signedIn && !state.needsMore;
+  };
+  const { up, allowed } = await panel.ask(mode);
+  if (!up) return false;
+  // Closed without a yes: nothing changed, whoever was signed in before.
+  if (!allowed) return mode === "ask" && yes();
+  if (yes()) return true;
+  // Told yes, and the signer hasn't said so yet: it says a moment after the key is handed to it.
+  return new Promise<boolean>((done) => {
+    const stop = c.onChange(() => {
+      if (!yes()) return;
+      clearTimeout(timer);
+      stop();
+      done(true);
+    });
+    const timer = setTimeout(() => {
+      stop();
+      done(yes());
+    }, SAID_YES_MS);
+  });
+}
+
 let client: Promise<SignInClient | null> | null = null;
 /** The client once it is made, for a press: a window may only be opened while the press is still being handled. */
 let made: SignInClient | null = null;
@@ -339,7 +390,7 @@ export async function signIn(): Promise<boolean> {
   const c = made ?? (await signInClient());
   if (!c) return false;
   try {
-    return await c.signIn();
+    return await ask(c, "ask");
   } catch {
     return false;
   }
@@ -392,7 +443,7 @@ export async function askFor(what: Ask): Promise<"allowed" | "declined" | "block
   const began = Date.now();
   let ok = false;
   try {
-    ok = await c.signIn();
+    ok = await ask(c, "ask");
   } catch {
     ok = false;
   }
@@ -429,7 +480,7 @@ export async function switchAccount(): Promise<boolean> {
   const c = made ?? (await signInClient());
   if (!c) return false;
   try {
-    return await (c.switchAccount ? c.switchAccount() : c.signIn());
+    return await ask(c, "switch");
   } catch {
     return false;
   }
