@@ -48,6 +48,8 @@ export interface YouOptions {
    */
   account?(): void;
   canAccount?(): boolean;
+  /** Show their own files, kept by the sign-in address, the same way. */
+  files?(): void;
   /** Their look as it is kept, or null while they have none. */
   look(): KeptLook | null;
   /** Their look has changed, or been forgotten: draw it. */
@@ -93,6 +95,8 @@ export function addYou(o: YouOptions): You {
     { id: "identity-another", section: "you", icon: "you", label: "Be someone else", short: "Other", hidden: () => !o.signedInAs(), act: () => o.another() },
     // The same row every world has (the kit's `accountAction`): everything the sign-in address does, without leaving.
     { id: "account", section: "you", icon: "key", label: () => `Your account, at ${signInHost()}`, short: "Account", hidden: () => !(o.account && o.canAccount?.()), act: () => o.account?.() },
+    // And their own files (the kit's `filesAction`): the sign-in address's file browser, over the room.
+    { id: "files", section: "you", icon: "list", label: () => `Your files, at ${signInHost()}`, short: "Files", hidden: () => !(o.files && o.canAccount?.()), act: () => o.files?.() },
   );
   if (o.door) {
     const where = o.door.host || "the world you came from";

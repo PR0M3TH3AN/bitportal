@@ -1,7 +1,7 @@
-import { c as P, t as F, o as J, r as ee, u as B, k as te, m as ne, q as O, v as se, R as re } from "./bitlogin-shared-BUDtZbQR.js";
-import { e as Pe, w as je } from "./bitlogin-shared-BUDtZbQR.js";
-import { r as g, f as oe, k as H, i as v } from "./bitlogin-shared-BASIqHEi.js";
-import { f as ie } from "./bitlogin-shared-CzbW6ySa.js";
+import { c as P, t as F, o as J, r as ee, u as B, k as te, m as ne, q as O, v as se, R as re } from "./bitlogin-shared-BqDMTUOp.js";
+import { e as Pe, w as je } from "./bitlogin-shared-BqDMTUOp.js";
+import { r as g, f as oe, k as H, i as v } from "./bitlogin-shared-AdzLHSV8.js";
+import { f as ie } from "./bitlogin-shared-B_Tl4qF0.js";
 import { a as _e } from "./bitlogin-shared-D6Hzbnis.js";
 const V = "bitlogin-panel", K = 1, le = ["https://portal.bitblocks.network"];
 function ge(t, e) {
@@ -16,9 +16,9 @@ function ke(t) {
   const e = t;
   if (e.bitlogin !== V || e.v !== K || e.t !== "hello") return null;
   const n = e.mode === void 0 ? e.world === void 0 ? "account" : "ask" : e.mode;
-  if (n !== "ask" && n !== "switch" && n !== "account") return null;
+  if (n !== "ask" && n !== "switch" && n !== "account" && n !== "files" && n !== "wallet") return null;
   let s;
-  return e.world !== void 0 && (s = P(e.world), !s) || n !== "account" && !s ? null : { t: "hello", mode: n, ...s ? { world: s } : {} };
+  return e.world !== void 0 && (s = P(e.world), !s) || (n === "ask" || n === "switch") && !s ? null : { t: "hello", mode: n, ...s ? { world: s } : {} };
 }
 function ae(t) {
   const e = [];
@@ -35,7 +35,7 @@ function ae(t) {
   }
   return e;
 }
-const Y = "bitlogin:allowed-sites:v1", w = {
+const Y = "bitlogin:allowed-sites:v1", y = {
   /** No more entries than this are kept: the oldest go first. */
   entries: 200,
   /** How long an entry is kept after it has ended, in seconds. */
@@ -51,7 +51,7 @@ function D(t) {
   if (!s || s !== e.site || typeof e.pubkey != "string" || !ue.test(e.pubkey) || typeof e.at != "number" || typeof e.until != "number" || !Number.isFinite(e.at) || !Number.isFinite(e.until) || e.until < e.at) return null;
   const r = e.wants === void 0 ? void 0 : ee(e.wants);
   if (r === null || n && r) return null;
-  const o = n && Array.isArray(e.members) ? [...new Set(e.members.filter((i) => v(i, n)))].slice(0, w.members) : [];
+  const o = n && Array.isArray(e.members) ? [...new Set(e.members.filter((i) => v(i, n)))].slice(0, y.members) : [];
   return { site: s, ...o.length ? { members: o } : {}, pubkey: e.pubkey, at: Math.floor(e.at), until: Math.floor(e.until), remembered: e.remembered === !0, ...r ? { wants: r } : {} };
 }
 function ce(t, e) {
@@ -62,13 +62,13 @@ function ce(t, e) {
   } catch {
     return [];
   }
-  return Array.isArray(n) ? n.slice(0, w.entries * 2).map(D).filter((s) => s !== null && s.until + w.keepEndedSec > e).sort((s, r) => r.at - s.at).slice(0, w.entries) : [];
+  return Array.isArray(n) ? n.slice(0, y.entries * 2).map(D).filter((s) => s !== null && s.until + y.keepEndedSec > e).sort((s, r) => r.at - s.at).slice(0, y.entries) : [];
 }
 function de(t, e) {
   const n = D(e);
   if (!n) return [...t];
   const s = t.find((o) => o.site === n.site && o.pubkey === n.pubkey);
-  return [g(n.site) && s?.members ? D({ ...n, members: [...n.members ?? [], ...s.members] }) ?? n : n, ...t.filter((o) => !(o.site === n.site && o.pubkey === n.pubkey))].slice(0, w.entries);
+  return [g(n.site) && s?.members ? D({ ...n, members: [...n.members ?? [], ...s.members] }) ?? n : n, ...t.filter((o) => !(o.site === n.site && o.pubkey === n.pubkey))].slice(0, y.entries);
 }
 function Ae(t, e, n, s) {
   return !g(n) || !v(e, n) ? null : t.find((r) => r.pubkey === s && r.remembered && r.site !== e && v(r.site, n)) ?? null;
@@ -120,7 +120,7 @@ const U = "bitlogin:family-declined:v1", W = (t) => {
 function $e(t, e = Date.now() / 1e3, n = b()) {
   if (!g(t)) return !1;
   const s = Math.floor(e), r = Object.fromEntries(Object.entries(W(n)).filter(([o, i]) => g(o) && typeof i == "number" && i > s));
-  r[t] = s + w.familyDeclineSec;
+  r[t] = s + y.familyDeclineSec;
   try {
     return n?.setItem(U, JSON.stringify(r)), !!n;
   } catch {
@@ -216,7 +216,7 @@ function Ie(t = {}) {
       if (l.t === "done" && a && m.source === a) return void N?.(l.ok);
       if (l.t !== "frame" || a || t.world && l.world !== t.world) return;
       a = m.source, clearInterval(M), clearTimeout(q), d = !0;
-      const { world: f, recipient: x } = l, c = l.wants && ne(f, l.wants) ? l.wants : null, G = l.turnedDown === !0 || !!l.wants && !c, y = c ? [] : l.has ?? [], A = c ? [] : (l.more ?? []).filter((h) => !y.includes(h)), p = c || A.length || y.length ? "" : ie(f);
+      const { world: f, recipient: x } = l, c = l.wants && ne(f, l.wants) ? l.wants : null, G = l.turnedDown === !0 || !!l.wants && !c, w = c ? [] : l.has ?? [], A = c ? [] : (l.more ?? []).filter((h) => !w.includes(h)), p = c || A.length || w.length ? "" : ie(f);
       i({
         site: f,
         wants: c,
@@ -225,7 +225,7 @@ function Ie(t = {}) {
         knownFamily: p ? H(p) : !1,
         turnedDown: G,
         more: A,
-        has: y,
+        has: w,
         local: !!c && se(f) && [...c.sign, ...c.read].some((h) => re.includes(h)),
         ask: l.ask ?? null,
         askedAs: l.ask ? l.pubkey ?? null : null,
@@ -238,7 +238,7 @@ function Ie(t = {}) {
           return window.removeEventListener("message", k), S;
         },
         async grant(h, L, S, E, X) {
-          const _ = E === !0 && S === !0 && !!p, z = await h.exportHandoff(x, c ? { site: f, permissions: c } : void 0, f, S === !0, _ ? p : void 0, _ ? void 0 : X === !0 && A.length ? [...y, ...A] : y.length ? y : void 0), Q = new Promise((R) => {
+          const _ = E === !0 && S === !0 && !!p, z = await h.exportHandoff(x, c ? { site: f, permissions: c } : void 0, f, S === !0, _ ? p : void 0, _ ? void 0 : X === !0 && A.length ? [...w, ...A] : w.length ? w : void 0), Q = new Promise((R) => {
             N = R, setTimeout(() => R(!1), 8e3);
           });
           a.postMessage(O({ t: "grant", nonce: o, world: f, sealed: z, ...L ? { name: L } : {} }), s);

@@ -1440,6 +1440,9 @@ async function start(): Promise<void> {
     account: () => {
       if (windowed() && !askClientForSignIn("account")) controls.say(`${signInHost()} couldn't be shown here just now.`);
     },
+    files: () => {
+      if (windowed() && !askClientForSignIn("files")) controls.say(`${signInHost()} couldn't be shown here just now.`);
+    },
     look: () => myLook,
     onLook: (kept: KeptLook | null) => {
       myLook = kept;
