@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>BitPortal</title>
+<meta name="description" content="BitPortal with the screen kept filled as you walk from world to world.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body class="shell">
+<!-- Before anything is shown: one press fills the screen, and it stays filled from then on. -->
+<main id="start" class="shell-start">
+  <h1 class="wordmark"><span class="glyph" aria-hidden="true"></span>BitPortal</h1>
+  <p class="shell-lede">Your screen stays filled as you walk from world to world.</p>
+  <p><button id="enter" class="button primary" type="button">Enter, and fill the screen</button></p>
+  <p class="small">A trial. It holds for BitPortal's own worlds; a door to anywhere else leaves this view. <a href="/walk/">Go in the ordinary way</a></p>
+</main>
+<!-- The room, the Airlock and each world are shown here, one after another. The frame is not given the screen to
+     fill: this page holds it. A microphone and a headset are handed on to the worlds this page may frame. -->
+<iframe id="view" class="shell-view" title="Where you are" allow="xr-spatial-tracking; microphone; autoplay; gamepad; clipboard-write; fullscreen 'none'" hidden></iframe>
+<button id="fill" class="button shell-fill" type="button" hidden>Fill the screen</button>
+<script type="module" src="/shell/main.js"></script>
+</body>
+</html>

@@ -55,6 +55,7 @@ import { checkedSigner, knownSignedIn, quietSigner, type Signer } from "../share
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
+import { goFrom, linksLeaveWhole } from "../shared/shell.js";
 import { keptSettings, settingsToCarry } from "../shared/prefs.js";
 import { kitNote } from "../shared/kit.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
@@ -286,7 +287,7 @@ async function goHome(home: HomeChoice, fromHeadset: boolean, carry: { joined?: 
   if (!entry.capabilities.includes(HOME_CAPABILITY)) return sorry(`${host} no longer says it can be a home, so you are in BitPortal's room.`);
   // They arrive as they last chose to go anywhere, short of signing: with their look, or plain.
   const mine = goMode() === "plain" ? null : loadLook();
-  location.replace(await toLocal(buildArrivalUrl(home.url, { airlock: await selfForWorlds(), ...(INSTANCE.signer ? { signer: INSTANCE.signer } : {}), home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry })));
+  goFrom(await toLocal(buildArrivalUrl(home.url, { airlock: await selfForWorlds(), ...(INSTANCE.signer ? { signer: INSTANCE.signer } : {}), home: true as const, ...(mine ? { look: inlineLook(mine) } : {}), ...(fromHeadset ? { immersive: true as const } : {}), ...carry })), { real: home.url, replace: true });
   return true;
 }
 
@@ -430,6 +431,7 @@ async function render(): Promise<void> {
   const entry = entryFromFragment();
   // Read on a headset's flat panel with a controller's ray: everything to press is larger.
   if (req.immersive) document.body.classList.add("from-vr");
+  linksLeaveWhole();
   const approvalKey = a.world?.pubkey ? `${a.origin}|${a.world.pubkey}|${a.world.d}` : null;
   const approved = readJson<Record<string, boolean>>(APPROVED, {});
   // People a world says the visitor blocked there, and any still waiting from a trip home. A question to answer,
@@ -720,7 +722,8 @@ async function render(): Promise<void> {
     // On a development server, a site that is being served there is visited there (core, local.ts). The check above
     // was of the real site, and the card says so.
     if (!a.nswpAware) {
-      location.assign(await toLocal(target));
+      // A site that hasn't adopted any of this hasn't said it may be framed either: it is gone to by the whole page.
+      goFrom(await toLocal(target), { real: "about:blank" });
       return true;
     }
     // What goes with the visitor is what they chose on this screen. The choice is remembered for next time.
@@ -771,7 +774,7 @@ async function render(): Promise<void> {
     // Remembered once it has worked, so a pass that couldn't be signed doesn't become the habit.
     if (mine || who) setGoMode(how);
     if (stopped) return false;
-    location.assign(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(INSTANCE.signer ? { signer: INSTANCE.signer } : {}), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })));
+    goFrom(await toLocal(buildArrivalUrl(target, { ...(entry ? { entry } : {}), airlock: await selfForWorlds(), ...(INSTANCE.signer ? { signer: INSTANCE.signer } : {}), ...(look ? { look } : {}), ...(pass ?? {}), ...(req.immersive ? { immersive: true as const } : {}), ...carry })), { real: target });
     return true;
   };
   go.addEventListener("click", () => void leave());
