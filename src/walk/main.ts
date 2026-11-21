@@ -1295,7 +1295,9 @@ async function start(): Promise<void> {
   let travelling = (): { joined: boolean; mic: boolean } => ({ joined: false, mic: false });
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
   let myLook = loadLook();
-  const presence = createPresence({ scene, camera, rig, renderer, controllers, labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
+  // The home draws nothing anyone carries: its rule is "none", said here in so many words, since a place that
+  // says nothing has items (kit 0.58.0). Turning them on at home is the owner's decision.
+  const presence = createPresence({ scene, camera, rig, renderer, controllers, itemsRule: () => "none", labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
   // And they can see it too: their own figure stands to one side, as others will see it.
   // It is drawn again whenever they change it, which they do from the menu, standing here (you.ts).
   let mirror: Figure | null = null;

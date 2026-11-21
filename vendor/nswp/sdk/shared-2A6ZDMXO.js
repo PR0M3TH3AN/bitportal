@@ -577,6 +577,10 @@ var keepFull = (on) => {
   }
 };
 var prefersFullscreen = () => prefers;
+var held = false;
+var holdFullscreen = (on) => {
+  held = on;
+};
 function resumeFullscreen(presenting = () => false) {
   if (resumed || typeof document === "undefined") return;
   resumed = true;
@@ -601,7 +605,7 @@ function resumeFullscreen(presenting = () => false) {
     if (document.fullscreenElement) stop();
   };
   const onPress = (e) => {
-    if (e.code === "Escape" || presenting() || document.fullscreenElement) return;
+    if (e.code === "Escape" || held || presenting() || document.fullscreenElement) return;
     void document.documentElement.requestFullscreen().then(stop, () => {
     });
   };
@@ -612,7 +616,7 @@ var fullscreenWaiting = () => waiting;
 function fullscreenAction(controls, presenting) {
   resumeFullscreen(presenting);
   setTimeout(() => {
-    if (waiting && !presenting()) controls.say("Press any key, or click, to fill the screen again.");
+    if (waiting && !held && !presenting()) controls.say("Press any key, or click, to fill the screen again.");
   }, 600);
   return {
     id: "fullscreen",
@@ -636,6 +640,98 @@ function fullscreenAction(controls, presenting) {
       }
       controls.setTarget("");
     }
+  };
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/headset.ts
+var granted = false;
+var waitingForGrant = /* @__PURE__ */ new Set();
+try {
+  if (typeof navigator !== "undefined" && navigator.xr && !/WebXRViewer\//i.test(navigator.userAgent)) {
+    navigator.xr.addEventListener("sessiongranted", () => {
+      granted = true;
+      for (const fn of [...waitingForGrant]) fn();
+      waitingForGrant.clear();
+    });
+  }
+} catch {
+}
+function whenSessionGranted(fn) {
+  if (granted) fn();
+  else waitingForGrant.add(fn);
+}
+var NOT_A_PRESS = /* @__PURE__ */ new Set(["Tab", "Shift", "Control", "Alt", "Meta", "CapsLock", "ContextMenu"]);
+var TRYING_MS = 2e3;
+var GIVE_UP_MS = 12e3;
+function offerHeadset(title, enter, stay) {
+  const scrim = document.createElement("div");
+  scrim.id = "nswp-enter";
+  scrim.setAttribute("role", "dialog");
+  scrim.setAttribute("aria-label", `You've arrived at ${title}`);
+  Object.assign(scrim.style, { position: "fixed", inset: "0", zIndex: "50", display: "grid", placeContent: "center", justifyItems: "center", gap: "18px", padding: "24px", background: "rgba(4, 7, 11, 0.62)", textAlign: "center", cursor: "pointer" });
+  const heading = document.createElement("p");
+  heading.textContent = title;
+  Object.assign(heading.style, { margin: "0", font: "700 clamp(28px, 6vw, 56px)/1.1 system-ui, sans-serif", color: "#eef5fb" });
+  const go = document.createElement("button");
+  go.type = "button";
+  go.id = "nswp-enter-vr";
+  go.textContent = "Enter VR";
+  Object.assign(go.style, { font: "700 clamp(24px, 5vw, 40px)/1 system-ui, sans-serif", minWidth: "min(78vw, 520px)", minHeight: "120px", padding: "0 32px", border: "0", borderRadius: "18px", background: "#eef5fb", color: "#04070b", cursor: "pointer" });
+  const hint2 = document.createElement("p");
+  hint2.id = "nswp-enter-hint";
+  hint2.setAttribute("aria-live", "polite");
+  hint2.textContent = "Press anywhere, with anything, to go back in.";
+  Object.assign(hint2.style, { margin: "0", font: "500 clamp(18px, 3vw, 24px)/1.3 system-ui, sans-serif", color: "#eef5fb" });
+  const flat = document.createElement("button");
+  flat.type = "button";
+  flat.id = "nswp-enter-flat";
+  flat.textContent = "Look around on this screen";
+  Object.assign(flat.style, { font: "500 18px/1 system-ui, sans-serif", padding: "14px 20px", border: "0", background: "none", color: "#eef5fb", textDecoration: "underline", cursor: "pointer" });
+  scrim.append(heading, go, hint2, flat);
+  let tried = -Infinity;
+  let up = true;
+  let gaveUp;
+  const presses = ["pointerup", "touchend", "keydown"];
+  const onPress = (e) => {
+    if (!up) return;
+    const key = e.key;
+    if (e.type === "keydown") {
+      if (key === "Escape") return void stay();
+      if (NOT_A_PRESS.has(key) || e.repeat) return;
+    }
+    const at = e.target instanceof Element ? e.target : null;
+    const onStay = !!at && flat.contains(at);
+    if (onStay && (e.type !== "keydown" || key === "Enter" || key === " ")) return;
+    if (at && !scrim.contains(at) && at !== document.body && at !== document.documentElement && !(at instanceof HTMLCanvasElement)) return;
+    const now = performance.now();
+    if (now - tried < TRYING_MS) return;
+    tried = now;
+    hint2.textContent = "Starting VR\u2026";
+    clearTimeout(gaveUp);
+    gaveUp = setTimeout(failed, GIVE_UP_MS);
+    enter();
+  };
+  const failed = () => {
+    clearTimeout(gaveUp);
+    if (!up) return;
+    tried = -Infinity;
+    hint2.textContent = "That press didn't start VR. Press again, anywhere.";
+  };
+  flat.addEventListener("click", stay);
+  for (const type of presses) addEventListener(type, onPress, true);
+  holdFullscreen(true);
+  document.body.append(scrim);
+  go.focus();
+  return {
+    remove() {
+      if (!up) return;
+      up = false;
+      clearTimeout(gaveUp);
+      for (const type of presses) removeEventListener(type, onPress, true);
+      holdFullscreen(false);
+      scrim.remove();
+    },
+    failed
   };
 }
 
@@ -7157,7 +7253,7 @@ function createPresence(d) {
       a.head.add(a.light);
     }
   };
-  const itemsRule = () => cleanItemsRule2(d.itemsRule?.());
+  const itemsRule = () => d.items ? cleanItemsRule2(d.itemsRule?.()) : "none";
   const canBeHeld = (item) => item.behaviors.includes("holdable") || item.fits.includes("hand-right") || item.fits.includes("hand-left");
   let mine = "";
   let mineModel = null;
@@ -10137,7 +10233,7 @@ function createXrInput(opts) {
     else if (canStand(headAt.x, headAt.z + dz)) rig.position.z += dz;
   };
   const things = /* @__PURE__ */ new Map();
-  const held = /* @__PURE__ */ new Map();
+  const held2 = /* @__PURE__ */ new Map();
   const returning = [];
   const box = new THREE11.Box3();
   const ball = new THREE11.Sphere();
@@ -10146,10 +10242,10 @@ function createXrInput(opts) {
   const turnOnly = new THREE11.Matrix4();
   const HOLD_AT = new THREE11.Vector3(0, 0, -0.06);
   const FAR_REACH = 6;
-  const isHeld = (object) => [...held.values()].some((h) => h.thing.object === object);
+  const isHeld = (object) => [...held2.values()].some((h) => h.thing.object === object);
   const grab = (slot, by) => {
     const s = slots[slot];
-    if (held.has(slot) || !s.source) return false;
+    if (held2.has(slot) || !s.source) return false;
     (s.grip.visible ? s.grip : s.ray).getWorldPosition(handAt);
     let best = null;
     let bestFar = Infinity;
@@ -10183,15 +10279,15 @@ function createXrInput(opts) {
     const home = { parent: object.parent, position: object.position.clone(), quaternion: object.quaternion.clone() };
     const hand = s.grip.visible ? s.grip : s.ray;
     hand.attach(object);
-    held.set(slot, { thing: best, by, home, ...pulled ? { pull: { from: object.position.clone(), t: 0 } } : {} });
+    held2.set(slot, { thing: best, by, home, ...pulled ? { pull: { from: object.position.clone(), t: 0 } } : {} });
     pulse(slot, 0.6, 35);
     best.onGrab?.(slot);
     return true;
   };
   function release(slot) {
-    const h = held.get(slot);
+    const h = held2.get(slot);
     if (!h) return;
-    held.delete(slot);
+    held2.delete(slot);
     const object = h.thing.object;
     const parent = h.home.parent ?? opts.scene;
     parent.attach(object);
@@ -10202,13 +10298,13 @@ function createXrInput(opts) {
   slots.forEach((s, i) => {
     listen(s.ray, "squeezestart", (() => void grab(i, "squeeze")));
     listen(s.ray, "squeezeend", (() => {
-      if (held.get(i)?.by === "squeeze") release(i);
+      if (held2.get(i)?.by === "squeeze") release(i);
     }));
     listen(s.ray, "selectstart", (() => {
       if (kindOf(s) === "hand") grab(i, "pinch");
     }));
     listen(s.ray, "selectend", (() => {
-      if (held.get(i)?.by === "pinch") release(i);
+      if (held2.get(i)?.by === "pinch") release(i);
     }));
   });
   const setComfort = (patch, keep3 = false) => {
@@ -10283,7 +10379,7 @@ function createXrInput(opts) {
       aiming = [];
       narrow = 0;
       vignette.visible = false;
-      for (const slot of [...held.keys()]) release(slot);
+      for (const slot of [...held2.keys()]) release(slot);
     } else {
       const pads = read();
       const intent = loco.frame(dt, pads, comfort);
@@ -10318,7 +10414,7 @@ function createXrInput(opts) {
         s.hand.visible = opts.models !== false && kind === "hand";
       });
     }
-    for (const h of held.values()) {
+    for (const h of held2.values()) {
       if (!h.pull) continue;
       h.pull.t = Math.min(1, h.pull.t + dt / 0.18);
       h.thing.object.position.lerpVectors(h.pull.from, HOLD_AT, 1 - (1 - h.pull.t) ** 3);
@@ -10345,11 +10441,11 @@ function createXrInput(opts) {
     grabbable(object, o = {}) {
       things.set(object, { object, reach: o.reach ?? 0.1, far: o.far ?? true, pull: o.pull ?? true, release: o.release ?? "stay", ...o.onGrab ? { onGrab: o.onGrab } : {}, ...o.onRelease ? { onRelease: o.onRelease } : {} });
       return () => {
-        for (const [slot, h] of held) if (h.thing.object === object) release(slot);
+        for (const [slot, h] of held2) if (h.thing.object === object) release(slot);
         things.delete(object);
       };
     },
-    claimed: (slot) => held.get(slot)?.by === "pinch",
+    claimed: (slot) => held2.get(slot)?.by === "pinch",
     pulse,
     info() {
       const pads = renderer.xr.isPresenting ? read() : [];
@@ -10357,13 +10453,13 @@ function createXrInput(opts) {
         comfort,
         slots: slots.map((s, i) => ({ hand: handOf(s), kind: kindOf(s), pad: pads.find((p) => p.index === i)?.pad ?? NO_PAD })),
         aiming,
-        holding: [0, 1].map((i) => held.get(i)?.thing.object.name || (held.has(i) ? "(unnamed)" : null)),
+        holding: [0, 1].map((i) => held2.get(i)?.thing.object.name || (held2.has(i) ? "(unnamed)" : null)),
         narrow: Math.round(narrow * 100) / 100,
         pulses
       };
     },
     dispose() {
-      for (const slot of [...held.keys()]) release(slot);
+      for (const slot of [...held2.keys()]) release(slot);
       for (const [target, type, fn] of listeners) target.removeEventListener(type, fn);
       camera.remove(vignette);
       vignette.geometry.dispose();
@@ -11876,11 +11972,11 @@ function lookAfter(yaw, pitch, dx, dy, speed = LOOK_SPEED) {
   const clean2 = (n) => Number.isFinite(n) ? n : 0;
   return { yaw: yaw - clean2(dx) * speed, pitch: Math.min(PITCH_LIMIT, Math.max(-PITCH_LIMIT, pitch - clean2(dy) * speed)) };
 }
-function strideOf(held, yaw, speed, dt, sprint = SPRINT) {
-  const f = (held.forward ? 1 : 0) - (held.back ? 1 : 0);
-  const s = (held.right ? 1 : 0) - (held.left ? 1 : 0);
+function strideOf(held2, yaw, speed, dt, sprint = SPRINT) {
+  const f = (held2.forward ? 1 : 0) - (held2.back ? 1 : 0);
+  const s = (held2.right ? 1 : 0) - (held2.left ? 1 : 0);
   if (!f && !s) return [0, 0];
-  const pace = speed * (held.sprint ? sprint : 1) * Math.max(0, dt) / Math.hypot(f, s);
+  const pace = speed * (held2.sprint ? sprint : 1) * Math.max(0, dt) / Math.hypot(f, s);
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   return [(s * cos - f * sin) * pace, (-s * sin - f * cos) * pace];
@@ -11939,7 +12035,7 @@ function createFps(o) {
     if (typeof arrivedSettings().intense === "boolean" || o.arrived) keepIntense(enabled, key);
     reportSettings("moving", () => ({ intense: enabled }));
   }
-  const held = {};
+  const held2 = {};
   let pitch = 0;
   let weLetGo = false;
   let closedAt = -1;
@@ -11979,7 +12075,7 @@ function createFps(o) {
   };
   const onLock = () => {
     if (looking()) return;
-    for (const k of Object.keys(held)) held[k] = false;
+    for (const k of Object.keys(held2)) held2[k] = false;
     if (active() && !weLetGo && o.hud && !o.hud.open) o.hud.setOpen(true);
     weLetGo = false;
   };
@@ -12000,7 +12096,7 @@ function createFps(o) {
     if (!looking() && !e.repeat) look();
     const which = heldKey(e.code);
     if (which) {
-      held[which] = true;
+      held2[which] = true;
       if (e.code.startsWith("Arrow")) e.preventDefault();
       return;
     }
@@ -12008,10 +12104,10 @@ function createFps(o) {
   };
   const onKeyUp = (e) => {
     const which = heldKey(e.code);
-    if (which) held[which] = false;
+    if (which) held2[which] = false;
   };
   const onBlur = () => {
-    for (const k of Object.keys(held)) held[k] = false;
+    for (const k of Object.keys(held2)) held2[k] = false;
   };
   const onFullscreen = () => {
     const keyboard = navigator.keyboard;
@@ -12090,7 +12186,7 @@ function createFps(o) {
       }
       o.dom.style.cursor = aiming ? "none" : "";
       if (o.hud?.open) return true;
-      const [dx, dz] = strideOf(held, o.rig.rotation.y, o.speed ?? 2.4, dt);
+      const [dx, dz] = strideOf(held2, o.rig.rotation.y, o.speed ?? 2.4, dt);
       if (!dx && !dz) return true;
       o.camera.getWorldPosition(at);
       if (o.canStand(at.x + dx, at.z + dz)) {
@@ -12248,11 +12344,11 @@ function createScores(opts) {
     } catch {
     }
   };
-  const held = /* @__PURE__ */ new Map();
+  const held2 = /* @__PURE__ */ new Map();
   const of = (who) => {
     const k = keyFor(who);
-    if (!held.has(k)) held.set(k, read(who));
-    return held.get(k);
+    if (!held2.has(k)) held2.set(k, read(who));
+    return held2.get(k);
   };
   const best = (id) => {
     const b = boardOf(id);
@@ -13139,8 +13235,8 @@ function worldPersonLines(o) {
         const at = o.scores.standingOf(b.id, pubkey);
         if (at) out.push(`${b.title}: ${o.scores.words(b.id, at.score)}, ${ordinal(at.rank)} of ${at.of} here`);
       }
-      const held = o.achievements?.heldBy(pubkey) ?? [];
-      if (held.length) out.push(`Shows ${held.length} of ${o.achievements.list.length} achievements here: ${someOf(held.map((a) => a.title))}`);
+      const held2 = o.achievements?.heldBy(pubkey) ?? [];
+      if (held2.length) out.push(`Shows ${held2.length} of ${o.achievements.list.length} achievements here: ${someOf(held2.map((a) => a.title))}`);
       return out;
     },
     onChange(fn) {
@@ -13174,10 +13270,10 @@ function createAchievements(opts) {
     for (const fn of watchers3) fn();
   };
   const keyFor = (who) => `nswp:achievements:${world}:${who ?? "guest"}`;
-  const held = /* @__PURE__ */ new Map();
+  const held2 = /* @__PURE__ */ new Map();
   const of = (who) => {
     const k = keyFor(who);
-    if (!held.has(k)) {
+    if (!held2.has(k)) {
       let kept2 = { earned: [], shown: [] };
       try {
         const read = JSON.parse(store?.getItem(k) ?? "{}");
@@ -13185,9 +13281,9 @@ function createAchievements(opts) {
         kept2 = { earned: ids(read?.earned), shown: ids(read?.shown) };
       } catch {
       }
-      held.set(k, kept2);
+      held2.set(k, kept2);
     }
-    return held.get(k);
+    return held2.get(k);
   };
   const write = (who) => {
     try {
@@ -13331,12 +13427,12 @@ function addAchievementControls(controls, opts) {
       const title = one.hidden && !mine ? "Something not yet found" : one.title;
       const about = one.hidden && !mine ? "" : one.about ? `: ${one.about}` : "";
       const others = h ? h.holders - (h.mine ? 1 : 0) : 0;
-      const held = others > 0 ? ` Shown by ${others === 1 ? "1 other" : `${others} others`}${h.known.length ? `, ${h.known.length} you follow` : ""}.` : "";
+      const held2 = others > 0 ? ` Shown by ${others === 1 ? "1 other" : `${others} others`}${h.known.length ? `, ${h.known.length} you follow` : ""}.` : "";
       add({
         id: `achievements-${one.id}`,
         icon: mine ? "check" : "step",
         on: () => mine,
-        label: `${title}${about}.${held}`.replace(/\.\./g, "."),
+        label: `${title}${about}.${held2}`.replace(/\.\./g, "."),
         act: () => controls.say(mine ? `You earned "${one.title}"${out.includes(one.id) ? ", and it is shown as yours" : ". It is kept on this device until you show it"}.` : one.hidden ? "Not found yet." : `Not earned yet: ${one.about ?? one.title}.`)
       });
     }
@@ -14678,40 +14774,6 @@ function createPortalWindow(geometry, pano, opts = {}) {
   };
   return mesh;
 }
-function offerHeadset(title, enter, stay) {
-  const scrim = document.createElement("div");
-  scrim.id = "nswp-enter";
-  scrim.setAttribute("role", "dialog");
-  scrim.setAttribute("aria-label", `You've arrived at ${title}`);
-  Object.assign(scrim.style, { position: "fixed", inset: "0", zIndex: "50", display: "grid", placeContent: "center", justifyItems: "center", gap: "18px", padding: "24px", background: "rgba(4, 7, 11, 0.62)", textAlign: "center" });
-  const heading = document.createElement("p");
-  heading.textContent = title;
-  Object.assign(heading.style, { margin: "0", font: "700 clamp(28px, 6vw, 56px)/1.1 system-ui, sans-serif", color: "#eef5fb" });
-  const go = document.createElement("button");
-  go.type = "button";
-  go.id = "nswp-enter-vr";
-  go.textContent = "Enter VR";
-  Object.assign(go.style, { font: "700 clamp(24px, 5vw, 40px)/1 system-ui, sans-serif", minWidth: "min(78vw, 520px)", minHeight: "120px", padding: "0 32px", border: "0", borderRadius: "18px", background: "#eef5fb", color: "#04070b", cursor: "pointer" });
-  const flat = document.createElement("button");
-  flat.type = "button";
-  flat.id = "nswp-enter-flat";
-  flat.textContent = "Look around on this screen";
-  Object.assign(flat.style, { font: "500 18px/1 system-ui, sans-serif", padding: "14px 20px", border: "0", background: "none", color: "#eef5fb", textDecoration: "underline", cursor: "pointer" });
-  scrim.append(heading, go, flat);
-  const remove = () => {
-    removeEventListener("keydown", onKey);
-    scrim.remove();
-  };
-  const onKey = (e) => {
-    if (e.key === "Escape") stay();
-  };
-  go.addEventListener("click", enter);
-  flat.addEventListener("click", stay);
-  addEventListener("keydown", onKey);
-  document.body.append(scrim);
-  go.focus();
-  return { remove };
-}
 async function addViewControls(controls, d) {
   if (!controls.has("fresh")) controls.add(freshAction(controls, { busy: () => d.renderer.xr.isPresenting }));
   const xr = navigator.xr;
@@ -14730,23 +14792,45 @@ async function addViewControls(controls, d) {
     offer = null;
     d.onOffer?.(false);
   };
+  const init = { optionalFeatures: ["local-floor", "hand-tracking"] };
+  const begin = async (session2) => {
+    await d.renderer.xr.setSession(session2);
+    d.onState?.("presenting");
+    session2.addEventListener("end", () => {
+      d.onState?.("ended");
+      setTimeout(propose, 0);
+    });
+    answered();
+  };
+  let entering = false;
   const enter = async () => {
-    if (presenting()) return;
+    if (presenting() || entering) return;
+    entering = true;
     try {
-      const session2 = await xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "hand-tracking"] });
-      await d.renderer.xr.setSession(session2);
-      d.onState?.("presenting");
-      session2.addEventListener("end", () => d.onState?.("ended"));
-      answered();
+      await begin(await xr.requestSession("immersive-vr", init));
     } catch (err) {
       d.onState?.(`error: ${err instanceof Error ? err.message : String(err)}`);
-      controls.say("Couldn't start VR on this device.");
+      if (offer) offer.failed();
+      else controls.say("Couldn't start VR on this device.");
+    } finally {
+      entering = false;
     }
   };
-  try {
-    xr?.addEventListener?.("sessiongranted", () => void enter());
-  } catch {
-  }
+  const propose = () => {
+    const offers = xr;
+    if (!supported || presenting() || typeof offers?.offerSession !== "function") return;
+    try {
+      offers.offerSession("immersive-vr", init).then(
+        (session2) => void begin(session2).catch(() => {
+        }),
+        () => {
+        }
+      );
+    } catch {
+    }
+  };
+  whenSessionGranted(() => void enter());
+  propose();
   if (supported && d.arrived && !presenting()) {
     offer = offerHeadset(d.arrived.title, () => void enter(), answered);
     d.onOffer?.(true);

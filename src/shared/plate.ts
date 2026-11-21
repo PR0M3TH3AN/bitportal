@@ -2,7 +2,7 @@
  * The marks on a door plate: what a visitor is told before they commit
  * (NSWP spec §6.7). The list and the walk-in hall draw the same marks.
  */
-import { categoryWords, itemsWords, type World } from "@nswp/core";
+import { categoryWords, cleanItemsRule, itemsWords, type World } from "@nswp/core";
 
 export interface Mark {
   text: string;
@@ -31,11 +31,12 @@ export function plateMarks(world: Pick<World, "modes" | "comfort" | "contentWarn
   if (kind) marks.push({ text: kind, tone: "plain" });
   if (verified) marks.push({ text: "Verified", tone: "ok" });
   if (!fit.ok) marks.push({ text: fit.reason, tone: "warn" });
-  // What it does with the things visitors carry (NSWP-17), told before anyone goes in: a place where items are
-  // part of the game is somewhere other people can reach you with them. Said as a caution; one that only lets
-  // items work is said plainly.
+  // What it does with the things visitors carry (NSWP-17), told before anyone goes in, where it isn't the
+  // ordinary rule: a place where items are part of the game is somewhere other people can reach you with them,
+  // and is said as a caution. One that has turned them off is said plainly, for whoever is carrying something.
+  // A place where they simply work, which is every place that says nothing, has no mark.
   const carried = itemsWords(world.items);
-  if (carried) marks.push({ text: world.items === "play" ? "Items in play" : "Items work", tone: world.items === "play" ? "warn" : "plain" });
+  if (carried) marks.push(cleanItemsRule(world.items) === "play" ? { text: "Items in play", tone: "warn" } : { text: "No items", tone: "plain" });
   const intensity = world.comfort.intensity;
   if (intensity === "high") marks.push({ text: "Intense", tone: "warn" });
   else if (intensity === "low") marks.push({ text: "Gentle", tone: "plain" });

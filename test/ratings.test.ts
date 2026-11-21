@@ -58,9 +58,11 @@ describe("a tally for each place on show", () => {
     const fit = { ok: true, reason: "" };
     const world = { modes: ["inline-3d"], comfort: {}, contentWarning: undefined };
     expect(plateMarks({ ...world, items: "play" as const }, fit, false).find((m) => /Items/.test(m.text))).toEqual({ text: "Items in play", tone: "warn" });
-    expect(plateMarks({ ...world, items: "allowed" as const }, fit, false).find((m) => /Items/.test(m.text))).toEqual({ text: "Items work", tone: "plain" });
-    // A place that says nothing draws and runs nothing carried, and its plate says nothing of it.
-    expect(plateMarks(world, fit, false).some((m) => /Items/.test(m.text))).toBe(false);
+    // A place where items simply work, which is one that says nothing too, has no mark: it is the ordinary rule.
+    expect(plateMarks({ ...world, items: "allowed" as const }, fit, false).some((m) => /items/i.test(m.text))).toBe(false);
+    expect(plateMarks(world, fit, false).some((m) => /items/i.test(m.text))).toBe(false);
+    // One that has turned them off says so, plainly.
+    expect(plateMarks({ ...world, items: "none" as const }, fit, false).find((m) => /items/i.test(m.text))).toEqual({ text: "No items", tone: "plain" });
   });
 
   it("goes on a door's plate first after what kind of place it is", () => {
