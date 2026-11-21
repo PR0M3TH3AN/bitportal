@@ -16,6 +16,7 @@ import { createPortalWindow, panoramaTexture } from "nswp-sdk/three";
 import type { Entry } from "../shared/catalog.js";
 import { archMaskTexture, DOOR_H, DOOR_W, doorFrame, flatViewTexture, viewTexture } from "../shared/door3d.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
+import { arcRow } from "../shared/wall.js";
 
 export interface Hero {
   /** Draw the doors again, after the list changed. */
@@ -106,11 +107,12 @@ export function mountHero(stage: HTMLElement, opts: HeroOptions): Hero | null {
     });
     wall.clear();
     const entries = opts.entries().slice(0, 8);
-    const step = THREE.MathUtils.degToRad(11);
+    // As far apart as doors stand anywhere: the kit's spacing (shared/wall.ts).
+    const row = arcRow(entries.length, RADIUS);
     doors = entries.map((entry, i) => {
-      const theta = (i - (entries.length - 1) / 2) * step;
+      const { x, z, theta } = row[i]!;
       const group = new THREE.Group();
-      group.position.set(Math.sin(theta) * RADIUS, 0, -Math.cos(theta) * RADIUS);
+      group.position.set(x, 0, z);
       group.rotation.y = -theta;
       const view = new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({ map: viewTexture(entry.id), transparent: true, alphaTest: 0.5 }));
       view.position.y = DOOR_H / 2;
