@@ -17,6 +17,7 @@
  */
 import * as THREE from "three";
 import type { Offer } from "@nswp/core";
+import { prototypeNotice } from "../shared/notice.js";
 import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
@@ -320,6 +321,10 @@ async function start(): Promise<void> {
   if (enterShell()) return;
   const settings = loadSettings();
   const params = new URLSearchParams(location.search);
+  // Someone arriving is told once that this is an early prototype (shared/notice.ts). Someone coming home from a
+  // world, or back from a headset session, is in the middle of a visit: nothing is put in front of them.
+  const cameHome = location.hash.replace(/^#/, "").split("&").some((part) => part === "back" || part === "xr=1");
+  prototypeNotice({ midVisit: cameHome, large: detectTier(navigator.userAgent, undefined) === "standalone" });
   const emulate = params.get("xr") === "emulate";
   const state: Record<string, unknown> = { ready: false, xr: "idle", emulate, leaving: null, hovered: null };
   const hooks: TestHooks = { state, doors: () => [], aim: () => {}, visit: () => {}, toggle: () => {}, putBack: () => {}, step: () => {}, where: () => [0, 0], roomInfo: () => [], teleport: () => {} };
