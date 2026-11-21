@@ -51,7 +51,8 @@ import { addComputers, type Computers } from "./computers.js";
 import { plateMarks } from "../shared/plate.js";
 import { decidePreview, loadPreview } from "../shared/preview.js";
 import { loadRoom } from "../shared/room.js";
-import { addSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, restoreSaved, savedEntries, storeSaved, WALL_DOORS, wallSlot, type SavedPlace } from "../shared/saved.js";
+import { addSaved, loadSaved, readLeft, refreshSaved, rememberLeft, removeSaved, restoreSaved, savedEntries, storeSaved, WALL_DOORS, type SavedPlace } from "../shared/saved.js";
+import { morePlace, ROOM_RADIUS, wallPlace } from "../shared/wall.js";
 import { followedAuthors, loadFollowed, refreshFollowed, storeFollowed } from "../shared/lists.js";
 import { loadSettings } from "../shared/settings.js";
 import type { Candidate } from "../shared/shelves.js";
@@ -157,11 +158,10 @@ window.bitportal = { version: VERSION };
 
 const INK = "#f2f3f6";
 const ACCENT = 0x3df2a0;
-/** Metres from the middle of the room to either wall of doors. */
-const RADIUS = 8;
-/** The angle between neighbouring doors: twelve fit on a wall. */
-const SLOT = THREE.MathUtils.degToRad(13);
-const PLATE_W = 1.7;
+/** Metres from the middle of the room to either wall of doors: as large as a dozen doors a wall need at the kit's spacing (`shared/wall.ts`). */
+const RADIUS = ROOM_RADIUS;
+/** A door's name plate: as wide as it looked from the middle of the room when the walls were 8 m off, so a larger room doesn't make it smaller to read. Narrower than the kit's spacing, so two never touch. */
+const PLATE_W = 1.7 * (ROOM_RADIUS / 8);
 const USED_A_DOOR = "bitportal:used-a-door";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -619,10 +619,9 @@ async function start(): Promise<void> {
   let everyDoor: DoorList | null = null;
 
   /** Stand something at a place along a wall, facing the middle of the room. */
-  const place = (object: THREE.Object3D, slot: number) => {
-    const theta = wallSlot(slot) * SLOT;
-    object.position.set(Math.sin(theta) * RADIUS, 0, -Math.cos(theta) * RADIUS);
-    object.rotation.y = -theta;
+  const place = (object: THREE.Object3D, slot: number, at = wallPlace(slot)) => {
+    object.position.set(at.x, 0, at.z);
+    object.rotation.y = -at.theta;
   };
   const emptyWall = (wall: THREE.Group) => {
     wall.traverse((o) => {
@@ -719,7 +718,7 @@ async function start(): Promise<void> {
   /** A sign past the last door of a full wall, leading to everything as a list. */
   const makeMore = (wall: Wall, slot: number, hidden: number) => {
     const group = new THREE.Group();
-    place(group, slot);
+    place(group, slot, morePlace(slot));
     const label = textSprite(`${hidden} more\non the list`, INK, 1.2);
     label.position.set(0, 1.5, 0.05);
     const b = pill(pillMaps.list, widePillGeo);
