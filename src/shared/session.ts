@@ -195,6 +195,13 @@ interface SignInClient {
   signEvent(e: EventTemplate): Promise<unknown>;
   nip44: { encrypt(peer: string, text: string): Promise<string> };
   decryptEvent(event: NostrEvent): Promise<string>;
+  /**
+   * Put a note of a careful kind (0, 5, 10002) to the person on BitLogin's own page, and resolve with it signed
+   * and checked, or null (BitLogin `docs/sign-in-window.md` §SW20). `show` is called once, when the signer says
+   * the person is to be asked: true if this page had BitLogin's page shown itself (the panel), else the client
+   * opens the window. Left out by a client too old to have it.
+   */
+  propose?(event: { kind: number; content: string; tags: string[][] }, o?: { show?: () => boolean | Promise<boolean> }): Promise<NostrEvent | null>;
   /** Remove its frame and stop listening. */
   destroy(): void;
 }
@@ -483,6 +490,32 @@ export async function switchAccount(): Promise<boolean> {
     return await ask(c, "switch");
   } catch {
     return false;
+  }
+}
+
+/**
+ * Put a note of a careful kind to the visitor themselves, on BitLogin's own page: its panel where this page is
+ * shown inside the page that keeps the screen, its window otherwise. Call it from their press, on a page that is
+ * already watching (`watchSignIn`). Resolves with the note, signed by them and checked by BitLogin's client to be
+ * exactly what was put to them, or null: they said no, it took too long, or this sign-in address can't do it.
+ *
+ * It widens nothing BitPortal may sign on its own say (`permissionsFor` is untouched): nothing is signed but at
+ * the visitor's press on BitLogin's page, which shows them what it is.
+ */
+export async function proposeToPerson(note: { kind: number; content: string; tags: string[][] }): Promise<NostrEvent | null> {
+  const c = made;
+  if (!c?.propose) return null;
+  try {
+    return await c.propose(note, {
+      show: () => {
+        if (!panel?.offered()) return false;
+        // Asked for and not waited on: BitLogin's client is what hears the answer.
+        void panel.ask("ask").catch(() => undefined);
+        return true;
+      },
+    });
+  } catch {
+    return null;
   }
 }
 

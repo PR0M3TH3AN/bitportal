@@ -21,6 +21,13 @@ export interface HomeNotes {
   /** Sign a note of the visitor's own words. Null for anything else, or if it can't be signed. */
   sign(note: { kind: number; content: string; tags: string[][] }): Promise<NostrEvent | null>;
   onChange(fn: () => void): () => void;
+  /**
+   * Put the deletion of one of their own posts to them, at their sign-in address (the kit's `RoomNotes.propose`).
+   * Null for anything but that, or if it wasn't signed.
+   */
+  propose(note: { kind: number; content: string; tags: string[][] }): Promise<NostrEvent | null>;
+  /** Where they are asked, as an address to name. */
+  host(): string | null;
   /** Whose key signs: their feed is that key's posts. Null for nobody, or a guest. */
   pubkey(): string | null;
   /** What to call them over their feed: the name in their own profile, or null. */
@@ -45,8 +52,19 @@ export interface HomeNotesDeps {
   nameOf?(pubkey: string): string | null;
   /** The site their signer marks each post with, to tell them so; null where it marks nothing. */
   marked?(): string | null;
+  /**
+   * Put a note of a careful kind to them on their sign-in address's own page (`proposeToPerson`). Left out, no
+   * post can be deleted from here.
+   */
+  propose?(note: { kind: number; content: string; tags: string[][] }): Promise<NostrEvent | null>;
+  /** Where that is, as an address to name. */
+  host?(): string | null;
   now?: () => number;
 }
+
+/** A deletion (NIP-09). */
+const DELETION = 5;
+const HEX64 = /^[0-9a-f]{64}$/;
 
 export function createHomeNotes(deps: HomeNotesDeps): HomeNotes {
   let who: string | null = null;
@@ -75,6 +93,23 @@ export function createHomeNotes(deps: HomeNotesDeps): HomeNotes {
         quiet.close();
       }
     },
+    async propose(note) {
+      const pubkey = test?.pubkey ?? who;
+      if (!pubkey || deps.asGuest()) return null;
+      // One thing only: the deletion of one note, by its id. Nothing else is put to them from the room.
+      const [e, k, ...rest] = note.tags;
+      if (note.kind !== DELETION || note.content !== "" || rest.length || e?.length !== 2 || e[0] !== "e" || !HEX64.test(e[1] ?? "") || k?.length !== 2 || k[0] !== "k" || k[1] !== "1") return null;
+      const asked = { kind: DELETION, content: "", tags: [e, k] };
+      try {
+        // A stand-in identity for tests signs it itself; anyone else is asked at their sign-in address.
+        const signed = test ? await test.signer.signEvent({ ...asked, created_at: Math.floor((deps.now?.() ?? Date.now()) / 1000) }) : ((await deps.propose?.(asked)) ?? null);
+        const names = signed ? signed.tags.filter((t) => t[0] === "e" || t[0] === "a") : [];
+        return signed && signed.pubkey === pubkey && signed.kind === DELETION && names.length === 1 && names[0]![1] === e[1] ? signed : null;
+      } catch {
+        return null;
+      }
+    },
+    host: () => deps.host?.() ?? null,
     onChange(fn) {
       watchers.add(fn);
       return () => void watchers.delete(fn);

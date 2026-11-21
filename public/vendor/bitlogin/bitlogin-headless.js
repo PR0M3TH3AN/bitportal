@@ -1,4 +1,4 @@
-import { c as a } from "./bitlogin-shared-D-JqvHzL.js";
+import { c as a } from "./bitlogin-shared-Cmu8fEvJ.js";
 export {
   a as createHeadlessSigner
 };
