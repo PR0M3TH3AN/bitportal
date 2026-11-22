@@ -143,7 +143,7 @@ describe("where this copy's visitors sign from inside a world", () => {
 describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-11-19)", () => {
   it("is the sign-in address's own window: no page of BitPortal has a sign-in form, and none loads BitLogin's widget", async () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
-    for (const page of ["account", "publish", "go", "walk", "lobby", "look", "landing"]) {
+    for (const page of ["account", "publish", "go", "walk", "lobby", "look", "landing", "start"]) {
       const html = readFileSync(new URL(`../src/${page}/index.html`, import.meta.url), "utf8");
       expect(html, page).not.toContain("<bitlogin-auth");
       expect(html, page).not.toContain("/vendor/bitlogin/");
