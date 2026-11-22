@@ -106,7 +106,16 @@ addEventListener("message", (e: MessageEvent) => {
     // Airlock, which is a moment on the way, and never anything but a place that may be shown here.
     const at = typeof said.at === "string" && said.at.startsWith("/") && said.at.length <= 300 ? said.at : "/";
     const where = e.origin === location.origin ? at : `${e.origin}${at}`;
-    if (!(e.origin === location.origin && at.startsWith("/go/"))) void remember(where);
+    // At the Airlock they are between places, and if they stay there (a door that won't open, a way home it
+    // couldn't read) the place to come back to is the room: never the world they were in before it.
+    if (e.origin === location.origin && at.startsWith("/go/")) void remember("/walk/");
+    else void remember(where);
+    // Said for the page that has just loaded (late), or for the one about to (a place says it as its script starts,
+    // before its page has finished loading).
+    if (unheard) {
+      clearTimeout(unheard);
+      unheard = null;
+    } else heard = true;
     tell();
   } else if (said.nswp === "screen" && typeof said.fill === "boolean") {
     // Asked at the visitor's own press in the frame, which a browser counts for this page too.
@@ -134,9 +143,23 @@ document.addEventListener("fullscreenchange", () => {
   // The keys are the world's: they go to whatever is in the frame, not to this page.
   view.focus();
 });
+/** Whether the page coming into the frame has said where it is, before its page finished loading. */
+let heard = false;
+/** Waiting, after a page loaded without saying, for it to say so late. */
+let unheard: ReturnType<typeof setTimeout> | null = null;
 view.addEventListener("load", () => {
   // A panel that was up was for the place that has gone.
   panel?.close();
+  // A page came into the frame and never said where it is (a browser's own "refused to connect", say): what was
+  // kept is no longer where they are, so a refresh comes back to the room instead of an older place.
+  if (unheard) clearTimeout(unheard);
+  unheard = null;
+  if (heard) heard = false;
+  else
+    unheard = setTimeout(() => {
+      unheard = null;
+      forgetWhere();
+    }, HELLO_MS);
   // Each place that comes into the frame is given the keys as it arrives: a visitor walks on with no press.
   view.focus();
   // Its page has loaded, so it has had its chance to say so: a little longer, and then the ordinary way.
@@ -156,6 +179,13 @@ const mayShow = async (where: string): Promise<boolean> => {
     return showsInShell(await fromLocal(where));
   } catch {
     return false;
+  }
+};
+const forgetWhere = (): void => {
+  try {
+    sessionStorage.removeItem(AT_KEY);
+  } catch {
+    /* nothing kept */
   }
 };
 const remember = async (where: string): Promise<void> => {
