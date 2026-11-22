@@ -30,7 +30,11 @@ describe("items at home", () => {
   it("what is in hand is pressed the kit's way, as in every world", async () => {
     const room = await read("src/walk/main.ts");
     expect(room).toContain("itemControls = addItemControls(controls, {");
-    expect(room).toContain("itemControls?.tap(raycaster.ray, performance.now() - downAt)");
+    expect(room).toContain("itemControls?.tap(raycaster.ray, performance.now() - downAt, e.pointerType)");
+    // A drag looks all ways, as in every world: the kit's, not the room's own turn.
+    expect(room).toContain("const dragLook = createDragLook({ rig, camera, scale: lookScale });");
+    expect(room).toContain("dragLook.drag(e.clientX - lastX, e.clientY - lastY);");
+    expect(room).not.toMatch(/rig\.rotation\.y \+= \(e\.clientX - lastX\)/);
     expect(room).toContain("itemControls?.trigger(i)");
   });
 

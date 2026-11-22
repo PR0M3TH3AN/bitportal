@@ -26,7 +26,7 @@ import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/trav
 import { enterShell, goFrom, linksLeaveWhole } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createDoorOffers, createHome, type Alloy, type DoorOffers } from "nswp-sdk/home";
-import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, createDragLook, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -146,6 +146,10 @@ interface TestHooks {
   aim(id: string | null): void;
   visit(id: string): void;
   roomInfo(): unknown;
+  /** What is under the thumb on a touch screen (the sight and the item's buttons), or null. */
+  thumbs?: () => unknown;
+  /** How far the view is tilted by dragging, in degrees: up is positive. */
+  tilt?: () => number;
   /** What is in play in their hand, and its two presses (as in every world). */
   play?: () => unknown;
   itemUse?: () => void;
@@ -1181,7 +1185,11 @@ async function start(): Promise<void> {
 
   let dragging = false;
   let lastX = 0;
+  let lastY = 0;
   let moved = 0;
+  // A drag looks round, as in every world: sideways it turns them, up and down it tilts the view within about sixty
+  // degrees, and walking brings it back level (the kit's `createDragLook`; the owner's option B, 2026-11-22).
+  const dragLook = createDragLook({ rig, camera, scale: lookScale });
   // A panel taken by its bar is dragged; anything else, and the drag turns the view.
   let panelDrag = false;
   // Game controls, for a visitor who turned them on: the mouse looks, keys walk, F uses. While they are on, the
@@ -1228,6 +1236,7 @@ async function start(): Promise<void> {
     panelDrag = !renderer.xr.isPresenting && !!panels?.pointer("down", raycaster);
     dragging = !panelDrag;
     lastX = e.clientX;
+    lastY = e.clientY;
     moved = 0;
     downAt = performance.now();
   });
@@ -1247,15 +1256,17 @@ async function start(): Promise<void> {
     // The keyboard, the console and a panel come first. Then, with something in hand that does something, a tap is
     // its first press, sent where they tapped; a press held is still how they walk, or go through a door.
     if (thing && (thing.onPanel || thing.onConsole)) return thing.act();
-    if (itemControls?.tap(raycaster.ray, performance.now() - downAt)) return;
+    // A touch is never the item's: on a touch screen its presses are under the thumb, and a tap walks.
+    if (itemControls?.tap(raycaster.ray, performance.now() - downAt, e.pointerType)) return;
     if (thing) thing.act();
     else stepToFloor();
   });
   window.addEventListener("pointermove", (e) => {
     if (dragging && !renderer.xr.isPresenting) {
-      rig.rotation.y += (e.clientX - lastX) * 0.005 * lookScale();
-      moved += Math.abs(e.clientX - lastX);
+      dragLook.drag(e.clientX - lastX, e.clientY - lastY);
+      moved += Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY);
       lastX = e.clientX;
+      lastY = e.clientY;
     }
     if (!gameControls()) ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     if (panelDrag) {
@@ -1721,7 +1732,9 @@ async function start(): Promise<void> {
   };
   hooks.roomInfo = () => presence.info();
   // What is in their hand, pressed: on the bar, by a tap or the mouse and R at a desk, by the trigger in a headset.
-  itemControls = addItemControls(controls, { play: () => presence.play, holdingHand: () => presence.holdingHand, dom: renderer.domElement, sight: (on) => presence.setSighting(on) });
+  itemControls = addItemControls(controls, { play: () => presence.play, holdingHand: () => presence.holdingHand, dom: renderer.domElement, sight: (on) => presence.setSighting(on), presenting: () => renderer.xr.isPresenting });
+  hooks.thumbs = () => itemControls?.thumbs() ?? null;
+  hooks.tilt = () => Math.round(THREE.MathUtils.radToDeg(dragLook.pitch) * 10) / 10;
   hooks.play = () => presence.play?.info() ?? null;
   hooks.itemUse = () => presence.play?.use();
   hooks.itemSecond = () => presence.play?.second();
@@ -1828,14 +1841,12 @@ async function start(): Promise<void> {
     // Shut in the crossing's room, nobody else is in it with the visitor, wherever they happen to be standing.
     presence.setHidden(crossing.state !== "none");
     presence.update(dt);
-    // What they hold, and what it does, can change at any moment (taken up, put down, its logic started): the bar
-    // offers its presses while it does something. Nothing is redrawn unless that changed.
-    itemControls?.refresh();
     let pointed: Clickable | null = null;
     let hover: [number, number] | null = null;
     let going: readonly (readonly [number, number])[] | null = null;
     reticle.visible = false;
     if (renderer.xr.isPresenting) {
+      dragLook.update(dt, { walking: false, active: false });
       for (const c of controllers) {
         if (!c.visible) continue;
         const thing = aimFrom(c);
@@ -1852,10 +1863,15 @@ async function start(): Promise<void> {
       if (through) void visit(through, "walked");
     } else {
       // Game controls have the visitor's movement when they are on, and aim from the middle of the view.
-      if (fps!.update(dt)) ndc.set(0, 0);
-      else {
+      if (fps!.update(dt)) {
+        ndc.set(0, 0);
+        dragLook.update(dt, { walking: false, active: false });
+      } else {
         walk(dt);
         stroll.update(dt);
+        // Walking, by a tap or by the keys, brings the view back level.
+        const keyed = ["KeyW", "KeyS", "KeyA", "KeyD", "ArrowUp", "ArrowDown"].some((k) => keys.has(k));
+        dragLook.update(dt, { walking: stroll.going || keyed, active: true });
         // They face the way they walk, so a press ahead is a press where they are looking. Not while they are
         // turning the view themselves.
         if (stroll.going && !dragging) rig.rotation.y = stroll.face(rig.rotation.y, dt);
