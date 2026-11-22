@@ -6,12 +6,13 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "47a0c7029038c25a8dde9f427a4fbe13f2a5d7d8",
+        "commit": "34d4ae0954a77a10a99ffad69894854d870430ad",
         "remote": "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-.git"
       },
       "files": {
         "LICENSE": "bc40ab40278d23777e57ea2872fbaf64663e1c7d6faf4f5ca31e8f4686351b15",
         "THIRD-PARTY-NOTICES.md": "b57049889d0e38733d33f6f07558c1c9b8ba8d0548f9cde2fae287c0c2349b40",
+        "docs/start.md": "0bb78a403f498cde903babbea0361bce724dd0b9cb5441a81d31189df3f90eec",
         "nswp-core.js": "7e48aed2d6ab41d17c7c9c154a32e7caf7df41d5cfb88c3411b542a8f36b1d47",
         "sdk-types/achievements.d.ts": "8bc8881a70f1155f385b064f998fc4eec44a8a4ab9656a1cee4c26349ff2b3e8",
         "sdk-types/achieving.d.ts": "b77adcdc4abf978aee8384cc622033210e244d48bc6c1340ddc645c790c7f55b",
