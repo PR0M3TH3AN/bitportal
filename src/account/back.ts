@@ -36,5 +36,5 @@ export function wayBack(search: string, door: WhoDoor | null = null): WayBack {
     const where = door.host || "where you were";
     return { href: `/go/#${door.hash}`, label: `Back to ${where}`, guest: "Go back as a guest", named: `Back to ${where}, by name`, door };
   }
-  return { href: "/", label: "Back to the lobby", guest: "Carry on as a guest" };
+  return { href: "/doors/", label: "Back to the lobby", guest: "Carry on as a guest" };
 }

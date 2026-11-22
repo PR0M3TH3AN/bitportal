@@ -558,8 +558,8 @@ async function start(): Promise<void> {
       hidden: () => !atDoor || !signedInKey || renderer.xr.isPresenting,
       act: () => hud.setOpen(true, "rate"),
     },
-    // The front page still has what needs a page: signing in, settings, announcing a world. It can't be seen from a headset.
-    { id: "front-page", section: "travel", icon: "list", label: "The front page: settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => goFrom("/") },
+    // The lobby's page has what needs a page: settings, announcing a world, every door as a list. It can't be seen from a headset.
+    { id: "front-page", section: "travel", icon: "list", label: "The lobby page: settings, announce a world", short: "Page", hidden: () => renderer.xr.isPresenting, act: () => goFrom("/doors/") },
   );
   // Someone whose home is a world of their own keeps their doors here, and goes home from here. Nothing is asked
   // of them on the way: the Airlock looks at their home first, and brings them back here if it doesn't answer.
@@ -1487,7 +1487,7 @@ async function start(): Promise<void> {
   }
   // Someone they blocked in a world, reported on the way home, is waiting for their answer.
   const waiting = loadPendingBlocks().length;
-  if (waiting) setTimeout(() => controls.say(`You blocked ${waiting === 1 ? "1 person" : `${waiting} people`} in a world. To block them everywhere you go, say so in Settings on the front page, or at your next door.`), 3000);
+  if (waiting) setTimeout(() => controls.say(`You blocked ${waiting === 1 ? "1 person" : `${waiting} people`} in a world. To block them everywhere you go, say so in Settings on the lobby page, or at your next door.`), 3000);
   // Following someone from their card in this room (NSWP-14): their own follow list, changed by their own signer.
   // What ratings are counted from follows at once.
   const follows = homeFollows({ me: () => (goesAsGuest() ? null : signedInKey), relays: settings.relays, signerFor: quietSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });

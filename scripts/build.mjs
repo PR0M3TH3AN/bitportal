@@ -52,6 +52,11 @@ cpSync(join(root, "public"), out, { recursive: true });
 // The kit's own sounds, served from this site like everything else: nothing is fetched from anywhere else.
 cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: true, filter: (f) => !/\.md$/.test(f) });
 cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
+// The lobby's own page: every door as a list, search, lists, Settings, announcing a world (landing-01, the owner's
+// "keeping users on the landing is not necessary"). For now the same page as the front one; the front page is made
+// the way in, and only that, after this.
+mkdirSync(join(out, "doors"), { recursive: true });
+cpSync(join(root, "src/lobby/index.html"), join(out, "doors/index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
 for (const page of ["account", "publish", "look", "shell"]) {

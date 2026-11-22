@@ -12,8 +12,8 @@ describe("the way back from signing in", () => {
     expect(wayBack("?back=history")).toMatchObject({ href: null, label: "Back to where you were" });
   });
   it("is the lobby otherwise, and never an address a link supplies", () => {
-    expect(wayBack("").href).toBe("/");
-    for (const sly of ["?back=https://evil.example/", "?back=//evil.example", "?back=/go/%23to=https://evil.example", "?back=javascript:alert(1)", "?next=https://evil.example/"]) expect(wayBack(sly).href).toBe("/");
+    expect(wayBack("").href).toBe("/doors/");
+    for (const sly of ["?back=https://evil.example/", "?back=//evil.example", "?back=/go/%23to=https://evil.example", "?back=javascript:alert(1)", "?next=https://evil.example/"]) expect(wayBack(sly).href).toBe("/doors/");
   });
   it("lets a guest carry on as a guest", () => {
     expect(wayBack("").guest).toBe("Carry on as a guest");
