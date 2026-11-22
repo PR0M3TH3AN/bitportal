@@ -2,34 +2,35 @@ import {
   FEED_LIMITS,
   ICONS,
   ago,
+  arriveAs,
   arriveWith,
   arrivedSettings,
-  askClientForScreen,
   askClientForSignIn,
   askWell,
-  clientHoldsScreen,
-  clientScreenFilled,
   clientSignsInAt,
   createHeldButton,
+  currentForm,
   currentSettings,
   foundRelays,
-  framed,
+  fullscreenAction,
+  holdFullscreen,
   learnFrom,
   loadPicture,
-  meetClient,
   onChatChange,
   onClientScreen,
   onPicturesChange,
   relayBackup,
   reportSettings,
+  resumeFullscreen,
   rgb,
   sendWell,
   setShowsChat,
   setShowsPictures,
   showsChat,
   showsPictures,
+  startingForm,
   wrapWords
-} from "./shared-BOHXJA7G.js";
+} from "./shared-OTNZQF72.js";
 import {
   LiveKeys,
   TextEntry,
@@ -604,101 +605,6 @@ function createConsole(controls, opts) {
   return con;
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
-var resumed = false;
-var waiting = false;
-var FULL_KEY = "nswp:full";
-var prefers = false;
-var keepFull = (on) => {
-  prefers = on;
-  try {
-    if (on) localStorage.setItem(FULL_KEY, "1");
-    else localStorage.removeItem(FULL_KEY);
-  } catch {
-  }
-};
-var prefersFullscreen = () => prefers;
-var held = false;
-var holdFullscreen = (on) => {
-  held = on;
-};
-function resumeFullscreen(presenting = () => false) {
-  if (resumed || typeof document === "undefined") return;
-  resumed = true;
-  const came = arrivedSettings().full;
-  let kept2 = false;
-  try {
-    kept2 = localStorage.getItem(FULL_KEY) === "1";
-  } catch {
-  }
-  if (came === void 0) prefers = kept2;
-  else keepFull(came);
-  reportSettings("screen", () => ({ full: prefers }));
-  meetClient();
-  const mayAsk = framed();
-  waiting = prefers && (document.fullscreenEnabled && !document.fullscreenElement || mayAsk);
-  if (!waiting) return;
-  const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
-  const stop = () => {
-    waiting = false;
-    for (const type of presses) removeEventListener(type, onPress, true);
-    document.removeEventListener("fullscreenchange", onChange);
-    forget();
-  };
-  const onChange = () => {
-    if (document.fullscreenElement || clientScreenFilled()) stop();
-  };
-  const forget = onClientScreen(onChange);
-  const onPress = (e) => {
-    if (e.code === "Escape" || held || presenting() || document.fullscreenElement) return;
-    if (clientHoldsScreen()) return void (clientScreenFilled() ? stop() : askClientForScreen(true));
-    if (!document.fullscreenEnabled) return;
-    void document.documentElement.requestFullscreen().then(stop, () => {
-    });
-  };
-  for (const type of presses) addEventListener(type, onPress, true);
-  document.addEventListener("fullscreenchange", onChange);
-  onChange();
-}
-var isFilled = () => clientHoldsScreen() ? clientScreenFilled() : !!document.fullscreenElement;
-var canFill = () => clientHoldsScreen() || document.fullscreenEnabled;
-var fullscreenWaiting = () => waiting && canFill() && !isFilled();
-function fullscreenAction(controls, presenting) {
-  resumeFullscreen(presenting);
-  setTimeout(() => {
-    if (waiting && !held && !presenting() && canFill() && !isFilled()) controls.say("Press any key, or click, to fill the screen again.");
-  }, 600);
-  onClientScreen(() => controls.setTarget(""));
-  return {
-    id: "fullscreen",
-    section: "view",
-    icon: "size",
-    on: () => prefers,
-    // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
-    hidden: () => !canFill() || presenting(),
-    // It says what they prefer, in every world, and whether the screen is filled just now.
-    label: () => !prefers ? "Fullscreen: off" : isFilled() ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
-    act: async () => {
-      const fill = !isFilled();
-      if (!fill) keepFull(false);
-      if (clientHoldsScreen()) {
-        if (fill) keepFull(true);
-        askClientForScreen(fill);
-        return void controls.setTarget("");
-      }
-      try {
-        if (fill) {
-          await document.documentElement.requestFullscreen();
-          keepFull(true);
-        } else await document.exitFullscreen();
-      } catch {
-        controls.say("This browser wouldn't go fullscreen.");
-      }
-      controls.setTarget("");
-    }
-  };
-}
-
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panorama.ts
 import * as THREE3 from "three";
 var PANORAMA_VIEWS = [
@@ -867,57 +773,6 @@ function offerHeadset(title, enter, stay) {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/desk.ts
 import { FOV_RANGE, LOOK_RANGE } from "@nswp/core";
-
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
-var matches = (query) => {
-  try {
-    return typeof matchMedia === "function" && matchMedia(query).matches;
-  } catch {
-    return false;
-  }
-};
-function deviceForms() {
-  const touch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0 || matches("(any-pointer: coarse)");
-  const mouse = matches("(any-pointer: fine)");
-  return { touch, mouse, main: matches("(pointer: fine)") ? "desk" : "touch" };
-}
-function formFor(said, device) {
-  if (said === "touch" && device.touch) return "touch";
-  if (said === "desk" && device.mouse) return "desk";
-  return device.main;
-}
-var arrived;
-var used;
-var watching = false;
-function arriveAs(form) {
-  arrived = form;
-  watch();
-}
-function startingForm() {
-  return formFor(arrived, deviceForms());
-}
-function currentForm() {
-  watch();
-  return used ?? startingForm();
-}
-function usedForm() {
-  watch();
-  return used;
-}
-function watch() {
-  if (watching || typeof addEventListener !== "function") return;
-  watching = true;
-  addEventListener(
-    "pointerdown",
-    (e) => {
-      if (e.pointerType === "touch") used = "touch";
-      else if (e.pointerType === "mouse") used = "desk";
-    },
-    { capture: true, passive: true }
-  );
-}
-
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/desk.ts
 var DESK_PREFS_KEY = "nswp:desk";
 var LOOK_STEPS = [
   { value: 0.5, word: "slow" },
@@ -4551,7 +4406,7 @@ function createPaidGate(opts) {
   let worldName = "";
   const offers = /* @__PURE__ */ new Map();
   const unread = /* @__PURE__ */ new Map();
-  let held2 = null;
+  let held = null;
   const takenBack = /* @__PURE__ */ new Set();
   const asked = /* @__PURE__ */ new Map();
   let endsAt = 0;
@@ -4594,7 +4449,7 @@ function createPaidGate(opts) {
     clearTimeout(endTimer);
     clearTimeout(graceTimer);
     endsAt = 0;
-    held2 = null;
+    held = null;
     set("shut", why2);
   };
   const believe = (event, listing, buyer) => {
@@ -4605,7 +4460,7 @@ function createPaidGate(opts) {
   const lasts = (r) => r.expiresAt === null || r.expiresAt * 1e3 > now();
   const best = (all) => all.filter((r) => !!r && lasts(r)).sort((a, b) => a.expiresAt === null ? -1 : b.expiresAt === null ? 1 : b.expiresAt - a.expiresAt)[0] ?? null;
   const openUp = (r) => {
-    held2 = r;
+    held = r;
     clearTimeout(endTimer);
     clearTimeout(graceTimer);
     endsAt = 0;
@@ -4615,7 +4470,7 @@ function createPaidGate(opts) {
     if (was === "open") changed();
   };
   const ending = () => {
-    held2 = null;
+    held = null;
     clearTimeout(endTimer);
     clearTimeout(graceTimer);
     endsAt = now() + GATE_TIMES.grace * 1e3;
@@ -4639,7 +4494,7 @@ function createPaidGate(opts) {
       openUp(r);
       if (!due) return;
       const said2 = await askAbout(r);
-      if (disposed || held2?.fulfillment !== r.fulfillment) return;
+      if (disposed || held?.fulfillment !== r.fulfillment) return;
       if (said2 === "taken-back") return shut("taken-back");
       if (said2 === "unknown" && now() - Math.max(goodAt()[r.fulfillment] ?? 0, r.issuedAt * 1e3) >= GATE_TIMES.goodFor * 1e3) shut("unchecked");
       return;
@@ -4672,10 +4527,10 @@ function createPaidGate(opts) {
       return set("open", "");
     }
     if (!signer || !buyer) return shut(signer ? "signed-out" : "no-signer");
-    if (held2 && held2.buyer !== buyer) held2 = null;
+    if (held && held.buyer !== buyer) held = null;
     const got = await Promise.all(listings.map((l) => signer.have(l).then((r) => r ? believe(r.event, l, buyer) : null).catch(() => null)));
     if (disposed || mine !== round) return;
-    const found = best([...got, held2 && !takenBack.has(held2.fulfillment) ? held2 : null]);
+    const found = best([...got, held && !takenBack.has(held.fulfillment) ? held : null]);
     if (found) return take(found, mine);
     if (state === "ending") return;
     if (ended && state === "open") return ending();
@@ -4856,7 +4711,7 @@ function createPaidGate(opts) {
       return !paid || offers.size > 0 || unread.size > 0;
     },
     get until() {
-      return state === "open" && held2 ? held2.expiresAt : null;
+      return state === "open" && held ? held.expiresAt : null;
     },
     get signedIn() {
       return signedIn();
@@ -4921,7 +4776,7 @@ function createPaidGate(opts) {
       return () => void watchers3.delete(fn);
     },
     info() {
-      return { state, open: state === "free" || state === "open" || state === "ending", reason, why: why(), offers: offerList(), unread: Object.fromEntries(unread), until: state === "open" && held2 ? held2.expiresAt : null, endsAt: endsAt ? Math.round(endsAt / 1e3) : null, signedIn: signedIn(), buying, listings: [...listings], lists: listState, ownerBlocked: ownerBlocked.length, namedOnly, byInvitation, invites: inviteState, invited: invited.length };
+      return { state, open: state === "free" || state === "open" || state === "ending", reason, why: why(), offers: offerList(), unread: Object.fromEntries(unread), until: state === "open" && held ? held.expiresAt : null, endsAt: endsAt ? Math.round(endsAt / 1e3) : null, signedIn: signedIn(), buying, listings: [...listings], lists: listState, ownerBlocked: ownerBlocked.length, namedOnly, byInvitation, invites: inviteState, invited: invited.length };
     },
     dispose() {
       disposed = true;
@@ -5300,15 +5155,15 @@ function createWorldSigner(opts) {
   let waited = false;
   let asking = false;
   let again = 0;
-  let waiting2;
+  let waiting;
   let signerUrl = "";
   const reload = () => {
     if (frame && signerUrl) frame.src = signerUrl;
   };
   const wait = () => {
     waited = false;
-    clearTimeout(waiting2);
-    waiting2 = setTimeout(() => {
+    clearTimeout(waiting);
+    waiting = setTimeout(() => {
       if (state !== "none" || disposed) return;
       if (again === 0) {
         again = 1;
@@ -5395,19 +5250,19 @@ function createWorldSigner(opts) {
       clearTimeout(question.timer);
       return question.answer(reply.t === "refused" ? null : reply);
     }
-    const waiting3 = pending.get(reply.id);
-    if (!waiting3) return;
+    const waiting2 = pending.get(reply.id);
+    if (!waiting2) return;
     pending.delete(reply.id);
-    clearTimeout(waiting3.timer);
-    if (reply.t !== "signed") return waiting3.done(null);
+    clearTimeout(waiting2.timer);
+    if (reply.t !== "signed") return waiting2.done(null);
     const signed = reply.event;
-    if (waiting3.session) {
-      const checked = verifyRoomPass3(signed, { origin: location.origin, session: waiting3.session });
-      return waiting3.done(checked.ok && checked.value.pubkey === pubkey ? signed : null);
+    if (waiting2.session) {
+      const checked = verifyRoomPass3(signed, { origin: location.origin, session: waiting2.session });
+      return waiting2.done(checked.ok && checked.value.pubkey === pubkey ? signed : null);
     }
-    if (!waiting3.asked) return waiting3.done(null);
+    if (!waiting2.asked) return waiting2.done(null);
     const marked = Array.isArray(signed?.tags) && signed.tags.some((t) => t[0] === WORLD_TAG && t[1] === cleanOrigin(location.origin));
-    waiting3.done(verifyEvent3(signed) && signed.pubkey === pubkey && marked && isWhatWasAsked(waiting3.asked, signed) ? signed : null);
+    waiting2.done(verifyEvent3(signed) && signed.pubkey === pubkey && marked && isWhatWasAsked(waiting2.asked, signed) ? signed : null);
   };
   void (async () => {
     try {
@@ -5644,7 +5499,7 @@ function createWorldSigner(opts) {
     dispose() {
       disposed = true;
       for (const go of [...firstAnswer]) go();
-      clearTimeout(waiting2);
+      clearTimeout(waiting);
       removeEventListener("message", onMessage);
       frame?.remove();
       frame = null;
@@ -6707,6 +6562,7 @@ function pieceName(address) {
   return name.slice(0, 60) || "a piece with no name";
 }
 var STEP_LEVEL = 0.45;
+var JUMP_STEPS = { louder: 1.35, gap: 0.09 };
 var STRIDE = 0.75;
 var HEARD = { near: 2, far: 25, floor: 0.14, fall: 6 };
 function heardFrom(place) {
@@ -9968,7 +9824,7 @@ function addRoomControls(controls, presence, opts = {}) {
   const refresh = () => {
     const s = presence.session;
     opts.onState?.(
-      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn, screen: presence.screenOn, music: presence.musicOn, musicListeners: presence.musicListeners, sharing: s.members.filter((m) => m.sharing).map((m) => m.pubkey), watching: [...watching2.keys()] } : null
+      s ? { name: s.name, private: !!presence.roomName, status: s.status, self: s.self.pubkey, members: s.members.map((m) => m.pubkey), relays: s.relayCount, mic: presence.micOn, screen: presence.screenOn, music: presence.musicOn, musicListeners: presence.musicListeners, sharing: s.members.filter((m) => m.sharing).map((m) => m.pubkey), watching: [...watching.keys()] } : null
     );
     controls.addSection({ id: "room", label: "Room", icon: "room", note: status });
     tendChat();
@@ -9993,12 +9849,12 @@ function addRoomControls(controls, presence, opts = {}) {
       return false;
     }
   };
-  const watching2 = /* @__PURE__ */ new Map();
+  const watching = /* @__PURE__ */ new Map();
   const sharers = /* @__PURE__ */ new Set();
   const stopWatching = (pubkey, panelGone = false) => {
-    const w = watching2.get(pubkey);
+    const w = watching.get(pubkey);
     if (!w) return;
-    watching2.delete(pubkey);
+    watching.delete(pubkey);
     presence.watch(pubkey, false);
     w.video.srcObject = null;
     w.texture?.dispose();
@@ -10006,15 +9862,15 @@ function addRoomControls(controls, presence, opts = {}) {
   };
   const startWatching = (m) => {
     const stream = presence.screenOf(m.pubkey);
-    if (!opts.panels || !stream || watching2.has(m.pubkey)) return false;
+    if (!opts.panels || !stream || watching.has(m.pubkey)) return false;
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
     video.srcObject = stream;
     const w = { video, texture: null, panel: null };
-    watching2.set(m.pubkey, w);
+    watching.set(m.pubkey, w);
     const show = () => {
-      if (w.panel || watching2.get(m.pubkey) !== w || !video.videoWidth || !video.videoHeight) return;
+      if (w.panel || watching.get(m.pubkey) !== w || !video.videoWidth || !video.videoHeight) return;
       w.texture = new THREE11.VideoTexture(video);
       w.texture.colorSpace = THREE11.SRGBColorSpace;
       w.panel = opts.panels.open(
@@ -10137,7 +9993,7 @@ function addRoomControls(controls, presence, opts = {}) {
       toldOfMusic = true;
       controls.say(`${here.find((m) => m.music).name} is sharing music. To hear what people near you share, turn it on in Sound.`);
     }
-    for (const key of [...watching2.keys()]) if (!here.some((m) => m.pubkey === key && m.sharing)) stopWatching(key);
+    for (const key of [...watching.keys()]) if (!here.some((m) => m.pubkey === key && m.sharing)) stopWatching(key);
     for (const m of here) {
       if (m.sharing && !sharers.has(m.pubkey)) controls.say(opts.panels ? `${m.name} is sharing their screen. Select them in People to watch.` : `${m.name} is sharing their screen.`);
       if (m.sharing) sharers.add(m.pubkey);
@@ -10150,10 +10006,10 @@ function addRoomControls(controls, presence, opts = {}) {
         id: "person-watch",
         section: "people",
         icon: "panel",
-        on: () => watching2.has(who.pubkey),
-        label: () => watching2.has(who.pubkey) ? `Stop watching ${who.name}'s screen` : `Watch ${who.name}'s screen`,
+        on: () => watching.has(who.pubkey),
+        label: () => watching.has(who.pubkey) ? `Stop watching ${who.name}'s screen` : `Watch ${who.name}'s screen`,
         act: () => {
-          if (watching2.has(who.pubkey)) stopWatching(who.pubkey);
+          if (watching.has(who.pubkey)) stopWatching(who.pubkey);
           else if (startWatching(who)) controls.say(`${who.name}'s screen is opening on a panel of your own. Put the panel away to stop.`);
           else controls.say(`${who.name}'s screen can't be shown here.`);
           refresh();
@@ -10613,7 +10469,7 @@ function addRoomControls(controls, presence, opts = {}) {
     turning = busy = true;
     const mic = presence.micOn;
     const name = presence.roomName;
-    for (const key of [...watching2.keys()]) stopWatching(key);
+    for (const key of [...watching.keys()]) stopWatching(key);
     presence.leave();
     try {
       await presence.join(name);
@@ -10702,7 +10558,7 @@ function addRoomControls(controls, presence, opts = {}) {
       hidden: () => busy,
       act: async () => {
         if (presence.session) {
-          for (const key of [...watching2.keys()]) stopWatching(key);
+          for (const key of [...watching.keys()]) stopWatching(key);
           presence.leave();
           controls.signal("leave");
           tell("You left the room.");
@@ -10978,12 +10834,12 @@ function createStroll(o) {
       const far = Math.hypot(dx, dz);
       aim(x, z, next[0], next[1]);
       const step = Math.min(far, speed * (running ? RUN : 1) * Math.min(Math.max(dt, 0), 0.1));
-      const arrived2 = () => {
+      const arrived = () => {
         path.shift();
         if (path.length === 0) halt();
       };
       if (far < 0.02 || step <= 0) {
-        if (far < 0.02) arrived2();
+        if (far < 0.02) arrived();
         return;
       }
       const sx = dx / far * step;
@@ -10994,7 +10850,7 @@ function createStroll(o) {
         return;
       }
       o.move(sx, sz);
-      if (far - step < 0.02) arrived2();
+      if (far - step < 0.02) arrived();
     },
     face(yaw, dt) {
       if (heading === null || !(dt > 0)) return yaw;
@@ -11317,7 +11173,7 @@ function createXrInput(opts) {
     else if (canStand(headAt.x, headAt.z + dz)) rig.position.z += dz;
   };
   const things = /* @__PURE__ */ new Map();
-  const held2 = /* @__PURE__ */ new Map();
+  const held = /* @__PURE__ */ new Map();
   const returning = [];
   const box = new THREE12.Box3();
   const ball = new THREE12.Sphere();
@@ -11326,10 +11182,10 @@ function createXrInput(opts) {
   const turnOnly = new THREE12.Matrix4();
   const HOLD_AT = new THREE12.Vector3(0, 0, -0.06);
   const FAR_REACH = 6;
-  const isHeld = (object) => [...held2.values()].some((h) => h.thing.object === object);
+  const isHeld = (object) => [...held.values()].some((h) => h.thing.object === object);
   const grab = (slot, by) => {
     const s = slots[slot];
-    if (held2.has(slot) || !s.source) return false;
+    if (held.has(slot) || !s.source) return false;
     (s.grip.visible ? s.grip : s.ray).getWorldPosition(handAt);
     let best = null;
     let bestFar = Infinity;
@@ -11363,15 +11219,15 @@ function createXrInput(opts) {
     const home = { parent: object.parent, position: object.position.clone(), quaternion: object.quaternion.clone() };
     const hand = s.grip.visible ? s.grip : s.ray;
     hand.attach(object);
-    held2.set(slot, { thing: best, by, home, ...pulled ? { pull: { from: object.position.clone(), t: 0 } } : {} });
+    held.set(slot, { thing: best, by, home, ...pulled ? { pull: { from: object.position.clone(), t: 0 } } : {} });
     pulse(slot, 0.6, 35);
     best.onGrab?.(slot);
     return true;
   };
   function release(slot) {
-    const h = held2.get(slot);
+    const h = held.get(slot);
     if (!h) return;
-    held2.delete(slot);
+    held.delete(slot);
     const object = h.thing.object;
     const parent = h.home.parent ?? opts.scene;
     parent.attach(object);
@@ -11382,13 +11238,13 @@ function createXrInput(opts) {
   slots.forEach((s, i) => {
     listen(s.ray, "squeezestart", (() => void grab(i, "squeeze")));
     listen(s.ray, "squeezeend", (() => {
-      if (held2.get(i)?.by === "squeeze") release(i);
+      if (held.get(i)?.by === "squeeze") release(i);
     }));
     listen(s.ray, "selectstart", (() => {
       if (kindOf(s) === "hand") grab(i, "pinch");
     }));
     listen(s.ray, "selectend", (() => {
-      if (held2.get(i)?.by === "pinch") release(i);
+      if (held.get(i)?.by === "pinch") release(i);
     }));
   });
   const setComfort = (patch, keep3 = false) => {
@@ -11492,7 +11348,7 @@ function createXrInput(opts) {
       aiming = [];
       narrow = 0;
       vignette.visible = false;
-      for (const slot of [...held2.keys()]) release(slot);
+      for (const slot of [...held.keys()]) release(slot);
     } else {
       const pads = read();
       const intent = loco.frame(dt, pads, comfort);
@@ -11527,7 +11383,7 @@ function createXrInput(opts) {
         s.hand.visible = opts.models !== false && kind === "hand";
       });
     }
-    for (const h of held2.values()) {
+    for (const h of held.values()) {
       if (!h.pull) continue;
       h.pull.t = Math.min(1, h.pull.t + dt / 0.18);
       h.thing.object.position.lerpVectors(h.pull.from, HOLD_AT, 1 - (1 - h.pull.t) ** 3);
@@ -11554,11 +11410,11 @@ function createXrInput(opts) {
     grabbable(object, o = {}) {
       things.set(object, { object, reach: o.reach ?? 0.1, far: o.far ?? true, pull: o.pull ?? true, release: o.release ?? "stay", ...o.onGrab ? { onGrab: o.onGrab } : {}, ...o.onRelease ? { onRelease: o.onRelease } : {} });
       return () => {
-        for (const [slot, h] of held2) if (h.thing.object === object) release(slot);
+        for (const [slot, h] of held) if (h.thing.object === object) release(slot);
         things.delete(object);
       };
     },
-    claimed: (slot) => held2.get(slot)?.by === "pinch",
+    claimed: (slot) => held.get(slot)?.by === "pinch",
     pulse,
     info() {
       const pads = renderer.xr.isPresenting ? read() : [];
@@ -11566,14 +11422,14 @@ function createXrInput(opts) {
         comfort,
         slots: slots.map((s, i) => ({ hand: handOf(s), kind: kindOf(s), pad: pads.find((p) => p.index === i)?.pad ?? NO_PAD })),
         aiming,
-        holding: [0, 1].map((i) => held2.get(i)?.thing.object.name || (held2.has(i) ? "(unnamed)" : null)),
+        holding: [0, 1].map((i) => held.get(i)?.thing.object.name || (held.has(i) ? "(unnamed)" : null)),
         narrow: Math.round(narrow * 100) / 100,
         pulses
       };
     },
     dispose() {
       for (const stop of stops.splice(0)) stop();
-      for (const slot of [...held2.keys()]) release(slot);
+      for (const slot of [...held.keys()]) release(slot);
       for (const [target, type, fn] of listeners) target.removeEventListener(type, fn);
       camera.remove(vignette);
       vignette.geometry.dispose();
@@ -13116,11 +12972,11 @@ function lookAfter(yaw, pitch, dx, dy, speed = LOOK_SPEED) {
   const clean2 = (n) => Number.isFinite(n) ? n : 0;
   return { yaw: yaw - clean2(dx) * speed, pitch: Math.min(PITCH_LIMIT, Math.max(-PITCH_LIMIT, pitch - clean2(dy) * speed)) };
 }
-function strideOf(held2, yaw, speed, dt, sprint = SPRINT) {
-  const f = (held2.forward ? 1 : 0) - (held2.back ? 1 : 0);
-  const s = (held2.right ? 1 : 0) - (held2.left ? 1 : 0);
+function strideOf(held, yaw, speed, dt, sprint = SPRINT) {
+  const f = (held.forward ? 1 : 0) - (held.back ? 1 : 0);
+  const s = (held.right ? 1 : 0) - (held.left ? 1 : 0);
   if (!f && !s) return [0, 0];
-  const pace = speed * (held2.sprint ? sprint : 1) * Math.max(0, dt) / Math.hypot(f, s);
+  const pace = speed * (held.sprint ? sprint : 1) * Math.max(0, dt) / Math.hypot(f, s);
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   return [(s * cos - f * sin) * pace, (-s * sin - f * cos) * pace];
@@ -13154,14 +13010,14 @@ var DESK_WORDS = {
   nowCasual: "Casual: click where you want to stand, twice to run there, and drag to look round. W, A, S, D walk, Shift runs and Space jumps."
 };
 var hasMouse = () => startingForm() === "desk";
-function startsIntense(arrived2, key = DESK_KEY) {
+function startsIntense(arrived, key = DESK_KEY) {
   if (!hasMouse()) return false;
-  const prefers2 = arrivedSettings().intense;
-  if (typeof prefers2 === "boolean") return prefers2;
+  const prefers = arrivedSettings().intense;
+  if (typeof prefers === "boolean") return prefers;
   try {
-    return arrived2 || localStorage.getItem(key) === "1";
+    return arrived || localStorage.getItem(key) === "1";
   } catch {
-    return arrived2;
+    return arrived;
   }
 }
 function keepIntense(on, key = DESK_KEY) {
@@ -13190,7 +13046,7 @@ function createFps(o) {
     if (typeof arrivedSettings().intense === "boolean" || o.arrived) keepIntense(enabled, key);
     reportSettings("moving", () => answered ? { intense: enabled } : {});
   }
-  const held2 = {};
+  const held = {};
   let pitch = 0;
   let weLetGo = false;
   let closedAt = -1;
@@ -13230,7 +13086,7 @@ function createFps(o) {
   };
   const onLock = () => {
     if (looking()) return;
-    for (const k of Object.keys(held2)) held2[k] = false;
+    for (const k of Object.keys(held)) held[k] = false;
     if (active() && !weLetGo && o.hud && !o.hud.open) o.hud.setOpen(true);
     weLetGo = false;
   };
@@ -13241,6 +13097,10 @@ function createFps(o) {
   const onKey = (e) => {
     if (!active() || typing(e)) return;
     if (e.code === "Escape") {
+      if (e.defaultPrevented) {
+        if (looking()) letGo();
+        return;
+      }
       if (looking()) {
         letGo();
         o.hud?.setOpen(true);
@@ -13251,7 +13111,7 @@ function createFps(o) {
     if (!looking() && !e.repeat) look();
     const which = heldKey(e.code);
     if (which) {
-      held2[which] = true;
+      held[which] = true;
       if (e.code.startsWith("Arrow")) e.preventDefault();
       return;
     }
@@ -13259,24 +13119,14 @@ function createFps(o) {
   };
   const onKeyUp = (e) => {
     const which = heldKey(e.code);
-    if (which) held2[which] = false;
+    if (which) held[which] = false;
   };
   const onBlur = () => {
-    for (const k of Object.keys(held2)) held2[k] = false;
-  };
-  const onFullscreen = () => {
-    const keyboard = navigator.keyboard;
-    try {
-      if (document.fullscreenElement && active()) void keyboard?.lock?.(["Escape"])?.catch?.(() => {
-      });
-      else keyboard?.unlock?.();
-    } catch {
-    }
+    for (const k of Object.keys(held)) held[k] = false;
   };
   o.dom.addEventListener("mousedown", onDown);
   document.addEventListener("mousemove", onMove);
   document.addEventListener("pointerlockchange", onLock);
-  document.addEventListener("fullscreenchange", onFullscreen);
   addEventListener("keydown", onKey);
   addEventListener("keyup", onKeyUp);
   addEventListener("blur", onBlur);
@@ -13303,7 +13153,6 @@ function createFps(o) {
       dot.style.display = "none";
       o.dom.style.cursor = "";
     }
-    onFullscreen();
   };
   o.controls.add({
     id: "fps",
@@ -13366,7 +13215,7 @@ function createFps(o) {
       }
       o.dom.style.cursor = aiming ? "none" : "";
       if (o.hud?.open) return true;
-      const [dx, dz] = strideOf(held2, o.rig.rotation.y, o.speed ?? 2.4, dt);
+      const [dx, dz] = strideOf(held, o.rig.rotation.y, o.speed ?? 2.4, dt);
       if (!dx && !dz) return true;
       o.camera.getWorldPosition(at);
       if (o.canStand(at.x + dx, at.z + dz)) {
@@ -13387,7 +13236,6 @@ function createFps(o) {
       o.dom.removeEventListener("mousedown", onDown);
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("pointerlockchange", onLock);
-      document.removeEventListener("fullscreenchange", onFullscreen);
       removeEventListener("keydown", onKey);
       removeEventListener("keyup", onKeyUp);
       removeEventListener("blur", onBlur);
@@ -13437,7 +13285,7 @@ function createJump(o = {}) {
   };
 }
 function addJump(controls, o) {
-  const jump = createJump({ onJump: () => o.sounds?.play("step"), onLand: () => o.sounds?.play("land") });
+  const jump = createJump({ onJump: () => o.sounds?.jumped ? o.sounds.jumped() : o.sounds?.play("step"), onLand: () => o.sounds?.play("land") });
   const typing = (e) => {
     const t = e.composedPath?.()[0] ?? e.target;
     return !!t && (t.isContentEditable || t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
@@ -13526,11 +13374,11 @@ function createScores(opts) {
     } catch {
     }
   };
-  const held2 = /* @__PURE__ */ new Map();
+  const held = /* @__PURE__ */ new Map();
   const of = (who) => {
     const k = keyFor(who);
-    if (!held2.has(k)) held2.set(k, read(who));
-    return held2.get(k);
+    if (!held.has(k)) held.set(k, read(who));
+    return held.get(k);
   };
   const best = (id) => {
     const b = boardOf(id);
@@ -13999,9 +13847,9 @@ function keptHolding() {
     return void 0;
   }
 }
-function keepHolding(held2) {
+function keepHolding(held) {
   try {
-    globalThis.localStorage?.setItem(HELD_KEY, JSON.stringify(held2));
+    globalThis.localStorage?.setItem(HELD_KEY, JSON.stringify(held));
   } catch {
   }
 }
@@ -14091,8 +13939,8 @@ function addBagControls(controls, opts) {
   let drawnHolding = "";
   const refresh = () => {
     drawnHolding = opts.holding();
-    const held2 = heldNow();
-    if (held2 !== void 0) keepHolding(held2);
+    const held = heldNow();
+    if (held !== void 0) keepHolding(held);
     for (const id of shown2) controls.remove(id);
     shown2 = [];
     const me = opts.me();
@@ -14337,14 +14185,14 @@ function addBagControls(controls, opts) {
     return { item, ...Object.keys(tints).length ? { tints } : {}, ...script && scriptAllowed(script) ? { script } : {} };
   };
   reportSettings("holding", () => {
-    const held2 = heldNow();
-    return held2 === void 0 ? {} : { holding: held2 };
+    const held = heldNow();
+    return held === void 0 ? {} : { holding: held };
   });
   refresh();
-  const watch2 = setInterval(() => {
+  const watch = setInterval(() => {
     if (!taking && opts.holding() !== drawnHolding) refresh();
   }, 400);
-  watch2.unref?.();
+  watch.unref?.();
   return { refresh };
 }
 
@@ -14511,8 +14359,8 @@ function worldPersonLines(o) {
         const at = o.scores.standingOf(b.id, pubkey);
         if (at) out.push(`${b.title}: ${o.scores.words(b.id, at.score)}, ${ordinal(at.rank)} of ${at.of} here`);
       }
-      const held2 = o.achievements?.heldBy(pubkey) ?? [];
-      if (held2.length) out.push(`Shows ${held2.length} of ${o.achievements.list.length} achievements here: ${someOf(held2.map((a) => a.title))}`);
+      const held = o.achievements?.heldBy(pubkey) ?? [];
+      if (held.length) out.push(`Shows ${held.length} of ${o.achievements.list.length} achievements here: ${someOf(held.map((a) => a.title))}`);
       return out;
     },
     onChange(fn) {
@@ -14546,10 +14394,10 @@ function createAchievements(opts) {
     for (const fn of watchers3) fn();
   };
   const keyFor = (who) => `nswp:achievements:${world}:${who ?? "guest"}`;
-  const held2 = /* @__PURE__ */ new Map();
+  const held = /* @__PURE__ */ new Map();
   const of = (who) => {
     const k = keyFor(who);
-    if (!held2.has(k)) {
+    if (!held.has(k)) {
       let kept2 = { earned: [], shown: [] };
       try {
         const read = JSON.parse(store?.getItem(k) ?? "{}");
@@ -14557,9 +14405,9 @@ function createAchievements(opts) {
         kept2 = { earned: ids(read?.earned), shown: ids(read?.shown) };
       } catch {
       }
-      held2.set(k, kept2);
+      held.set(k, kept2);
     }
-    return held2.get(k);
+    return held.get(k);
   };
   const write = (who) => {
     try {
@@ -14601,11 +14449,11 @@ function createAchievements(opts) {
       if (!world) return { ok: false, said: "This world has no achievements." };
       if (!who) return { ok: false, said: "Sign in here to show what you have earned: it is under You." };
       const kept2 = of(who);
-      const waiting2 = earned().filter((id) => !kept2.shown.includes(id));
-      if (waiting2.length === 0) return { ok: true, said: earned().length ? "Everything you have earned here is already shown." : "You haven't earned anything here yet." };
+      const waiting = earned().filter((id) => !kept2.shown.includes(id));
+      if (waiting.length === 0) return { ok: true, said: earned().length ? "Everything you have earned here is already shown." : "You haven't earned anything here yet." };
       const own = await ownRelays(who);
       let done = 0;
-      for (const id of waiting2) {
+      for (const id of waiting) {
         const a = one(id);
         const signed = await opts.hand.sign(world, id, a.title).catch(() => null);
         if (!signed) break;
@@ -14619,7 +14467,7 @@ function createAchievements(opts) {
       }
       changed();
       if (done === 0) return { ok: false, said: "It couldn't be signed or sent, so nothing was shown. What you earned is still kept on this device." };
-      const rest = waiting2.length - done;
+      const rest = waiting.length - done;
       return { ok: rest === 0, said: `${done === 1 ? "1 achievement is" : `${done} achievements are`} shown as yours. Anyone can see ${done === 1 ? "it" : "them"}.${rest ? ` ${rest} more couldn't be sent: try again in a moment.` : ""}` };
     },
     async holders(fresh = false) {
@@ -14675,7 +14523,7 @@ function addAchievementControls(controls, opts) {
     };
     const earned = a.earned();
     const out = a.shown();
-    const waiting2 = earned.filter((id) => !out.includes(id)).length;
+    const waiting = earned.filter((id) => !out.includes(id)).length;
     controls.addSection({
       id: "achievements",
       label: "Achievements",
@@ -14685,8 +14533,8 @@ function addAchievementControls(controls, opts) {
     add({
       id: "achievements-show",
       icon: "check",
-      tone: waiting2 ? "primary" : "normal",
-      label: () => earned.length === 0 ? "Nothing earned here yet" : !opts.signedIn() ? `Sign in to show the ${earned.length} you have earned` : waiting2 === 0 ? `All ${earned.length} you have earned ${earned.length === 1 ? "is" : "are"} shown as yours` : `Show the ${waiting2} I have earned, as mine (public)`,
+      tone: waiting ? "primary" : "normal",
+      label: () => earned.length === 0 ? "Nothing earned here yet" : !opts.signedIn() ? `Sign in to show the ${earned.length} you have earned` : waiting === 0 ? `All ${earned.length} you have earned ${earned.length === 1 ? "is" : "are"} shown as yours` : `Show the ${waiting} I have earned, as mine (public)`,
       short: "Show",
       act: async () => {
         if (earned.length === 0) return controls.say("Earn one first: it is kept on this device until you show it.");
@@ -14703,12 +14551,12 @@ function addAchievementControls(controls, opts) {
       const title = one.hidden && !mine ? "Something not yet found" : one.title;
       const about = one.hidden && !mine ? "" : one.about ? `: ${one.about}` : "";
       const others = h ? h.holders - (h.mine ? 1 : 0) : 0;
-      const held2 = others > 0 ? ` Shown by ${others === 1 ? "1 other" : `${others} others`}${h.known.length ? `, ${h.known.length} you follow` : ""}.` : "";
+      const held = others > 0 ? ` Shown by ${others === 1 ? "1 other" : `${others} others`}${h.known.length ? `, ${h.known.length} you follow` : ""}.` : "";
       add({
         id: `achievements-${one.id}`,
         icon: mine ? "check" : "step",
         on: () => mine,
-        label: `${title}${about}.${held2}`.replace(/\.\./g, "."),
+        label: `${title}${about}.${held}`.replace(/\.\./g, "."),
         act: () => controls.say(mine ? `You earned "${one.title}"${out.includes(one.id) ? ", and it is shown as yours" : ". It is kept on this device until you show it"}.` : one.hidden ? "Not found yet." : `Not earned yet: ${one.about ?? one.title}.`)
       });
     }
@@ -14919,7 +14767,12 @@ function createSounds(o = {}) {
     const now = ctx.currentTime;
     if (now - (last.get(cue) ?? -1) < (GAP2[cue] ?? 0.03)) return;
     last.set(cue, now);
-    const shape = cue === "step" ? stepShape(foot++) : from ? heardFrom(from) : null;
+    sound(cue, now, from);
+  };
+  const sound = (cue, at, from, louder = 1) => {
+    const now = at;
+    const stepped = cue === "step" ? stepShape(foot++) : null;
+    const shape = stepped ? { ...stepped, gain: stepped.gain * louder } : from ? heardFrom(from) : null;
     const out = shape ? shaped(shape) : effects;
     const files2 = own.get(cue) ?? fromKit.get(cue);
     if (files2?.length) {
@@ -14932,10 +14785,18 @@ function createSounds(o = {}) {
       level.gain.value = files2[which].gain;
       src.connect(level);
       level.connect(out);
-      src.start();
+      src.start(now);
       return;
     }
     for (const part of cueRecipe(cue)) playPart(part, now + 5e-3, out, shape?.rate ?? 1);
+  };
+  const jumped = () => {
+    if (disposed || levels.off || levels.effects <= 0 || ctx.state !== "running") return;
+    if (theme.cues.step === null) return;
+    const now = ctx.currentTime;
+    sound("step", now, void 0, JUMP_STEPS.louder);
+    sound("step", now + JUMP_STEPS.gap, void 0, JUMP_STEPS.louder);
+    last.set("step", now + JUMP_STEPS.gap);
   };
   let walked = 0;
   const moved = (metres) => {
@@ -15243,6 +15104,7 @@ function createSounds(o = {}) {
     play,
     moved,
     bump: () => play("bump"),
+    jumped,
     get levels() {
       return levels;
     },
@@ -15281,15 +15143,15 @@ function createSounds(o = {}) {
         return null;
       }
     },
-    playForeign(sound, from) {
+    playForeign(sound2, from) {
       if (disposed || levels.off || levels.effects <= 0 || ctx.state !== "running") return;
       const far = from && Number.isFinite(from.distance) ? Math.max(0, from.distance) : 0;
       const reach = far <= FOREIGN_SOUND.fades ? 1 : Math.max(0, 1 - (far - FOREIGN_SOUND.fades) / (FOREIGN_SOUND.gone - FOREIGN_SOUND.fades));
       if (reach <= 0) return;
       const src = ctx.createBufferSource();
-      src.buffer = sound.buffer;
+      src.buffer = sound2.buffer;
       const level = ctx.createGain();
-      level.gain.value = sound.gain * reach;
+      level.gain.value = sound2.gain * reach;
       src.connect(level);
       level.connect(from ? shaped(heardFrom(from)) : effects);
       src.start();
@@ -16097,14 +15959,6 @@ async function addViewControls(controls, d) {
 export {
   turnVisitor,
   createConsole,
-  prefersFullscreen,
-  resumeFullscreen,
-  fullscreenWaiting,
-  deviceForms,
-  formFor,
-  startingForm,
-  currentForm,
-  usedForm,
   LOOK_STEPS,
   FOV_STEPS,
   lookScale,
