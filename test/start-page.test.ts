@@ -35,6 +35,7 @@ describe("how to make a world, the kit's docs/start.md as a page (landing-02)", 
     expect(await read("scripts/vendor.mjs")).toContain('cpSync(join(repo, "docs", "start.md"), join(out, "docs", "start.md"))');
     const page = await read("src/start/index.html");
     expect(page).toContain('<a href="/start.md"><code>/start.md</code></a>');
+    expect(page).toMatch(/word for word/);
     expect(page).toContain("<!-- doc -->");
   });
 
