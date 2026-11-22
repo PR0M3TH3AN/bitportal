@@ -50,4 +50,12 @@ describe("a plate beside tiles doesn't say what the tiles say", () => {
     expect(texts(world({ items: "play", modes: ["immersive-vr"] }), true)).toContain("Items in play");
     expect(texts(world({ contentWarning: "flashing", modes: ["immersive-vr"] }), true)).toContain("Content warning");
   });
+
+  it("a tile tapped with a finger keeps saying what it means until the next press, as a mouse resting on it would", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const room = readFileSync(new URL("../src/walk/main.ts", import.meta.url), "utf8");
+    expect(room).toContain('if (thing?.tile && e.pointerType === "touch") tappedTile = thing;');
+    expect(room).toContain("pointed = under() ?? tappedTile;");
+    expect(room).toMatch(/if \(gameControls\(\)\) return;\n    tappedTile = null;/);
+  });
 });
