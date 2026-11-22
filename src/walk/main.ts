@@ -400,6 +400,12 @@ async function start(): Promise<void> {
   // Which of the two ways the visitor is moving, on the device they are using. Worked out further down.
   let movingNow = (): "intense" | "casual" => "casual";
   const movingFlag = (): { moving?: "intense" } => (movingNow() === "intense" ? { moving: "intense" } : {});
+  /**
+   * How a visitor is moving, the form they are in and what they prefer, as they go: read it BEFORE a headset session
+   * is ended, every time. After it ends, how they move is the desk's answer (`movingNow`), and their choice in the
+   * headset is lost on the way to the next world.
+   */
+  const departing = () => ({ ...movingFlag(), form: currentForm(), settings: currentSettings() });
   // Sound in the room: the kit's cues, a quiet music of the room's own, and the visitor's own songs. The volumes
   // are the visitor's, kept in this browser. A world's sounds stop at its own door: here they are BitPortal's.
   const sounds = createSounds({ context: THREE.AudioContext.getContext() as unknown as AudioContext, seed: "BitPortal",
@@ -966,13 +972,16 @@ async function start(): Promise<void> {
     const naddr = encodeNaddr({ kind: WORLD_KIND, pubkey: entry.event.pubkey, identifier: w.d, relays: settings.relays.slice(0, 2) });
     // Left from a headset: say so, and the world at the other end offers the way back into one first.
     const immersive = renderer.xr.isPresenting;
+    // How they are moving, read while the headset session is still on: once it has ended, "how they move" is the
+    // desk's answer, and a visitor who chose intense in the headset would reach every world casual again.
+    const going = departing();
     try {
       await renderer.xr.getSession()?.end();
     } catch {
       /* already ended */
     }
     // In the room here, and heard: that goes along, so the world at the other end needn't ask again.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...movingFlag(), form: currentForm(), settings: currentSettings() }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, { naddr, url: w.url }, { immersive, joined: travelling().joined, mic: travelling().mic, ...going }));
   };
 
   const raycaster = new THREE.Raycaster();
@@ -1358,6 +1367,8 @@ async function start(): Promise<void> {
     document.body.classList.add("leaving");
     // They left a headset session to come here, or are in one now: the world offers the way back into one.
     const immersive = renderer.xr.isPresenting || !!req.immersive;
+    // Read before the headset session ends, for the same reason as at a door.
+    const going = departing();
     try {
       await renderer.xr.getSession()?.end();
     } catch {
@@ -1365,7 +1376,7 @@ async function start(): Promise<void> {
     }
     const dest = { ...(req.naddr ? { naddr: req.naddr.raw } : {}), ...(req.url ? { url: req.url } : {}), ...(req.entryPoint ? { entryPoint: req.entryPoint } : {}) };
     // They go back as they are now: what they set here goes with them, and the room they were in there is theirs to rejoin.
-    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, dest, { immersive, ...(req.joined ? { joined: true, ...(req.mic ? { mic: true } : {}) } : {}), ...(req.blocked ? { blocked: req.blocked } : {}), ...movingFlag(), form: currentForm(), settings: currentSettings() }));
+    location.assign(buildAirlockUrl(new URL("/go/", location.origin).href, dest, { immersive, ...(req.joined ? { joined: true, ...(req.mic ? { mic: true } : {}) } : {}), ...(req.blocked ? { blocked: req.blocked } : {}), ...going }));
   };
   // Signing in is done here, as in every world: the sign-in address's own window opens at their press, and the
   // room is then read again as whoever they now are, with them put back where they stood. (It used to be a place
