@@ -8,19 +8,7 @@
  * Each followed list keeps the last copy of itself and of its worlds'
  * announcements, so its shelf is there before any relay answers.
  */
-import {
-  coordinate,
-  CURATION_SET_KIND,
-  decodeNaddr,
-  latestAddressable,
-  parseCoordinate,
-  parseListEvent,
-  parseWorldEvent,
-  verifyEvent,
-  WORLD_KIND,
-  type NostrEvent,
-  type WorldList,
-} from "@nswp/core";
+import { coordinate, CURATION_SET_KIND, decodeNaddr, latestAddressable, parseCoordinate, parseListEvent, parseWorldEvent, verifyEvent, WORLD_KIND, type NostrEvent, resolveList, type WorldList } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 
@@ -122,14 +110,14 @@ export function unfollow(list: FollowedList[], id: string): FollowedList[] {
  * key signed a later copy of the same list; its worlds' announcements are
  * refreshed alongside. Returns the same array when nothing changed.
  */
-export function refreshFollowed(list: FollowedList[], events: unknown[]): FollowedList[] {
+export function refreshFollowed(list: FollowedList[], events: unknown[], now?: number): FollowedList[] {
   let changed = false;
   const next = list.map((f) => {
-    let event = f.event;
-    for (const e of events) {
-      const read = readList(e);
-      if (read && read.coordinate === f.id && (e as NostrEvent).created_at > event.created_at) event = e as NostrEvent;
-    }
+    // Which copy counts is NSWP-08's rule, in the kit (`resolveList`): a copy dated far ahead, or with two names, never
+    // stands over the one they have. With no copy that counts, they keep the one they have.
+    const cands = [f.event, ...events];
+    const id = resolveList(cands, { coordinate: f.id, ...(now !== undefined ? { now } : {}) }).id;
+    const event = (id ? (cands.find((e) => (e as NostrEvent)?.id === id) as NostrEvent | undefined) : undefined) ?? f.event;
     const read = readList(event)!;
     const worlds = worldsFor(read, [...f.worlds, ...events]);
     if (event === f.event && worlds.length === f.worlds.length && worlds.every((w, i) => w.id === f.worlds[i]!.id)) return f;

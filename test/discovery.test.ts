@@ -56,10 +56,24 @@ describe("following a list", () => {
     const newer = list("quiet", ALICE, [id(cave), id(hill)], T + 10);
     const forged = list("quiet", BOB, [id(hill)], T + 99); // another key, same name: a different list
     const older = list("quiet", ALICE, [], T - 10);
-    expect(refreshFollowed(f, [forged, older])).toBe(f);
-    const next = refreshFollowed(f, [forged, newer, hill]);
+    // The reader's clock is the lists' own (T): which copies count is NSWP-08's, and a copy far ahead of now doesn't.
+    expect(refreshFollowed(f, [forged, older], T)).toBe(f);
+    const next = refreshFollowed(f, [forged, newer, hill], T);
     expect(next[0]!.event.id).toBe(newer.id);
     expect(next[0]!.worlds.map((w) => w.id)).toEqual([cave.id, hill.id]);
+  });
+
+  it("chooses a copy as NSWP-08 does, with the kit's own rule: never one dated far ahead, or one with two names", () => {
+    const f = follow([], quiet, [pond, cave], 1);
+    // Dated more than ten minutes ahead of the reader's clock: left out, and the one they have stands.
+    const ahead = list("quiet", ALICE, [id(hill)], T + 3600);
+    expect(refreshFollowed(f, [ahead, hill], T)).toBe(f);
+    // Ten minutes ahead exactly still counts.
+    const justAhead = list("quiet", ALICE, [id(hill)], T + 600);
+    expect(refreshFollowed(f, [justAhead, hill], T)[0]!.event.id).toBe(justAhead.id);
+    // A copy with two names is no copy of this list, however new.
+    const twoNames = finalizeEvent({ kind: 30004, created_at: T + 5, content: "", tags: [["d", "quiet"], ["d", "loud"], ["title", "List quiet"], ["a", id(hill)]] }, ALICE);
+    expect(refreshFollowed(f, [twoNames, hill], T)).toBe(f);
   });
 
   it("takes a world's newer announcement, and only a validly signed one", () => {
@@ -283,5 +297,34 @@ describe("what a pass says about its holder (NSWP-10, \"Who someone is\")", () =
     // Nothing to say is left off the pass altogether.
     const bare = await issuePass(signer, { origin: "https://grove.example", name: "Alice" }, { now: T });
     expect(bare.pass.tags.some((t) => t[0] === "about")).toBe(false);
+  });
+});
+
+describe("which copy of a list the catalogue takes (NSWP-08, the kit's `resolveList`)", () => {
+  const operatorPolicy = { operators: [alice], allowList: "bitportal", allowListOnly: true, allowAdult: false };
+  const twoNames = (sk: Uint8Array, names: string[], at: number) =>
+    finalizeEvent({ kind: 30004, created_at: at, content: "", tags: [...names.map((n) => ["d", n]), ["title", "Two names"], ["a", id(hill)]] }, sk);
+
+  it("an operator's list: never a copy dated far ahead, or one with two names; the newest of the rest", () => {
+    const honest = list("bitportal", ALICE, [id(pond)], T - 60);
+    const ahead = list("bitportal", ALICE, [id(hill)], T + 3600);
+    const both = twoNames(ALICE, ["bitportal", "other"], T);
+    const c = buildWithPolicy(starter, [honest, ahead, both, pond, hill], { policy: operatorPolicy, now: T });
+    expect(c.operatorLists.map((e) => e.id)).toEqual([honest.id]);
+    expect(c.allowed.has(id(pond))).toBe(true);
+    expect(c.allowed.has(id(hill))).toBe(false);
+    // Ten minutes ahead exactly still counts, and is the newest.
+    const justAhead = list("bitportal", ALICE, [id(hill)], T + 600);
+    expect(buildWithPolicy(starter, [honest, justAhead], { policy: operatorPolicy, now: T }).operatorLists.map((e) => e.id)).toEqual([justAhead.id]);
+  });
+
+  it("the starter set: the copy it ships with stands unless a newer one counts", () => {
+    const own = list("starter", BOB, [id(pond)], T);
+    const mine = { curator: bob, set: own, worlds: [] } as unknown as StarterBundle;
+    const ahead = list("starter", BOB, [id(hill)], T + 3600);
+    const both = twoNames(BOB, ["starter", "other"], T + 5);
+    expect(buildCatalog(mine, [ahead, both], { now: T }).curator.updatedAt).toBe(T);
+    const newer = list("starter", BOB, [id(hill)], T + 10);
+    expect(buildCatalog(mine, [ahead, both, newer], { now: T }).curator.updatedAt).toBe(T + 10);
   });
 });

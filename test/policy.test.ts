@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { buildListEvent, buildWorldEvent, finalizeEvent, getPublicKey, type NostrEvent } from "@nswp/core";
 import bundle from "../src/starter/starter-set.json";
-import { buildCatalog, type StarterBundle } from "../src/shared/catalog.js";
+import { buildCatalog as buildAt, type CatalogOptions, type StarterBundle } from "../src/shared/catalog.js";
 import { INSTANCE, OPEN_POLICY, sendsPass, type InstancePolicy } from "../src/shared/instance.js";
 import { follow } from "../src/shared/lists.js";
 import { savedEntries } from "../src/shared/saved.js";
@@ -14,6 +14,8 @@ const ALICE = key(1);
 const BOB = key(2);
 const operator = getPublicKey(OPERATOR);
 const T = 1_800_000_000;
+// The reader's clock is the lists' own: which copy of a list counts is NSWP-08's rule, and a copy far ahead of now doesn't.
+const buildCatalog = (b: StarterBundle, events: unknown[] = [], opts: CatalogOptions = {}) => buildAt(b, events, { now: T, ...opts });
 const world = (d: string, sk: Uint8Array, extra: Partial<Parameters<typeof buildWorldEvent>[0]> = {}, at = T): NostrEvent =>
   finalizeEvent(buildWorldEvent({ d, title: `World ${d}`, url: `https://${d}.example/`, createdAt: at, ...extra }), sk);
 const list = (d: string, sk: Uint8Array, worlds: string[], at = T): NostrEvent => finalizeEvent(buildListEvent({ d, title: `List ${d}`, description: "", worlds, createdAt: at }), sk);

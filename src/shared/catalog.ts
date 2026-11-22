@@ -2,7 +2,7 @@
  * The lobby's catalogue: the lists a visitor sees, the worlds those lists
  * name, and the worlds nobody has listed (NSWP-08; spec §5.4, §14).
  */
-import { audienceOf, CURATION_SET_KIND, coordinate, getTagValue, parseCoordinate, parseWorldEvent, verifyEvent, WORLD_KIND, type NostrEvent, type World } from "@nswp/core";
+import { audienceOf, CURATION_SET_KIND, coordinate, getTagValue, parseCoordinate, parseWorldEvent, resolveList, verifyEvent, WORLD_KIND, type NostrEvent, type World } from "@nswp/core";
 import { INSTANCE, type InstancePolicy } from "./instance.js";
 import { readList, type FollowedList } from "./lists.js";
 
@@ -67,6 +67,8 @@ export interface Catalog {
 }
 
 export interface CatalogOptions {
+  /** The reader's clock, in unix seconds: which copies of a list are dated ahead. The system clock unless a test says. */
+  now?: number;
   /** Lists the visitor follows. */
   followed?: FollowedList[];
   /** False when the visitor has put BitPortal's own list away. */
@@ -109,12 +111,16 @@ function isValidSet(e: unknown, curator: string): e is NostrEvent {
  */
 export function buildCatalog(bundle: StarterBundle, relayEvents: unknown[] = [], opts: CatalogOptions = {}): Catalog {
   if (!isValidSet(bundle.set, bundle.curator)) throw new CatalogError("starter_set_invalid", "The bundled starter set failed its signature check.");
-  let set = bundle.set;
-  const setD = getTagValue(set, "d");
-  for (const e of relayEvents) {
-    if (isValidSet(e, bundle.curator) && getTagValue(e, "d") === setD && e.created_at > set.created_at) set = e;
-  }
+  const setD = getTagValue(bundle.set, "d");
   const starterId = coordinate({ kind: CURATION_SET_KIND, pubkey: bundle.curator, identifier: setD ?? "" });
+  // Which copy of a list counts is NSWP-08's rule, written once in the kit (`resolveList`): exactly that `d`, a good
+  // signature, nothing dated more than ten minutes ahead, the newest of the rest. Never BitPortal's own reading of it.
+  const chosen = (events: readonly unknown[], at: string): NostrEvent | null => {
+    const id = resolveList(events, { coordinate: at, ...(opts.now !== undefined ? { now: opts.now } : {}) }).id;
+    return id ? ((events.find((e) => (e as NostrEvent)?.id === id) as NostrEvent | undefined) ?? null) : null;
+  };
+  // The copy it ships with stands until a newer one counts: a client keeps the copy it holds (NSWP-08).
+  const set = chosen([bundle.set, ...relayEvents], starterId) ?? bundle.set;
   const curator = {
     pubkey: bundle.curator,
     title: getTagValue(set, "title") ?? "Starter set",
@@ -129,10 +135,7 @@ export function buildCatalog(bundle: StarterBundle, relayEvents: unknown[] = [],
   // The operators' own allow lists: the newest each has signed under the agreed name.
   const operatorLists: NostrEvent[] = [];
   for (const key of policy.operators) {
-    let newestList: NostrEvent | null = null;
-    for (const e of [...(opts.operatorLists ?? []), ...relayEvents]) {
-      if (isValidSet(e, key) && getTagValue(e, "d") === policy.allowList && (!newestList || e.created_at > newestList.created_at)) newestList = e;
-    }
+    const newestList = chosen([...(opts.operatorLists ?? []), ...relayEvents], coordinate({ kind: CURATION_SET_KIND, pubkey: key, identifier: policy.allowList }));
     if (newestList) operatorLists.push(newestList);
   }
 
