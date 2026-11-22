@@ -138,7 +138,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-KRA4ULYH.js";
+} from "./shared-6E5NMO4L.js";
 import {
   PICTURE_LIMITS,
   addDoorControls,
