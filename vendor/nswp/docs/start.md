@@ -34,8 +34,8 @@ A world can be anything: a game, an app, a gallery, a place to meet.
 | You have | Start from | Then read |
 |---|---|---|
 | Nothing yet, and you like JavaScript | **The world template** (Three.js): everything above is done, you change a scene | Its [README](https://github.com/PR0M3TH3AN/nswp-world-template#readme) and [AGENTS.md](https://github.com/PR0M3TH3AN/nswp-world-template/blob/main/AGENTS.md) |
-| A Godot 4 project | **The Godot addon**: `engines/godot/addons/nswp/` in this repository | [docs/other-engines.md, "Godot"](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/other-engines.md#godot) |
-| A site already, in any engine | **The protocol**, and the engine script `engines/nswp-engine.js` | [docs/add-your-site.md](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/add-your-site.md), then [docs/other-engines.md](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/other-engines.md) |
+| A Godot 4 project | **The Godot addon**: `engines/godot/addons/nswp/` in the protocol's repository, [Nostr-Spatial-Web-Protocol--NSWP-](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-) | [docs/other-engines.md, "Godot"](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/other-engines.md#godot) |
+| A site already, in any engine | **The protocol**, and the engine script `engines/nswp-engine.js` in the same repository | [docs/add-your-site.md](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/add-your-site.md), then [docs/other-engines.md](https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/docs/other-engines.md) |
 
 The rest of this page walks the first way, because it is the shortest. The
 other two reach the same three things by other routes. The Godot addon's
@@ -69,11 +69,17 @@ until you stop it with Ctrl+C. Open the address: drag to look around, walk
 with W, A, S, D, click a door to go through it. Add `?xr=emulate` to try it
 with a pretend headset.
 
-**An agent:** start it in the background (or under `timeout`) with its output
-going to a file, and read the address from the file: piped through `tail`,
-the address is lost when the server is stopped. Without a browser you can
-only see that the address answers; `npm run check` (below) is what says the
-world builds.
+**An agent:** start it in the background with its output going to a file,
+and read the address from the file (piped through `tail`, the address is lost
+when the server is stopped). For example, this runs it for a minute and stops
+by itself:
+
+```bash
+timeout 60 npm run dev > dev.log 2>&1 &
+```
+
+Without a browser you can only see that the address answers; `npm run check`
+(below) is what says the world builds.
 
 What you see deployed with no changes at all:
 <https://starter.bitblocks.network/>.
@@ -86,7 +92,14 @@ Three places hold everything that is yours. The page rebuilds as you save.
 |---|---|
 | `home.json` | The room you start with: colours, furniture, doors. No code |
 | `src/scene.ts` and `src/scenes/` | The scene itself, in Three.js |
-| `world.json` | The facts: its name (`title`), a short name for it (`d`), its address (`url`), what it offers. Step 3 says what to put there |
+| `world.json` | The facts about your world |
+
+In `world.json`, set `url` to the https address the world will live at, `d`
+to a short name of your own (lower case, no spaces), and `title` to its name.
+What each kind of thing in `home.json` takes, and how a door names where it
+leads, is in the template's README,
+["The home"](https://github.com/PR0M3TH3AN/nswp-world-template#the-home-homejson).
+Edit the files by hand: a tool that rewrites them whole changes every line.
 
 Then check it:
 
@@ -96,11 +109,7 @@ npm run check
 
 It ends with `All checks passed.` when the world builds and its files agree.
 
-### 3. Say where it lives, and make its key
-
-In `world.json`, set `url` to the https address the world will live at, `d`
-to a short name of your own (lower case, no spaces), and `title` to its name.
-(If you did this already in step 2, there is nothing more to do here.)
+### 3. Make its key
 
 ```bash
 npm run keygen
@@ -117,7 +126,10 @@ folder, in a message or in a log. (To keep it somewhere else, set
 ### 4. Take its picture, sign it, build it
 
 A door that leads to a world shows a 360° picture of it, and a world must
-have one. This needs Google Chrome installed:
+have one. This opens the built world on this machine in Google Chrome and
+photographs it, so it needs Google Chrome itself installed (it asks for
+Chrome by name; Chromium alone won't do), and stops with a plain message if it
+can't start it:
 
 ```bash
 npm run preview
@@ -135,12 +147,16 @@ npm run check
 site into `dist/` and checks it; when the tools say "Next: npm run build",
 `npm run check` does that build too, so either is fine.
 
-`previews/` and `signed/` are part of your world: keep them with it (commit
-them, if it is in a repository). The key never goes with them.
+`previews/` and `signed/` are part of your world: keep them with it. If the
+world is in a repository, this is a good moment to commit, with them in it.
+The key never goes with them.
 
 ### 5. Put it online
 
-`dist/` is a folder of plain files: upload it to any static host. It must
+`dist/` is a folder of plain files: upload it to any static host (GitHub
+Pages, Netlify, Cloudflare Pages and Vercel all work; how you upload is each
+host's own, and putting a site online is yours to decide, so this page gives no
+command for it). It must
 send `Access-Control-Allow-Origin: *` for `/.well-known/nswp.json`; the
 build writes `dist/vercel.json` and `dist/_headers` for Vercel, Netlify and
 Cloudflare Pages, and the template's README says what to do elsewhere.
@@ -153,7 +169,8 @@ npm run check:live -- https://your-world.example/
 ```
 
 It ends with `Verified world.` when the site's own file vouches for the key
-that announced it. Try it on the starter world to see what good looks like:
+that announced it. Before the site is up, or before it is announced, it ends
+with `Problems found.` and says which: that is expected, not a mistake. Try it on the starter world to see what good looks like:
 `npm run check:live -- https://starter.bitblocks.network/`.
 
 ### 6. Announce it

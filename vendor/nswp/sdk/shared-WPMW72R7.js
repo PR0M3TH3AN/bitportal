@@ -29,7 +29,7 @@ import {
   showsChat,
   showsPictures,
   wrapWords
-} from "./shared-ON4WPMQC.js";
+} from "./shared-BOHXJA7G.js";
 import {
   LiveKeys,
   TextEntry,
@@ -3296,8 +3296,10 @@ var RoomSession = class {
   ownerBlocked = /* @__PURE__ */ new Set();
   /** Session keys let go this visit for the world's rules (the owner's list, or no pass where one is needed): not answered again. */
   turnedAway = /* @__PURE__ */ new Set();
-  /** Whether this room shows only people whose pass checks out. */
+  /** Whether this room shows only people whose pass checks out: so where it is by invitation, too. */
   namedOnly;
+  /** Where the world is by invitation, who may be in its rooms; null where it isn't. */
+  invited = null;
   /** In a room that shows only named people: the members shown, by session key, and what arrived for each before. */
   announced = /* @__PURE__ */ new Set();
   waiting = /* @__PURE__ */ new Map();
@@ -3384,7 +3386,14 @@ var RoomSession = class {
     this.iceServers = opts.iceServers ?? DEFAULT_ICE;
     for (const k of opts.blocked ?? []) if (/^[0-9a-f]{64}$/.test(k)) this.blocked.add(k);
     for (const k of opts.ownerBlocked ?? []) if (/^[0-9a-f]{64}$/.test(k)) this.ownerBlocked.add(k);
-    this.namedOnly = opts.namedOnly === true;
+    this.invited = opts.invited ? new Set([...opts.invited].filter((k) => /^[0-9a-f]{64}$/.test(k))) : null;
+    this.namedOnly = opts.namedOnly === true || this.invited !== null;
+  }
+  /** Who may be in this world's rooms, as its gate last read the owner's allow list. Anyone here not on it is let go at once. */
+  setInvited(keys) {
+    if (keys === null || this.invited === null) return;
+    this.invited = new Set([...keys].filter((k) => /^[0-9a-f]{64}$/.test(k)));
+    for (const peer of [...this.peers.values()]) if (peer.member.identity && !this.invited.has(peer.member.identity)) this.turnAway(peer.member.pubkey);
   }
   /**
    * The keys the world's owner keeps out, as the world's gate last read them. Anyone here whose pass names one is
@@ -3685,7 +3694,7 @@ var RoomSession = class {
       this.drop(peer.member.pubkey, true);
       return;
     }
-    if (this.ownerBlocked.has(checked.value.pubkey)) return this.turnAway(peer.member.pubkey);
+    if (this.ownerBlocked.has(checked.value.pubkey) || this.invited && !this.invited.has(checked.value.pubkey)) return this.turnAway(peer.member.pubkey);
     peer.passUntil = checked.value.expiresAt;
     Object.assign(peer.member, { guest: false, identity: checked.value.pubkey, name: checked.value.name || shortNpub(checked.value.pubkey) });
     if (this.namedOnly && !this.announced.has(peer.member.pubkey)) {
@@ -4562,6 +4571,9 @@ function createPaidGate(opts) {
   let listState = "none";
   let ownerBlocked = [];
   let namedOnly = false;
+  let byInvitation = false;
+  let inviteState = "none";
+  let invited = [];
   let listRetries = 0;
   let listTimer;
   const changed = () => {
@@ -4649,6 +4661,12 @@ function createPaidGate(opts) {
       seekTimer = setTimeout(() => void look(), 3e3);
     }
     if (isBlocked(buyer)) return shut("blocked");
+    if (byInvitation) {
+      if (!signer || !buyer) return shut(signer ? "signed-out" : "no-signer");
+      if (inviteState === "reading" || listState === "reading") return;
+      if (!isInvited(buyer)) return shut("not-invited");
+      if (!paid) return set("open", "");
+    }
     if (!paid) {
       if (lists && buyer && listState === "reading") return;
       return set("open", "");
@@ -4689,32 +4707,48 @@ function createPaidGate(opts) {
     clearTimeout(retryTimer);
     if ([...unread.values()].some((w) => w === "no-relay" || w === "not-found")) retryTimer = setTimeout(() => void readOffers(), Math.min(2e4 * 2 ** retries++, GATE_TIMES.look * 1e3));
   };
-  const isBlocked = (key) => !!lists && !!key && ownerBlocked.includes(key) && !lists.root.includes(key);
-  const applyLists = (events, answered = true) => {
-    if (!lists) return;
+  const rootOf = (subject) => lists?.root ?? [subject.split(":")[1]];
+  const isKeeper = (key) => !!lists && lists.subjects.some((s) => rootOf(s).includes(key));
+  const isBlocked = (key) => !!lists && !!key && ownerBlocked.includes(key) && !isKeeper(key);
+  const isInvited = (key) => isKeeper(key) || inviteState === "read" && invited.includes(key) || inviteState === "unanswered" && invited.includes(key);
+  const chooseList = (scope, events, answered) => {
     const kept2 = rememberedLists();
-    const blocked = /* @__PURE__ */ new Set();
+    const people = /* @__PURE__ */ new Set();
     let state2 = "not-found";
+    let found = false;
     for (const subject of lists.subjects) {
-      const d = listD("user-deny", subject);
+      const d = listD(scope, subject);
+      const root = rootOf(subject);
       const all = [...events, ...kept2[d] ? [kept2[d]] : []];
-      const r = resolveOwnerList(all, { scope: "user-deny", subject, root: lists.root, now: sec() });
-      const newest = all.filter((e) => e && e.kind === LIST_KIND && lists.root.includes(e.pubkey) && e.created_at <= sec() + OWNER_LIST_LIMITS.ahead && Array.isArray(e.tags) && e.tags.some((t) => t[0] === "d" && t[1] === d)).sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
+      const r = resolveOwnerList(all, { scope, subject, root, now: sec() });
+      const newest = all.filter((e) => e && e.kind === LIST_KIND && root.includes(e.pubkey) && e.created_at <= sec() + OWNER_LIST_LIMITS.ahead && Array.isArray(e.tags) && e.tags.some((t) => t[0] === "d" && t[1] === d)).sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
       if (newest && (!kept2[d] || newest.created_at > kept2[d].created_at || newest.created_at === kept2[d].created_at && newest.id < kept2[d].id)) rememberList(d, newest);
       if (r.ok) {
-        for (const key of r.entries) blocked.add(key);
+        for (const key of r.entries) people.add(key);
         state2 = "read";
-      } else if (r.reason !== "not_found" && state2 !== "read") state2 = "unreadable";
+        found = true;
+      } else if (r.reason !== "not_found" && !found) state2 = "unreadable";
     }
-    listState = answered ? state2 : "unanswered";
-    const next = [...blocked].sort();
-    const differs = next.join() !== ownerBlocked.join();
-    ownerBlocked = next;
+    return { people: [...people].sort(), state: answered ? state2 : "unanswered" };
+  };
+  const applyLists = (events, answered = true) => {
+    if (!lists) return;
+    const blocks = chooseList("user-deny", events, answered);
+    listState = blocks.state;
+    let differs = blocks.people.join() !== ownerBlocked.join();
+    ownerBlocked = blocks.people;
+    if (byInvitation) {
+      const invites = chooseList("user-allow", events, answered);
+      differs ||= invites.people.join() !== invited.join() || invites.state !== inviteState;
+      inviteState = invites.state;
+      invited = invites.state === "read" || invites.state === "unanswered" ? invites.people : [];
+    }
     if (differs) changed();
   };
   const readLists = async () => {
     if (!lists || disposed) return;
-    const filter = { kinds: [LIST_KIND], authors: [...lists.root], "#d": lists.subjects.map((s) => listD("user-deny", s)) };
+    const scopes = byInvitation ? ["user-deny", "user-allow"] : ["user-deny"];
+    const filter = { kinds: [LIST_KIND], authors: [...new Set(lists.subjects.flatMap(rootOf))], "#d": lists.subjects.flatMap((s) => scopes.map((scope) => listD(scope, s))) };
     const got = await askWell(filter, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS2, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
     if (disposed) return;
     const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
@@ -4751,14 +4785,16 @@ function createPaidGate(opts) {
     const named = file?.worlds?.[access.d]?.access;
     const meant = opts.listings ? opts.listings.length > 0 : Array.isArray(named) ? named.length > 0 : named !== void 0;
     paid = meant;
-    if (access.keepers && access.sellers.length) {
+    byInvitation = access.byInvitation;
+    if ((access.keepers || byInvitation) && access.sellers.length) {
       lists = { root: access.keepers, subjects: access.sellers.map((key) => worldSubject(key, access.d)) };
       listState = "reading";
+      if (byInvitation) inviteState = "reading";
     }
     if (!meant && !lists) return set("free", "");
     if (meant && listings.length === 0) return set("shut", "not-own");
     if (lists) {
-      const remembered = lists.subjects.some((s) => rememberedLists()[listD("user-deny", s)]);
+      const remembered = lists.subjects.some((s) => rememberedLists()[listD("user-deny", s)] || byInvitation && rememberedLists()[listD("user-allow", s)]);
       if (remembered) {
         applyLists([]);
         void readLists().then(() => look());
@@ -4783,6 +4819,13 @@ function createPaidGate(opts) {
     if (reason === "no-manifest") return "This world couldn't read its own list of what it is sold by, so the way stays shut. It is being read again.";
     if (reason === "not-own") return "What this world says it is sold by isn't its own to sell, so nothing here can be bought. That is the world's to put right.";
     if (reason === "blocked") return "The owner of this world has asked you not to come in.";
+    if (reason === "not-invited") {
+      if (inviteState === "not-found") return "This world is by invitation, and its owner's list of who is invited wasn't found. Only its owner may go in until it is.";
+      if (inviteState === "unreadable") return "This world is by invitation, and its owner's list of who is invited doesn't read, so only its owner may go in.";
+      if (inviteState === "unanswered" && !invited.length) return "This world is by invitation, and its owner's list of who is invited couldn't be read just now. It is being asked for again.";
+      return "This world is by invitation, and its owner hasn't invited you.";
+    }
+    if (byInvitation && (reason === "signed-out" || reason === "no-signer") && !paid) return reason === "signed-out" ? "This world is by invitation. Sign in, so it can see whether you are invited." : "This world is by invitation, and sign-in is done at a sign-in address: this world was given none for you.";
     const list = offerList();
     const firstUnread = [...unread.values()][0];
     const sale = list.length ? `Past here is for people who have bought it: ${list.map((o) => `${o.name}, ${o.words}`).join("; or ")}.` : `Past here is for people who have bought it. ${firstUnread ? unreadWords(firstUnread) : "What it costs is being read."}`;
@@ -4810,7 +4853,7 @@ function createPaidGate(opts) {
       return offerList();
     },
     get read() {
-      return offers.size > 0 || unread.size > 0;
+      return !paid || offers.size > 0 || unread.size > 0;
     },
     get until() {
       return state === "open" && held2 ? held2.expiresAt : null;
@@ -4826,6 +4869,15 @@ function createPaidGate(opts) {
     },
     get lists() {
       return listState;
+    },
+    get byInvitation() {
+      return byInvitation;
+    },
+    get invites() {
+      return inviteState;
+    },
+    get invited() {
+      return byInvitation && lists ? [.../* @__PURE__ */ new Set([...invited, ...lists.subjects.flatMap(rootOf)])].sort() : null;
     },
     get host() {
       return host();
@@ -4869,7 +4921,7 @@ function createPaidGate(opts) {
       return () => void watchers3.delete(fn);
     },
     info() {
-      return { state, open: state === "free" || state === "open" || state === "ending", reason, why: why(), offers: offerList(), unread: Object.fromEntries(unread), until: state === "open" && held2 ? held2.expiresAt : null, endsAt: endsAt ? Math.round(endsAt / 1e3) : null, signedIn: signedIn(), buying, listings: [...listings], lists: listState, ownerBlocked: ownerBlocked.length, namedOnly };
+      return { state, open: state === "free" || state === "open" || state === "ending", reason, why: why(), offers: offerList(), unread: Object.fromEntries(unread), until: state === "open" && held2 ? held2.expiresAt : null, endsAt: endsAt ? Math.round(endsAt / 1e3) : null, signedIn: signedIn(), buying, listings: [...listings], lists: listState, ownerBlocked: ownerBlocked.length, namedOnly, byInvitation, invites: inviteState, invited: invited.length };
     },
     dispose() {
       disposed = true;
@@ -4906,7 +4958,7 @@ function addGateControls(controls, gate, opts = {}) {
       else controls.say("That didn't finish, and the way is still shut. If you did pay, press Buy again: it finds what you paid for and charges nothing more.");
     });
   };
-  const showing = () => (gate.state === "shut" || gate.state === "ending") && gate.reason !== "no-manifest" && gate.reason !== "not-own" && gate.reason !== "no-signer" && gate.reason !== "blocked";
+  const showing = () => (gate.state === "shut" || gate.state === "ending") && gate.reason !== "no-manifest" && gate.reason !== "not-own" && gate.reason !== "no-signer" && gate.reason !== "blocked" && gate.reason !== "not-invited";
   for (let i = 0; i < ACCESS_MOST; i++) {
     const offer = () => gate.offers[i];
     controls.add({
@@ -4920,6 +4972,7 @@ function addGateControls(controls, gate, opts = {}) {
       label: () => {
         const o = offer();
         if (o) return `${gate.signedIn ? "Buy" : "Sign in to buy"} ${o.name}: ${o.words}`;
+        if (gate.byInvitation && !gate.signedIn) return "Sign in, to show you are invited";
         return gate.signedIn ? "Ask again what this costs" : "Sign in, to show what you hold";
       },
       hidden: () => !showing() || !offer() && (i > 0 || gate.offers.length > 0),
@@ -5762,7 +5815,7 @@ function worldGate(opts = {}) {
 var pageGate = null;
 var rulesWatchers = /* @__PURE__ */ new Set();
 function pageRules() {
-  return pageGate ? { blocked: pageGate.ownerBlocked, namedOnly: pageGate.namedOnly } : { blocked: [], namedOnly: false };
+  return pageGate ? { blocked: pageGate.ownerBlocked, namedOnly: pageGate.namedOnly, invited: pageGate.invited } : { blocked: [], namedOnly: false, invited: null };
 }
 function onPageRules(fn) {
   rulesWatchers.add(fn);
@@ -8113,7 +8166,12 @@ function speechSprite(text, width = 0.8) {
 }
 function createPresence(d) {
   const rulesNow = () => d.worldRules?.() ?? pageRules();
-  if (!d.worldRules) onPageRules(() => session2?.setOwnerBlocked(rulesNow().blocked));
+  const takeRules = () => {
+    const now = rulesNow();
+    session2?.setOwnerBlocked(now.blocked);
+    session2?.setInvited(now.invited ?? null);
+  };
+  if (!d.worldRules) onPageRules(takeRules);
   const labelColor = d.labelColor ?? "#ffffff";
   const changed = () => d.onChange?.();
   const listener = new THREE9.AudioListener();
@@ -8573,9 +8631,12 @@ function createPresence(d) {
     const look = typeof d.look === "function" ? d.look() : d.look;
     const identity = await byName(typeof d.identity === "function" ? d.identity() : d.identity);
     const rules = rulesNow();
+    const invitedOnly = rules.invited ?? null;
+    if (invitedOnly && !identity) throw new Error("this world is by invitation. Sign in, then join.");
     if (rules.namedOnly && !identity) throw new Error("this world's rooms show only people who are signed in. Sign in, then join.");
     if (identity && rules.blocked.includes(identity.pass.pubkey)) throw new Error("the owner of this world has asked you not to come in.");
-    const s = await room.join({ ...name ? { name } : {}, ...look ? { look } : {}, ...identity ? { identity } : {}, blocked: blockedKeys(), ownerBlocked: rules.blocked, namedOnly: rules.namedOnly });
+    if (identity && invitedOnly && !invitedOnly.includes(identity.pass.pubkey)) throw new Error("this world is by invitation, and its owner hasn't invited you.");
+    const s = await room.join({ ...name ? { name } : {}, ...look ? { look } : {}, ...identity ? { identity } : {}, blocked: blockedKeys(), ownerBlocked: rules.blocked, namedOnly: rules.namedOnly, invited: invitedOnly });
     session2 = s;
     if (!offsetApplied) {
       const off = spawnOffset(s.self.pubkey);
@@ -8908,7 +8969,7 @@ function createPresence(d) {
       changed();
     },
     rulesChanged() {
-      session2?.setOwnerBlocked(rulesNow().blocked);
+      takeRules();
     },
     blocked() {
       return [...keptBlocks.map((b) => ({ key: b.key, name: b.name, kept: true })), ...[...blockedNow].map(([key, name]) => ({ key, name, kept: false }))];
