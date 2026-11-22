@@ -141,9 +141,10 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-VQZESCN3.js";
+} from "./shared-VL4GBGJK.js";
 import {
   PICTURE_LIMITS,
+  addDoorControls,
   arriveWith,
   arrivedSettings,
   askClientForSignIn,
@@ -163,8 +164,9 @@ import {
   reportSettings,
   sendWell,
   setShowsPictures,
-  showsPictures
-} from "./shared-YMP44EJS.js";
+  showsPictures,
+  vouchedWords
+} from "./shared-ON4WPMQC.js";
 import {
   browserVoice,
   computerVoice,
@@ -211,6 +213,7 @@ export {
   addBagControls,
   addCameraControls,
   addDeskControls,
+  addDoorControls,
   addFollowingControls,
   addGateControls,
   addItemControls,
@@ -336,6 +339,7 @@ export {
   usedForm,
   viewScale,
   visitorFov,
+  vouchedWords,
   wasRefreshed,
   watchFov,
   watchFresh,
