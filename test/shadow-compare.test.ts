@@ -52,21 +52,26 @@ describe("BitGate's shadow, BitPortal's part", async () => {
     expect(r.lines[0]).toMatchObject({ event: "bitgate_shadow", v: 1, project: "bitportal", decision: "world-shown", listsAge: 30 });
   });
 
-  it("finds the readers' difference over a copy dated in the future: BitPortal takes it, BitGate (NSWP-08) leaves it out", () => {
+  // These two were the readers' differences the shadow found (#187): BitPortal took a far-future copy, and the first
+  // `d` of a list with two. Both now choose a copy with NSWP-08's rule (BitPortal through the kit's `resolveList`,
+  // #190), so the shadow agrees, and a list's copy dated ahead is named on both sides.
+  it("agrees over a copy dated in the future: both leave it out (NSWP-08)", () => {
     const ahead = list(operatorKey, "bitportal", [coord(maker, "unlisted")], now + 86_400);
     const r = run([operatorList, ahead, ...worlds]);
-    expect(r.reconciliation.bitportalOnly).toEqual([coord(maker, "unlisted")]);
-    expect(r.reconciliation.bitgateOnly).toEqual([coord(maker, "for-adults"), coord(maker, "name:with:colons"), coord(maker, "on-operator-list")]);
-    // A reader difference is never counted as expected: it is left to explain.
-    expect(r.counts.unexplained).toBe(4);
+    expect(r.reconciliation.bitportalOnly).toEqual([]);
+    expect(r.reconciliation.bitgateOnly).toEqual([]);
+    expect(r.counts).toMatchObject({ disagree: 0, unexplained: 0 });
     expect(r.reconciliation.read.find((x) => x.list.endsWith(":bitportal"))?.futureDated).toEqual([ahead.id]);
+    // The world only the far-future copy names is shown by neither.
+    expect(r.reconciliation.lists.bitportal).not.toContain(coord(maker, "unlisted"));
   });
 
-  it("finds the readers' difference over a list with two names: BitPortal reads the first, BitGate refuses it", () => {
+  it("agrees over a list with two names: neither takes it as this list", () => {
     const twoNames = list(operatorKey, ["bitportal", "other"], [coord(maker, "unlisted")], now - 60);
     const r = run([operatorList, twoNames, ...worlds]);
-    expect(r.reconciliation.bitportalOnly).toEqual([coord(maker, "unlisted")]);
-    expect(r.reconciliation.bitgateOnly).toEqual([coord(maker, "for-adults"), coord(maker, "name:with:colons"), coord(maker, "on-operator-list")]);
+    expect(r.reconciliation.bitportalOnly).toEqual([]);
+    expect(r.reconciliation.bitgateOnly).toEqual([]);
+    expect(r.counts).toMatchObject({ disagree: 0, unexplained: 0 });
   });
 
   it("finds that BitGate never hides its root's own world, which BitPortal hides when nobody listed it", () => {

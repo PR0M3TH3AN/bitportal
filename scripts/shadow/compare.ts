@@ -79,8 +79,9 @@ export function shadowCompare(o: {
   verify?: Verify;
 }): ShadowReport {
   const verify: Verify = o.verify ?? ((e) => verifyEvent(e));
-  // BitPortal's own reading: the same function the doors use. A neutral world, so only the allow list counts.
-  const catalog = buildCatalog(o.bundle, o.events, { policy: o.policy });
+  // BitPortal's own reading: the same function the doors use, with the same clock BitGate's reader is given, so the
+  // two choose list copies at the same moment. A neutral world, so only the allow list counts.
+  const catalog = buildCatalog(o.bundle, o.events, { policy: o.policy, now: o.now });
   const existingOf = (id: string): "allow" | "deny" => (catalog.permits(id, {}) ? "allow" : "deny");
 
   // BitGate's reading of the same lists.

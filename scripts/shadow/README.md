@@ -24,10 +24,8 @@ committed tree at a pinned commit).
 - **Unexplained** (`counts.unexplained`): everything else. Each one is a reader difference to explain and fix in a
   list or in code before anyone switches to BitGate's answer (the plan's 14 days with no unexplained difference).
 
-Reader differences the test finds (`test/shadow-compare.test.ts`), which BitPortal fixes on its side by choosing a
-list's copy with the kit's own `resolveList`, as NSWP-08 says:
-
-- a copy of a list dated more than 600 s in the future: BitPortal took it; BitGate leaves it out;
-- a list with two `d` tags: BitPortal read the first; BitGate refuses it.
+Two reader differences the shadow found at first are gone: BitPortal now chooses a list's copy with the kit's own
+`resolveList`, as NSWP-08 says (#190), so both sides leave out a copy dated more than 600 s ahead, and both refuse
+a list with two `d` tags. The test (`test/shadow-compare.test.ts`) checks that they agree.
 
 Switching to BitGate's answer is the owner's word, never this script's.
