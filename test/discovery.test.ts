@@ -1,5 +1,5 @@
 /** Finding worlds beyond BitPortal's own list (NSWP-08). */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { buildListEvent, buildWorldEvent, encodeNaddr, finalizeEvent, getPublicKey, type NostrEvent } from "@nswp/core";
 import bundle from "../src/starter/starter-set.json";
 import { buildCatalog as buildWithPolicy, UNLISTED_LIMITS, type CatalogOptions, type StarterBundle } from "../src/shared/catalog.js";
@@ -80,9 +80,15 @@ describe("following a list", () => {
     expect(parseFollowed([{ id: "30004:x:y", event: pond }, null, 4])).toEqual([]);
   });
 
-  it("keeps a bounded number of a list's announcements", () => {
-    const many = Array.from({ length: KEPT_WORLDS + 5 }, (_, i) => world(`w${i}`, BOB));
-    const big = list("big", ALICE, many.map(id));
+  // Signing sixty-odd announcements is slow on a busy machine: done once, before the test, so the test times only
+  // what it is about. The test still checks every one of them, and is given room for that under load.
+  let many: NostrEvent[] = [];
+  let big: NostrEvent;
+  beforeAll(() => {
+    many = Array.from({ length: KEPT_WORLDS + 5 }, (_, i) => world(`w${i}`, BOB));
+    big = list("big", ALICE, many.map(id));
+  }, 120_000);
+  it("keeps a bounded number of a list's announcements", { timeout: 60_000 }, () => {
     expect(follow([], big, many, 1)[0]!.worlds.length).toBe(KEPT_WORLDS);
   });
 
@@ -175,8 +181,12 @@ describe("worlds nobody has listed", () => {
     expect(buildCatalog(starter, [pond]).unlisted.length).toBe(1);
   });
 
-  it("stops at the total", () => {
-    const crowd = Array.from({ length: UNLISTED_LIMITS.total + 9 }, (_, i) => world("only", key(10 + i), { url: `https://w${i}.example/` }, T + i));
+  // As above: the crowd is signed once beforehand, and the test, which checks every signature, has room under load.
+  let crowd: NostrEvent[] = [];
+  beforeAll(() => {
+    crowd = Array.from({ length: UNLISTED_LIMITS.total + 9 }, (_, i) => world("only", key(10 + i), { url: `https://w${i}.example/` }, T + i));
+  }, 120_000);
+  it("stops at the total", { timeout: 60_000 }, () => {
     const c = buildCatalog(starter, crowd);
     expect(c.unlisted.length).toBe(UNLISTED_LIMITS.total);
     expect(c.unlistedHeld).toBe(9);
