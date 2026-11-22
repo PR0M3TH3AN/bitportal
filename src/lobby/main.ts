@@ -727,7 +727,7 @@ function openSettings(): void {
   const fullBox = el("input", { type: "checkbox", id: "set-full" }) as HTMLInputElement;
   fullBox.checked = prefs.full;
   const intenseBox = el("input", { type: "checkbox", id: "set-intense" }) as HTMLInputElement;
-  intenseBox.checked = prefs.intense;
+  intenseBox.checked = prefs.intense === true;
   const picturesBox = el("input", { type: "checkbox", id: "set-pictures" }) as HTMLInputElement;
   picturesBox.checked = prefs.pictures;
   const chatBox = el("input", { type: "checkbox", id: "set-chat" }) as HTMLInputElement;
@@ -919,7 +919,7 @@ function openSettings(): void {
     const cleaned = cleanRelays(relays.value.split(/\s+/));
     settings = { ...settings, ranking: rankBox.checked, relays: cleaned.length ? cleaned : settings.relays, airlock: airlockBox.checked ? "known" : "ask" };
     saveSettings(settings);
-    storePrefs({ full: fullBox.checked, intense: intenseBox.checked, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null, pictures: picturesBox.checked, chat: chatBox.checked }, localStorage);
+    storePrefs({ full: fullBox.checked, intense: intenseBox.checked ? true : prefs.intense === null ? null : false, look: Number(lookPick.value) || 1, fov: fovPick.value ? Number(fovPick.value) : null, pictures: picturesBox.checked, chat: chatBox.checked }, localStorage);
     void refresh();
   });
   dialog.replaceChildren(form);

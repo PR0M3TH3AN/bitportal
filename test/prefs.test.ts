@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DESK_KEY, FULL_KEY, INTENSE_KEY, keptSettings, loadPrefs, settingsToCarry, storePrefs } from "../src/shared/prefs.js";
+import { COMFORT_KEY, DESK_KEY, FULL_KEY, INTENSE_KEY, keptSettings, loadPrefs, settingsToCarry, storePrefs } from "../src/shared/prefs.js";
 
 const store = (first: Record<string, string> = {}) => {
   const kept = new Map<string, string>(Object.entries(first));
@@ -8,8 +8,8 @@ const store = (first: Record<string, string> = {}) => {
 
 describe("what a visitor prefers in every world", () => {
   it("is nothing special until they say so", () => {
-    expect(loadPrefs(store())).toEqual({ full: false, intense: false, look: 1, fov: null, pictures: true, chat: true });
-    expect(loadPrefs(null)).toEqual({ full: false, intense: false, look: 1, fov: null, pictures: true, chat: true });
+    expect(loadPrefs(store())).toEqual({ full: false, intense: null, look: 1, fov: null, pictures: true, chat: true });
+    expect(loadPrefs(null)).toEqual({ full: false, intense: null, look: 1, fov: null, pictures: true, chat: true });
   });
 
   it("is kept where the kit keeps it, and read back the same", () => {
@@ -23,8 +23,14 @@ describe("what a visitor prefers in every world", () => {
     expect(s.kept.get("nswp:chat")).toBe("0");
     storePrefs({ full: false, intense: false, look: 1, fov: null, pictures: true, chat: true }, s);
     expect(s.kept.has(FULL_KEY)).toBe(false);
-    expect(s.kept.has(INTENSE_KEY)).toBe(false);
+    // Casual, once chosen, is kept as plainly as intense, the way the kit keeps it.
+    expect(s.kept.get(INTENSE_KEY)).toBe("0");
+    expect(loadPrefs(s).intense).toBe(false);
     expect(loadPrefs(s).fov).toBeNull();
+    // Nothing chosen leaves what is kept alone: Settings saved without touching it doesn't answer for them.
+    const fresh = store();
+    storePrefs({ full: false, intense: null, look: 1, fov: null, pictures: true, chat: true }, fresh);
+    expect(fresh.kept.has(INTENSE_KEY)).toBe(false);
   });
 
   it("reads anything out of range as the nearest thing a world can do", () => {
@@ -65,9 +71,24 @@ describe("what goes through a door", () => {
     expect(on.sound).toEqual({ music: 0.9, effects: 0.6 });
   });
 
-  it("says they prefer an unfilled screen and the casual way as plainly as the other", () => {
-    expect(keptSettings(store())).toMatchObject({ full: false, intense: false, look: 1 });
+  it("says they prefer an unfilled screen as plainly as the other", () => {
+    expect(keptSettings(store())).toMatchObject({ full: false, look: 1 });
     expect(keptSettings(store()).fov).toBeUndefined();
+  });
+
+  it("says how they move only once they have chosen, so a world asks someone never asked (NSWP-11)", () => {
+    // Never asked, at a desk or in a headset: nothing said, and the next world asks once.
+    expect(keptSettings(store())).not.toHaveProperty("intense");
+    expect(keptSettings(store())).not.toHaveProperty("headset");
+    // Chosen casual: said, so nobody asks again.
+    expect(keptSettings(store({ [INTENSE_KEY]: "0" })).intense).toBe(false);
+    expect(keptSettings(store({ [COMFORT_KEY]: JSON.stringify({ move: "teleport", turn: "snap", turnStep: 45 }) })).headset).toBe("casual");
+    // Chosen intense in a headset: walking and turning smoothly, as the kit keeps it.
+    expect(keptSettings(store({ [COMFORT_KEY]: JSON.stringify({ move: "smooth", turn: "smooth" }) })).headset).toBe("intense");
+    // The two are separate: an answer at a desk is never taken for one in a headset.
+    expect(keptSettings(store({ [INTENSE_KEY]: "1" }))).not.toHaveProperty("headset");
+    // And through a door, what the place they leave says is the newer word.
+    expect(settingsToCarry(keptSettings(store()), { headset: "intense" }).headset).toBe("intense");
   });
 });
 
