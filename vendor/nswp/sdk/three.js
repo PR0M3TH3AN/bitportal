@@ -141,7 +141,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-QZ2HM7PS.js";
+} from "./shared-WPMW72R7.js";
 import {
   PICTURE_LIMITS,
   addDoorControls,
@@ -166,7 +166,7 @@ import {
   setShowsPictures,
   showsPictures,
   vouchedWords
-} from "./shared-ON4WPMQC.js";
+} from "./shared-BOHXJA7G.js";
 import {
   browserVoice,
   computerVoice,
