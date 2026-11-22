@@ -1320,11 +1320,11 @@ async function start(): Promise<void> {
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
   let myLook = loadLook();
   // What visitors carry is drawn here, as in any world that hasn't turned items off (the owner, 2026-11-20: "Yes
-  // turn it on in home and the portal main world too"): the one thing each person holds, in their colours. What
-  // an item does of its own doesn't run here: that needs the locked box, a page of BitPortal's own framed by this
-  // one, and no page of BitPortal may frame anything but the sign-in address until the owner says so.
+  // turn it on in home and the portal main world too"), and what an item does of its own runs here as in every
+  // world: in the kit's locked box, a page of this site served under the kit's own rules (`/item-box/`), which is
+  // the one page of BitPortal the room frames.
   const carriedItems = createItems({ relays: settings.relays });
-  const presence = createPresence({ scene, camera, rig, renderer, controllers, items: carriedItems, itemsRule: () => "allowed", sounds, theme: () => ({ accent: controls.theme.accent, motion: controls.theme.motion }), labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
+  const presence = createPresence({ scene, camera, rig, renderer, controllers, items: carriedItems, itemsRule: () => "allowed", itemScripts: { url: "/item-box/" }, sounds, theme: () => ({ accent: controls.theme.accent, motion: controls.theme.motion }), labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
   // And they can see it too: their own figure stands to one side, as others will see it.
   // It is drawn again whenever they change it, which they do from the menu, standing here (you.ts).
   let mirror: Figure | null = null;
@@ -1528,8 +1528,7 @@ async function start(): Promise<void> {
     hold: async (item, tints) => {
       const done = await presence.setHolding(item, tints);
       state.holding = presence.holding || null;
-      // Said, so that a thing which fires elsewhere isn't taken to be broken here.
-      return done.ok && item && carriedItems.known(item)?.script ? { ...done, said: `${done.said} What it does of its own doesn't run at home yet.` } : done;
+      return done;
     },
     tinted: (item, tints) => void (presence.holding === item && presence.setTints(tints)),
     allowed: carried.allowed,
