@@ -562,3 +562,25 @@ input[type="url"], #f-id { font-family: var(--mono); font-size: 0.95rem; }
 /* Read on a headset's flat panel with a controller's ray: everything to press is larger. */
 .sheet.notice.large .button { min-height: 76px; font-size: 1.3rem; }
 .sheet.notice.large p { font-size: 1.2rem; }
+
+/* ---------- the front page: the way in, and a few words (src/landing/) ---------- */
+body.landing .hero { min-height: min(88vh, 860px); }
+body.landing .hero-actions .button.primary { min-height: 60px; padding-inline: 40px; font-size: 1.15rem; }
+body.landing .readout a { color: var(--bitportal-accent); }
+.landing-main { display: grid; gap: clamp(48px, 7vw, 96px); padding-block: clamp(48px, 7vw, 96px) 0; }
+.landing-band h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 760; letter-spacing: -0.018em; line-height: 1.05; }
+.landing-band > p { margin-top: 14px; max-width: 62ch; color: rgba(233, 243, 242, 0.84); }
+.landing-band > p .button { margin-top: 6px; }
+.landing-points { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 22px 34px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.landing-points li { padding-left: 14px; border-left: 2px solid var(--bitportal-accent); }
+.landing-points h3 { font-size: 1.05rem; font-weight: 700; }
+.landing-points p { margin-top: 6px; color: rgba(233, 243, 242, 0.8); }
+.landing-build { padding: clamp(22px, 4vw, 38px); border: 1px solid rgba(var(--bitportal-accent-rgb), 0.35); clip-path: var(--notch); background: rgba(var(--bitportal-accent-rgb), 0.05); }
+.landing-next > p { color: var(--bitportal-muted); }
+/* A short phone: the picture gives way, so the way in is on the first screen. */
+@media (max-width: 820px) and (max-height: 740px) {
+  body.landing .hero-stage { height: 30vh; min-height: 170px; }
+  body.landing .intro { font-size: clamp(2rem, 9vw, 2.6rem); }
+  body.landing .hero-lede { margin-top: 14px; font-size: 1.02rem; }
+  body.landing .hero-actions { margin-top: 20px; }
+}
