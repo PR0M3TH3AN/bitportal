@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>BitPortal</title>
+<meta name="description" content="Walk into the open spatial web: worlds anyone can make and nobody owns, on a phone, at a desk or in VR.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/bitportal.css">
+</head>
+<body class="home landing">
+<header class="top">
+  <div class="frame top-row">
+    <a class="wordmark" href="/" aria-label="BitPortal home"><span class="glyph" aria-hidden="true"></span>BitPortal</a>
+    <span class="top-actions"><button id="jump-button" class="button" type="button">Your doors</button><a class="button" href="/look/">Your look</a><a id="account-link" class="button" href="/walk/#you">Sign in</a></span>
+  </div>
+</header>
+<section class="hero" aria-labelledby="intro">
+  <!-- The room, live, with nobody's doors in it: the way in is the button. Drawn by the page's script; without it the grid behind stays. -->
+  <div id="hero-stage" class="hero-stage" aria-hidden="true"></div>
+  <div class="frame hero-copy">
+    <h1 id="intro" class="intro">Walk into the open spatial web.</h1>
+    <p class="hero-lede">Worlds anyone can make and nobody owns: a game, an app, a place to meet, anything. Nostr now has a cyberspace, and this is a way in.</p>
+    <p class="hero-actions"><a id="walk-in" class="button primary" href="/walk/">Walk in</a></p>
+    <dl class="readout">
+      <div><dt>Works on</dt><dd>Phone, desk, VR</dd></div>
+      <div><dt>To look around</dt><dd>No account</dd></div>
+      <div><dt>Every door</dt><dd><a href="/doors/">As a list</a></dd></div>
+    </dl>
+  </div>
+</section>
+<main class="frame landing-main">
+  <section class="landing-band" aria-labelledby="what-title">
+    <h2 id="what-title">One room, doors to everywhere.</h2>
+    <ul class="landing-points">
+      <li><h3>Go through a door</h3><p>Every door shows where it really leads, and you stop at the Airlock to see the address before you cross.</p></li>
+      <li><h3>Meet people</h3><p>Join the room you are in to see the people there, talk and write to them. Nobody is joined until they choose to.</p></li>
+      <li><h3>Carry things</h3><p>What you hold goes with you from world to world, and only works where a world lets it.</p></li>
+      <li><h3>Sign in once</h3><p>One sign-in at BitLogin, the same in every world. Or look around as a guest.</p></li>
+    </ul>
+  </section>
+  <section class="landing-band landing-build" aria-labelledby="build-title">
+    <h2 id="build-title">Make a world of your own.</h2>
+    <p>Copy the world template, change one scene, put it on any web host, and announce it with your own key. It becomes a door in every client that reads the announcement, and nobody has to let you in.</p>
+    <p><a id="get-started" class="button" href="https://github.com/PR0M3TH3AN/nswp-world-template">Start from the template</a></p>
+  </section>
+  <section class="landing-band landing-next" aria-labelledby="next-title">
+    <h2 id="next-title">Still being built.</h2>
+    <p>Worlds can keep your progress and mark what you achieve on this device today; keeping it with your sign-in, paying to enter a world or for a thing, and boards across worlds are still to come.</p>
+    <p>A browser of our own is in development, for crossing from world to world without leaving VR.</p>
+  </section>
+</main>
+<footer class="frame foot">
+  <p class="small">Experimental, and still being built. BitPortal is part of the <a href="https://bitblocks.network/">BitBlocks</a> family and follows the <a href="https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-">Nostr Spatial Web Protocol</a>.</p>
+</footer>
+<script type="module" src="/landing.js"></script>
+</body>
+</html>

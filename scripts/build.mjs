@@ -19,6 +19,7 @@ mkdirSync(join(out, "walk"), { recursive: true });
 await build({
   entryPoints: {
     lobby: join(root, "src/lobby/main.ts"),
+    landing: join(root, "src/landing/main.ts"),
     "feed-worker": join(root, "src/lobby/feed-worker.ts"),
     "go/airlock": join(root, "src/go/airlock.ts"),
     "walk/main": join(root, "src/walk/main.ts"),
@@ -51,10 +52,9 @@ await build({
 cpSync(join(root, "public"), out, { recursive: true });
 // The kit's own sounds, served from this site like everything else: nothing is fetched from anywhere else.
 cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: true, filter: (f) => !/\.md$/.test(f) });
-cpSync(join(root, "src/lobby/index.html"), join(out, "index.html"));
-// The lobby's own page: every door as a list, search, lists, Settings, announcing a world (landing-01, the owner's
-// "keeping users on the landing is not necessary"). For now the same page as the front one; the front page is made
-// the way in, and only that, after this.
+// The front page is the way in, and only that (landing-01, the owner's "keeping users on the landing is not
+// necessary"). The lobby has a page of its own: every door as a list, search, lists, Settings, announcing a world.
+cpSync(join(root, "src/landing/index.html"), join(out, "index.html"));
 mkdirSync(join(out, "doors"), { recursive: true });
 cpSync(join(root, "src/lobby/index.html"), join(out, "doors/index.html"));
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
