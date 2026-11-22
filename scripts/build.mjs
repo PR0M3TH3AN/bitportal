@@ -1,6 +1,6 @@
 // Builds BitPortal into dist/ as plain static files.
 import { build } from "esbuild";
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,6 +57,16 @@ cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: t
 cpSync(join(root, "src/landing/index.html"), join(out, "index.html"));
 mkdirSync(join(out, "doors"), { recursive: true });
 cpSync(join(root, "src/lobby/index.html"), join(out, "doors/index.html"));
+// How to make a world (landing-02): the kit's own docs/start.md, vendored, shown as a page for a person and served as
+// it is for an agent. One text, written once, in the kit: never a copy of BitPortal's own that could drift.
+const startDoc = join(root, "vendor/nswp/docs/start.md");
+if (existsSync(startDoc)) {
+  const { markdownToHtml } = await import("./markdown.mjs");
+  const text = readFileSync(startDoc, "utf8");
+  cpSync(startDoc, join(out, "start.md"));
+  mkdirSync(join(out, "start"), { recursive: true });
+  writeFileSync(join(out, "start/index.html"), readFileSync(join(root, "src/start/index.html"), "utf8").replace("<!-- doc -->", markdownToHtml(text)));
+} else console.warn("No vendor/nswp/docs/start.md yet: /start/ is not built. `npm run vendor -- --only nswp` brings it.");
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
 for (const page of ["account", "publish", "look", "shell"]) {
@@ -136,6 +146,8 @@ writeFileSync(
         { source: "/fonts/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
         // Mirrored previews are named by their hash, so a file never changes.
         { source: "/previews/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+        // How to make a world, as plain text for an agent (landing-02): read as text by anything that fetches it.
+        { source: "/start.md", headers: [{ key: "Content-Type", value: "text/markdown; charset=utf-8" }] },
       ],
     },
     null,
