@@ -12,6 +12,11 @@
  * Airlock read the same thing: one small entry each in this browser. For
  * someone signed in they go in the sealed note kept with their profile too (sync.ts).
  *
+ * How they move is said only once they have chosen (NSWP-11, "Asked once"):
+ * at a desk `intense` ("1" or "0" kept by the kit, nothing until asked), and in
+ * a headset `headset`, from the kit's comfort settings once they are kept. A
+ * world told nothing asks them once; told "casual", it doesn't.
+ *
  * `keptSettings` is everything of the visitor's that travels, as this browser
  * has it. The Airlock starts from it, so a door opened from the front page or
  * the jump list, which says nothing about settings, still takes them along.
@@ -26,6 +31,8 @@ export const PICTURES_KEY = "nswp:pictures";
 export const CHAT_KEY = "nswp:chat";
 /** Whether anything people carry is drawn for them (NSWP-17): the kit keeps "off" here, and nothing while it is on. */
 export const ITEMS_KEY = "nswp:items";
+/** How they move in a headset, as the kit keeps it (its comfort settings): kept only once they have chosen. */
+export const COMFORT_KEY = "nswp:comfort";
 const SOUND_KEY = "bitportal:sound";
 const UI_KEY = "nswp:ui";
 /** The tabs of the menu they keep on their bar, as the kit keeps them here. */
@@ -35,7 +42,8 @@ export const HELD_KEY = "nswp:holding";
 
 export interface Prefs {
   full: boolean;
-  intense: boolean;
+  /** The intense way of moving at a desk: true or false once they have chosen, null while nobody has asked them. */
+  intense: boolean | null;
   /** 1 is the kit's own speed. */
   look: number;
   /** Degrees top to bottom at a desk, or null for each world's own. */
@@ -69,12 +77,23 @@ const json = (text: string | null): unknown => {
 };
 const within = (v: unknown, [least, most]: readonly [number, number]): number | null => (typeof v === "number" && Number.isFinite(v) ? Math.min(most, Math.max(least, v)) : null);
 
+/** What the kit keeps for a choice of two: "1", "0", or nothing while it hasn't been made. */
+const chosen = (kept: string | null): boolean | null => (kept === "1" ? true : kept === "0" ? false : null);
+
+/** How they move in a headset, once they have chosen: intense is walking and turning smoothly, as the kit has it. */
+export function headsetChoice(store: Reader | null): "casual" | "intense" | undefined {
+  const kept = store?.getItem(COMFORT_KEY) ?? null;
+  if (kept === null) return undefined;
+  const comfort = json(kept) as { move?: unknown; turn?: unknown } | null;
+  return comfort && comfort.move === "smooth" && comfort.turn === "smooth" ? "intense" : "casual";
+}
+
 export function loadPrefs(store: Reader | null): Prefs {
   const desk = (json(store?.getItem(DESK_KEY) ?? null) ?? {}) as { look?: unknown; fov?: unknown };
   const fov = within(desk.fov, FOV_RANGE);
   return {
     full: store?.getItem(FULL_KEY) === "1",
-    intense: store?.getItem(INTENSE_KEY) === "1",
+    intense: chosen(store?.getItem(INTENSE_KEY) ?? null),
     look: Math.round((within(desk.look, LOOK_RANGE) ?? 1) * 100) / 100,
     fov: fov === null ? null : Math.round(fov),
     pictures: store?.getItem(PICTURES_KEY) !== "0",
@@ -86,8 +105,8 @@ export function storePrefs(prefs: Prefs, store: Writer | null): void {
   try {
     if (prefs.full) store?.setItem(FULL_KEY, "1");
     else store?.removeItem(FULL_KEY);
-    if (prefs.intense) store?.setItem(INTENSE_KEY, "1");
-    else store?.removeItem(INTENSE_KEY);
+    // Kept as the kit keeps it, both ways once chosen; nothing chosen is left as it is, so a world still asks.
+    if (prefs.intense !== null) store?.setItem(INTENSE_KEY, prefs.intense ? "1" : "0");
     store?.setItem(DESK_KEY, JSON.stringify({ look: prefs.look, fov: prefs.fov }));
     // Kept as the kit keeps it: nothing when they are on, "0" when they are off.
     if (prefs.pictures) store?.removeItem(PICTURES_KEY);
@@ -117,7 +136,8 @@ export function keptSettings(store: Reader | null): TravelSettings {
     ...(typeof ui.motion === "boolean" ? { motion: ui.motion } : {}),
     ...(typeof ui.wrist === "string" ? { wrist: ui.wrist } : {}),
     full: prefs.full,
-    intense: prefs.intense,
+    ...(prefs.intense === null ? {} : { intense: prefs.intense }),
+    ...(headsetChoice(store) ? { headset: headsetChoice(store) } : {}),
     look: prefs.look,
     ...(prefs.fov === null ? {} : { fov: prefs.fov }),
     pictures: prefs.pictures,
