@@ -61,3 +61,14 @@ describe("what is kept", () => {
     expect(removeComputer(list, key(3), key(9)).length).toBe(COMPUTER_LIMIT);
   });
 });
+
+describe("signing in, from a computer's sheet", () => {
+  it("is the room's own menu row, as everywhere: nothing sends the visitor away to the front page", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const src = readFileSync(new URL("../src/walk/computers.ts", import.meta.url), "utf8");
+    expect(src).not.toMatch(/front page/i);
+    expect(src).not.toMatch(/href: "\/"/);
+    // The button opens the room's menu at You, where Sign in is.
+    expect(src).toContain('o.controls.signal("show:you")');
+  });
+});

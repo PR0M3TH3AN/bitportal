@@ -119,6 +119,11 @@ export function addComputers(o: ComputersOptions): Computers {
     if (!dialog.open) dialog.showModal();
   };
   const closeButton = (label: string) => el("button", { className: "button", type: "button", textContent: label, onclick: () => dialog.close() });
+  // Signing in is one row of the room's own menu, as it is everywhere (the owner): this opens the menu there, and
+  // nothing leaves the room.
+  const signInButton = (label: string, primary = false) =>
+    el("button", { className: primary ? "button primary" : "button", type: "button", textContent: label, onclick: () => (dialog.close(), o.controls.signal("show:you")) });
+  const SIGN_IN = "Sign in from this room's menu (You, then Sign in)";
 
   const explain = () => {
     const me = who ? encodeNpub(who) : "npub1…";
@@ -130,7 +135,7 @@ export function addComputers(o: ComputersOptions): Computers {
       el("p", { textContent: "It prints a link. Open the link in this browser to add the computer here." }),
       el("p", { className: "why", textContent: "A terminal can do anything you can do on that computer. The Bridge asks there, on its own screen, before each one opens." }),
       el("p", { className: "why", textContent: "Add --tmux for terminals that carry on when this page is closed or refreshed, and --voice to speak instead of typing: your computer turns what you say into text itself, and your voice goes nowhere else." }),
-      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: "You aren't signed in on this browser. Sign in on the front page first: the computer needs to know whose it is." })]),
+      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: `You aren't signed in on this browser. ${SIGN_IN} first: the computer needs to know whose it is.` })]),
       el("div", { className: "actions" }, el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
     );
   };
@@ -140,8 +145,8 @@ export function addComputers(o: ComputersOptions): Computers {
       return sheet(
         el("h2", { textContent: "Sign in first" }),
         el("p", { className: "lede", textContent: "This link adds a computer to your home. A computer answers one key, so this browser needs to know which is yours." }),
-        el("p", { textContent: "Sign in on the front page, then open the link again." }),
-        el("div", { className: "actions" }, el("a", { className: "button primary", href: "/", textContent: "Go to the front page" }), closeButton("Not now")),
+        el("p", { textContent: `${SIGN_IN}, then open the link again.` }),
+        el("div", { className: "actions" }, signInButton("Sign in", true), closeButton("Not now")),
       );
     }
     const owner = who;
@@ -198,9 +203,9 @@ export function addComputers(o: ComputersOptions): Computers {
     const signedInAs = await identify();
     // Asked of the sign-in address by now: whether it signs a grant at this address at all.
     if (!test && !holdsReserved()) return no(NO_GRANT_HERE);
-    if (signedInAs !== c.owner) return no("Sign in on the front page first, as the key this computer answers.");
+    if (signedInAs !== c.owner) return no(`${SIGN_IN} first, as the key this computer answers.`);
     const quiet = await signer(c.owner);
-    if (!quiet) return no("Your sign-in has run out here. Sign in again on the front page, then try again.");
+    if (!quiet) return no(`Your sign-in has run out here. ${SIGN_IN} again, then try again.`);
     try {
       // The terminal's code is fetched now, the first time one is opened, and not before.
       const { openTerminalPanel } = await import("nswp-sdk/terminal");
@@ -296,7 +301,7 @@ export function addComputers(o: ComputersOptions): Computers {
     if (!owner || !world) return no("That isn't one of the worlds you are building.");
     if (!computer) return no("The computer for that world has been forgotten. Name the world again.");
     const quiet = await signer(owner);
-    if (!quiet) return no("Your sign-in has run out here. Sign in again on the front page, then try again.");
+    if (!quiet) return no(`Your sign-in has run out here. ${SIGN_IN} again, then try again.`);
     try {
       const secret = crypto.getRandomValues(new Uint8Array(32));
       const session = getPublicKey(secret);
