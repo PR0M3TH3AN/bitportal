@@ -266,6 +266,20 @@
         "UbuntuSans-var.woff2": "0b1572d174ccd3a747b89d0369f4e06f14aa31c2c3d8947d5973d33b6a321fd7",
         "UbuntuSansMono-var.woff2": "d60288ab6d8c2a89d67cb62cdfb6b30d7fddbea2707bf5cfc6b2c45d967435cb"
       }
+    },
+    "@bitgate/readers": {
+      "path": "vendor/bitgate",
+      "version": "0.1.0",
+      "license": "MIT",
+      "source": {
+        "commit": "2220c95ebb70fadae746f0c88a482cafb92f9d32",
+        "remote": "https://github.com/PR0M3TH3AN/bitgate.git"
+      },
+      "files": {
+        "LICENSE": "23e1f76916d6a20d0e370fc6ac6288b3e68f4a2c426db6b7389260f2c5ab9396",
+        "core.js": "081602b8c64bc3d40069373b5b7e40e80f01609b965d1c88145765c1fb4d8d83",
+        "nostr.js": "c23dd83789c9286ec0828bd130fd1e3ccdae33b35df202779552b6213215fb39"
+      }
     }
   }
 }

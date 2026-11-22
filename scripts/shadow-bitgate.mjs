@@ -5,17 +5,19 @@
 //   npm run shadow:bitgate -- --relays ws://127.0.0.1:4313   the stand-in relay
 //   npm run shadow:bitgate -- --operator <hex>               a trial's test key as the operator
 //
+// What each difference means, and which are expected, is in scripts/shadow/README.md.
+//
 // An operator's script, on the operator's own machine: never in a visitor's page. It only reads public events (lists,
 // world announcements), publishes nothing, holds no key, and writes only to its own output: the log lines (which name
 // no world) to the terminal and to .shadow/, and the reconciliation (which compares the two lists by coordinate) to
 // .shadow/ alone. Nothing it computes changes what BitPortal shows.
 //
-// BitGate's readers are taken from its checkout beside this one (or --bitgate <dir>), at whatever commit it is on;
-// the report says which.
+// BitGate's readers are BitPortal's vendored copy (vendor/bitgate, built by `npm run vendor -- --only bitgate` from
+// BitGate's committed tree at a pinned commit); the report says which commit.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -23,20 +25,13 @@ const arg = (name, fallback) => {
   const at = process.argv.indexOf(`--${name}`);
   return at >= 0 ? process.argv[at + 1] : fallback;
 };
-const bitgate = resolve(arg("bitgate", join(root, "..", "bitgate")));
-if (!existsSync(join(bitgate, "packages/nostr/src/curationSets.js"))) {
-  console.error(`BitGate's checkout isn't at ${bitgate}: give --bitgate <dir>.`);
+const vendored = JSON.parse(readFileSync(join(root, "vendor/integrity.json"), "utf8")).packages["@bitgate/readers"];
+if (!vendored) {
+  console.error("BitGate's readers aren't vendored: run npm run vendor -- --only bitgate.");
   process.exit(2);
 }
-const git = (...a) => {
-  try {
-    return execFileSync("git", ["-C", bitgate, ...a], { encoding: "utf8" }).trim();
-  } catch {
-    return "";
-  }
-};
 
-// Bundle the comparison with BitGate's readers and BitPortal's own catalogue, as they are now.
+// Bundle the comparison with BitGate's vendored readers and BitPortal's own catalogue.
 const work = mkdtempSync(join(tmpdir(), "bitportal-shadow-"));
 const bundle = join(work, "shadow.mjs");
 execFileSync(
@@ -53,8 +48,8 @@ execFileSync(
     `--alias:nswp-sdk/home=${join(root, "vendor/nswp/sdk/home.js")}`,
     `--alias:nswp-sdk/ui=${join(root, "vendor/nswp/sdk/ui.js")}`,
     `--alias:nswp-sdk/terminal=${join(root, "vendor/nswp/sdk/terminal.js")}`,
-    `--alias:@bitgate/core=${join(bitgate, "packages/core/src/index.js")}`,
-    `--alias:@bitgate/nostr=${join(bitgate, "packages/nostr/src/index.js")}`,
+    `--alias:@bitgate/core=${join(root, "vendor/bitgate/core.js")}`,
+    `--alias:@bitgate/nostr=${join(root, "vendor/bitgate/nostr.js")}`,
   ],
   { stdio: "inherit" },
 );
@@ -128,6 +123,6 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const file = join(out, `bitgate-shadow-${stamp}.json`);
 writeFileSync(
   file,
-  `${JSON.stringify({ ran: new Date().toISOString(), relays, operator: operator ? "trial key" : "instance", bitgate: { dir: bitgate, commit: git("rev-parse", "HEAD"), dirty: git("status", "--porcelain") !== "" }, events: events.length, counts: report.counts, reconciliation: report.reconciliation, lines: report.lines }, null, 1)}\n`,
+  `${JSON.stringify({ ran: new Date().toISOString(), relays, operator: operator ? "trial key" : "instance", bitgate: { vendored: vendored.source.commit, version: vendored.version }, events: events.length, counts: report.counts, reconciliation: report.reconciliation, lines: report.lines }, null, 1)}\n`,
 );
-console.error(`${report.counts.worlds} worlds: ${report.counts.agree} agree, ${report.counts.disagree} disagree, ${report.counts.unavailable} unavailable (${report.counts.adultLeftOut} for adults left out). Report: ${file}`);
+console.error(`${report.counts.worlds} worlds: ${report.counts.agree} agree, ${report.counts.disagree} disagree (${report.counts.expected} expected, ${report.counts.unexplained} to explain), ${report.counts.unavailable} unavailable (${report.counts.adultLeftOut} for adults left out). Report: ${file}`);

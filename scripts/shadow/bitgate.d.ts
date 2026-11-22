@@ -1,5 +1,5 @@
 // The few parts of BitGate's readers the shadow comparison uses (PR0M3TH3AN/bitgate packages/core, packages/nostr),
-// taken from its checkout beside this one when the comparison runs. Only their shape is declared here.
+// vendored in vendor/bitgate (built from BitGate's committed tree at a pinned commit). Only their shape is declared here.
 declare module "@bitgate/core" {
   export const ALLOWLIST_POLICY: unknown;
   export function createAuthorityState(o: { root: string }): unknown;

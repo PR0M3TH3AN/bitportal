@@ -1,11 +1,9 @@
 // BitGate's shadow comparison, BitPortal's part (scripts/shadow/compare.ts): both answers for every world, from the
-// same signed lists, with test keys made here. It stands aside where BitGate's checkout isn't beside this one.
+// same signed lists, with test keys made here, and BitGate's vendored readers.
 import { describe, expect, it } from "vitest";
 import { buildWorldEvent, finalizeEvent, getPublicKey } from "@nswp/core";
 import type { InstancePolicy } from "../src/shared/instance.js";
 
-const { existsSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { existsSync(path: URL): boolean };
-const haveBitgate = existsSync(new URL("../../bitgate/packages/nostr/src/index.js", import.meta.url));
 
 const key = () => crypto.getRandomValues(new Uint8Array(32)); // throwaways, made here and gone with the test
 const now = 1_800_000_000;
@@ -22,7 +20,7 @@ const list = (signer: Uint8Array, d: string | string[], names: string[], created
   finalizeEvent({ kind: 30004, created_at: createdAt, content: "", tags: [...(Array.isArray(d) ? d : [d]).map((x) => ["d", x]), ["title", "A list"], ...names.map((n) => ["a", n])] }, signer);
 const policy: InstancePolicy = { operators: [operator], allowList: "bitportal", allowListOnly: true, allowAdult: false } as InstancePolicy;
 
-describe.skipIf(!haveBitgate)("BitGate's shadow, BitPortal's part", async () => {
+describe("BitGate's shadow, BitPortal's part", async () => {
   const { shadowCompare } = await import("../scripts/shadow/compare.js");
   const starterSet = list(curatorKey, "starter-test", [coord(maker, "on-starter")], now - 7200);
   const bundle = { curator, set: starterSet, worlds: [] };
@@ -59,6 +57,8 @@ describe.skipIf(!haveBitgate)("BitGate's shadow, BitPortal's part", async () => 
     const r = run([operatorList, ahead, ...worlds]);
     expect(r.reconciliation.bitportalOnly).toEqual([coord(maker, "unlisted")]);
     expect(r.reconciliation.bitgateOnly).toEqual([coord(maker, "for-adults"), coord(maker, "name:with:colons"), coord(maker, "on-operator-list")]);
+    // A reader difference is never counted as expected: it is left to explain.
+    expect(r.counts.unexplained).toBe(4);
     expect(r.reconciliation.read.find((x) => x.list.endsWith(":bitportal"))?.futureDated).toEqual([ahead.id]);
   });
 
@@ -75,6 +75,9 @@ describe.skipIf(!haveBitgate)("BitGate's shadow, BitPortal's part", async () => 
     expect(r.reconciliation.bitgateOnly).toEqual([coord(operator, "operators-own")]);
     // BitGate gives no reason for it: its root is never gated by the allowlist.
     expect(r.lines.filter((l) => l.existing === "deny" && l.bitgate === "allow")).toHaveLength(1);
+    // That is BitGate's design, and the report says so: an expected difference, nothing left to explain.
+    expect(r.reconciliation.expected).toEqual([{ coordinate: coord(operator, "operators-own"), why: "root's own world" }]);
+    expect(r.counts).toMatchObject({ disagree: 1, expected: 1, unexplained: 0 });
   });
 
   it("says unavailable, never a guess, with no list read at all", () => {

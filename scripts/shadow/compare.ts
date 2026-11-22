@@ -45,12 +45,18 @@ export interface ShadowReport {
     bitportalOnly: string[];
     /** Allowed by BitGate and not by BitPortal. */
     bitgateOnly: string[];
+    /**
+     * The disagreements that are BitGate's design, not a fault (scripts/shadow/README.md): a world published by a
+     * list's own root, which BitGate's allowlist preset never hides and BitPortal hides when no list names it. Each
+     * is also in `bitgateOnly`; what is left there after these is what needs explaining.
+     */
+    expected: { coordinate: string; why: "root's own world" }[];
     /** The `a` entries of the lists as BitPortal reads them (`catalog.allowed`) against BitGate's reading of the same events. */
     lists: { bitportal: string[]; bitgate: string[]; onlyBitportal: string[]; onlyBitgate: string[] };
     /** What BitGate's reader made of each list: the copy it chose, or why it chose none. */
     read: { list: string; ok: boolean; id?: string; reason?: string; futureDated: string[]; worlds: number }[];
   };
-  counts: { worlds: number; agree: number; disagree: number; unavailable: number; adultLeftOut: number };
+  counts: { worlds: number; agree: number; disagree: number; expected: number; unexplained: number; unavailable: number; adultLeftOut: number };
 }
 
 type Verify = (event: NostrEvent) => boolean;
@@ -137,6 +143,10 @@ export function shadowCompare(o: {
     if (existing === "deny" && bitgate === "allow") bitgateOnly.push(id);
     lines.push({ event: "bitgate_shadow", v: 1, project: "bitportal", decision: "world-shown", existing, bitgate, agree: existing === bitgate, reasons, lists: listIds, listsAge, at: o.now });
   }
+  // BitGate never gates its root by the allowlist: a root's own world is allowed there, by design.
+  const roots = new Set(lists.map((l) => l.root));
+  const expected = bitgateOnly.filter((id) => roots.has(parseCoordinate(id)?.pubkey ?? "")).map((coordinate) => ({ coordinate, why: "root's own world" as const }));
+  const disagree = lines.filter((l) => !l.agree && l.bitgate !== "unavailable").length;
   const bp = [...catalog.allowed].sort();
   const bg = [...bitgateListed].sort();
   return {
@@ -144,13 +154,16 @@ export function shadowCompare(o: {
     reconciliation: {
       bitportalOnly,
       bitgateOnly,
+      expected,
       lists: { bitportal: bp, bitgate: bg, onlyBitportal: bp.filter((x) => !bitgateListed.has(x)), onlyBitgate: bg.filter((x) => !catalog.allowed.has(x)) },
       read,
     },
     counts: {
       worlds: lines.length,
       agree: lines.filter((l) => l.agree).length,
-      disagree: lines.filter((l) => !l.agree && l.bitgate !== "unavailable").length,
+      disagree,
+      expected: expected.length,
+      unexplained: disagree - expected.length,
       unavailable: lines.filter((l) => l.bitgate === "unavailable").length,
       adultLeftOut,
     },
