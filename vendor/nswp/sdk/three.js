@@ -141,7 +141,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-VL4GBGJK.js";
+} from "./shared-PRROCVBX.js";
 import {
   PICTURE_LIMITS,
   addDoorControls,
