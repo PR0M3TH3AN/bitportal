@@ -77,7 +77,7 @@
   "worlds": [
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304981,
       "tags": [
         [
           "d",
@@ -121,6 +121,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -191,6 +199,10 @@
           "experience"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -201,12 +213,12 @@
       ],
       "content": "A short path with five stops for someone's first minute on the spatial web: looking round, moving, doors, the page between places, and getting home.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "0c30d724cc34ad155dcdeece70079adf319057aec5ee7ce30e9614d750ae8ce4",
-      "sig": "73a9d37a4e5146359aba74b1886d51895a5efb68a760f2b459dfc88cc7f4cf338a53c56dfdea4d3d1eff5c14e0ed59bca900f8e359f4da525d893813d9b1fd81"
+      "id": "d3a13473324e3d164d4747cbc06b1f715e2d6ab200191299430d0c0271c967b8",
+      "sig": "3595ece5c0669a9893d64f46f0402048f3d593b466e73d92bfd0a2185946e9e58aaaa9b1f486d6027febc246bbe094e9e97a59689bd421e7216c1ccb50c461f2"
     },
     {
       "kind": 37300,
-      "created_at": 1795157454,
+      "created_at": 1795304981,
       "tags": [
         [
           "d",
@@ -250,6 +262,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -320,6 +340,10 @@
           "experience"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -330,12 +354,12 @@
       ],
       "content": "Six sculptures, each a few lines of code turned into a shape, on plinths down a long hall. Doors lead to the Grove and the Workshop.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "828e30d58f268ae8d68e251aadcbc375ad0a92c090c70ed713524a589a36d8b1",
-      "sig": "546ec4fb1c5531a1856f53110b64da7299421caca7dd180087aca13388577086a059994ee6273472e185237a2e52a707410ca3415d40031d409be50f867b80b3"
+      "id": "55a1173758f732b99f7f714275b91220df2473e25bef0b07324dc22e1daff24f",
+      "sig": "83d5f3e00578b76ca61baf066568f8c90c388aca2b397b63e347432a12ae0d4569c4ece754bf5bba582b1d91859335561d3cc9502eb1d90f192b1548c03c01cc"
     },
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304981,
       "tags": [
         [
           "d",
@@ -379,6 +403,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -449,6 +481,10 @@
           "social"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -459,12 +495,12 @@
       ],
       "content": "A ring of seats round a hearth in a clearing of lantern trees. Press Join to see and hear whoever else is there.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "d01563e8f45c924b9e00f0908814a8032e26cfa5ba9d330c74644fc8cfefb065",
-      "sig": "954f7da199c234cec01e389dc077104ecadcca1989cac23cfafca96c8d900081c9572ea9962402b3eda152c7f2ec280a736367139eff4511024422d0ad9a32fc"
+      "id": "9fb0e7aa819e011bf6c541894ec2414ba2e9ae47efe938405719cc18d057a513",
+      "sig": "09148fc5ad06960abf34385f626a17a32493ed5fb730c27fccc1a9f0d220809240e5696ccfc325dd23825a22d0b7ffbd3cab9712e83638594cc7a5664c828398"
     },
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304982,
       "tags": [
         [
           "d",
@@ -508,6 +544,26 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
+        ],
+        [
+          "capability",
+          "saves"
+        ],
+        [
+          "capability",
+          "scores"
+        ],
+        [
+          "capability",
+          "achievements"
         ],
         [
           "comfort",
@@ -578,6 +634,10 @@
           "game"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -588,12 +648,12 @@
       ],
       "content": "A small game: walk into twelve lanterns drifting over a field while a clock runs. The best time stays on your own device.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "ba29fc8d71a133e3366877cc675d2f04815a547521c69ef27de2b6da8c9a3a33",
-      "sig": "ee50cc01f352629e573d1c395480d9e1e084dc31fad277b20b5709d903d8f79e2a365aed1abd9af9a525a091dba6ac04fa9d38eb4f9634ed0100ddda351f61a3"
+      "id": "4b52e43b653b46e2bc1f479dab81139a04c9e9ce6b43372c9498ec981a75c778",
+      "sig": "2e0f47d4d2d16cce284d41955c7e72b87d43e4c8450f76577f705ca5445aeafb31974ea2d475d779ca7d00081b838ffab07474159e699159fa35ee779748e6ef"
     },
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304982,
       "tags": [
         [
           "d",
@@ -637,6 +697,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -707,6 +775,10 @@
           "experience"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -717,12 +789,12 @@
       ],
       "content": "A round terrace with an orrery turning at its middle, under a sky with a ringed world and constellations drawn like a network.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "156c8b8513936eeef03874f22acc055d5e6aedc9e3ddfdc9b14d18acbbb4e1db",
-      "sig": "c72198e61914cf8ea8a60067dd6421b357a245a766c36ca8249809958de99e67bca9b8c12cdabc026382666d3b270e05788d03af0ebc2fc8c41206898c2855e4"
+      "id": "dbd76f424d90d0787b251500c4e9886d2dca2bb11f967c94c99977dfc2702fca",
+      "sig": "c82d448af497d1cad42a5880253d9875c410ca0c256172a46ad761f7c4c94313f464f3f3f74b32da79455ecbc2fb1bd11a25faad2066cad2a7914415900a9ff0"
     },
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304982,
       "tags": [
         [
           "d",
@@ -766,6 +838,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -836,6 +916,10 @@
           "experience"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -846,12 +930,12 @@
       ],
       "content": "For people who want to build a world: the ready-made parts and the four ways of making a shape, each labelled with the name it has in code.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "bb441300ee128da7bbe85ea64787c59c4e49bfa76880bd9b903d97d785000185",
-      "sig": "aafc7a83818e5fd0710fb3641c2edae1a92985600b4d00294b30ef809a34142411fe63a8d8395bcb59d3cb51337e2dad5e864b59d37d4f0cda20fdaf0db52875"
+      "id": "42e559172de42653e24dfb57fb97de6997eb5bb7e871db8e988797f964bf29b6",
+      "sig": "4fbecca3cdf2291dbb9f1639e5311ca990d02edc00404ffb47759d22af60e9355140d1d67e9380d4d20a9dd1fb4e913057dfe2da3ebbc51c22f59b61fad69b41"
     },
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304983,
       "tags": [
         [
           "d",
@@ -895,6 +979,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -965,6 +1057,10 @@
           "site"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -975,12 +1071,12 @@
       ],
       "content": "A reading room. Eight notes on its walls explain worlds, doors, the page between them, signing, verifying, and what stays private.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "321675e70080ca2cd0bd73e5eb3b92c7e63a88485a094c1a5a4821ab2f082eb1",
-      "sig": "2fd60406ba60791b86b07dbe7579debc704a3abdf1b86c70daf1c9d1efde5d11cee464afc8c9cef9192b09e309bd63ebee99fdecf2c34957a8a36cabb55d93b5"
+      "id": "6f300181fc4362826ce2811ad952111910cafdc5a53df72d6b27afbccb003256",
+      "sig": "88b5227aa55524e33fda8bc481ff3eba8e9eb36862028c378d66c4ab064e055b3ff9cc2fcbae202840ce948486984cccd23f2c29abf37859a848307585d03489"
     },
     {
       "kind": 37300,
-      "created_at": 1795157455,
+      "created_at": 1795304983,
       "tags": [
         [
           "d",
@@ -999,12 +1095,31 @@
           "https://foundry.bitblocks.network/"
         ],
         [
+          "preview",
+          "https://foundry.bitblocks.network/previews/095384b8781a9413b733ec091bbb810b114d3ca9af9a707b973e4707044f292a.webp",
+          "pano",
+          "095384b8781a9413b733ec091bbb810b114d3ca9af9a707b973e4707044f292a",
+          "2048x1024"
+        ],
+        [
           "mode",
           "inline-3d"
         ],
         [
           "capability",
           "spatial-portals"
+        ],
+        [
+          "capability",
+          "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -1063,6 +1178,10 @@
           "experience"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -1073,12 +1192,12 @@
       ],
       "content": "For people who build with another engine: a small place made in Godot 4 with the NSWP addon. You arrive in the same room you left the last world from, move the same way, and sign in in the same window. It is about forty megabytes, since the engine comes with it.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "f6912123cf7a5b16a677a151e08a15990e505ae8d9d9dd1a8d7e585edd2020c5",
-      "sig": "bec8caa7d76a10c2b63f3928c993ba3ff61fa0326395f3f77a7c3e823be195460bfeaab98dc9012bf616e6a64cb27a531ce7f49ac60343d22339d1fbeb51b247"
+      "id": "ead33c98e21734600b46c8e496d8a855de95885f3d9c731d557bebb6cfc125eb",
+      "sig": "e9174b24c9efc14ffdb91730d8fd034664d9638e727b4efc49ee5aa88dd774c977dc6f4944d910429c08dd58a5283fe130ba005760ae104ac01e7abe9b582071"
     },
     {
       "kind": 37300,
-      "created_at": 1795157448,
+      "created_at": 1795305006,
       "tags": [
         [
           "d",
@@ -1122,6 +1241,14 @@
         [
           "capability",
           "rooms"
+        ],
+        [
+          "capability",
+          "voice"
+        ],
+        [
+          "capability",
+          "avatars"
         ],
         [
           "comfort",
@@ -1192,6 +1319,10 @@
           "experience"
         ],
         [
+          "items",
+          "allowed"
+        ],
+        [
           "status",
           "beta"
         ],
@@ -1202,8 +1333,8 @@
       ],
       "content": "The NSWP world template, deployed unchanged: a hall, some furniture, and two doors. It is where a world of your own begins.",
       "pubkey": "546f9f791aba0984777051d93605b66e87ce0dc88fb0053fbe8475eec19aa00c",
-      "id": "8f6b854f69296ab09f75b1888fa63cb88eaa045da6aef78dd44de2d9a26f520a",
-      "sig": "33692132b4297f99f3a96e941e8fa6b612f5975bb4d2fb44df3b8a00ee5de48558bf818165768ac1a6accfcd026879b631f88b1fc46118bc0a7f5fc9dc1c2ec6"
+      "id": "89e2950f509797179da21e7ff99249d61b48e2e24155846b69cc164bd57e53bd",
+      "sig": "a770892fea0bf2c8210af2fa9521e193535e4afc4f1a6618e7431a10799ba723ed75c31ba6cb0edcddce26b8786740cb44e163a306602ab190d9e6dd93fadea6"
     },
     {
       "kind": 37300,
