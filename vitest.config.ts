@@ -2,7 +2,6 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const at = (p: string) => fileURLToPath(new URL(p, import.meta.url));
-
 export default defineConfig({
   resolve: {
     alias: {
@@ -12,6 +11,9 @@ export default defineConfig({
       "nswp-sdk/home": at("./vendor/nswp/sdk/home.js"),
       "nswp-sdk/ui": at("./vendor/nswp/sdk/ui.js"),
       "nswp-sdk/terminal": at("./vendor/nswp/sdk/terminal.js"),
+      // BitGate's readers, vendored for the operator's shadow comparison (scripts/shadow/); nothing BitPortal ships uses them.
+      "@bitgate/core": at("./vendor/bitgate/core.js"),
+      "@bitgate/nostr": at("./vendor/bitgate/nostr.js"),
     },
   },
 });
