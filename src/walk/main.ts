@@ -16,6 +16,7 @@
  * hand pinches and gaze-and-pinch alike (spec §21.2).
  */
 import * as THREE from "three";
+import { menuDoor } from "../shared/menu-door.js";
 import type { Offer } from "@nswp/core";
 import { prototypeNotice } from "../shared/notice.js";
 import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
@@ -29,7 +30,7 @@ import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, ad
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
-import { createControls, mountHud, type Controls } from "nswp-sdk/ui";
+import { addDoorControls, createControls, mountHud, type Controls } from "nswp-sdk/ui";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { createDoorList, type DoorList, type DoorRow } from "./door-list.js";
@@ -523,7 +524,7 @@ async function start(): Promise<void> {
       showMaker(maker);
     },
   });
-  controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choosing one leaves from where you stand, and your Airlock shows its real address next." });
+  controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choose one to see what its world offers; Travel here leaves from where you stand, and your Airlock shows its real address next." });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
@@ -840,29 +841,23 @@ async function start(): Promise<void> {
     saved = next;
     return storeSaved(saved);
   };
-  /** The list in the menu: a row for every door, in the order the panel in a headset shows them. */
-  let doorRows: string[] = [];
-  const fillDoorMenu = () => {
-    for (const id of doorRows) controls.remove(id);
-    doorRows = listed.map(({ entry, saved: mine }, i) => {
-      const id = `door-row-${i}`;
-      const host = hostParts(entry.world.url);
-      controls.add({
-        id,
-        section: "doors",
-        icon: mine ? "save" : "door",
-        label: `${entry.world.title}, at ${host.prefix}${host.domain}${mine ? ". One of yours" : ""}`,
-        short: entry.world.title,
-        // In a headset the list is the panel in the room.
-        hidden: () => renderer.xr.isPresenting,
-        act: () => {
-          hud.setOpen(false);
-          void visitEntry(entry, "chosen");
-        },
-      });
-      return id;
-    });
-  };
+  /**
+   * The list in the menu: every door, in the order the panel in a headset shows them, through the kit's door details
+   * (`addDoorControls`): choosing one shows its card and what its world offers, and "Travel here" takes it the way a
+   * door chosen in the room is taken, through the visitor's Airlock. In a headset the list is the panel in the room,
+   * so the menu lists none there.
+   */
+  const doorMenu = addDoorControls(controls, {
+    section: "doors",
+    doors: () => (renderer.xr.isPresenting ? [] : listed.map(({ entry }) => menuDoor(entry, cachedVerification(entry.id, entry.world.createdAt)))),
+    travel: (door) => {
+      const entry = listed.find((x) => x.entry.id === door.id)?.entry;
+      if (!entry) return;
+      hud.setOpen(false);
+      void visitEntry(entry, "chosen");
+    },
+  });
+  const fillDoorMenu = () => doorMenu.refresh();
   openList = () => (renderer.xr.isPresenting ? everyDoor?.open() : hud.setOpen(true, "doors"));
 
   const toggle = async (door: Door) => {
@@ -1663,6 +1658,9 @@ async function start(): Promise<void> {
     if (`${cover.top}|${cover.bottom}` !== covered) fit();
   }, 500);
   renderer.xr.addEventListener("sessionend", fit);
+  // The menu's list of doors stands down in a headset, where the panel in the room is the list, and comes back after.
+  renderer.xr.addEventListener("sessionstart", () => fillDoorMenu());
+  renderer.xr.addEventListener("sessionend", () => fillDoorMenu());
   onDeskChange(fit);
   fit();
 
