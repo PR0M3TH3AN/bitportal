@@ -27,6 +27,13 @@ describe("items at home", () => {
     for (const file of ["src/walk/main.ts", "src/walk/you.ts", "src/walk/door-list.ts", "src/walk/computers.ts", "src/walk/notes.ts"]) expect(await read(file), file).not.toMatch(/createElement\(["']iframe["']\)/);
   });
 
+  it("what is in hand is pressed the kit's way, as in every world", async () => {
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("itemControls = addItemControls(controls, {");
+    expect(room).toContain("itemControls?.tap(raycaster.ray, performance.now() - downAt)");
+    expect(room).toContain("itemControls?.trigger(i)");
+  });
+
   it("no longer says an item's own logic doesn't run at home", async () => {
     expect(await read("src/walk/main.ts")).not.toMatch(/doesn't run at home/);
   });

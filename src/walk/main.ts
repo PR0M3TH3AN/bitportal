@@ -26,7 +26,7 @@ import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/trav
 import { enterShell, goFrom, linksLeaveWhole } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createDoorOffers, createHome, type Alloy, type DoorOffers } from "nswp-sdk/home";
-import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -146,6 +146,10 @@ interface TestHooks {
   aim(id: string | null): void;
   visit(id: string): void;
   roomInfo(): unknown;
+  /** What is in play in their hand, and its two presses (as in every world). */
+  play?: () => unknown;
+  itemUse?: () => void;
+  itemSecond?: () => void;
   teleport(x: number, z: number): void;
   /** Turn the visitor to face this way, in degrees. For tests. */
   face?: (degrees: number) => void;
@@ -1123,6 +1127,10 @@ async function start(): Promise<void> {
   const ndc = new THREE.Vector2(2, 2); // off-screen until the mouse moves
   // The visitor's own panels: notes, pictures and video they hang in their room. Set up further down.
   let panels: Panels | null = null;
+  /** The presses of what is in their hand, as in every world (the kit's `addItemControls`). */
+  let itemControls: ItemControls | null = null;
+  /** When the current press on the view began: a short one is the first press of what they hold. */
+  let downAt = 0;
   /** What the current ray points at: a door, or one of the room's buttons. */
   const doorSpot = new THREE.Vector3();
   const isDoor = (c: Clickable | null): boolean => !!c?.door && c.mesh === c.door.view;
@@ -1215,6 +1223,7 @@ async function start(): Promise<void> {
     dragging = !panelDrag;
     lastX = e.clientX;
     moved = 0;
+    downAt = performance.now();
   });
   window.addEventListener("pointerup", (e) => {
     dragging = false;
@@ -1228,6 +1237,10 @@ async function start(): Promise<void> {
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     const thing = under();
+    // The keyboard, the console and a panel come first. Then, with something in hand that does something, a tap is
+    // its first press, sent where they tapped; a press held is still how they walk, or go through a door.
+    if (thing && (thing.onPanel || thing.onConsole)) return thing.act();
+    if (itemControls?.tap(raycaster.ray, performance.now() - downAt)) return;
     if (thing) thing.act();
     else stepToFloor();
   });
@@ -1255,6 +1268,8 @@ async function start(): Promise<void> {
     );
     c.addEventListener("select", () => {
       const thing = aimFrom(c); // leaves the ray pointing where this hand points
+      // The hand that holds something that does something: its trigger is the item's, on anything but the console.
+      if (!thing?.onPanel && !thing?.onConsole && itemControls?.trigger(i)) return void xrInput.pulse(i, 0.4, 25);
       if (thing) {
         xrInput.pulse(i, 0.5, 30);
         thing.act();
@@ -1698,6 +1713,11 @@ async function start(): Promise<void> {
     if (d) void visit(d);
   };
   hooks.roomInfo = () => presence.info();
+  // What is in their hand, pressed: on the bar, by a tap or the mouse and R at a desk, by the trigger in a headset.
+  itemControls = addItemControls(controls, { play: () => presence.play, holdingHand: () => presence.holdingHand, dom: renderer.domElement, sight: (on) => presence.setSighting(on) });
+  hooks.play = () => presence.play?.info() ?? null;
+  hooks.itemUse = () => presence.play?.use();
+  hooks.itemSecond = () => presence.play?.second();
   // How loud other people are is the visitor's to set, with the rest of their volumes.
   sounds.onChange((levels) => presence.setVolume(levels.off ? 0 : levels.voices));
   // The visitor's camera: a picture, a selfie, a short clip, saved to their own device.
@@ -1801,6 +1821,9 @@ async function start(): Promise<void> {
     // Shut in the crossing's room, nobody else is in it with the visitor, wherever they happen to be standing.
     presence.setHidden(crossing.state !== "none");
     presence.update(dt);
+    // What they hold, and what it does, can change at any moment (taken up, put down, its logic started): the bar
+    // offers its presses while it does something. Nothing is redrawn unless that changed.
+    itemControls?.refresh();
     let pointed: Clickable | null = null;
     let hover: [number, number] | null = null;
     let going: readonly (readonly [number, number])[] | null = null;
