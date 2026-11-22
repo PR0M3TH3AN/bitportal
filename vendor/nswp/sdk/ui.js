@@ -18,10 +18,15 @@ import {
   createHoldWatch,
   createUiChat,
   createUiFeed,
+  escapeDoes,
+  escapeHeld,
   foundRelays,
+  fullscreenButton,
   learnFrom,
+  leaveFullscreen,
   loadPicture,
   loadVisitorTheme,
+  onBrowserLeftFullscreen,
   onChatChange,
   onClientSignIn,
   onPicturesChange,
@@ -40,7 +45,7 @@ import {
   showsChat,
   showsPictures,
   vouchedWords
-} from "./shared-BOHXJA7G.js";
+} from "./shared-OTNZQF72.js";
 import "./shared-QLSLERQ3.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
@@ -410,6 +415,12 @@ svg { width: 1.55em; height: 1.55em; fill: none; stroke: currentColor; stroke-wi
 .menu { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
   pointer-events: auto; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px 0 10px; border-radius: 12px; }
 .menu:hover, .menu[aria-expanded="true"] { border-color: rgb(var(--accent)); color: rgb(var(--accent)); }
+/* Fill the screen: small, top centre, on a desk while it isn't filled. */
+.full { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; translate: -50% 0; pointer-events: auto;
+  display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px 0 9px; border-radius: 10px; font-size: .9em; }
+.full svg { width: 16px; height: 16px; }
+.full:hover, .full:focus-visible { border-color: rgb(var(--accent)); color: rgb(var(--accent)); }
+.full[hidden] { display: none; }
 kbd { font: inherit; font-size: .82em; min-width: 1.6em; padding: 1px 5px; text-align: center; border-radius: 5px;
   border: 1px solid rgba(var(--ink), .3); color: rgba(var(--ink), .75); }
 
@@ -722,6 +733,7 @@ function mountHud(controls, opts = {}) {
   const asLead = el("small");
   const asName = el("b");
   const asWho = el("div", { class: "as glass", role: "status" }, asFace, el("span", { class: "who" }, asLead, asName));
+  const full = el("button", { class: "full glass", type: "button", hidden: "" }, icon("full"), el("span", {}, fullscreenButton.label));
   const tabs = el("div", { class: "tabs", role: "tablist" });
   const tabsBack = el("button", { class: "more left", type: "button", "aria-label": "Earlier sections", hidden: "" }, "\u2039");
   const tabsOn = el("button", { class: "more right", type: "button", "aria-label": "More sections", hidden: "" }, "\u203A");
@@ -770,7 +782,7 @@ function mountHud(controls, opts = {}) {
   const chatSend = el("button", { type: "submit" }, "Send");
   const chatForm = el("form", {}, chatField, chatSend);
   const chat = el("section", { class: "chat", "aria-label": "Room chat", "data-state": "closed", "data-tab": "room" }, el("div", { class: "frame glass" }, el("header", {}, chatTitle, chatTabs, chatClose), feedLead, chatEmpty, chatLines, chatHint, feedSaid, chatForm));
-  root.append(style, el("i", { class: "corner a", "aria-hidden": "true" }), el("i", { class: "corner b", "aria-hidden": "true" }), id, menu, quiet, asWho, says, chat, sheet, el("div", { class: "low" }, target, hotbar));
+  root.append(style, el("i", { class: "corner a", "aria-hidden": "true" }), el("i", { class: "corner b", "aria-hidden": "true" }), id, menu, quiet, asWho, full, says, chat, sheet, el("div", { class: "low" }, target, hotbar));
   (opts.parent ?? document.body).append(host);
   let open = false;
   let section = "";
@@ -1082,6 +1094,7 @@ function mountHud(controls, opts = {}) {
     title.textContent = view.title;
     address.textContent = view.address;
     sayWho(view.sections.find((section2) => section2.id === "you")?.card ?? null);
+    full.hidden = !fullscreenButton.shown() || view.presence === "hidden" || asWho.classList.contains("shown");
     const shown = [view.target, ...view.detail].join("\n");
     if (target.dataset.shown !== shown) {
       target.dataset.shown = shown;
@@ -1277,7 +1290,13 @@ function mountHud(controls, opts = {}) {
     if (host.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
     const at = e.composedPath()[0];
     if (at && (at.tagName === "INPUT" || at.tagName === "TEXTAREA" || at.isContentEditable)) return;
-    if (e.key === "Escape" && open) return setOpen(false);
+    if (e.key === "Escape") {
+      const does = escapeDoes({ menuOpen: open, held: escapeHeld() });
+      if (does !== "nothing") e.preventDefault();
+      if (does === "close-menu") return setOpen(false);
+      if (does === "open-menu") return setOpen(true);
+      if (does === "leave-fullscreen") return void leaveFullscreen();
+    }
     const view = controls.view();
     if (view.keys.menu && e.key.toLowerCase() === view.keys.menu && view.presence !== "hidden") return setOpen(!open);
     if (view.keys.chat && view.chat.ready && view.presence !== "hidden" && !open && !e.repeat && (e.key.toLowerCase() === view.keys.chat || e.key === "Enter" && at?.tagName !== "BUTTON" && at?.tagName !== "A")) {
@@ -1291,6 +1310,14 @@ function mountHud(controls, opts = {}) {
     if (pin) openPin(pin.id);
   };
   addEventListener("keydown", onKey);
+  full.addEventListener("click", () => {
+    void fullscreenButton.press(controls).then(draw);
+  });
+  const stopLeft = onBrowserLeftFullscreen(() => {
+    if (!open && !host.hidden) setOpen(true);
+    draw();
+  });
+  document.addEventListener("fullscreenchange", draw);
   const onTabKey = (e) => {
     if (!open || host.hidden || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     const at = e.composedPath()[0];
@@ -1393,6 +1420,8 @@ function mountHud(controls, opts = {}) {
       stopAsking();
       stopSay();
       removeEventListener("keydown", onKey);
+      stopLeft();
+      document.removeEventListener("fullscreenchange", draw);
       removeEventListener("keydown", onSummonKey, listening);
       removeEventListener("keydown", onTabKey, true);
       removeEventListener("keyup", swallow, listening);

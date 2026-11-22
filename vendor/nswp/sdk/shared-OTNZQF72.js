@@ -19,6 +19,8 @@ var ICONS = {
   pin: "M9 4h6l-1 6 3 3H7l3-3-1-6ZM12 13v7",
   step: "M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.800-6 10-6 10ZM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
   size: "M4 18 9 6l5 12M5.700 14h6.600M15 18l3.500-8 3.500 8M16 15.700h5",
+  /** Filling the screen: four corners drawn out. */
+  full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
   motion: "M3 12h4l3-7 4 14 3-7h4",
   check: "M5 12.500 10 17.500 19 7",
   camera: "M4 8h3l1.5-2h7L17 8h3v11H4ZM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z",
@@ -314,6 +316,222 @@ function meetClient() {
   say({ nswp: "here", at });
 }
 meetClient();
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
+var matches = (query) => {
+  try {
+    return typeof matchMedia === "function" && matchMedia(query).matches;
+  } catch {
+    return false;
+  }
+};
+function deviceForms() {
+  const touch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0 || matches("(any-pointer: coarse)");
+  const mouse = matches("(any-pointer: fine)");
+  return { touch, mouse, main: matches("(pointer: fine)") ? "desk" : "touch" };
+}
+function formFor(said, device) {
+  if (said === "touch" && device.touch) return "touch";
+  if (said === "desk" && device.mouse) return "desk";
+  return device.main;
+}
+var arrived2;
+var used;
+var watching = false;
+function arriveAs(form) {
+  arrived2 = form;
+  watch();
+}
+function startingForm() {
+  return formFor(arrived2, deviceForms());
+}
+function currentForm() {
+  watch();
+  return used ?? startingForm();
+}
+function usedForm() {
+  watch();
+  return used;
+}
+function watch() {
+  if (watching || typeof addEventListener !== "function") return;
+  watching = true;
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.pointerType === "touch") used = "touch";
+      else if (e.pointerType === "mouse") used = "desk";
+    },
+    { capture: true, passive: true }
+  );
+}
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
+var resumed = false;
+var waiting = false;
+var FULL_KEY = "nswp:full";
+var prefers = false;
+var keepFull = (on) => {
+  prefers = on;
+  try {
+    if (on) localStorage.setItem(FULL_KEY, "1");
+    else localStorage.removeItem(FULL_KEY);
+  } catch {
+  }
+};
+var prefersFullscreen = () => prefers;
+var held = false;
+var holdFullscreen = (on) => {
+  held = on;
+};
+function resumeFullscreen(presenting = () => false) {
+  if (resumed || typeof document === "undefined") return;
+  resumed = true;
+  const came = arrivedSettings().full;
+  let kept = false;
+  try {
+    kept = localStorage.getItem(FULL_KEY) === "1";
+  } catch {
+  }
+  if (came === void 0) prefers = kept;
+  else keepFull(came);
+  reportSettings("screen", () => ({ full: prefers }));
+  meetClient();
+  const mayAsk = framed();
+  waiting = prefers && (document.fullscreenEnabled && !document.fullscreenElement || mayAsk);
+  if (!waiting) return;
+  const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
+  const stop = () => {
+    waiting = false;
+    for (const type of presses) removeEventListener(type, onPress, true);
+    document.removeEventListener("fullscreenchange", onChange);
+    forget();
+  };
+  const onChange = () => {
+    if (document.fullscreenElement || clientScreenFilled()) stop();
+  };
+  const forget = onClientScreen(onChange);
+  const onPress = (e) => {
+    if (e.code === "Escape" || held || presenting() || document.fullscreenElement) return;
+    if (clientHoldsScreen()) return void (clientScreenFilled() ? stop() : askClientForScreen(true));
+    if (!document.fullscreenEnabled) return;
+    void document.documentElement.requestFullscreen().then(stop, () => {
+    });
+  };
+  for (const type of presses) addEventListener(type, onPress, true);
+  document.addEventListener("fullscreenchange", onChange);
+  onChange();
+}
+var isFilled = () => clientHoldsScreen() ? clientScreenFilled() : !!document.fullscreenElement;
+var canFill = () => clientHoldsScreen() || document.fullscreenEnabled;
+var fullscreenWaiting = () => waiting && canFill() && !isFilled();
+function fullscreenAction(controls, presenting) {
+  resumeFullscreen(presenting);
+  presentingNow = presenting;
+  watchEscape();
+  setTimeout(() => {
+    if (waiting && !held && !presenting() && canFill() && !isFilled()) controls.say("Press any key, or click, to fill the screen again.");
+  }, 600);
+  onClientScreen(() => controls.setTarget(""));
+  return {
+    id: "fullscreen",
+    section: "view",
+    icon: "full",
+    on: () => prefers,
+    // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
+    hidden: () => !canFill() || presenting(),
+    // It says what they prefer, in every world, and whether the screen is filled just now.
+    label: () => !prefers ? "Fullscreen: off" : isFilled() ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
+    act: async () => {
+      const fill = !isFilled();
+      if (!fill) keepFull(false);
+      if (clientHoldsScreen()) {
+        if (fill) keepFull(true);
+        askClientForScreen(fill);
+        return void controls.setTarget("");
+      }
+      try {
+        if (fill) {
+          await document.documentElement.requestFullscreen();
+          keepFull(true);
+        } else await leaveFullscreen();
+      } catch {
+        controls.say("This browser wouldn't go fullscreen.");
+      }
+      controls.setTarget("");
+    }
+  };
+}
+var keyboard = () => typeof navigator === "undefined" ? void 0 : navigator.keyboard;
+var holding = false;
+var leaving = false;
+var watching2 = false;
+var leftByBrowser = /* @__PURE__ */ new Set();
+function onBrowserLeftFullscreen(fn) {
+  leftByBrowser.add(fn);
+  return () => void leftByBrowser.delete(fn);
+}
+function watchEscape() {
+  if (watching2 || typeof document === "undefined") return;
+  watching2 = true;
+  let wasFilled = !!document.fullscreenElement;
+  const onChange = () => {
+    const filled2 = !!document.fullscreenElement;
+    if (filled2) {
+      holding = false;
+      try {
+        const asked = keyboard()?.lock?.(["Escape"]);
+        if (asked) void asked.then(() => holding = !!document.fullscreenElement, () => holding = false);
+      } catch {
+      }
+    } else {
+      holding = false;
+      try {
+        keyboard()?.unlock?.();
+      } catch {
+      }
+      if (wasFilled && !leaving) for (const fn of [...leftByBrowser]) fn();
+      leaving = false;
+    }
+    wasFilled = filled2;
+  };
+  document.addEventListener("fullscreenchange", onChange);
+}
+var escapeHeld = () => holding && typeof document !== "undefined" && !!document.fullscreenElement;
+function escapeDoes(state) {
+  if (state.menuOpen) return state.held ? "leave-fullscreen" : "close-menu";
+  return state.held ? "open-menu" : "nothing";
+}
+async function leaveFullscreen() {
+  if (typeof document === "undefined" || !document.fullscreenElement) return;
+  leaving = true;
+  try {
+    await document.exitFullscreen();
+  } catch {
+    leaving = false;
+  }
+}
+var presentingNow = () => false;
+var fullscreenButton = {
+  shown() {
+    if (typeof document === "undefined" || presentingNow()) return false;
+    return canFill() && !isFilled() && currentForm() === "desk";
+  },
+  label: "Full screen",
+  async press(controls) {
+    if (clientHoldsScreen()) {
+      keepFull(true);
+      askClientForScreen(true);
+      return;
+    }
+    try {
+      await document.documentElement.requestFullscreen();
+      keepFull(true);
+    } catch {
+      controls?.say("This browser wouldn't go fullscreen.");
+    }
+  }
+};
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/relay-book.ts
 import { DISCOVERY, DISCOVERY_RELAYS, learnRelays, pickDiscovered, pickRelays, publishEvent, queryRelays, RELAY_DISCOVERY_KIND, WRAP_KIND } from "@nswp/core";
@@ -803,16 +1021,16 @@ function createHoldWatch(o) {
   };
 }
 function createHeldButton(hold = SUMMON_HOLD) {
-  let held = 0;
+  let held2 = 0;
   let fired = false;
   return (down, dt) => {
     if (!down) {
-      held = 0;
+      held2 = 0;
       fired = false;
       return false;
     }
-    held += Math.max(0, dt) * 1e3;
-    if (fired || held < hold) return false;
+    held2 += Math.max(0, dt) * 1e3;
+    if (fired || held2 < hold) return false;
     fired = true;
     return true;
   };
@@ -837,17 +1055,28 @@ export {
   saveVisitorTheme,
   resolveTheme,
   rgb,
-  framed,
   setMenuPlace,
-  clientHoldsScreen,
-  clientScreenFilled,
   onClientScreen,
-  askClientForScreen,
   clientSignsInAt,
   clientPanelOpen,
   onClientSignIn,
   askClientForSignIn,
-  meetClient,
+  deviceForms,
+  formFor,
+  arriveAs,
+  startingForm,
+  currentForm,
+  usedForm,
+  prefersFullscreen,
+  holdFullscreen,
+  resumeFullscreen,
+  fullscreenWaiting,
+  fullscreenAction,
+  onBrowserLeftFullscreen,
+  escapeHeld,
+  escapeDoes,
+  leaveFullscreen,
+  fullscreenButton,
   learnFrom,
   relaysWell,
   sendWell,
