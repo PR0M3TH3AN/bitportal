@@ -68,6 +68,10 @@ if (existsSync(startDoc)) {
   writeFileSync(join(out, "start/index.html"), readFileSync(join(root, "src/start/index.html"), "utf8").replace("<!-- doc -->", markdownToHtml(text)));
 } else console.warn("No vendor/nswp/docs/start.md yet: /start/ is not built. `npm run vendor -- --only nswp` brings it.");
 cpSync(join(root, "src/go/index.html"), join(out, "go/index.html"));
+// The kit's locked box, as the kit writes it, for the room (the owner's decision is in AGENTS.md, "Items").
+const { ITEM_BOX_HTML, ITEM_BOX_CSP } = await import(join(root, "vendor/nswp/nswp-core.js"));
+mkdirSync(join(out, "item-box"), { recursive: true });
+writeFileSync(join(out, "item-box/index.html"), ITEM_BOX_HTML);
 cpSync(join(root, "src/walk/index.html"), join(out, "walk/index.html"));
 for (const page of ["account", "publish", "look", "shell"]) {
   mkdirSync(join(out, page), { recursive: true });
@@ -111,6 +115,9 @@ const rulesFor = ({ frames = [], framedBy = "'none'" } = {}) =>
   ].join("; ");
 const csp = rulesFor();
 const cspFramed = rulesFor({ framedBy: "'self'" });
+// The room alone frames a page of this site: the kit's locked box, where what an item does of its own runs, with
+// nothing to reach (`ITEM_BOX_CSP`). Nothing else of BitPortal's is ever framed by it.
+const cspRoom = rulesFor({ frames: ["'self'"], framedBy: "'self'" });
 const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });
 /** What a page may use, and hand on to what it frames: `/shell/` hands a headset and a microphone to the worlds it may frame, by name. */
 const handsOn = (to = []) => `xr-spatial-tracking=(self${to.map((o) => ` "${o}"`).join("")}), microphone=(self${to.map((o) => ` "${o}"`).join("")}), camera=(), geolocation=()`;
@@ -137,8 +144,12 @@ writeFileSync(
       headers: [
         // One set of rules for each path, and no path under two: where two rules set the same header a browser
         // holds a page to both, and the page that frames worlds would be held to the rule that frames none.
-        { source: "/((?!(?:walk|go|shell)(?:/|$)).*)", headers: guards(csp) },
-        { source: "/(walk|go)(/.*)?", headers: guards(cspFramed) },
+        { source: "/((?!(?:walk|go|shell|item-box)(?:/|$)).*)", headers: guards(csp) },
+        { source: "/walk(/.*)?", headers: guards(cspRoom) },
+        { source: "/go(/.*)?", headers: guards(cspFramed) },
+        // The kit's locked box for what an item does of its own, under the kit's own rules and no others: it reaches
+        // nothing, and only this site may be above it (the room, and the page that keeps the screen above that).
+        { source: "/item-box(/.*)?", headers: [{ key: "Content-Security-Policy", value: ITEM_BOX_CSP }, { key: "Referrer-Policy", value: "no-referrer" }, { key: "X-Content-Type-Options", value: "nosniff" }] },
         { source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },
         // Always the latest (NSWP-09): a browser asks before it uses a copy of a page or a script it kept. Said
         // outright, and not left to the host's habit. Not for the fonts and previews, which have rules of their own.

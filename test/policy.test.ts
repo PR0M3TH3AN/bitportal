@@ -165,19 +165,22 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     expect(build).toContain("const csp = rulesFor();");
     expect(build).toContain(`"script-src 'self'"`);
     expect(build).not.toContain("wasm-unsafe-eval");
-    // Every page but three is under those rules, and each path is under one set of rules only.
-    expect(build).toContain('{ source: "/((?!(?:walk|go|shell)(?:/|$)).*)", headers: guards(csp) },');
+    // Every page but four is under those rules, and each path is under one set of rules only.
+    expect(build).toContain('{ source: "/((?!(?:walk|go|shell|item-box)(?:/|$)).*)", headers: guards(csp) },');
     // The address in the policy is read from this instance's own settings, as the one named to worlds.
     expect(/^\s*signer:\s*"(https:\/\/[^"]+)"/m.exec(readFileSync(new URL("../src/shared/instance.ts", import.meta.url), "utf8"))?.[1]).toBe(INSTANCE.signer);
   });
   it("lets one page keep the screen, framing only its own room, its Airlock and the worlds it names (2026-11-20)", async () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
     const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
-    // The three exceptions, and no fourth: the page that holds the screen, and the two it shows of this site's own.
-    expect(build.split("rulesFor(").length - 1).toBe(3);
+    // The exceptions, and no more: the page that holds the screen, the two it shows of this site's own, and the
+    // room's own, which frames the kit's locked item box (below).
+    expect(build.split("rulesFor(").length - 1).toBe(4);
     expect(build).toContain(`const cspFramed = rulesFor({ framedBy: "'self'" });`);
+    expect(build).toContain(`const cspRoom = rulesFor({ frames: ["'self'"], framedBy: "'self'" });`);
     expect(build).toContain(`const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });`);
-    expect(build).toContain('{ source: "/(walk|go)(/.*)?", headers: guards(cspFramed) },');
+    expect(build).toContain('{ source: "/walk(/.*)?", headers: guards(cspRoom) },');
+    expect(build).toContain('{ source: "/go(/.*)?", headers: guards(cspFramed) },');
     expect(build).toContain('{ source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },');
     // The worlds it names are sites, each by its own address and nothing wider: never a whole scheme, never a star.
     const named = JSON.parse(readFileSync(new URL("../src/shared/shell-worlds.json", import.meta.url), "utf8")) as string[];
