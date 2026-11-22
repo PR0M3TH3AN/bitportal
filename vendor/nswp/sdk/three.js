@@ -133,7 +133,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-ABLFMOUK.js";
+} from "./shared-VV6FBT5Q.js";
 import {
   PICTURE_LIMITS,
   addDoorControls,
