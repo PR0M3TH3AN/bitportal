@@ -1127,6 +1127,11 @@ async function start(): Promise<void> {
   const ndc = new THREE.Vector2(2, 2); // off-screen until the mouse moves
   // The visitor's own panels: notes, pictures and video they hang in their room. Set up further down.
   let panels: Panels | null = null;
+  /**
+   * A tile tapped with a finger, which has nothing to hover with: what it means stays in the card until the next
+   * press anywhere, as it would while a mouse rested on it.
+   */
+  let tappedTile: Clickable | null = null;
   /** The presses of what is in their hand, as in every world (the kit's `addItemControls`). */
   let itemControls: ItemControls | null = null;
   /** When the current press on the view began: a short one is the first press of what they hold. */
@@ -1217,6 +1222,7 @@ async function start(): Promise<void> {
   renderer.domElement.addEventListener("pointerleave", () => ndc.set(2, 2));
   renderer.domElement.addEventListener("pointerdown", (e) => {
     if (gameControls()) return;
+    tappedTile = null;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     panelDrag = !renderer.xr.isPresenting && !!panels?.pointer("down", raycaster);
@@ -1237,6 +1243,7 @@ async function start(): Promise<void> {
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     const thing = under();
+    if (thing?.tile && e.pointerType === "touch") tappedTile = thing;
     // The keyboard, the console and a panel come first. Then, with something in hand that does something, a tap is
     // its first press, sent where they tapped; a press held is still how they walk, or go through a door.
     if (thing && (thing.onPanel || thing.onConsole)) return thing.act();
@@ -1854,7 +1861,7 @@ async function start(): Promise<void> {
         if (stroll.going && !dragging) rig.rotation.y = stroll.face(rig.rotation.y, dt);
       }
       raycaster.setFromCamera(ndc, camera);
-      pointed = under();
+      pointed = under() ?? tappedTile;
       const through = walkedThrough();
       if (through) void visit(through, "walked");
       // The casual way, with a pointer that hovers: a ring on the floor where a press would take them. With a finger
