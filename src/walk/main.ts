@@ -19,7 +19,7 @@ import * as THREE from "three";
 import { menuDoor } from "../shared/menu-door.js";
 import type { Offer } from "@nswp/core";
 import { prototypeNotice } from "../shared/notice.js";
-import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally } from "@nswp/core";
+import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally, ENTRY_PLACES_ROOMS, entryPlaces } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
@@ -148,6 +148,8 @@ interface TestHooks {
   roomInfo(): unknown;
   /** What is under the thumb on a touch screen (the sight and the item's buttons), or null. */
   thumbs?: () => unknown;
+  /** The places the visitor may be stepped to on joining, and whether each is inside the room. */
+  entryPlaces?: () => { at: number[]; ok: boolean }[];
   /** How far the view is tilted by dragging, in degrees: up is positive. */
   tilt?: () => number;
   /** What is in play in their hand, and its two presses (as in every world). */
@@ -1357,7 +1359,20 @@ async function start(): Promise<void> {
   // world: in the kit's locked box, a page of this site served under the kit's own rules (`/item-box/`), which is
   // the one page of BitPortal the room frames.
   const carriedItems = createItems({ relays: settings.relays });
-  const presence = createPresence({ scene, camera, rig, renderer, controllers, items: carriedItems, itemsRule: () => "allowed", itemScripts: { url: "/item-box/" }, sounds, theme: () => ({ accent: controls.theme.accent, motion: controls.theme.motion }), labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
+  // Places to arrive (NSWP-01): eight round the spot they arrived on, facing the way they faced, inside the room.
+  // If they join and find themselves inside someone, the kit steps them to the first clear one, once, while they are
+  // still, and only the one who came later. Made when they join, from where they arrived (`arrivedAt`, below).
+  let arrivedAt: { x: number; z: number; yaw: number } | null = null;
+  const stillMoving = (): boolean => {
+    if (renderer.xr.isPresenting) {
+      const info = xrInput.info();
+      return info.aiming.length > 0 || info.narrow > 0.01 || info.slots.some((sl) => Math.hypot(sl.pad.stick[0], sl.pad.stick[1]) > 0.2);
+    }
+    return dragging || stroll.going || ["KeyW", "KeyS", "KeyA", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].some((k) => keys.has(k));
+  };
+  const arrivalPlaces = () => (arrivedAt ? entryPlaces({ position: [arrivedAt.x, 0, arrivedAt.z], yaw: arrivedAt.yaw }, ENTRY_PLACES_ROOMS) : []);
+  hooks.entryPlaces = () => arrivalPlaces().map((p) => ({ at: [p.position[0], p.position[2]], ok: Math.hypot(p.position[0], p.position[2]) <= RADIUS }));
+  const presence = createPresence({ scene, camera, rig, renderer, controllers, arrival: () => (arrivedAt ? { places: arrivalPlaces(), canStand: (x: number, z: number) => Math.hypot(x, z) <= RADIUS, moving: stillMoving } : null), items: carriedItems, itemsRule: () => "allowed", itemScripts: { url: "/item-box/" }, sounds, theme: () => ({ accent: controls.theme.accent, motion: controls.theme.motion }), labelColor: INK, look: () => (myLook ? inlineLook(myLook) : undefined), identity: () => roomIdentity, onChange: () => refreshRoom() });
   // And they can see it too: their own figure stands to one side, as others will see it.
   // It is drawn again whenever they change it, which they do from the menu, standing here (you.ts).
   let mirror: Figure | null = null;
@@ -1785,6 +1800,8 @@ async function start(): Promise<void> {
     rig.rotation.y = THREE.MathUtils.degToRad(stood.yaw);
     state.facing = "as before";
   }
+  // Where they arrived, for the places they may be stepped to if they join inside someone.
+  arrivedAt = { x: rig.position.x, z: rig.position.z, yaw: THREE.MathUtils.radToDeg(rig.rotation.y) };
   const keepPlace = () => stay.keep({ x: rig.position.x, z: rig.position.z, yaw: THREE.MathUtils.radToDeg(rig.rotation.y), headset: renderer.xr.isPresenting });
   addEventListener("pagehide", keepPlace);
   setInterval(keepPlace, 1000);

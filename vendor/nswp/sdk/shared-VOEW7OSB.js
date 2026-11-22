@@ -3282,6 +3282,9 @@ var RoomSession = class {
   words = createChatGate();
   timers = [];
   closed = false;
+  /** When this visitor joined, in unix seconds, and who has joined since (by a joining hello signed after it). */
+  joinedAt = Math.floor(Date.now() / 1e3);
+  newer = /* @__PURE__ */ new Set();
   constructor(opts = {}) {
     const world = opts.world ?? `${location.origin}${location.pathname}`;
     this.origin = new URL(world).origin;
@@ -3398,6 +3401,7 @@ var RoomSession = class {
     return [...this.sockets.values()].filter((s) => s.readyState === WebSocket.OPEN).length;
   }
   start() {
+    this.joinedAt = Math.floor(Date.now() / 1e3);
     for (const url of this.relays) this.connectRelay(url);
     this.timers.push(
       setInterval(() => this.announce(), HELLO_EVERY_MS),
@@ -3425,7 +3429,7 @@ var RoomSession = class {
     this.sockets.set(url, ws);
     ws.onopen = () => {
       ws.send(JSON.stringify(["REQ", "room", { kinds: [ROOM_SIGNAL_KIND], "#x": [this.topic], since: Math.floor(Date.now() / 1e3) - 5 }]));
-      ws.send(JSON.stringify(["EVENT", buildHello(this.topic, this.key)]));
+      ws.send(JSON.stringify(["EVENT", buildHello(this.topic, this.key, void 0, { first: Math.floor(Date.now() / 1e3) - this.joinedAt < 15 })]));
       this.setStatus("open");
     };
     ws.onmessage = (msg) => {
@@ -3467,6 +3471,8 @@ var RoomSession = class {
         case "welcome": {
           if (existing) return;
           if (this.peers.size >= this.maxMembers - 1) return;
+          const at = raw.created_at;
+          if (message.t === "hello" && message.first === true && typeof at === "number" && (at > this.joinedAt || at === this.joinedAt && from > this.self.pubkey)) this.newer.add(from);
           if (shouldInitiate(this.self.pubkey, from)) await this.offerTo(from);
           else if (message.t === "hello") this.publish(buildSignal(this.topic, this.key, from, { t: "welcome" }));
           return;
@@ -3496,7 +3502,7 @@ var RoomSession = class {
   createPeer(pubkey) {
     const pc = new RTCPeerConnection({ iceServers: this.iceServers });
     const peer = {
-      member: { pubkey, guest: true, name: guestName(pubkey), color: guestColor(pubkey), look: generatedLook(pubkey), recording: false },
+      member: { pubkey, guest: true, name: guestName(pubkey), color: guestColor(pubkey), look: generatedLook(pubkey), recording: false, ...this.newer.has(pubkey) ? { joinedAfterYou: true } : {} },
       pc,
       refused: 0,
       words: createChatGate(),
@@ -5875,7 +5881,7 @@ function figureAction(controls, leaving = () => ({})) {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/presence.ts
 import * as THREE9 from "three";
-import { bubbleSeconds, buildTints, cleanItemsRule as cleanItemsRule2, cleanTints, itemCoordinate as itemCoordinate3, parseTints, decodeLook as decodeLook2, spawnOffset } from "@nswp/core";
+import { bubbleSeconds, buildTints, cleanItemsRule as cleanItemsRule2, cleanTints, ENTRY_CLEAR, itemCoordinate as itemCoordinate3, parseTints, pickEntryPlace, decodeLook as decodeLook2, spawnOffset } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
 import * as THREE6 from "three";
@@ -8034,6 +8040,7 @@ function createPlay(o) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/presence.ts
+var ARRIVING_SECONDS = 6;
 var SEND_EVERY_MS = 66;
 var FADE_START = 0.9;
 var FADE_END = 0.45;
@@ -8113,6 +8120,25 @@ function createPresence(d) {
   let sendTimer;
   let micTrack = null;
   let offsetApplied = false;
+  let arriving = null;
+  let clock = 0;
+  const tendArrival = () => {
+    if (!arriving) return;
+    const head = d.camera.getWorldPosition(new THREE9.Vector3());
+    if (clock > arriving.until || Math.hypot(head.x - arriving.from.x, head.z - arriving.from.z) > ENTRY_CLEAR) return void (arriving = null);
+    const others = [...avatars.values()].filter((a) => a.target && !a.member.joinedAfterYou).map((a) => {
+      const h = a.head.getWorldPosition(new THREE9.Vector3());
+      return [h.x, h.z];
+    });
+    if (!others.some(([x, z]) => Math.hypot(x - head.x, z - head.z) < ENTRY_CLEAR)) return;
+    if (arriving.moving?.()) return;
+    const i = pickEntryPlace(arriving.places, others, arriving.canStand);
+    const to = arriving.places[i];
+    arriving = null;
+    if (!to) return;
+    d.rig.position.x += to.position[0] - head.x;
+    d.rig.position.z += to.position[2] - head.z;
+  };
   let plainSeed;
   let dot = null;
   const glow = (color) => {
@@ -8569,10 +8595,15 @@ function createPresence(d) {
     const s = await room.join({ ...name ? { name } : {}, ...look ? { look } : {}, ...identity ? { identity } : {}, blocked: blockedKeys(), ownerBlocked: rules.blocked, namedOnly: rules.namedOnly, invited: invitedOnly });
     session2 = s;
     if (!offsetApplied) {
-      const off = spawnOffset(s.self.pubkey);
-      d.rig.position.x += off.x;
-      d.rig.position.z += off.z;
       offsetApplied = true;
+      const at = d.arrival?.() ?? null;
+      if (at && at.places.length) {
+        arriving = { until: clock + ARRIVING_SECONDS, from: d.camera.getWorldPosition(new THREE9.Vector3()), places: at.places, ...at.canStand ? { canStand: at.canStand } : {}, ...at.moving ? { moving: at.moving } : {} };
+      } else {
+        const off = spawnOffset(s.self.pubkey);
+        d.rig.position.x += off.x;
+        d.rig.position.z += off.z;
+      }
     }
     s.on("status", changed);
     s.on("recording", (m, on) => {
@@ -8627,7 +8658,7 @@ function createPresence(d) {
     s.on("pose", (m, pose) => {
       const a = avatars.get(m.pubkey);
       if (!a) return;
-      if (!a.target) stepApart(s.self.pubkey, m.pubkey, pose);
+      if (!a.target && !d.arrival) stepApart(s.self.pubkey, m.pubkey, pose);
       a.target = pose;
     });
     s.on("video", (m, stream) => {
@@ -8924,6 +8955,8 @@ function createPresence(d) {
       return dest.stream.getAudioTracks()[0];
     },
     update(dt) {
+      clock += dt;
+      tendArrival();
       tendMusic(dt);
       placeMine(dt);
       const k = 1 - Math.exp(-dt * 14);
