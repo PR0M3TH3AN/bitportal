@@ -37,6 +37,7 @@ import {
   type World,
   shortNpub,
   toLocal,
+  worldDownload,
 } from "@nswp/core";
 
 import bundleJson from "../starter/starter-set.json";
@@ -524,6 +525,12 @@ async function render(): Promise<void> {
   // here with the rest of what there is to know: it is not a warning and decides nothing about the crossing.
   const kit = kitNote(a.manifest?.kit, a.nswpAware);
   if (kit) body.append(el("p", { class: "small muted", id: "kit-note" }, kit));
+  // How big the world says its first download is, from its own manifest (`budgets.initial_download_mb`; the kit's
+  // `worldDownload`, spec §10.1). Its claim, said in its words, and never a reason not to go: within the budget it is
+  // here with the rest; above it ("a lot on a phone's data") it is up front, so nobody on a phone's data is surprised.
+  const download = worldDownload(w ? a.manifest?.worlds[w.d] : null);
+  const downloadLine = download ? el("p", { class: download.heavy ? "fit fit-warn" : "small muted", id: "download" }, download.words) : null;
+  if (downloadLine && !download!.heavy) body.append(downloadLine);
 
   const card = el(
     "section",
@@ -532,6 +539,7 @@ async function render(): Promise<void> {
     host,
     el("div", { class: "title-row" }, w ? el("h1", {}, w.title) : el("h1", {}, "An unlisted site"), status),
     fit.tone === "warn" || fit.tone === "bad" ? fitLine : "",
+    download?.heavy && downloadLine ? downloadLine : "",
   );
   if (a.warnings.length) card.append(issueList(a.warnings, "warn"));
 
