@@ -312,6 +312,10 @@ async function render(): Promise<void> {
   // world to world (shared/shell.ts): the same address, and everything below happens there instead.
   if (enterShell()) return;
   helloShell();
+  // Inside the page that keeps the screen, a link to a page that won't be framed (the front page, the lobby, the
+  // page a look is made on) opens in the whole page, on every screen this shows: without it the frame shows
+  // "refused to connect" and the visitor is stranded (the owner, 2026-11-21).
+  linksLeaveWhole();
   const main = $("main");
   const req = parseAirlockFragment(location.hash);
   // Asked, from inside a world, for something of their own first: to say who they are, or to change how they look
@@ -388,6 +392,13 @@ async function render(): Promise<void> {
       location.replace(home.href);
       return;
     }
+    // Something was said after the # and it can't be read: it came from a world (a way home it couldn't make out,
+    // a link cut short), and a page of text is no place to land from one. Home is the room, as above. Only an
+    // Airlock opened with nothing at all after its address explains itself.
+    if (location.hash.replace(/^#/, "").trim()) {
+      location.replace(`/walk/#back${/(^|&)xr=1(&|$)/.test(location.hash.replace(/^#/, "")) ? "&xr=1" : ""}`);
+      return;
+    }
     $("landing").hidden = false;
     $("checking").hidden = true;
     return;
@@ -435,7 +446,6 @@ async function render(): Promise<void> {
   const entry = entryFromFragment();
   // Read on a headset's flat panel with a controller's ray: everything to press is larger.
   if (req.immersive) document.body.classList.add("from-vr");
-  linksLeaveWhole();
   const approvalKey = a.world?.pubkey ? `${a.origin}|${a.world.pubkey}|${a.world.d}` : null;
   const approved = readJson<Record<string, boolean>>(APPROVED, {});
   // People a world says the visitor blocked there, and any still waiting from a trip home. A question to answer,

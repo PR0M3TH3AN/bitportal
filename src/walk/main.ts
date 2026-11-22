@@ -23,7 +23,7 @@ import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, 
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
-import { enterShell, goFrom } from "../shared/shell.js";
+import { enterShell, goFrom, linksLeaveWhole } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createDoorOffers, createHome, type Alloy, type DoorOffers } from "nswp-sdk/home";
 import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
@@ -320,6 +320,8 @@ async function start(): Promise<void> {
   // Opened as a page of its own at a desk, the room is opened again inside the page that keeps the screen filled
   // from world to world (shared/shell.ts): the same address, and nothing more is done here.
   if (enterShell()) return;
+  // Inside the page that keeps the screen, a link to a page that won't be framed opens in the whole page.
+  linksLeaveWhole();
   const settings = loadSettings();
   const params = new URLSearchParams(location.search);
   // Someone arriving is told once that this is an early prototype (shared/notice.ts). Someone coming home from a

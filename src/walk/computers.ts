@@ -18,6 +18,7 @@
  *   signer, their panels or this list.
  */
 import { buildWorldGrant, DEFAULT_RELAYS, encodeNpub, finalizeEvent, getPublicKey, packBrought, shortNpub, verifyWorldGrant, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { goFrom } from "../shared/shell.js";
 import { wasRefreshed, type Panels } from "nswp-sdk/three";
 import type { Controls } from "nswp-sdk/ui";
 import type { TerminalPanel } from "nswp-sdk/terminal";
@@ -305,7 +306,8 @@ export function addComputers(o: ComputersOptions): Computers {
       const brought = packBrought({ grant, sessionKey: [...secret].map((b) => b.toString(16).padStart(2, "0")).join(""), bridge: computer.pubkey, name: computer.name, relays: computer.relays, immersive: o.presenting() });
       // After the #, which no server is sent. The world takes it out of its address at once.
       const to = `${world.url}#nswp-bring=${brought}`;
-      if (!stay) location.assign(to);
+      // A world of their own isn't one the page that keeps the screen may frame: it is gone to by the whole page there.
+      if (!stay) goFrom(to);
       return to;
     } catch {
       return no("Your key didn't sign it. Check you are still signed in.");
