@@ -433,7 +433,7 @@ function createConsole(controls, opts) {
     const shared2 = !!(linePages > 1 && layout.rows === 1 && items.length);
     const itemW = shared2 ? (areaW - PAGER_W - items.length * 14) / items.length : evenW;
     const cellAt = (i) => shared2 ? { x: left + i * (itemW + 14), y: contentTop, w: i < items.length ? itemW : PAGER_W } : { x: left + i % cols * (evenW + 14), y: contentTop + Math.floor(i / cols) * (cellH + 12), w: evenW };
-    const pager = linePages > 1 ? { id: "", label: `Page ${linePage + 1} of ${linePages}`, icon: "turn", on: null, tone: "normal", key: "", short: "", kind: "button", color: "" } : null;
+    const pager = linePages > 1 ? { id: "", label: `Page ${linePage + 1} of ${linePages}`, icon: "turn", on: null, tone: "normal", key: "", short: "", kind: "button", color: "", mark: null, faint: false } : null;
     [...items, ...pager ? [pager] : []].forEach((item, i) => {
       const { x, y, w: cellW } = cellAt(i);
       const tone2 = item.tone === "warn" ? rgb(t.warn) : A;
@@ -459,8 +459,17 @@ function createConsole(controls, opts) {
         } else if (item.kind === "tile") {
           const picture = item.picture?.();
           const side = Math.min(cellH - 12, iconSize * 1.5);
+          const was = g.globalAlpha;
+          if (item.faint) g.globalAlpha = was * 0.45;
           if (picture) g.drawImage(picture, x + 10, y + (cellH - side) / 2 - 2, side, side);
           else strokeIcon(g, item.icon, x + 18, y + (cellH - iconSize) / 2 - 2, iconSize);
+          g.globalAlpha = was;
+          if (item.mark) {
+            const ink = g.strokeStyle;
+            g.strokeStyle = t.accent;
+            strokeIcon(g, item.mark, x + 10 + side - 22, y + (cellH - side) / 2, 22);
+            g.strokeStyle = ink;
+          }
         } else strokeIcon(g, item.icon, x + 18, y + (cellH - iconSize) / 2 - 2, iconSize);
         const size = Math.round((cols === 3 || cellW < 240 ? 23 : 28) * k);
         g.font = `600 ${size}px ${SANS}`;
@@ -1101,6 +1110,9 @@ import {
   WELL_KNOWN_PATH
 } from "@nswp/core";
 
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/file-hosts.ts
+import { DEFAULT_RELAYS, FILE_HOST_LIST_KIND, FILE_HOSTS, fileAt, onFileHost, parseFileHostList } from "@nswp/core";
+
 // ../Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/hashes/_u64.js
 var fromNumH = (n) => n / 2 ** 32 | 0;
 var fromNumL = (n) => n >>> 0;
@@ -1545,6 +1557,97 @@ var sha256 = /* @__PURE__ */ createHasher(
   () => new _SHA256(),
   /* @__PURE__ */ oidNist(1)
 );
+
+// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/file-hosts.ts
+var ANYWHERE_KEY = "nswp:files-anywhere";
+var watchers2 = /* @__PURE__ */ new Set();
+var anywhere = null;
+var keep2 = (on) => {
+  try {
+    if (on) globalThis.localStorage?.setItem(ANYWHERE_KEY, "on");
+    else globalThis.localStorage?.removeItem(ANYWHERE_KEY);
+  } catch {
+  }
+};
+function filesAnywhere() {
+  if (anywhere !== null) return anywhere;
+  const came = arrivedSettings().filesAnywhere;
+  let kept2 = null;
+  try {
+    kept2 = globalThis.localStorage?.getItem(ANYWHERE_KEY) ?? null;
+  } catch {
+  }
+  anywhere = came === false ? false : kept2 === "on";
+  if (came === false) keep2(false);
+  reportSettings("files-anywhere", () => filesAnywhere() ? {} : { filesAnywhere: false });
+  return anywhere;
+}
+function setFilesAnywhere(on) {
+  filesAnywhere();
+  anywhere = on;
+  keep2(on);
+  for (const fn of watchers2) fn();
+}
+function onFileHostsChange(fn) {
+  watchers2.add(fn);
+  return () => void watchers2.delete(fn);
+}
+var own = null;
+function learnFileHosts(pubkey, opts = {}) {
+  if (!pubkey || !/^[0-9a-f]{64}$/.test(pubkey)) {
+    own = null;
+    return Promise.resolve([]);
+  }
+  if (own?.pubkey === pubkey) return own.asked;
+  const mine = {
+    pubkey,
+    hosts: [],
+    asked: askWell({ kinds: [FILE_HOST_LIST_KIND], authors: [pubkey], limit: 4 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS, ...opts.query ? { query: opts.query } : {}, timeoutMs: 4e3, ...opts.now ? { now: opts.now } : {} }).then((got) => parseFileHostList(got.events, pubkey)).catch(() => []).then((hosts) => {
+      mine.hosts = hosts;
+      if (own === mine) for (const fn of watchers2) fn();
+      return hosts;
+    })
+  };
+  own = mine;
+  return mine.asked;
+}
+function fileHosts() {
+  return [.../* @__PURE__ */ new Set([...own?.hosts ?? [], ...FILE_HOSTS])];
+}
+function keptElsewhere(hint2) {
+  return !filesAnywhere() && !onFileHost(hint2, fileHosts());
+}
+var FETCH_MS = 3e4;
+async function fetchWithin(url, most) {
+  try {
+    const res = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer", redirect: "error", signal: AbortSignal.timeout(FETCH_MS) });
+    if (!res.ok) return null;
+    const stated = Number(res.headers.get("content-length") ?? 0);
+    if (stated > most) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    return bytes.length <= most ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+function addressesFor(sha2562, hint2, hosts = fileHosts(), anywhereOn = filesAnywhere()) {
+  const at = hosts.map((host) => fileAt(host, sha2562, hint2));
+  const useHint = !!hint2 && (anywhereOn || onFileHost(hint2, hosts));
+  return [...new Set(useHint ? [hint2, ...at] : at)];
+}
+async function fetchByHashSaying(sha2562, hint2, opts = {}) {
+  if (!/^[0-9a-f]{64}$/.test(sha2562)) return { bytes: null, wrong: false };
+  const most = opts.most ?? Infinity;
+  if (opts.viewer !== void 0) await learnFileHosts(opts.viewer, opts.hosts);
+  const get = opts.fetchBytes ?? ((url) => fetchWithin(url, most));
+  let wrong = false;
+  for (const url of addressesFor(sha2562, hint2)) {
+    const bytes = await get(url).catch(() => null);
+    if (bytes && bytes.length <= most && bytesToHex(sha256(bytes)) === sha2562) return { bytes, wrong: false };
+    if (bytes) wrong = true;
+  }
+  return { bytes: null, wrong };
+}
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/utils.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
@@ -3171,7 +3274,7 @@ import {
   CHAT_LIMITS,
   createChatGate,
   parseSay,
-  DEFAULT_RELAYS,
+  DEFAULT_RELAYS as DEFAULT_RELAYS2,
   getPublicKey,
   guestColor,
   guestName,
@@ -3313,7 +3416,7 @@ var RoomSession = class {
     this.self.look = seenLook(this.self, mine?.ok ? mine.value : void 0);
     this.name = (opts.name ?? "lobby").slice(0, ROOM_LIMITS.maxNameChars);
     this.topic = roomTopic(world, this.name);
-    this.relays = opts.relays ?? DEFAULT_RELAYS;
+    this.relays = opts.relays ?? DEFAULT_RELAYS2;
     this.maxMembers = opts.maxMembers ?? ROOM_LIMITS.defaultMaxMembers;
     this.iceServers = opts.iceServers ?? DEFAULT_ICE;
     for (const k of opts.blocked ?? []) if (/^[0-9a-f]{64}$/.test(k)) this.blocked.add(k);
@@ -4395,13 +4498,13 @@ function showFallback(dest) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/front-room.ts
-import { ACCESS_MOST, accessFor, cleanAccess, cleanListing, DEFAULT_RELAYS as DEFAULT_RELAYS3, isHex64 as isHex642, LIST_KIND, listD, LISTING_KIND, listingSeller, OWNER_LIST_LIMITS, parseManifest as parseManifest2, priceWords, readListing, readReceipt, isOwnerListAsked, resolveOwnerList, scopeOfChange, shortNpub as shortNpub3, worldSubject, WORLD_KIND } from "@nswp/core";
+import { ACCESS_MOST, accessFor, cleanAccess, cleanListing, DEFAULT_RELAYS as DEFAULT_RELAYS4, isHex64 as isHex642, LIST_KIND, listD, LISTING_KIND, listingSeller, OWNER_LIST_LIMITS, parseManifest as parseManifest2, priceWords, readListing, readReceipt, isOwnerListAsked, resolveOwnerList, scopeOfChange, shortNpub as shortNpub3, worldSubject, WORLD_KIND } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/following.ts
 import { decodeNpub, encodeNpub, shortNpub as shortNpub2 } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/profiles.ts
-import { cleanAbout, cleanName, cleanPicture, DEFAULT_RELAYS as DEFAULT_RELAYS2, isHex64, queryRelays, verifyEvent } from "@nswp/core";
+import { cleanAbout, cleanName, cleanPicture, DEFAULT_RELAYS as DEFAULT_RELAYS3, isHex64, queryRelays as queryRelays2, verifyEvent } from "@nswp/core";
 var KEY = "nswp:profiles";
 var MOST = 400;
 var FRESH_MS = 24 * 3600 * 1e3;
@@ -4421,7 +4524,7 @@ function readProfile(event) {
 }
 function createProfiles(opts = {}) {
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays;
+  const query = opts.query ?? queryRelays2;
   const store = (() => {
     if (opts.storage !== void 0) return opts.storage;
     try {
@@ -4430,7 +4533,7 @@ function createProfiles(opts = {}) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   let kept2 = null;
   const all = () => {
     if (kept2) return kept2;
@@ -4461,7 +4564,7 @@ function createProfiles(opts = {}) {
       const book = all();
       const wanted = [...new Set(pubkeys)].filter((k) => isHex64(k) && now() - (book[k]?.asked ?? 0) > FRESH_MS).slice(0, AT_ONCE);
       if (wanted.length === 0) return;
-      const got = await askWell({ kinds: [0], authors: wanted, limit: wanted.length * 2 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS2, query, timeoutMs: 4e3, now }).catch(() => null);
+      const got = await askWell({ kinds: [0], authors: wanted, limit: wanted.length * 2 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS3, query, timeoutMs: 4e3, now }).catch(() => null);
       const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
       for (const e of got?.events ?? []) {
         if (e.kind !== 0 || !wanted.includes(e.pubkey) || !verifyEvent(e)) continue;
@@ -4471,11 +4574,11 @@ function createProfiles(opts = {}) {
       }
       if (answered) for (const k of wanted) book[k] = { ...book[k] ?? { name: "", picture: "", about: "", at: 0 }, asked: now() };
       save();
-      for (const fn of watchers3) fn();
+      for (const fn of watchers4) fn();
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -4744,7 +4847,7 @@ function untilWords(until) {
 function createPaidGate(opts) {
   const now = opts.now ?? (() => Date.now());
   const sec = () => Math.floor(now() / 1e3);
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   let state = opts.listings && opts.listings.length === 0 ? "free" : "checking";
   let reason = "";
   let listings = [];
@@ -4780,7 +4883,7 @@ function createPaidGate(opts) {
   let listRetries = 0;
   let listTimer;
   const changed = () => {
-    for (const fn of [...watchers3]) {
+    for (const fn of [...watchers4]) {
       try {
         fn();
       } catch {
@@ -4889,7 +4992,7 @@ function createPaidGate(opts) {
     if (!want.length || disposed) return;
     const name = (l) => l.slice(71);
     const filter = { kinds: [LISTING_KIND], authors: [...new Set(want.map(listingSeller))], "#d": want.map(name) };
-    const got = await askWell(filter, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS3, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
+    const got = await askWell(filter, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS4, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
     if (disposed) return;
     const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
     for (const l of want) {
@@ -4952,7 +5055,7 @@ function createPaidGate(opts) {
     if (!lists || disposed) return;
     const scopes = byInvitation ? ["user-deny", "user-allow"] : ["user-deny"];
     const filter = { kinds: [LIST_KIND], authors: [...new Set(lists.subjects.flatMap(rootOf))], "#d": lists.subjects.flatMap((s) => scopes.map((scope) => listD(scope, s))) };
-    const got = await askWell(filter, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS3, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
+    const got = await askWell(filter, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS4, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
     if (disposed) return;
     const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
     applyLists(got?.events ?? [], answered);
@@ -5130,7 +5233,7 @@ function createPaidGate(opts) {
       rememberList(d, signed);
       applyLists([signed]);
       void look();
-      const sent = await sendWell(signed, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS3, ...opts.publish ? { publish: opts.publish } : {}, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
+      const sent = await sendWell(signed, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS4, ...opts.publish ? { publish: opts.publish } : {}, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
       const done = change2 === "allow" ? "Invited." : change2 === "unallow" ? "Taken off the list." : change2 === "block" ? "Kept out." : "No longer kept out.";
       if (!sent || sent.took === 0) return { ok: true, said: `${done} It holds here, but no relay took the list yet, so nobody else sees the change.` };
       return { ok: true, said: `${done} Anyone can read this list.` };
@@ -5167,8 +5270,8 @@ function createPaidGate(opts) {
       await look();
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     info() {
       return { state, open: state === "free" || state === "open" || state === "ending", reason, why: why(), offers: offerList(), unread: Object.fromEntries(unread), until: state === "open" && held ? held.expiresAt : null, endsAt: endsAt ? Math.round(endsAt / 1e3) : null, signedIn: signedIn(), buying, listings: [...listings], lists: listState, changing, ownerBlocked: ownerBlocked.length, namedOnly, byInvitation, invites: inviteState, invited: invited.length };
@@ -5182,7 +5285,7 @@ function createPaidGate(opts) {
       clearTimeout(listTimer);
       clearInterval(lookTimer);
       unwatch?.();
-      watchers3.clear();
+      watchers4.clear();
     }
   };
 }
@@ -5352,15 +5455,15 @@ var count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 var capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/people.ts
-import { DEFAULT_RELAYS as DEFAULT_RELAYS4, FOLLOWS_KIND, followsIn, isFollowAsked, isHex64 as isHex643, newestFollows, publishEvent as publishEvent2, queryRelays as queryRelays2, readRelayList, RELAY_LIST_KIND, verifyEvent as verifyEvent2 } from "@nswp/core";
+import { DEFAULT_RELAYS as DEFAULT_RELAYS5, FOLLOWS_KIND, followsIn, isFollowAsked, isHex64 as isHex643, newestFollows, publishEvent as publishEvent2, queryRelays as queryRelays3, readRelayList, RELAY_LIST_KIND, verifyEvent as verifyEvent2 } from "@nswp/core";
 var KEPT_MOST = 4e5;
 var FRESH_MS2 = 6e4;
 function createPeople(opts) {
   const { hand } = opts;
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays2;
+  const query = opts.query ?? queryRelays3;
   const publish = opts.publish ?? publishEvent2;
-  const usual = () => opts.relays ?? DEFAULT_RELAYS4;
+  const usual = () => opts.relays ?? DEFAULT_RELAYS5;
   const store = (() => {
     if (opts.storage !== void 0) return opts.storage;
     try {
@@ -5369,9 +5472,9 @@ function createPeople(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:follows:${who}`;
   const readKept = (who) => {
@@ -5382,7 +5485,7 @@ function createPeople(opts) {
       return null;
     }
   };
-  const keep3 = (list) => {
+  const keep4 = (list) => {
     try {
       const text = JSON.stringify(list);
       if (text.length <= KEPT_MOST) store?.setItem(keyFor(list.pubkey), text);
@@ -5402,13 +5505,13 @@ function createPeople(opts) {
   let offered = null;
   const look = async (who) => {
     const kept2 = readKept(who);
-    const own = await ownRelays(who);
-    const got = await askWell({ kinds: [FOLLOWS_KIND], authors: [who], limit: 4 }, { own, usual: usual(), query, timeoutMs: 4e3, now }).catch(() => null);
+    const own2 = await ownRelays(who);
+    const got = await askWell({ kinds: [FOLLOWS_KIND], authors: [who], limit: 4 }, { own: own2, usual: usual(), query, timeoutMs: 4e3, now }).catch(() => null);
     const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
     const found = newestFollows((got?.events ?? []).filter((e) => verifyEvent2(e)), who);
     const list = found && kept2 ? kept2.created_at > found.created_at ? kept2 : found : found ?? kept2;
-    if (kept2 && list === kept2 && answered && (!found || found.id !== kept2.id)) void sendWell(kept2, { own, usual: usual(), publish, query, now }).catch(() => null);
-    if (list && list !== kept2) keep3(list);
+    if (kept2 && list === kept2 && answered && (!found || found.id !== kept2.id)) void sendWell(kept2, { own: own2, usual: usual(), publish, query, now }).catch(() => null);
+    if (list && list !== kept2) keep4(list);
     if (hand.pubkey() !== who) return;
     known = { who, list, answered, at: now() };
     changed();
@@ -5454,7 +5557,7 @@ function createPeople(opts) {
     const asked = adding ? { add: pubkey } : { remove: pubkey };
     const signed = await hand.change(list, asked).catch(() => null);
     if (!signed || !isFollowAsked(signed, { list, ...asked, pubkey: who })) return { ok: false, why: "refused", said: "It couldn't be signed. Who you follow is as it was." };
-    keep3(signed);
+    keep4(signed);
     known = { who, list: signed, answered: true, at: now() };
     changed();
     const sent = await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
@@ -5470,19 +5573,19 @@ function createPeople(opts) {
     follow: (pubkey, name = "") => change2(pubkey, true, name),
     unfollow: (pubkey, name = "") => change2(pubkey, false, name),
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/saves.ts
-import { cleanSlot, DEFAULT_RELAYS as DEFAULT_RELAYS5, fitsInSave, publishEvent as publishEvent3, queryRelays as queryRelays3, readRelayList as readRelayList2, RELAY_LIST_KIND as RELAY_LIST_KIND2, SAVE_KIND, SAVE_SLOT, verifyEvent as verifyEvent3 } from "@nswp/core";
+import { cleanSlot, DEFAULT_RELAYS as DEFAULT_RELAYS6, fitsInSave, publishEvent as publishEvent3, queryRelays as queryRelays4, readRelayList as readRelayList2, RELAY_LIST_KIND as RELAY_LIST_KIND2, SAVE_KIND, SAVE_SLOT, verifyEvent as verifyEvent3 } from "@nswp/core";
 function createSaves(opts = {}) {
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays3;
+  const query = opts.query ?? queryRelays4;
   const publish = opts.publish ?? publishEvent3;
-  const usual = () => opts.relays ?? DEFAULT_RELAYS5;
+  const usual = () => opts.relays ?? DEFAULT_RELAYS6;
   const signer = () => (typeof opts.signer === "function" ? opts.signer() : opts.signer) ?? null;
   const store = (() => {
     if (opts.storage !== void 0) return opts.storage;
@@ -5631,7 +5734,7 @@ function createWorldSigner(opts) {
   const real = opts.at ? namedAddresses(opts.at) : signerAt2(opts.under) ?? signerAddresses(opts.airlock);
   if (!real || typeof document === "undefined") return NONE;
   const test = new URLSearchParams(opts.search ?? location.search).get("signer") === "test";
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const pending = /* @__PURE__ */ new Map();
   const kept2 = /* @__PURE__ */ new Map();
   const askAbout = (request, read) => new Promise((done) => {
@@ -5684,7 +5787,7 @@ function createWorldSigner(opts) {
   const firstAnswer = /* @__PURE__ */ new Set();
   let n = 0;
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const tell = (message) => frame?.contentWindow?.postMessage(signerMessage(message), origin);
   const showPage = () => {
@@ -5991,8 +6094,8 @@ function createWorldSigner(opts) {
       return askAbout({ t: "achieve", id: `a${++n}`, world, achievement, title }, (reply) => reply.t === "signed" && isAchievementAsked(reply.event, { pubkey, world, id: achievement, title, origin: location.origin }) ? reply.event : null);
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     whenAnswered(ms) {
       if (answered || disposed) return Promise.resolve();
@@ -7213,16 +7316,16 @@ import * as THREE7 from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/item-store.ts
-import { DEFAULT_RELAYS as DEFAULT_RELAYS6, ITEM_KIND, itemCoordinate as itemCoordinate2, MODEL_BUDGET, parseItem, queryRelays as queryRelays4, readGlb, SCRIPT_LIMITS, verifyEvent as verifyEvent5 } from "@nswp/core";
+import { DEFAULT_RELAYS as DEFAULT_RELAYS7, ITEM_KIND, itemCoordinate as itemCoordinate2, MODEL_BUDGET, parseItem, queryRelays as queryRelays5, readGlb, SCRIPT_LIMITS, verifyEvent as verifyEvent5 } from "@nswp/core";
 var ITEM_BUDGET = {
   ...MODEL_BUDGET,
   /** The most one of an item's sounds may weigh, in bytes. */
   sound: 15e4
 };
 var ITEMS_KEY = "nswp:items";
-var watchers2 = /* @__PURE__ */ new Set();
+var watchers3 = /* @__PURE__ */ new Set();
 var shown = null;
-var keep2 = (on) => {
+var keep3 = (on) => {
   try {
     if (on) globalThis.localStorage?.removeItem(ITEMS_KEY);
     else globalThis.localStorage?.setItem(ITEMS_KEY, "off");
@@ -7238,38 +7341,27 @@ function showsItems() {
   } catch {
   }
   shown = came ?? kept2 !== "off";
-  if (came !== void 0) keep2(shown);
+  if (came !== void 0) keep3(shown);
   reportSettings("items", () => ({ items: showsItems() }));
   return shown;
 }
 function setShowsItems(on) {
   showsItems();
   shown = on;
-  keep2(on);
-  for (const fn of watchers2) fn();
+  keep3(on);
+  for (const fn of watchers3) fn();
 }
 function onItemsChange(fn) {
-  watchers2.add(fn);
-  return () => void watchers2.delete(fn);
+  watchers3.add(fn);
+  return () => void watchers3.delete(fn);
 }
-var FETCH_MS = 3e4;
 var AGAIN_MS = 4e3;
-async function fetchWithin(url, most) {
-  try {
-    const res = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer", redirect: "error", signal: AbortSignal.timeout(FETCH_MS) });
-    if (!res.ok) return null;
-    const stated = Number(res.headers.get("content-length") ?? 0);
-    if (stated > most) return null;
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    return bytes.length <= most ? bytes : null;
-  } catch {
-    return null;
-  }
-}
 function createItemStore(opts = {}) {
-  const query = opts.query ?? queryRelays4;
+  const query = opts.query ?? queryRelays5;
   const now = opts.now ?? (() => Date.now());
-  const fetchBytes = opts.fetchBytes ?? ((url) => fetchWithin(url, ITEM_BUDGET.bytes));
+  const viewer = opts.viewer ?? (() => arrival.identity()?.pubkey ?? null);
+  const hosts = { ...opts.relays ? { relays: opts.relays } : {}, query, now };
+  const refused = /* @__PURE__ */ new Set();
   const described = /* @__PURE__ */ new Map();
   const settled = /* @__PURE__ */ new Map();
   const files2 = /* @__PURE__ */ new Map();
@@ -7282,15 +7374,24 @@ function createItemStore(opts = {}) {
   const file = (named, most) => {
     let got = files2.get(named.sha256);
     if (!got) {
-      const asking = fetchBytes(named.url).then((bytes) => {
-        if (!bytes) forgetSoon(files2, named.sha256, asking);
-        return bytes && bytes.length <= most && bytesToHex(sha256(bytes)) === named.sha256 ? bytes : null;
+      const asking = fetchByHashSaying(named.sha256, named.url, { most, viewer: viewer(), hosts, ...opts.fetchBytes ? { fetchBytes: opts.fetchBytes } : {} }).then(({ bytes, wrong }) => {
+        if (bytes) refused.delete(named.sha256);
+        else if (keptElsewhere(named.url)) refused.add(named.sha256);
+        else if (!wrong) forgetSoon(files2, named.sha256, asking);
+        return bytes;
       }).catch(() => (forgetSoon(files2, named.sha256, asking), null));
       got = asking;
       files2.set(named.sha256, got);
     }
     return got;
   };
+  onFileHostsChange(() => {
+    for (const sha of refused) {
+      files2.delete(sha);
+      models.delete(sha);
+    }
+    refused.clear();
+  });
   return {
     describe(coordinateIn) {
       const coordinate = itemCoordinate2(coordinateIn);
@@ -7298,7 +7399,7 @@ function createItemStore(opts = {}) {
       let found = described.get(coordinate);
       if (!found) {
         const [, maker, ...rest] = coordinate.split(":");
-        found = askWell({ kinds: [ITEM_KIND], authors: [maker], "#d": [rest.join(":")], limit: 4 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS6, query, timeoutMs: 4e3, now }).then((got) => {
+        found = askWell({ kinds: [ITEM_KIND], authors: [maker], "#d": [rest.join(":")], limit: 4 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS7, query, timeoutMs: 4e3, now }).then((got) => {
           const newest = got.events.filter((e) => e.kind === ITEM_KIND && e.pubkey === maker && verifyEvent5(e)).sort((a, b) => b.created_at - a.created_at)[0];
           const item = newest ? parseItem(newest) : null;
           return item && item.id === coordinate ? item : null;
@@ -7318,7 +7419,7 @@ function createItemStore(opts = {}) {
       if (!got) {
         const asking = file(named.model, ITEM_BUDGET.bytes).then((bytes) => {
           const read = bytes ? readGlb(bytes) : null;
-          if (!bytes) forgetSoon(models, named.model.sha256, asking);
+          if (!bytes && !refused.has(named.model.sha256)) forgetSoon(models, named.model.sha256, asking);
           return bytes && read?.ok ? { bytes, count: read.count } : null;
         });
         got = asking;
@@ -7330,6 +7431,7 @@ function createItemStore(opts = {}) {
       const named = item.sounds[name];
       return named && showsItems() ? file(named, ITEM_BUDGET.sound) : null;
     },
+    elsewhere: (item) => [item.model, item.script].some((f) => !!f && refused.has(f.sha256)),
     async script(item) {
       if (!item.script || !showsItems()) return null;
       const bytes = await file(item.script, SCRIPT_LIMITS.bytes);
@@ -7363,14 +7465,14 @@ function tinted(root, item, tints) {
   root.traverse((o) => {
     const mesh = o;
     if (!mesh.isMesh) return;
-    const own = (material) => {
+    const own2 = (material) => {
       const slot = tintSlot(material.name);
       if (!slot || !item.tints.some((t) => t.slot === slot)) return material;
       const copy = material.clone();
       copy.userData = { ...copy.userData, nswpTint: slot, nswpGlows: (material.emissive?.getHex() ?? 0) !== 0 };
       return copy;
     };
-    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(own) : own(mesh.material);
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(own2) : own2(mesh.material);
   });
   applyTints(root, item, tints);
   return root;
@@ -7727,8 +7829,8 @@ function createPlay(o) {
   let markUntil = 0;
   const accent = () => o.theme?.().accent ?? "#7be495";
   const lively = () => (o.theme?.().motion ?? true) && !isPresenting();
-  const own = { value: HEALTH.full, full: HEALTH.full, struckAt: -1e9, downUntil: 0, shownUntil: 0, regenAt: 0, flash: 0, painted: -1, shown: 0 };
-  const ownBar = drawn(384, 64, (g) => paintHealth(g, 384, 64, { value: own.value, full: own.full, accent: accent() }));
+  const own2 = { value: HEALTH.full, full: HEALTH.full, struckAt: -1e9, downUntil: 0, shownUntil: 0, regenAt: 0, flash: 0, painted: -1, shown: 0 };
+  const ownBar = drawn(384, 64, (g) => paintHealth(g, 384, 64, { value: own2.value, full: own2.full, accent: accent() }));
   ownBar.scale.set(0.3, 0.05, 1);
   ownBar.material.opacity = 0;
   ownBar.visible = false;
@@ -7757,16 +7859,16 @@ function createPlay(o) {
   glitch.visible = false;
   hud.add(cross, mark, ownBar, edge, glitch);
   const paintOwn = () => {
-    const down = own.downUntil > 0;
-    const growing = own.regenAt ? (clock - own.regenAt) / HEALTH.regenSeconds : 0;
-    repaint(ownBar, (g, cw, ch) => paintHealth(g, cw, ch, { value: own.value, full: own.full, accent: accent(), growing, down }));
-    own.painted = clock;
+    const down = own2.downUntil > 0;
+    const growing = own2.regenAt ? (clock - own2.regenAt) / HEALTH.regenSeconds : 0;
+    repaint(ownBar, (g, cw, ch) => paintHealth(g, cw, ch, { value: own2.value, full: own2.full, accent: accent(), growing, down }));
+    own2.painted = clock;
   };
   const sayState = () => {
-    const said = buildState({ name: "health", value: own.value, full: own.full });
+    const said = buildState({ name: "health", value: own2.value, full: own2.full });
     if (said && o.me()) o.tell(said);
     paintOwn();
-    own.shownUntil = clock + 2.5;
+    own2.shownUntil = clock + 2.5;
     o.onChange?.();
   };
   const soundOf = (item2, name) => {
@@ -7964,12 +8066,12 @@ function createPlay(o) {
     const said = buildHit({ by: thing.by, id: thing.shot.id, at: [at.x - me.feet.x, at.y - me.feet.y, at.z - me.feet.z] });
     if (said) o.tell(said);
     hear(thing.item, thing.send.strikes, null);
-    if (effect && clock >= own.downUntil) {
-      own.value = struck(own.value, effect.take);
-      own.struckAt = clock;
-      own.regenAt = 0;
-      own.flash = 1;
-      if (own.value === 0) own.downUntil = clock + HEALTH.downSeconds;
+    if (effect && clock >= own2.downUntil) {
+      own2.value = struck(own2.value, effect.take);
+      own2.struckAt = clock;
+      own2.regenAt = 0;
+      own2.flash = 1;
+      if (own2.value === 0) own2.downUntil = clock + HEALTH.downSeconds;
       sayState();
     }
     gone(thing);
@@ -8194,7 +8296,7 @@ function createPlay(o) {
       return words;
     },
     get health() {
-      return { value: own.value, full: own.full };
+      return { value: own2.value, full: own2.full };
     },
     heard(from, said) {
       if (!active() || muted(from)) return;
@@ -8286,37 +8388,37 @@ function createPlay(o) {
       for (const mixer of mixers.values()) mixer.update(dt);
       if (mark.visible && clock > markUntil) mark.visible = false;
       refreshOwn();
-      if (own.downUntil) {
-        if (clock >= own.downUntil) {
-          own.value = own.full;
-          own.downUntil = 0;
-          own.regenAt = 0;
+      if (own2.downUntil) {
+        if (clock >= own2.downUntil) {
+          own2.value = own2.full;
+          own2.downUntil = 0;
+          own2.regenAt = 0;
           sayState();
         }
-      } else if (own.value < own.full && clock - own.struckAt >= HEALTH.restSeconds) {
-        if (!own.regenAt) own.regenAt = clock;
-        if (clock - own.regenAt >= HEALTH.regenSeconds) {
-          own.value += 1;
-          own.regenAt = own.value < own.full ? clock : 0;
+      } else if (own2.value < own2.full && clock - own2.struckAt >= HEALTH.restSeconds) {
+        if (!own2.regenAt) own2.regenAt = clock;
+        if (clock - own2.regenAt >= HEALTH.regenSeconds) {
+          own2.value += 1;
+          own2.regenAt = own2.value < own2.full ? clock : 0;
           sayState();
         }
       }
       const on = active();
-      const down = own.downUntil > 0;
+      const down = own2.downUntil > 0;
       if (wordsSprite) wordsSprite.visible = !o.sighting?.();
       const tall = Math.tan(THREE8.MathUtils.degToRad(o.camera.fov / 2));
       const wide = tall * o.camera.aspect;
       ownBar.position.set(0, isPresenting() ? -0.3 : -tall * (o.camera.aspect < 1 ? 0.5 : 0.66), -1);
       const scale = Math.min(0.3, wide * 0.62);
       ownBar.scale.set(scale, scale / 6, 1);
-      const want = on && (own.value < own.full || clock < own.shownUntil) ? 1 : 0;
-      own.shown += (want - own.shown) * Math.min(1, dt * 9);
-      ownBar.visible = own.shown > 0.02;
-      ownBar.material.opacity = own.shown * (down && lively() ? 0.55 + 0.45 * Math.abs(Math.sin(clock * 9)) : 1);
-      if (ownBar.visible && (own.regenAt || down) && clock - own.painted > 0.08) paintOwn();
-      own.flash = Math.max(0, own.flash - dt / 0.55);
-      const low = !down && own.value < own.full && own.value <= 1;
-      const red = on && !isPresenting() ? Math.max(own.flash * 0.8, down ? 0.5 : low ? 0.2 + (lively() ? 0.1 * Math.abs(Math.sin(clock * 3.2)) : 0) : 0) : 0;
+      const want = on && (own2.value < own2.full || clock < own2.shownUntil) ? 1 : 0;
+      own2.shown += (want - own2.shown) * Math.min(1, dt * 9);
+      ownBar.visible = own2.shown > 0.02;
+      ownBar.material.opacity = own2.shown * (down && lively() ? 0.55 + 0.45 * Math.abs(Math.sin(clock * 9)) : 1);
+      if (ownBar.visible && (own2.regenAt || down) && clock - own2.painted > 0.08) paintOwn();
+      own2.flash = Math.max(0, own2.flash - dt / 0.55);
+      const low = !down && own2.value < own2.full && own2.value <= 1;
+      const red = on && !isPresenting() ? Math.max(own2.flash * 0.8, down ? 0.5 : low ? 0.2 + (lively() ? 0.1 * Math.abs(Math.sin(clock * 3.2)) : 0) : 0) : 0;
       edge.visible = red > 0.01;
       edge.material.opacity = red;
       edge.scale.set(wide * 1.2 * 1.02, tall * 1.2 * 1.02, 1);
@@ -8421,7 +8523,7 @@ function createPlay(o) {
         own: {
           cross: cross.visible,
           mark: mark.visible,
-          health: { value: own.value, full: own.full, growing: own.regenAt ? Math.min(1, (clock - own.regenAt) / HEALTH.regenSeconds) : 0, down: own.downUntil > 0, shown: own.shown },
+          health: { value: own2.value, full: own2.full, growing: own2.regenAt ? Math.min(1, (clock - own2.regenAt) / HEALTH.regenSeconds) : 0, down: own2.downUntil > 0, shown: own2.shown },
           red: edge.visible ? edge.material.opacity : 0,
           glitch: glitch.visible,
           words
@@ -8452,7 +8554,7 @@ function createPlay(o) {
         sent,
         landed,
         taken,
-        health: { value: own.value, full: own.full },
+        health: { value: own2.value, full: own2.full },
         words,
         script: scriptState,
         stoppedBecause,
@@ -8564,10 +8666,15 @@ function createPresence(d) {
     if (arriving.moving?.()) return;
     const i = pickEntryPlace(arriving.places, others, arriving.canStand);
     const to = arriving.places[i];
+    const jump = arriving.jump ?? ((fn) => fn());
     arriving = null;
     if (!to) return;
-    d.rig.position.x += to.position[0] - head.x;
-    d.rig.position.z += to.position[2] - head.z;
+    const dx = to.position[0] - head.x;
+    const dz = to.position[2] - head.z;
+    jump(() => {
+      d.rig.position.x += dx;
+      d.rig.position.z += dz;
+    });
   };
   let plainSeed;
   let dot = null;
@@ -9028,11 +9135,13 @@ function createPresence(d) {
       offsetApplied = true;
       const at = d.arrival?.() ?? null;
       if (at && at.places.length) {
-        arriving = { until: clock + ARRIVING_SECONDS, from: d.camera.getWorldPosition(new THREE9.Vector3()), places: at.places, ...at.canStand ? { canStand: at.canStand } : {}, ...at.moving ? { moving: at.moving } : {} };
+        arriving = { until: clock + ARRIVING_SECONDS, from: d.camera.getWorldPosition(new THREE9.Vector3()), places: at.places, ...at.jump ? { jump: at.jump } : {}, ...at.canStand ? { canStand: at.canStand } : {}, ...at.moving ? { moving: at.moving } : {} };
       } else {
         const off = spawnOffset(s.self.pubkey);
-        d.rig.position.x += off.x;
-        d.rig.position.z += off.z;
+        (at?.jump ?? ((fn) => fn()))(() => {
+          d.rig.position.x += off.x;
+          d.rig.position.z += off.z;
+        });
       }
     }
     s.on("status", changed);
@@ -9477,18 +9586,18 @@ function createPresence(d) {
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/room-controls.ts
 import * as THREE11 from "three";
-import { CHAT_LIMITS as CHAT_LIMITS2, cleanLightningAddress, DEFAULT_RELAYS as DEFAULT_RELAYS8, DELETION_KIND, encodeNpub as encodeNpub3, readRelayList as readRelayList4, RELAY_LIST_KIND as RELAY_LIST_KIND4, shortNpub as shortNpub7, verifyEvent as verifyEvent6 } from "@nswp/core";
+import { CHAT_LIMITS as CHAT_LIMITS2, cleanLightningAddress, DEFAULT_RELAYS as DEFAULT_RELAYS9, DELETION_KIND, encodeNpub as encodeNpub3, readRelayList as readRelayList4, RELAY_LIST_KIND as RELAY_LIST_KIND4, shortNpub as shortNpub7, verifyEvent as verifyEvent6 } from "@nswp/core";
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/messages.ts
-import { DEFAULT_RELAYS as DEFAULT_RELAYS7, isHex64 as isHex645, looksLikeWrap as looksLikeWrap2, MESSAGE_RELAYS_KIND, publishEvent as publishEvent4, queryRelays as queryRelays5, readMessageRelays, readRelayList as readRelayList3, RELAY_LIST_KIND as RELAY_LIST_KIND3, WRAP_KIND, wrapSeal, writtenWith } from "@nswp/core";
+import { DEFAULT_RELAYS as DEFAULT_RELAYS8, isHex64 as isHex645, looksLikeWrap as looksLikeWrap2, MESSAGE_RELAYS_KIND, publishEvent as publishEvent4, queryRelays as queryRelays6, readMessageRelays, readRelayList as readRelayList3, RELAY_LIST_KIND as RELAY_LIST_KIND3, WRAP_KIND, wrapSeal, writtenWith } from "@nswp/core";
 var MOST2 = 300;
 var FRESH_MS3 = 45e3;
 function createMessages(opts) {
   const { hand } = opts;
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays5;
+  const query = opts.query ?? queryRelays6;
   const publish = opts.publish ?? publishEvent4;
-  const usual = () => opts.relays ?? DEFAULT_RELAYS7;
+  const usual = () => opts.relays ?? DEFAULT_RELAYS8;
   const store = (() => {
     if (opts.storage !== void 0) return opts.storage;
     try {
@@ -9497,15 +9606,15 @@ function createMessages(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const newcomers = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   let who = null;
   let state = "off";
   let inbox = [];
-  let own = { read: [], write: [] };
+  let own2 = { read: [], write: [] };
   let monitors = { open: [], closed: [] };
   const read = /* @__PURE__ */ new Map();
   const tried = /* @__PURE__ */ new Set();
@@ -9530,7 +9639,7 @@ function createMessages(opts) {
     who = me;
     state = me && hand.ready() ? "looking" : "off";
     inbox = [];
-    own = { read: [], write: [] };
+    own2 = { read: [], write: [] };
     read.clear();
     tried.clear();
     marks = null;
@@ -9555,7 +9664,7 @@ function createMessages(opts) {
     if (hand.pubkey() !== me) return;
     const answered = !!lists && Object.values(lists.relays).some((said) => said === "eose");
     const relayList = readRelayList3(lists?.events ?? [], me);
-    own = { read: relayList?.read ?? [], write: relayList?.write ?? [] };
+    own2 = { read: relayList?.read ?? [], write: relayList?.write ?? [] };
     const found = readMessageRelays(lists?.events ?? [], me);
     if (found.length) inbox = found;
     if (!inbox.length) {
@@ -9596,10 +9705,10 @@ function createMessages(opts) {
     await looking;
   };
   const offered = () => {
-    const first2 = (own.read.length ? own.read : usual()).filter((r) => !monitors.closed.includes(r));
+    const first2 = (own2.read.length ? own2.read : usual()).filter((r) => !monitors.closed.includes(r));
     const rest = monitors.open.filter((r) => !first2.includes(r));
     const out = [...first2, ...rest].slice(0, 3);
-    return out.length ? out : (own.read.length ? own.read : usual()).slice(0, 3);
+    return out.length ? out : (own2.read.length ? own2.read : usual()).slice(0, 3);
   };
   return {
     state: () => hand.ready() && hand.pubkey() === who && who ? state : "off",
@@ -9612,7 +9721,7 @@ function createMessages(opts) {
       const relays = offered();
       const signed = await hand.reach(relays).catch(() => null);
       if (!signed) return { ok: false, said: "It couldn't be signed. Nothing was changed." };
-      const sent = await sendWell(signed, { own: own.write, usual: usual(), publish, query, now }).catch(() => null);
+      const sent = await sendWell(signed, { own: own2.write, usual: usual(), publish, query, now }).catch(() => null);
       if (!sent || sent.took === 0) return { ok: false, said: "No relay took it. Try again in a moment." };
       inbox = relays;
       state = "ready";
@@ -9671,8 +9780,8 @@ function createMessages(opts) {
       return n;
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     onNew(fn) {
       newcomers.add(fn);
@@ -10214,6 +10323,20 @@ function addRoomControls(controls, presence, opts = {}) {
       controls.say(showsPictures() ? "People's own pictures are shown over their names. Each is fetched from wherever its owner keeps it, which tells that place your address." : "No pictures are fetched or shown, here or in the next world.");
     }
   });
+  controls.add({
+    id: "files-anywhere",
+    section: "people",
+    icon: "link",
+    on: () => filesAnywhere(),
+    label: () => filesAnywhere() ? "Load people's files from anywhere: on" : "Load people's files from anywhere: off",
+    short: "Files",
+    act: () => {
+      setFilesAnywhere(!filesAnywhere());
+      controls.say(
+        filesAnywhere() ? "What people carry is fetched from wherever they keep it, in this place. The place that keeps a file learns your address, and when you were near it: anyone can choose that place. It stays off in other places until you turn it on there." : "People's files are fetched only from the file hosts you already use. Anything kept elsewhere is shown as a plain box."
+      );
+    }
+  });
   const people = () => {
     const here = presence.session ? presence.people() : [];
     if (presence.session && here.length !== headcount) controls.signal(here.length > headcount ? "join" : "leave");
@@ -10561,7 +10684,7 @@ function addRoomControls(controls, presence, opts = {}) {
     pubkey: () => worldSigner().pubkey,
     who: () => hereAs()?.name || worldSigner().name
   };
-  const usualRelays = () => opts.noteRelays ?? DEFAULT_RELAYS8;
+  const usualRelays = () => opts.noteRelays ?? DEFAULT_RELAYS9;
   let relaysKept = null;
   const ownRelays = (key) => {
     if (!key) return Promise.resolve([]);
@@ -10578,8 +10701,8 @@ function addRoomControls(controls, presence, opts = {}) {
     const to = await sendWell(note, { own: await ownRelays(note.pubkey), usual: usualRelays() }).catch(() => null);
     const kept3 = to?.took ?? 0;
     const n = to?.relays.length ?? 0;
-    const own = to?.own ?? 0;
-    const where = own === n ? `${kept3} of your ${n} relays` : own ? `${kept3} of ${n} relays: yours, and the usual ones because too few of your own were answering` : `${kept3} of the ${n} usual relays: you have published no relay list of your own`;
+    const own2 = to?.own ?? 0;
+    const where = own2 === n ? `${kept3} of your ${n} relays` : own2 ? `${kept3} of ${n} relays: yours, and the usual ones because too few of your own were answering` : `${kept3} of the ${n} usual relays: you have published no relay list of your own`;
     return kept3 ? { ok: true, said: `Sent out, to ${where}. Anyone can read it now.`, id: note.id } : { ok: false, said: "Signed, but no relay took it. It wasn't sent." };
   };
   const removeNote = async (id) => {
@@ -11230,9 +11353,9 @@ function readPad(pad) {
   }
   return { stick, from, trigger: value(0), squeeze: value(1), primary: !!button(4)?.pressed, secondary: !!button(5)?.pressed, press: from === "thumbstick" && !!button(3)?.pressed };
 }
-var DEFAULT_COMFORT = { move: "steps", turn: "steps", turnStep: 30, narrow: true, moveHand: "left" };
-var CASUAL_COMFORT = { move: "steps", turn: "steps", narrow: true };
-var INTENSE_COMFORT = { move: "smooth", turn: "smooth", narrow: false };
+var DEFAULT_COMFORT = { move: "steps", turn: "steps", turnStep: 30, narrow: true, fade: true, moveHand: "left" };
+var CASUAL_COMFORT = { move: "steps", turn: "steps", narrow: true, fade: true };
+var INTENSE_COMFORT = { move: "smooth", turn: "smooth", narrow: false, fade: false };
 var isIntense = (comfort) => comfort.move === "smooth" && comfort.turn === "smooth";
 function cleanComfort(input) {
   const out = {};
@@ -11242,6 +11365,7 @@ function cleanComfort(input) {
   if (c.turn === "steps" || c.turn === "smooth") out.turn = c.turn;
   if (c.turnStep === 30 || c.turnStep === 45 || c.turnStep === 90) out.turnStep = c.turnStep;
   if (typeof c.narrow === "boolean") out.narrow = c.narrow;
+  if (typeof c.fade === "boolean") out.fade = c.fade;
   if (c.moveHand === "left" || c.moveHand === "right") out.moveHand = c.moveHand;
   return out;
 }
@@ -11401,9 +11525,9 @@ function createXrInput(opts) {
   const accent = new THREE12.Color(opts.accent ?? 16758364);
   const came = arrivedSettings();
   let answered = came.headset !== void 0 || hasComfort() || opts.arrivedIntense === true;
-  let comfort = { ...loadComfort(), ...came.headset === "intense" ? INTENSE_COMFORT : came.headset === "casual" ? CASUAL_COMFORT : {}, ...came.turn !== void 0 ? { turnStep: came.turn } : {}, ...came.hand !== void 0 ? { moveHand: came.hand } : {}, ...came.narrow !== void 0 ? { narrow: came.narrow } : {} };
-  if (came.turn !== void 0 || came.hand !== void 0 || came.narrow !== void 0 || came.headset !== void 0) saveComfort(comfort);
-  reportSettings("hands", () => ({ turn: comfort.turnStep, hand: comfort.moveHand, narrow: comfort.narrow, ...answered ? { headset: isIntense(comfort) ? "intense" : "casual" } : {} }));
+  let comfort = { ...loadComfort(), ...came.headset === "intense" ? INTENSE_COMFORT : came.headset === "casual" ? CASUAL_COMFORT : {}, ...came.turn !== void 0 ? { turnStep: came.turn } : {}, ...came.hand !== void 0 ? { moveHand: came.hand } : {}, ...came.narrow !== void 0 ? { narrow: came.narrow } : {}, ...came.fade !== void 0 ? { fade: came.fade } : {} };
+  if (came.turn !== void 0 || came.hand !== void 0 || came.narrow !== void 0 || came.fade !== void 0 || came.headset !== void 0) saveComfort(comfort);
+  reportSettings("hands", () => ({ turn: comfort.turnStep, hand: comfort.moveHand, narrow: comfort.narrow, fade: comfort.fade, ...answered ? { headset: isIntense(comfort) ? "intense" : "casual" } : {} }));
   const loco = new Locomotion();
   const stops = [];
   const listeners = [];
@@ -11460,6 +11584,45 @@ function createXrInput(opts) {
   unpointable(vignette);
   camera.add(vignette);
   let narrow = 0;
+  const FADE_S = 0.12;
+  const sheet = new THREE12.Mesh(
+    new THREE12.PlaneGeometry(4, 4),
+    new THREE12.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0, depthTest: false, depthWrite: false })
+  );
+  sheet.position.z = -0.3;
+  sheet.renderOrder = 1e3;
+  sheet.frustumCulled = false;
+  sheet.visible = false;
+  unpointable(sheet);
+  camera.add(sheet);
+  let dark = 0;
+  let fading = null;
+  const jumps = [];
+  const jumped = [];
+  const made = (fn) => {
+    jumped.push(Math.round(dark * 100) / 100);
+    if (jumped.length > 8) jumped.shift();
+    fn();
+  };
+  const jump = (fn) => {
+    if (!renderer.xr.isPresenting || !comfort.fade) return made(fn);
+    jumps.push(fn);
+    fading = "out";
+  };
+  const tendFade = (dt) => {
+    if (fading === "out") {
+      dark = Math.min(1, dark + dt / FADE_S);
+      if (dark >= 1) {
+        for (const fn of jumps.splice(0)) made(fn);
+        fading = "in";
+      }
+    } else if (fading === "in") {
+      dark = Math.max(0, dark - dt / FADE_S);
+      if (dark <= 0) fading = null;
+    }
+    sheet.material.opacity = dark;
+    sheet.visible = dark > 0;
+  };
   let pulses = 0;
   const pulse = (slot, strength = 0.4, ms = 25) => {
     const pad = slots[slot]?.source?.gamepad;
@@ -11563,9 +11726,9 @@ function createXrInput(opts) {
       if (held.get(i)?.by === "pinch") release(i);
     }));
   });
-  const setComfort = (patch, keep3 = false) => {
+  const setComfort = (patch, keep4 = false) => {
     comfort = { ...comfort, ...cleanComfort(patch) };
-    if (keep3) {
+    if (keep4) {
       saveComfort(comfort);
       answered = true;
     }
@@ -11627,6 +11790,17 @@ function createXrInput(opts) {
         label: () => comfort.narrow ? "The view narrows while you move. Turn that off" : "Narrow the view while you move",
         short: "Narrow",
         act: () => change2({ narrow: !comfort.narrow })
+      },
+      {
+        // A jump the kit makes (a step, being stepped aside) fades to black and back: casual's default, intense's not.
+        id: "move-fade",
+        section: "moving",
+        icon: "look",
+        hidden,
+        on: () => comfort.fade,
+        label: () => comfort.fade ? "The view fades when you step. Turn that off" : "Fade the view when you step",
+        short: "Fade",
+        act: () => change2({ fade: !comfort.fade })
       }
     );
     let asking = false;
@@ -11664,6 +11838,10 @@ function createXrInput(opts) {
       aiming = [];
       narrow = 0;
       vignette.visible = false;
+      for (const fn of jumps.splice(0)) fn();
+      fading = null;
+      dark = 0;
+      sheet.visible = false;
       for (const slot of [...held.keys()]) release(slot);
     } else {
       const pads = read();
@@ -11675,7 +11853,11 @@ function createXrInput(opts) {
         }
       }
       const stepped = comfort.move === "steps";
-      if ((intent.walk[0] !== 0 || intent.walk[1] !== 0) && (!stepped || !opts.pace || opts.pace.take(Math.hypot(intent.walk[0], intent.walk[1])))) walk(intent.walk[0], intent.walk[1]);
+      if ((intent.walk[0] !== 0 || intent.walk[1] !== 0) && (!stepped || !opts.pace || opts.pace.take(Math.hypot(intent.walk[0], intent.walk[1])))) {
+        const [x, z] = intent.walk;
+        if (stepped) jump(() => walk(x, z));
+        else walk(x, z);
+      }
       for (const slot of intent.stepFrom) {
         opts.stepFrom?.(slot);
         pulse(slot, 0.35, 20);
@@ -11687,6 +11869,7 @@ function createXrInput(opts) {
       narrow += (intent.narrow - narrow) * Math.min(1, dt * (intent.narrow > narrow ? 12 : 3));
       vignette.material.uniforms.uAmount.value = narrow * 0.85;
       vignette.visible = narrow > 0.01;
+      tendFade(dt);
       slots.forEach((s, i) => {
         const kind = kindOf(s);
         if (s.model) {
@@ -11723,6 +11906,7 @@ function createXrInput(opts) {
     },
     setComfort,
     update,
+    jump,
     grabbable(object, o = {}) {
       things.set(object, { object, reach: o.reach ?? 0.1, far: o.far ?? true, pull: o.pull ?? true, release: o.release ?? "stay", ...o.onGrab ? { onGrab: o.onGrab } : {}, ...o.onRelease ? { onRelease: o.onRelease } : {} });
       return () => {
@@ -11740,6 +11924,8 @@ function createXrInput(opts) {
         aiming,
         holding: [0, 1].map((i) => held.get(i)?.thing.object.name || (held.has(i) ? "(unnamed)" : null)),
         narrow: Math.round(narrow * 100) / 100,
+        dark: Math.round(dark * 100) / 100,
+        jumped: [...jumped],
         pulses
       };
     },
@@ -13653,13 +13839,13 @@ function viewScale(metres, opts) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/scores.ts
-import { cleanBoard, cleanScore, DEFAULT_RELAYS as DEFAULT_RELAYS9, publishEvent as publishEvent5, queryRelays as queryRelays6, rankScores, readRelayList as readRelayList5, RELAY_LIST_KIND as RELAY_LIST_KIND5, SCORE_KIND, scoreWords, worldCoordinate } from "@nswp/core";
+import { cleanBoard, cleanScore, DEFAULT_RELAYS as DEFAULT_RELAYS10, publishEvent as publishEvent5, queryRelays as queryRelays7, rankScores, readRelayList as readRelayList5, RELAY_LIST_KIND as RELAY_LIST_KIND5, SCORE_KIND, scoreWords, worldCoordinate } from "@nswp/core";
 function createScores(opts) {
   const world = worldCoordinate(opts.world);
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays6;
+  const query = opts.query ?? queryRelays7;
   const publish = opts.publish ?? publishEvent5;
-  const usual = () => opts.relays ?? DEFAULT_RELAYS9;
+  const usual = () => opts.relays ?? DEFAULT_RELAYS10;
   const boards = opts.boards.filter((b) => cleanBoard(b.id));
   const boardOf = (id) => boards.find((b) => b.id === id) ?? null;
   const better = (b, a, than) => than === null || (b.order === "low" ? a < than : a > than);
@@ -13671,9 +13857,9 @@ function createScores(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:scores:${world}:${who ?? "guest"}`;
   const read = (who) => {
@@ -13775,8 +13961,8 @@ function createScores(opts) {
       return b ? scoreWords(b, score) : String(score);
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -13870,13 +14056,13 @@ function addScoreControls(controls, opts) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bag.ts
-import { BAG_KIND, bagIn, bagTints, changeBag, tintBag, DEFAULT_RELAYS as DEFAULT_RELAYS10, itemCoordinate as itemCoordinate4, newestBag, publishEvent as publishEvent6, queryRelays as queryRelays7, readRelayList as readRelayList6, RELAY_LIST_KIND as RELAY_LIST_KIND6, SITE_MARKS, verifyEvent as verifyEvent7 } from "@nswp/core";
+import { BAG_KIND, bagIn, bagTints, changeBag, tintBag, DEFAULT_RELAYS as DEFAULT_RELAYS11, itemCoordinate as itemCoordinate4, newestBag, publishEvent as publishEvent6, queryRelays as queryRelays8, readRelayList as readRelayList6, RELAY_LIST_KIND as RELAY_LIST_KIND6, SITE_MARKS, verifyEvent as verifyEvent7 } from "@nswp/core";
 var FRESH_MS4 = 6e4;
 function createBag(opts) {
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays7;
+  const query = opts.query ?? queryRelays8;
   const publish = opts.publish ?? publishEvent6;
-  const usual = () => opts.relays ?? DEFAULT_RELAYS10;
+  const usual = () => opts.relays ?? DEFAULT_RELAYS11;
   const store = (() => {
     if (opts.storage !== void 0) return opts.storage;
     try {
@@ -13885,9 +14071,9 @@ function createBag(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:bag:${who}`;
   const readKept = (who) => {
@@ -13898,7 +14084,7 @@ function createBag(opts) {
       return null;
     }
   };
-  const keep3 = (bag) => {
+  const keep4 = (bag) => {
     try {
       store?.setItem(keyFor(bag.pubkey), JSON.stringify(bag));
     } catch {
@@ -13916,13 +14102,13 @@ function createBag(opts) {
   let offered = null;
   const look = async (who) => {
     const kept2 = readKept(who);
-    const own = await ownRelays(who);
-    const got = await askWell({ kinds: [BAG_KIND], authors: [who], limit: 4 }, { own, usual: usual(), query, timeoutMs: 4e3, now }).catch(() => null);
+    const own2 = await ownRelays(who);
+    const got = await askWell({ kinds: [BAG_KIND], authors: [who], limit: 4 }, { own: own2, usual: usual(), query, timeoutMs: 4e3, now }).catch(() => null);
     const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
     const found = newestBag((got?.events ?? []).filter((e) => verifyEvent7(e)), who);
     const bag = found && kept2 ? kept2.created_at > found.created_at ? kept2 : found : found ?? kept2;
-    if (kept2 && bag === kept2 && answered && (!found || found.id !== kept2.id)) void sendWell(kept2, { own, usual: usual(), publish, query, now }).catch(() => null);
-    if (bag && bag !== kept2) keep3(bag);
+    if (kept2 && bag === kept2 && answered && (!found || found.id !== kept2.id)) void sendWell(kept2, { own: own2, usual: usual(), publish, query, now }).catch(() => null);
+    if (bag && bag !== kept2) keep4(bag);
     if (opts.me() !== who) return;
     known = { who, bag, answered, at: now() };
     changed();
@@ -13970,7 +14156,7 @@ function createBag(opts) {
     const signed = made ? await opts.hand.sign(made).catch(() => null) : null;
     const same = signed && verifyEvent7(signed) && signed.pubkey === who && signed.kind === BAG_KIND && JSON.stringify(signed.tags.filter((t) => !SITE_MARKS.includes(t[0] ?? ""))) === JSON.stringify(made.tags);
     if (!signed || !same) return { ok: false, why: "refused", said: "It couldn't be signed. Your bag is as it was." };
-    keep3(signed);
+    keep4(signed);
     known = { who, bag: signed, answered: true, at: now() };
     changed();
     const sent = await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
@@ -13996,7 +14182,7 @@ function createBag(opts) {
     const signed = made ? await opts.hand.sign(made).catch(() => null) : null;
     const same = signed && verifyEvent7(signed) && signed.pubkey === who && signed.kind === BAG_KIND && JSON.stringify(signed.tags.filter((t) => !SITE_MARKS.includes(t[0] ?? ""))) === JSON.stringify(made.tags);
     if (!signed || !same) return;
-    keep3(signed);
+    keep4(signed);
     known = { who, bag: signed, answered: true, at: now() };
     changed();
     await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
@@ -14027,8 +14213,8 @@ function createBag(opts) {
     add: (item, title = "") => change2(item, true, title),
     remove: (item, title = "") => change2(item, false, title),
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -14041,7 +14227,7 @@ import * as THREE17 from "three";
 var KEPT = 36;
 function createItemPreviews(o) {
   const size = o.size ?? 256;
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const ready = /* @__PURE__ */ new Map();
   let stage;
   const keyOf = (item, tints) => `${item.id}|${item.model.sha256}|${JSON.stringify(tints ?? {})}`;
@@ -14117,7 +14303,7 @@ function createItemPreviews(o) {
         const ball = box.getBoundingSphere(new THREE17.Sphere());
         if (!Number.isFinite(ball.radius) || ball.radius <= 0) return void ready.delete(key);
         ready.set(key, { object, middle: ball.center.clone(), radius: ball.radius, still: null, live: null });
-        for (const fn of watchers3) fn();
+        for (const fn of watchers4) fn();
       },
       () => void again(key)
     );
@@ -14132,7 +14318,7 @@ function createItemPreviews(o) {
     setTimeout(() => {
       if (ready.get(key) !== null) return;
       ready.delete(key);
-      for (const fn of watchers3) fn();
+      for (const fn of watchers4) fn();
     }, AGAIN_MS2 * n);
   }
   return {
@@ -14148,7 +14334,7 @@ function createItemPreviews(o) {
       return made.live = draw(made, angle, made.live);
     },
     onChange(fn) {
-      watchers3.add(fn);
+      watchers4.add(fn);
     }
   };
 }
@@ -14295,7 +14481,8 @@ function addBagControls(controls, opts) {
           proven: false,
           sub: `Made by ${item.maker.slice(0, 8)}\u2026`,
           copy: item.id,
-          text: item.summary,
+          // Drawn as a plain box because its files are kept somewhere they don't load files from: said, with what to do.
+          text: items.elsewhere?.(item) ? `${item.summary ? `${item.summary} ` : ""}Kept somewhere you don't load files from, so it is shown as a plain box. "Load people's files from anywhere", under People, would fetch it.` : item.summary,
           picture: "",
           color: "",
           now: [],
@@ -14444,6 +14631,8 @@ function addBagControls(controls, opts) {
           icon: "save",
           picture: still(item),
           on: () => chosen === item,
+          // In the bag (and in hand, which is in the bag): the bag in its corner.
+          mark: "bag",
           label: () => `${titleOf(item)}${opts.holding() === item ? ", in your hand" : ""}`,
           short: () => titleOf(item),
           act: choose(item)
@@ -14460,7 +14649,9 @@ function addBagControls(controls, opts) {
           icon: "save",
           picture: still(item),
           on: () => chosen === item,
-          label: () => `${titleOf(item)}, offered here`,
+          // Not theirs yet: greyed, and still theirs to choose and take.
+          faint: () => true,
+          label: () => `${titleOf(item)}, offered here, not in your bag`,
           short: () => titleOf(item),
           act: choose(item)
         })
@@ -14734,13 +14925,13 @@ function addItemControls(controls, o) {
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/door-ratings.ts
-import { DEFAULT_RELAYS as DEFAULT_RELAYS11, queryRelays as queryRelays8, RATING_KIND, tallyMark, tallyRatings, worldCoordinate as worldCoordinate2 } from "@nswp/core";
+import { DEFAULT_RELAYS as DEFAULT_RELAYS12, queryRelays as queryRelays9, RATING_KIND, tallyMark, tallyRatings, worldCoordinate as worldCoordinate2 } from "@nswp/core";
 var FRESH_MS5 = 5 * 6e4;
 function createDoorRatings(opts) {
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays8;
+  const query = opts.query ?? queryRelays9;
   const doors = new Map(opts.doors.map((d) => [worldCoordinate2(d.world), d.url]).filter(([world]) => world));
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   let events = [];
   let asked = 0;
   let askedFor = null;
@@ -14760,18 +14951,18 @@ function createDoorRatings(opts) {
           events = [];
           askedFor = null;
           asked = 0;
-          for (const fn of watchers3) fn();
+          for (const fn of watchers4) fn();
         }
         return;
       }
       if (!fresh && askedFor === me && now() - asked < FRESH_MS5) return;
       asked = now();
       askedFor = me;
-      const got = await askWell({ kinds: [RATING_KIND], "#a": [...doors.keys()], limit: 500 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS11, query, timeoutMs: 4e3, now }).catch(() => null);
+      const got = await askWell({ kinds: [RATING_KIND], "#a": [...doors.keys()], limit: 500 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS12, query, timeoutMs: 4e3, now }).catch(() => null);
       if (opts.me() !== me) return;
       const byId = new Map((got?.events ?? []).filter((e) => e.kind === RATING_KIND).map((e) => [e.id, e]));
       events = [...byId.values()];
-      for (const fn of watchers3) fn();
+      for (const fn of watchers4) fn();
     },
     tally,
     mark: (world) => tallyMark(tally(world)),
@@ -14785,8 +14976,8 @@ function createDoorRatings(opts) {
       return `Rated ${stars}, by ${t.mine ? `you and ${them}` : them}`;
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
@@ -14803,9 +14994,9 @@ function someOf(names, most = 3) {
   return rest > 0 ? `${shown2} and ${rest} more` : shown2;
 }
 function worldPersonLines(o) {
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   let asked = 0;
   const read = () => {
@@ -14831,20 +15022,20 @@ function worldPersonLines(o) {
       return out;
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     }
   };
 }
 
 // ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/achievements.ts
-import { achievementsIn, cleanAchievementId, DEFAULT_RELAYS as DEFAULT_RELAYS12, publishEvent as publishEvent7, queryRelays as queryRelays9, readRelayList as readRelayList7, RELAY_LIST_KIND as RELAY_LIST_KIND7, ACHIEVEMENT_KIND, worldCoordinate as worldCoordinate3 } from "@nswp/core";
+import { achievementsIn, cleanAchievementId, DEFAULT_RELAYS as DEFAULT_RELAYS13, publishEvent as publishEvent7, queryRelays as queryRelays10, readRelayList as readRelayList7, RELAY_LIST_KIND as RELAY_LIST_KIND7, ACHIEVEMENT_KIND, worldCoordinate as worldCoordinate3 } from "@nswp/core";
 function createAchievements(opts) {
   const world = worldCoordinate3(opts.world);
   const now = opts.now ?? (() => Date.now());
-  const query = opts.query ?? queryRelays9;
+  const query = opts.query ?? queryRelays10;
   const publish = opts.publish ?? publishEvent7;
-  const usual = () => opts.relays ?? DEFAULT_RELAYS12;
+  const usual = () => opts.relays ?? DEFAULT_RELAYS13;
   const list = opts.list.filter((a) => cleanAchievementId(a.id) && a.title);
   const one = (id) => list.find((a) => a.id === id) ?? null;
   const store = (() => {
@@ -14855,10 +15046,10 @@ function createAchievements(opts) {
       return null;
     }
   })();
-  const watchers3 = /* @__PURE__ */ new Set();
+  const watchers4 = /* @__PURE__ */ new Set();
   const earners = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers3) fn();
+    for (const fn of watchers4) fn();
   };
   const keyFor = (who) => `nswp:achievements:${world}:${who ?? "guest"}`;
   const held = /* @__PURE__ */ new Map();
@@ -14918,13 +15109,13 @@ function createAchievements(opts) {
       const kept2 = of(who);
       const waiting = earned().filter((id) => !kept2.shown.includes(id));
       if (waiting.length === 0) return { ok: true, said: earned().length ? "Everything you have earned here is already shown." : "You haven't earned anything here yet." };
-      const own = await ownRelays(who);
+      const own2 = await ownRelays(who);
       let done = 0;
       for (const id of waiting) {
         const a = one(id);
         const signed = await opts.hand.sign(world, id, a.title).catch(() => null);
         if (!signed) break;
-        const sent = await sendWell(signed, { own, usual: usual(), publish, query, now }).catch(() => null);
+        const sent = await sendWell(signed, { own: own2, usual: usual(), publish, query, now }).catch(() => null);
         if (!sent || sent.took === 0) break;
         kept2.shown.push(id);
         if (!kept2.earned.includes(id)) kept2.earned.push(id);
@@ -14955,8 +15146,8 @@ function createAchievements(opts) {
       return list.filter((a) => theirs.has(a.id));
     },
     onChange(fn) {
-      watchers3.add(fn);
-      return () => void watchers3.delete(fn);
+      watchers4.add(fn);
+      return () => void watchers4.delete(fn);
     },
     onEarn(fn) {
       earners.add(fn);
@@ -15176,7 +15367,7 @@ function createSounds(o = {}) {
       return null;
     }
   };
-  const own = /* @__PURE__ */ new Map();
+  const own2 = /* @__PURE__ */ new Map();
   const fromKit = /* @__PURE__ */ new Map();
   const loadInto = (into, files2) => {
     for (const [cue, addresses] of Object.entries(files2)) {
@@ -15202,7 +15393,7 @@ function createSounds(o = {}) {
   const loadCues = () => {
     if (cuesAsked || disposed) return;
     cuesAsked = true;
-    loadInto(own, theme.cues);
+    loadInto(own2, theme.cues);
     void kitReady.then(() => {
       const rest = Object.fromEntries(Object.entries(kit.cues).filter(([cue]) => theme.cues[cue] === void 0));
       loadInto(fromKit, rest);
@@ -15241,7 +15432,7 @@ function createSounds(o = {}) {
     const stepped = cue === "step" ? stepShape(foot++) : null;
     const shape = stepped ? { ...stepped, gain: stepped.gain * louder } : from ? heardFrom(from) : null;
     const out = shape ? shaped(shape) : effects;
-    const files2 = own.get(cue) ?? fromKit.get(cue);
+    const files2 = own2.get(cue) ?? fromKit.get(cue);
     if (files2?.length) {
       const which = nextVariant(files2.length, lastVariant.get(cue) ?? -1);
       lastVariant.set(cue, which);
@@ -16166,7 +16357,7 @@ function addCameraControls(controls, d) {
     controls.say(text);
   };
   let latest = null;
-  const keep3 = (capture) => {
+  const keep4 = (capture) => {
     latest = capture;
     d.onCapture?.(capture);
     if (presenting()) {
@@ -16181,7 +16372,7 @@ function addCameraControls(controls, d) {
     try {
       const hide = d.hide?.() ?? [];
       const blob = kind === "selfie" ? await takeSelfie(d.renderer, d.scene, d.camera, d.look?.() ?? plain, { hide }) : await takePicture(d.renderer, d.scene, d.camera, { hide });
-      keep3({ kind, blob, name: `${name}-${kind === "selfie" ? "selfie-" : ""}${stamp()}.jpg` });
+      keep4({ kind, blob, name: `${name}-${kind === "selfie" ? "selfie-" : ""}${stamp()}.jpg` });
     } catch {
       tell("That picture couldn't be taken on this device.");
     }
@@ -16189,7 +16380,7 @@ function addCameraControls(controls, d) {
   const finish = (blob) => {
     clip = null;
     d.recording?.(false);
-    keep3({ kind: "clip", blob, name: `${name}-clip-${stamp()}.${blob.type.includes("mp4") ? "mp4" : "webm"}` });
+    keep4({ kind: "clip", blob, name: `${name}-clip-${stamp()}.${blob.type.includes("mp4") ? "mp4" : "webm"}` });
   };
   controls.addSection({ id: "camera", label: "Camera", icon: "camera", note: () => clip ? `Recording: ${Math.floor(clip.seconds())} s. Others in the room can see that you are.` : last });
   controls.add(
