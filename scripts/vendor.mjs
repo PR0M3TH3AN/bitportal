@@ -97,8 +97,8 @@ if (take("nswp", "@nswp/core")) {
   // Core and three stay external so BitPortal's own build supplies one of each.
   // With them, the visitor's menu as a client carries it (`nswp-sdk/menu`: the page that keeps the screen draws it
   // above a framed world) and a world's end of that (`nswp-sdk/menu-above`: what this site's own pages say to it).
-  // Neither loads Three.js.
-  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), join(repo, "packages/sdk/src/terminal.ts"), join(repo, "packages/sdk/src/menu.ts"), join(repo, "packages/sdk/src/menu-above.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit", cwd: repo });
+  // Neither loads Three.js. Nor does the visitor's Bag for such a page (`nswp-sdk/bag`, the kit's bag-entry.ts).
+  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), join(repo, "packages/sdk/src/terminal.ts"), join(repo, "packages/sdk/src/menu.ts"), join(repo, "packages/sdk/src/menu-above.ts"), join(repo, "packages/sdk/src/bag-entry.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit", cwd: repo });
   execFileSync(tsc, ["-p", join(repo, "packages/sdk"), "--noEmit", "false", "--emitDeclarationOnly", "--declaration", "--rootDir", join(repo, "packages/sdk/src"), "--outDir", join(out, "sdk-types")], { stdio: "inherit" });
   // Its licence, and the notices for the libraries built into these files, travel with them.
   for (const name of ["LICENSE", "THIRD-PARTY-NOTICES.md"]) cpSync(join(repo, name), join(out, name));

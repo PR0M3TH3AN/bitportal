@@ -1,15 +1,10 @@
 import {
+  createUiChat
+} from "./shared-GK2URPYT.js";
+import {
   arrivedSettings,
-  askClientForScreen,
-  clientHoldsScreen,
-  clientScreenFilled,
-  createUiChat,
-  currentForm,
-  framed,
-  meetClient,
-  onClientScreen,
   reportSettings
-} from "./shared-KUNAPS23.js";
+} from "./shared-YBP57Z2Q.js";
 
 // packages/sdk/src/ui/icons.ts
 var ICONS = {
@@ -117,173 +112,6 @@ function rgb(hex) {
   const n = Number.parseInt(hex.slice(1), 16);
   return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
 }
-
-// packages/sdk/src/ui/fullscreen.ts
-var resumed = false;
-var waiting = false;
-var FULL_KEY = "nswp:full";
-var prefers = false;
-var keepFull = (on) => {
-  prefers = on;
-  try {
-    if (on) localStorage.setItem(FULL_KEY, "1");
-    else localStorage.removeItem(FULL_KEY);
-  } catch {
-  }
-};
-var prefersFullscreen = () => prefers;
-var held = false;
-var holdFullscreen = (on) => {
-  held = on;
-};
-function resumeFullscreen(presenting = () => false) {
-  if (resumed || typeof document === "undefined") return;
-  resumed = true;
-  const came = arrivedSettings().full;
-  let kept = false;
-  try {
-    kept = localStorage.getItem(FULL_KEY) === "1";
-  } catch {
-  }
-  if (came === void 0) prefers = kept;
-  else keepFull(came);
-  reportSettings("screen", () => ({ full: prefers }));
-  meetClient();
-  const mayAsk = framed();
-  waiting = prefers && (document.fullscreenEnabled && !document.fullscreenElement || mayAsk);
-  if (!waiting) return;
-  const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
-  const stop = () => {
-    waiting = false;
-    for (const type of presses) removeEventListener(type, onPress, true);
-    document.removeEventListener("fullscreenchange", onChange);
-    forget();
-  };
-  const onChange = () => {
-    if (document.fullscreenElement || clientScreenFilled()) stop();
-  };
-  const forget = onClientScreen(onChange);
-  const onPress = (e) => {
-    if (e.code === "Escape" || held || presenting() || document.fullscreenElement) return;
-    if (clientHoldsScreen()) return void (clientScreenFilled() ? stop() : askClientForScreen(true));
-    if (!document.fullscreenEnabled) return;
-    void document.documentElement.requestFullscreen().then(stop, () => {
-    });
-  };
-  for (const type of presses) addEventListener(type, onPress, true);
-  document.addEventListener("fullscreenchange", onChange);
-  onChange();
-}
-var isFilled = () => clientHoldsScreen() ? clientScreenFilled() : !!document.fullscreenElement;
-var canFill = () => clientHoldsScreen() || document.fullscreenEnabled;
-var fullscreenWaiting = () => waiting && canFill() && !isFilled();
-function fullscreenAction(controls, presenting) {
-  resumeFullscreen(presenting);
-  presentingNow = presenting;
-  watchEscape();
-  setTimeout(() => {
-    if (waiting && !held && !presenting() && canFill() && !isFilled()) controls.say("Press any key, or click, to fill the screen again.");
-  }, 600);
-  onClientScreen(() => controls.setTarget(""));
-  return {
-    id: "fullscreen",
-    section: "view",
-    icon: "full",
-    on: () => prefers,
-    // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
-    hidden: () => !canFill() || presenting(),
-    // It says what they prefer, in every world, and whether the screen is filled just now.
-    label: () => !prefers ? "Fullscreen: off" : isFilled() ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
-    act: async () => {
-      const fill = !isFilled();
-      if (!fill) keepFull(false);
-      if (clientHoldsScreen()) {
-        if (fill) keepFull(true);
-        askClientForScreen(fill);
-        return void controls.setTarget("");
-      }
-      try {
-        if (fill) {
-          await document.documentElement.requestFullscreen();
-          keepFull(true);
-        } else await leaveFullscreen();
-      } catch {
-        controls.say("This browser wouldn't go fullscreen.");
-      }
-      controls.setTarget("");
-    }
-  };
-}
-var keyboard = () => typeof navigator === "undefined" ? void 0 : navigator.keyboard;
-var holding = false;
-var leaving = false;
-var watching = false;
-var leftByBrowser = /* @__PURE__ */ new Set();
-function onBrowserLeftFullscreen(fn) {
-  leftByBrowser.add(fn);
-  return () => void leftByBrowser.delete(fn);
-}
-function watchEscape() {
-  if (watching || typeof document === "undefined") return;
-  watching = true;
-  let wasFilled = !!document.fullscreenElement;
-  const onChange = () => {
-    const filled = !!document.fullscreenElement;
-    if (filled) {
-      holding = false;
-      try {
-        const asked = keyboard()?.lock?.(["Escape"]);
-        if (asked) void asked.then(() => holding = !!document.fullscreenElement, () => holding = false);
-      } catch {
-      }
-    } else {
-      holding = false;
-      try {
-        keyboard()?.unlock?.();
-      } catch {
-      }
-      if (wasFilled && !leaving) for (const fn of [...leftByBrowser]) fn();
-      leaving = false;
-    }
-    wasFilled = filled;
-  };
-  document.addEventListener("fullscreenchange", onChange);
-}
-var escapeHeld = () => holding && typeof document !== "undefined" && !!document.fullscreenElement;
-function escapeDoes(state) {
-  if (state.menuOpen) return state.held ? "leave-fullscreen" : "close-menu";
-  return state.held ? "open-menu" : "nothing";
-}
-async function leaveFullscreen() {
-  if (typeof document === "undefined" || !document.fullscreenElement) return;
-  leaving = true;
-  try {
-    await document.exitFullscreen();
-  } catch {
-    leaving = false;
-  }
-}
-var presentingNow = () => false;
-var fullscreenButton = {
-  shown() {
-    if (typeof document === "undefined" || presentingNow()) return false;
-    return canFill() && !isFilled() && currentForm() === "desk";
-  },
-  label: "Full screen",
-  async press(controls) {
-    if (clientHoldsScreen()) {
-      keepFull(true);
-      askClientForScreen(true);
-      return;
-    }
-    try {
-      await document.documentElement.requestFullscreen();
-      keepFull(true);
-    } catch {
-      controls?.say("This browser wouldn't go fullscreen.");
-    }
-  }
-};
 
 // packages/sdk/src/ui/feed.ts
 import { CHAT_LIMITS, cleanChat, cleanLine } from "@nswp/core";
@@ -405,7 +233,7 @@ import { cleanSettings, PINS_MOST } from "@nswp/core";
 import { cleanMessage, MESSAGE_LIMITS } from "@nswp/core";
 function createUiLetters(changed, now = () => Date.now()) {
   let opts = null;
-  let waiting2 = [];
+  let waiting = [];
   let said = "";
   let version = 0;
   let count = 0;
@@ -416,14 +244,14 @@ function createUiLetters(changed, now = () => Date.now()) {
   return {
     attach(next) {
       opts = next;
-      waiting2 = [];
+      waiting = [];
       said = "";
       bump();
     },
     detach() {
       if (!opts) return;
       opts = null;
-      waiting2 = [];
+      waiting = [];
       said = "";
       bump();
     },
@@ -437,12 +265,12 @@ function createUiLetters(changed, now = () => Date.now()) {
       const words = cleanMessage(text);
       if (!words) return null;
       const line = { key: `new-${++count}`, mine: true, who: "You", text: words, at: Math.floor(now() / 1e3), state: "sending" };
-      waiting2.push(line);
+      waiting.push(line);
       said = "";
       bump();
       void mine.send(words).catch(() => ({ ok: false, said: "That wasn't sent." })).then((how) => {
         if (opts !== mine) return;
-        if (how.ok) waiting2 = waiting2.filter((l) => l !== line);
+        if (how.ok) waiting = waiting.filter((l) => l !== line);
         else line.state = "failed";
         said = how.said;
         bump();
@@ -451,7 +279,7 @@ function createUiLetters(changed, now = () => Date.now()) {
     },
     view() {
       const name = typeof opts?.with === "function" ? opts.with() : opts?.with ?? "";
-      const lines = opts ? [...opts.lines().map((l) => ({ ...l, state: "out" })), ...waiting2].sort((a, b) => a.at - b.at) : [];
+      const lines = opts ? [...opts.lines().map((l) => ({ ...l, state: "out" })), ...waiting].sort((a, b) => a.at - b.at) : [];
       return {
         ready: !!opts,
         title: name ? `${name}, privately` : "Private messages",
@@ -780,17 +608,6 @@ export {
   cleanTheme,
   resolveTheme,
   rgb,
-  prefersFullscreen,
-  holdFullscreen,
-  resumeFullscreen,
-  fullscreenWaiting,
-  fullscreenAction,
-  onBrowserLeftFullscreen,
-  watchEscape,
-  escapeHeld,
-  escapeDoes,
-  leaveFullscreen,
-  fullscreenButton,
   FEED_LIMITS,
   ago,
   STANDARD_TABS,

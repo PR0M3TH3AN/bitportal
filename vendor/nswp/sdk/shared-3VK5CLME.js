@@ -2,7 +2,7 @@ import {
   arrivedSettings,
   handUp,
   reportSettings
-} from "./shared-KUNAPS23.js";
+} from "./shared-YBP57Z2Q.js";
 
 // packages/sdk/src/sound-store.ts
 var CUES = [

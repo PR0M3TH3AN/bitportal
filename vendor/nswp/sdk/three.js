@@ -6,7 +6,6 @@ import {
   DOOR_SPACING,
   GATE_TIMES,
   INTENSE_COMFORT,
-  ITEM_BUDGET,
   JUMP_GRAVITY,
   JUMP_HEIGHT,
   JUMP_SPEED,
@@ -26,12 +25,10 @@ import {
   addRoomControls,
   addScoreControls,
   addViewControls,
-  allowScript,
   byName,
   canRecord,
   capturePanorama,
   createAchievements,
-  createBag,
   createChamber,
   createConsole,
   createCrossing,
@@ -67,11 +64,8 @@ import {
   identitySection,
   identityWords,
   isIntense,
-  itemIn,
   keyIn,
-  mayHold,
   onHereAs,
-  onItemsChange,
   ordinal,
   paintHealth,
   panoramaTexture,
@@ -79,10 +73,7 @@ import {
   readProfile,
   recordClip,
   runInBox,
-  scriptAllowed,
   seekPass,
-  setShowsItems,
-  showsItems,
   signerAction,
   signerNamed,
   someOf,
@@ -100,19 +91,11 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-COTUHKLD.js";
+} from "./shared-D4MBFQ6S.js";
 import {
   addDoorControls,
-  askWell,
-  foundRelays,
-  learnFrom,
-  publishBacked,
-  queryBacked,
-  relayBackup,
-  relaysWell,
-  sendWell,
   vouchedWords
-} from "./shared-CAXNWR2L.js";
+} from "./shared-I2ZTJEU4.js";
 import {
   browserVoice,
   computerVoice,
@@ -127,13 +110,10 @@ import {
   addSoundControls,
   createSounds,
   saveFile
-} from "./shared-AXAM7SKM.js";
+} from "./shared-3VK5CLME.js";
 import {
-  createControls,
-  fullscreenWaiting,
-  prefersFullscreen,
-  resumeFullscreen
-} from "./shared-HHYFOE7N.js";
+  createControls
+} from "./shared-OHLBJ3AU.js";
 import {
   DOUBLE_TAP,
   DRAG_LOOK,
@@ -169,9 +149,41 @@ import {
   strideOf,
   visitorFov,
   watchFov
-} from "./shared-55TX2T4S.js";
+} from "./shared-L6FYXGUA.js";
 import {
   PICTURE_LIMITS,
+  loadPicture,
+  onPicturesChange,
+  setShowsPictures,
+  showsPictures
+} from "./shared-GK2URPYT.js";
+import {
+  ITEM_BUDGET,
+  allowScript,
+  createBag,
+  itemIn,
+  mayHold,
+  onItemsChange,
+  scriptAllowed,
+  setShowsItems,
+  showsItems
+} from "./shared-D2ALGKZL.js";
+import {
+  askWell,
+  foundRelays,
+  learnFrom,
+  publishBacked,
+  queryBacked,
+  relayBackup,
+  relaysWell,
+  sendWell
+} from "./shared-L77KEPJY.js";
+import {
+  fullscreenWaiting,
+  prefersFullscreen,
+  resumeFullscreen
+} from "./shared-5DKD634P.js";
+import {
   arriveWith,
   arrivedSettings,
   askClientForSignIn,
@@ -181,15 +193,11 @@ import {
   currentSettings,
   deviceForms,
   formFor,
-  loadPicture,
   onClientSignIn,
-  onPicturesChange,
   reportSettings,
-  setShowsPictures,
-  showsPictures,
   startingForm,
   usedForm
-} from "./shared-KUNAPS23.js";
+} from "./shared-YBP57Z2Q.js";
 import "./shared-QLSLERQ3.js";
 export {
   CASUAL_COMFORT,

@@ -60,6 +60,7 @@ await build({
     "nswp-sdk/terminal": join(root, "vendor/nswp/sdk/terminal.js"),
     "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
     "nswp-sdk/menu-above": join(root, "vendor/nswp/sdk/menu-above.js"),
+    "nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),
   },
 });
 

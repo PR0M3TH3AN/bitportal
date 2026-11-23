@@ -127,12 +127,8 @@ check("and the very next key is the world's", (await worldKeys()) === kEsc + 1);
 await openSheet();
 await page.mouse.click(60, 300);
 await wait(900);
-// The plan's 17.2 names "a press outside it" as a way the sheet closes. The kit's menu has no such way: a press on
-// the view leaves the sheet up. What is so is written down, and is not a pass or a fail of this page's.
-const stays = await sheetOpen();
-console.log(`note a press on the view with the sheet open: the sheet ${stays ? "stays up" : "closes"}, and the keys are with the ${await active()}`);
-notes.push({ pressOnViewWithSheetOpen: { sheetStays: stays, keys: await active() } });
-if (stays) { await press(hud.getByRole("button", { name: "Close", exact: true })); await until(async () => !(await sheetOpen())); }
+// A press outside the sheet closes it (the kit's menu, from 0.85.0), and only closes it.
+check("closed by a press outside it: the frame has the keys", await holds(async () => !(await sheetOpen()) && (await active()) === "frame"), await active());
 await openSheet();
 await press(hud.getByRole("button", { name: "Close", exact: true }));
 check("closed by its own Close: the frame has the keys", await holds(async () => !(await sheetOpen()) && (await active()) === "frame"), await active());
@@ -299,6 +295,28 @@ check("the visitor's music is still playing after the door", (await page.evaluat
 check("over the room, which doesn't speak the words yet, the shell draws no menu", !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)));
 check("a door crossed: the frame has the keys", (await active()) === "frame", await active());
 await page.screenshot({ path: join(SHOTS, "shell-menu-room.png") });
+
+// ---- what a world reports from its headset session is kept, across a reload of this page
+// Said by the world's own page, as a world in a headset session says it: its description says the session is
+// running, and then what the visitor changed there. This is the world's word, not a press.
+await page.goto("about:blank");
+await page.goto(`${BASE}/shell/#to=${encodeURIComponent(`${WORLD}/`)}`);
+for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
+await wait(2500);
+await world().evaluate(() => {
+  parent.postMessage({ nswp: "menu", world: { title: "The Grove", level: "full", keys: true, state: { headset: { supported: true, presenting: true } }, target: [], loading: null, sections: [] } }, "*");
+  parent.postMessage({ nswp: "menu", settings: { turn: 90, hand: "left", fade: false, filesAnywhere: true, holding: { item: "x" } } }, "*");
+});
+await wait(600);
+const keptNow = await page.evaluate(() => JSON.parse(localStorage.getItem("bitportal:reported") ?? "null"));
+check("a world's headset report is kept for this site: comfort only, by the kit's list", keptNow && keptNow.turn === 90 && keptNow.hand === "left" && keptNow.fade === false && !("filesAnywhere" in keptNow) && !("holding" in keptNow), keptNow);
+await page.goto("about:blank");
+await page.goto(`${BASE}/shell/#to=${encodeURIComponent(`${WORLD}/`)}`);
+for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
+await wait(1500);
+const toldAfter = await world().evaluate(() => window.__told.find((w) => w.has === true)?.settings ?? null);
+check("and after this page is loaded again, the next world is told it", toldAfter && toldAfter.turn === 90 && toldAfter.hand === "left" && toldAfter.fade === false, toldAfter && { turn: toldAfter.turn, hand: toldAfter.hand, fade: toldAfter.fade });
+await page.evaluate(() => localStorage.removeItem("bitportal:reported"));
 
 // ---- through a door: the Airlock, and the next world, under the same menu
 const OTHER = process.env.OTHER ?? WORLD.replace(/:(\d+)$/, (_, p) => `:${Number(p) - 1}`);
