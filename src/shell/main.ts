@@ -102,6 +102,8 @@ addEventListener("message", (e: MessageEvent) => {
   if (!said || typeof said !== "object") return;
   if (said.nswp === "here") {
     cameUp();
+    // A panel kept for the last place is not for this one, unless this is a page of the same origin.
+    panel?.placeIs(e.origin);
     // Where they are, to come back to: a page of this site by its path, a world by its address. Never the
     // Airlock, which is a moment on the way, and never anything but a place that may be shown here.
     const at = typeof said.at === "string" && said.at.startsWith("/") && said.at.length <= 300 ? said.at : "/";
@@ -148,7 +150,8 @@ let heard = false;
 /** Waiting, after a page loaded without saying, for it to say so late. */
 let unheard: ReturnType<typeof setTimeout> | null = null;
 view.addEventListener("load", () => {
-  // A panel that was up was for the place that has gone.
+  // A panel that was up was for the place that has gone. Its frame is kept, hidden, until this place says whose it
+  // is ("here"); a place that never says is never shown the panel at all.
   panel?.close();
   // A page came into the frame and never said where it is (a browser's own "refused to connect", say): what was
   // kept is no longer where they are, so a refresh comes back to the room instead of an older place.
