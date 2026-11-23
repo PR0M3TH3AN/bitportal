@@ -77,7 +77,9 @@ function take(name, key) {
 
 // --- NSWP core: one ESM file plus type declarations -------------------------
 if (take("nswp", "@nswp/core")) {
-  const repo = join(siblings, "Nostr-Spatial-Web-Protocol--NSWP-");
+  // Beside this repo, or wherever NSWP_CHECKOUT says (a clean clone at the commit a kit version was cut from, when
+  // the checkout beside this one has moved on or has work in progress). Whichever it is, it is taken the same way.
+  const repo = process.env.NSWP_CHECKOUT || join(siblings, "Nostr-Spatial-Web-Protocol--NSWP-");
   const src = sourceInfo(repo);
   const out = join(root, "vendor", "nswp");
   rmSync(out, { recursive: true, force: true });
@@ -85,13 +87,18 @@ if (take("nswp", "@nswp/core")) {
   const esbuild = join(repo, "node_modules", ".bin", "esbuild");
   const tsc = join(repo, "node_modules", ".bin", "tsc");
   if (!existsSync(esbuild)) throw new Error(`run npm install in ${repo} first`);
-  execFileSync(esbuild, [join(repo, "packages/core/src/index.ts"), "--bundle", "--format=esm", "--target=es2022", `--outfile=${join(out, "nswp-core.js")}`, "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
+  // Run from the kit's own folder: a bundle names each source file in a comment, by its path from where the bundler
+  // ran. From there the names are the same wherever the checkout is, so the same commit gives the same bytes.
+  execFileSync(esbuild, [join(repo, "packages/core/src/index.ts"), "--bundle", "--format=esm", "--target=es2022", `--outfile=${join(out, "nswp-core.js")}`, "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit", cwd: repo });
   execFileSync(tsc, ["-p", join(repo, "packages/core"), "--emitDeclarationOnly", "--declaration", "--outDir", join(out, "types")], { stdio: "inherit" });
   // The SDK's Three.js parts: presence (avatars, voice, room controls), the
   // home renderer, and the terminal panel (with its emulator, which only the
   // room loads, and only when a terminal is opened). Built together so they share one copy of what both use.
   // Core and three stay external so BitPortal's own build supplies one of each.
-  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), join(repo, "packages/sdk/src/terminal.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit" });
+  // With them, the visitor's menu as a client carries it (`nswp-sdk/menu`: the page that keeps the screen draws it
+  // above a framed world) and a world's end of that (`nswp-sdk/menu-above`: what this site's own pages say to it).
+  // Neither loads Three.js.
+  execFileSync(esbuild, [join(repo, "packages/sdk/src/three.ts"), join(repo, "packages/sdk/src/home.ts"), join(repo, "packages/sdk/src/ui.ts"), join(repo, "packages/sdk/src/terminal.ts"), join(repo, "packages/sdk/src/menu.ts"), join(repo, "packages/sdk/src/menu-above.ts"), "--bundle", "--splitting", "--format=esm", "--target=es2022", "--external:@nswp/core", "--external:three", `--outdir=${join(out, "sdk")}`, "--chunk-names=shared-[hash]", "--legal-comments=inline", "--log-level=warning"], { stdio: "inherit", cwd: repo });
   execFileSync(tsc, ["-p", join(repo, "packages/sdk"), "--noEmit", "false", "--emitDeclarationOnly", "--declaration", "--rootDir", join(repo, "packages/sdk/src"), "--outDir", join(out, "sdk-types")], { stdio: "inherit" });
   // Its licence, and the notices for the libraries built into these files, travel with them.
   for (const name of ["LICENSE", "THIRD-PARTY-NOTICES.md"]) cpSync(join(repo, name), join(out, name));

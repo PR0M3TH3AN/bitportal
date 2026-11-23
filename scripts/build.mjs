@@ -46,6 +46,8 @@ await build({
     "nswp-sdk/home": join(root, "vendor/nswp/sdk/home.js"),
     "nswp-sdk/ui": join(root, "vendor/nswp/sdk/ui.js"),
     "nswp-sdk/terminal": join(root, "vendor/nswp/sdk/terminal.js"),
+    "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
+    "nswp-sdk/menu-above": join(root, "vendor/nswp/sdk/menu-above.js"),
   },
 });
 
@@ -119,6 +121,13 @@ const cspFramed = rulesFor({ framedBy: "'self'" });
 // nothing to reach (`ITEM_BOX_CSP`). Nothing else of BitPortal's is ever framed by it.
 const cspRoom = rulesFor({ frames: ["'self'"], framedBy: "'self'" });
 const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });
+// The page that keeps the screen is trusted by name by the sign-in address, and draws the visitor's menu over other
+// people's worlds. Its rules are written out here a second time, word for word, and the build stops if what
+// `rulesFor` made differs: a change to the rules every page shares can't loosen this page's without being made here
+// too, where it is seen (NSWP docs/plans/the-clients-menu.md, 17.1). Only whom it frames comes from elsewhere: this
+// site, the worlds named in shell-worlds.json, and the sign-in address.
+const cspShellWritten = `default-src 'self'; script-src 'self'; worker-src 'self'; frame-src 'self' ${[...shellWorlds, signInOrigin].join(" ")}; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https: wss:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
+if (cspShell !== cspShellWritten) throw new Error(`The rules for /shell/ differ from the ones written out for it in scripts/build.mjs.\n  made:    ${cspShell}\n  written: ${cspShellWritten}\nIf the change is meant, it needs the owner's word: that page frames the sign-in address's panel.`);
 /** What a page may use, and hand on to what it frames: `/shell/` hands a headset and a microphone to the worlds it may frame, by name. */
 const handsOn = (to = []) => `xr-spatial-tracking=(self${to.map((o) => ` "${o}"`).join("")}), microphone=(self${to.map((o) => ` "${o}"`).join("")}), camera=(), geolocation=()`;
 /**

@@ -8,22 +8,27 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-5JDYS5AU.js";
+} from "./shared-OWSUAQ4O.js";
 import {
-  ICONS,
   OFFER_ICONS
-} from "./shared-L5SGJDCD.js";
-import "./shared-DXWOPDGC.js";
+} from "./shared-CAXNWR2L.js";
+import "./shared-UBZ34GUM.js";
+import "./shared-BMAZ7AUG.js";
+import {
+  ICONS
+} from "./shared-WTJ6UI3X.js";
+import "./shared-4OUGBV3U.js";
+import "./shared-KUNAPS23.js";
 import "./shared-QLSLERQ3.js";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
+// packages/sdk/src/home.ts
 import * as THREE4 from "three";
 import { categoryWords, itemsWords, checkDestination, checkPictureBytes, encodeNaddr, LAYOUT_LIMITS, portalTarget, WORLD_KIND } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/environment.ts
+// packages/sdk/src/environment.ts
 import * as THREE2 from "three";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/models.ts
+// packages/sdk/src/models.ts
 import * as THREE from "three";
 function mouldingProfile(hw, hd, bev, c, cd) {
   return [
@@ -327,7 +332,7 @@ function addTree(b, leaf, seed = 1, tall = 2.4) {
   b.lathe([[5e-4, y + 0.16], [0.07, y + 0.27], [5e-4, y + 0.4]], [0, 0, 0], 4, () => ({ glow: 1 }), { turn });
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/environment.ts
+// packages/sdk/src/environment.ts
 var GROUND = 263947;
 function seeded(seed) {
   let s = seed >>> 0;
@@ -809,7 +814,7 @@ function createEnvironment(accent, opts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/door-offers.ts
+// packages/sdk/src/door-offers.ts
 import * as THREE3 from "three";
 import { DOOR_OFFERS } from "@nswp/core";
 var OFFER_TILE = 0.24;
@@ -930,7 +935,7 @@ ${shown.find((o) => o.id === next).words}` : "";
   return api;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/home.ts
+// packages/sdk/src/home.ts
 function addressLine(dest, category) {
   const kind = categoryWords(category);
   if (!dest.url) return kind ? `${kind} on Nostr` : "A world on Nostr";

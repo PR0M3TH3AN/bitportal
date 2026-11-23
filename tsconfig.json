@@ -15,6 +15,8 @@
       "nswp-sdk/home": ["./vendor/nswp/sdk-types/home.d.ts"],
       "nswp-sdk/ui": ["./vendor/nswp/sdk-types/ui.d.ts"],
       "nswp-sdk/terminal": ["./vendor/nswp/sdk-types/terminal.d.ts"],
+      "nswp-sdk/menu": ["./vendor/nswp/sdk-types/menu.d.ts"],
+      "nswp-sdk/menu-above": ["./vendor/nswp/sdk-types/menu-above.d.ts"],
       "bitfeed": ["./src/types/bitfeed.d.ts"]
     }
   },

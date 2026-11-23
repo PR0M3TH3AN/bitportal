@@ -30,3 +30,23 @@ describe("saying how old a world's controls are", () => {
     expect(crossingFor(facts)).toBe("straight");
   });
 });
+
+describe("the kit's menu, as a client carries it", () => {
+  it("is vendored as files of its own, beside a world's end of it, and neither names the renderer", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const recorded = JSON.parse(readFileSync(new URL("../vendor/integrity.json", import.meta.url), "utf8")) as { packages: Record<string, { files: Record<string, string> }> };
+    const files = Object.keys(recorded.packages["@nswp/core"]!.files);
+    for (const name of ["sdk/menu.js", "sdk/menu-above.js", "sdk-types/menu.d.ts", "sdk-types/menu-above.d.ts"]) expect(files, name).toContain(name);
+    for (const name of ["menu.js", "menu-above.js"]) expect(readFileSync(new URL(`../vendor/nswp/sdk/${name}`, import.meta.url), "utf8"), name).not.toMatch(/from\s*"three"/);
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    expect(build).toContain('"nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),');
+    expect(build).toContain('"nswp-sdk/menu-above": join(root, "vendor/nswp/sdk/menu-above.js"),');
+  });
+
+  it("is built from the kit's own folder, so the same commit gives the same bytes wherever its checkout is", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const core = readFileSync(new URL("../vendor/nswp/nswp-core.js", import.meta.url), "utf8");
+    expect(core).toContain("// packages/core/src/constants.ts");
+    expect(core).not.toMatch(/^\/\/ (\.\.\/|\/)/m);
+  });
+});
