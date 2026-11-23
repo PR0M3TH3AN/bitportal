@@ -129,7 +129,7 @@ const say = (words: Record<string, unknown>): void => {
  * For a page of BitPortal's that isn't made with the kit (the Airlock): say it came up, as a world's page says
  * (the kit's client-frame.ts), and ask for the screen at the visitor's first press if they prefer it filled.
  */
-export function helloShell(): void {
+export function helloShell(o: { saidByKit?: boolean } = {}): void {
   if (!inShell()) return;
   let isFilled = false;
   addEventListener("message", (e) => {
@@ -137,7 +137,10 @@ export function helloShell(): void {
     const said = e.data as { nswp?: unknown; filled?: unknown } | null;
     if (said && typeof said === "object" && said.nswp === "screen") isFilled = said.filled === true;
   });
-  say({ nswp: "here", at: location.pathname });
+  // Said here unless this page's own copy of the kit says it, which it does where the page speaks the menu's words
+  // (the Airlock: go/menu.ts). A page says `here` once: the page above takes a second as the next page's, and one
+  // that didn't say it speaks those words would undo one that did.
+  if (!o.saidByKit) say({ nswp: "here", at: location.pathname });
   let prefers = false;
   try {
     prefers = localStorage.getItem("nswp:full") === "1";

@@ -54,7 +54,8 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     // Following and Messages are still a world's to fill, until this page runs them itself (the plan's step 3).
     also: ["following", "messages"],
     home: (left) => {
-      if (left) controls.say("You are home. What was in your hand was left behind: the place you were in didn't answer.");
+      // A page of this site's own (the Airlock) holds nothing of theirs to leave behind.
+      if (left && below.origin !== location.origin) controls.say("You are home. What was in your hand was left behind: the place you were in didn't answer.");
       o.goHome();
     },
   });
@@ -102,6 +103,10 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   o.view.after(place);
   const menu = mountMenu(below.port, { parent: place });
   below.attach(menu);
+
+  // A new place has come into the frame: the sheet is put away, so nothing of the menu is over what the place shows
+  // first (the Airlock's question least of all), and the place has the keys as it arrives.
+  o.view.addEventListener("load", () => menu.setOpen(false));
 
   // No menu over a page that doesn't speak the words: such a page draws its own.
   let asked = false;

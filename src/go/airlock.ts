@@ -57,6 +57,7 @@ import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { loadSettings } from "../shared/settings.js";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS, carriedOn, micMayTravel, setMicMayTravel } from "../shared/travel.js";
 import { enterShell, goFrom, helloShell, linksLeaveWhole } from "../shared/shell.js";
+import "./menu.js";
 import { keptSettings, settingsToCarry } from "../shared/prefs.js";
 import { kitNote } from "../shared/kit.js";
 import { blockedToCarry, blocksToAsk, loadBlockedEverywhere, loadPendingBlocks, roomBlocks, storeBlockedEverywhere, storePendingBlocks, withBlockedEverywhere } from "../shared/blocked.js";
@@ -312,7 +313,7 @@ async function render(): Promise<void> {
   // Opened as a page of its own at a desk, it is opened again inside the page that keeps the screen filled from
   // world to world (shared/shell.ts): the same address, and everything below happens there instead.
   if (enterShell()) return;
-  helloShell();
+  helloShell({ saidByKit: true });
   // Inside the page that keeps the screen, a link to a page that won't be framed (the front page, the lobby, the
   // page a look is made on) opens in the whole page, on every screen this shows: without it the frame shows
   // "refused to connect" and the visitor is stranded (the owner, 2026-11-21).

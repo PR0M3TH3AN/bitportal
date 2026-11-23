@@ -45,7 +45,29 @@ const world = () => page.frames().find((f) => f.url().startsWith(WORLD));
 const frameNamed = (part) => page.frames().find((f) => f !== page.mainFrame() && f.url().includes(part));
 /** The shell's own menu: everything in it is under this. */
 const hud = page.locator(".shell-menu");
-const middle = async (locator) => { const b = await locator.first().boundingBox(); if (!b) throw new Error(`not on screen: ${locator}`); return [b.x + b.width / 2, b.y + b.height / 2]; };
+/**
+ * Where the middle of something is, once it has stopped moving: the sheet slides up as it opens, and a place read
+ * while it slides is a place the thing has left by the time the mouse gets there (the press then lands on the view).
+ */
+const middle = async (locator) => {
+  await locator.first().waitFor({ state: "visible", timeout: 10000 });
+  let b = await locator.first().boundingBox();
+  for (let i = 0; i < 20; i++) {
+    await wait(120);
+    const next = await locator.first().boundingBox();
+    if (b && next && Math.abs(next.x - b.x) < 0.5 && Math.abs(next.y - b.y) < 0.5) break;
+    b = next;
+  }
+  if (!b) throw new Error(`not on screen: ${locator}`);
+  return [b.x + b.width / 2, b.y + b.height / 2];
+};
+/** Wait for something to be so, for as long as a busy machine may need. */
+const until = async (so, ms = 6000) => { for (const end = Date.now() + ms; Date.now() < end; ) { if (await so().catch(() => false)) return true; await wait(100); } return false; };
+/**
+ * Whether something comes to be so and stays so. Not the same as catching it once: the keys can be given to the
+ * frame and taken back two thousandths of a second later, and a look at the right moment would call that a pass.
+ */
+const holds = async (so) => (await until(so)) && (await wait(500), await so().catch(() => false));
 /** A real press, at the middle of something of the shell's. */
 const press = async (locator) => { const [x, y] = await middle(locator); await page.mouse.click(x, y); await wait(350); };
 const active = () => page.evaluate(() => (document.activeElement === document.getElementById("view") ? "frame" : document.activeElement?.tagName ?? "nothing"));
@@ -54,19 +76,24 @@ const worldKeys = () => world().evaluate(() => window.__keys);
 const tab = (name) => hud.getByRole("tab", { name });
 /** Choose a tab of the open sheet with the keyboard's arrows, wherever the tab bar has scrolled to. */
 const goTab = async (name) => {
-  const chosen = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText().then((t) => t.trim());
-  if (await tab(name).isVisible().catch(() => false)) { const b = await tab(name).boundingBox(); if (b && b.x > 340 && b.x + b.width < 1085) { await press(tab(name)); if ((await chosen()) === name) return true; } }
-  await press(hud.locator('[role="tab"][aria-selected="true"]:visible'));
-  // One arrow at a time, waiting for the chosen tab to change before the next: a busy machine is slow to draw.
-  for (let n = 0; n < 24 && (await chosen()) !== name; n++) {
-    const was = await chosen();
-    await page.keyboard.press("ArrowRight");
-    for (let i = 0; i < 20 && (await chosen()) === was; i++) await wait(100);
+  const chosen = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText().then((t) => t.trim()).catch(() => "");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!(await sheetOpen())) { await press(hud.locator("button:visible").filter({ hasText: /^Menu/ }).first()).catch(() => {}); await wait(500); }
+    if ((await chosen()) === name) return true;
+    // The chosen tab is given the keys by a real press on it, then one arrow at a time, waiting for the chosen tab
+    // to change before the next: a busy machine is slow to draw.
+    await press(hud.locator('[role="tab"][aria-selected="true"]:visible'));
+    for (let n = 0; n < 24 && (await chosen()) !== name; n++) {
+      const was = await chosen();
+      await page.keyboard.press("ArrowRight");
+      for (let i = 0; i < 25 && (await chosen()) === was; i++) await wait(100);
+    }
+    await wait(300);
+    if ((await chosen()) === name) return true;
   }
-  await wait(300);
-  return (await chosen()) === name;
+  return false;
 };
-const openSheet = async () => { if (!(await sheetOpen())) await press(hud.getByRole("button", { name: /^Menu/ })); await wait(300); };
+const openSheet = async () => { if (!(await sheetOpen())) await press(hud.getByRole("button", { name: /^Menu/ })); await until(sheetOpen); await wait(300); };
 
 await page.goto(`${BASE}/shell/#to=${encodeURIComponent(`${WORLD}/`)}`);
 for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
@@ -93,8 +120,7 @@ check("and the world hears the next keys with no press on the view", (await worl
 await openSheet();
 check("the sheet open: the shell has the keys", (await active()) !== "frame", await active());
 await page.keyboard.press("Escape");
-await wait(900);
-check("closed by a key (Escape): the frame has the keys", !(await sheetOpen()) && (await active()) === "frame", await active());
+check("closed by a key (Escape): the frame has the keys", await holds(async () => !(await sheetOpen()) && (await active()) === "frame"), await active());
 const kEsc = await worldKeys();
 await page.keyboard.press("w");
 check("and the very next key is the world's", (await worldKeys()) === kEsc + 1);
@@ -106,11 +132,10 @@ await wait(900);
 const stays = await sheetOpen();
 console.log(`note a press on the view with the sheet open: the sheet ${stays ? "stays up" : "closes"}, and the keys are with the ${await active()}`);
 notes.push({ pressOnViewWithSheetOpen: { sheetStays: stays, keys: await active() } });
-if (stays) { await press(hud.getByRole("button", { name: "Close", exact: true })); await wait(900); }
+if (stays) { await press(hud.getByRole("button", { name: "Close", exact: true })); await until(async () => !(await sheetOpen())); }
 await openSheet();
 await press(hud.getByRole("button", { name: "Close", exact: true }));
-await wait(900);
-check("closed by its own Close: the frame has the keys", !(await sheetOpen()) && (await active()) === "frame", await active());
+check("closed by its own Close: the frame has the keys", await holds(async () => !(await sheetOpen()) && (await active()) === "frame"), await active());
 
 // ---- 17.1 (2): every tab opened, and nothing refused by this page's policy
 await openSheet();
@@ -123,7 +148,8 @@ for (let n = 0; n < 24; n++) {
   tabs.push(name);
   await wait(350);
   await page.keyboard.press("ArrowRight");
-  await wait(250);
+  // Until the chosen tab has changed: a busy machine is slow to draw it. At the last tab it doesn't change.
+  await until(async () => (await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText()).trim() !== name, 3000);
 }
 check("every tab opened, by the arrow key", tabs.length >= 10 && ["You", "Moving", "Sound", "Display", "Help"].every((t) => tabs.includes(t)), tabs);
 await page.screenshot({ path: join(SHOTS, "shell-menu-sheet.png") });
@@ -140,7 +166,7 @@ check("the sheet is down while the panel is up", !(await sheetOpen()));
 await page.screenshot({ path: join(SHOTS, "shell-menu-panel.png") });
 await page.mouse.click(60, 300);
 await wait(600);
-check("the panel closed: the frame has the keys", (await active()) === "frame", await active());
+check("the panel closed: the frame has the keys", await holds(async () => (await active()) === "frame"), await active());
 
 // ---- 17.2 (3): the shell given the keys by hand
 // Set up by a call, since nothing a visitor does here is known to move them: the keys then pressed are real.
@@ -163,7 +189,9 @@ check("so the next key is the world's", (await worldKeys()) === k1 + 1, { heard:
 await openSheet();
 if (await goTab("Camera")) {
   await press(hud.getByRole("button", { name: /Take a picture/ }));
-  for (let i = 0; i < 40 && !downloads.length; i++) await wait(200);
+  // The kit takes what a world hands up for ten seconds after the press (`MENU_SAVE_MS`). A machine drawing the
+  // world without a graphics card, and busy, can take most of that to make the picture.
+  for (let i = 0; i < 60 && !downloads.length; i++) await wait(200);
   check("Camera: a picture the world hands up is saved by this page, named by it", downloads.length === 1 && /\.(png|jpe?g|webp)$/.test(downloads[0] ?? ""), downloads);
 } else check("Camera: its tab", false);
 
@@ -271,6 +299,72 @@ check("the visitor's music is still playing after the door", (await page.evaluat
 check("over the room, which doesn't speak the words yet, the shell draws no menu", !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)));
 check("a door crossed: the frame has the keys", (await active()) === "frame", await active());
 await page.screenshot({ path: join(SHOTS, "shell-menu-room.png") });
+
+// ---- through a door: the Airlock, and the next world, under the same menu
+const OTHER = process.env.OTHER ?? WORLD.replace(/:(\d+)$/, (_, p) => `:${Number(p) - 1}`);
+const airlock = () => frameNamed("/go/");
+const continueOn = () => airlock().getByRole("button", { name: /^Continue to / });
+/** From the world, by a door of its own in the shell's menu, as far as the Airlock's question. Returns the door's name. */
+const toTheAirlock = async () => {
+  await page.goto("about:blank");
+  await page.goto(`${BASE}/shell/#to=${encodeURIComponent(`${WORLD}/`)}`);
+  for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
+  await wait(2500);
+  await openSheet();
+  await goTab("Travel");
+  const door = hud.locator("button:visible").filter({ hasText: /^The (Gallery|Observatory|Grove|Workshop)$/ }).first();
+  const name = (await door.innerText()).trim();
+  await press(door);
+  await press(hud.getByRole("button", { name: "Travel here" }));
+  for (let i = 0; i < 60 && !airlock(); i++) await wait(250);
+  if (airlock()) for (let i = 0; i < 60 && !(await continueOn().isVisible().catch(() => false)); i++) await wait(250);
+  await wait(800);
+  return name;
+};
+/** The mark, which is all of the menu that shows over the Airlock. */
+const mark = () => hud.locator("button:visible").first();
+
+let doorName = await toTheAirlock();
+check("a door of the world's, pressed in the shell's menu, leads to the Airlock", !!airlock(), doorName);
+if (airlock()) {
+  const over = await page.evaluate(() => { const b = window.__bitportalShell.below; return { speaks: b.speaks, own: b.origin === location.origin, title: b.world?.title, level: b.world?.level, tabs: b.world?.sections.length }; });
+  check("the Airlock speaks the words, as a page of this site's own, and describes no tab", over.speaks && over.own && over.title === "The Airlock" && over.tabs === 0, over);
+  check("over it the menu is one small mark: no bar, and the sheet is down", over.level === "quiet" && !(await sheetOpen()) && !(await hud.getByRole("button", { name: /^Home/ }).isVisible().catch(() => false)));
+  check("the Airlock has the keys as it arrives", (await active()) === "frame", await active());
+  // Nothing of the shell's is over the Airlock's own panel: at its corners and its middle, the thing there is the frame.
+  const card = await airlock().locator("#main section:visible").first().boundingBox();
+  const at = await page.evaluate((b) => [[b.x + 4, b.y + 4], [b.x + b.width - 4, b.y + 4], [b.x + b.width / 2, b.y + b.height / 2], [b.x + 4, b.y + b.height - 4], [b.x + b.width - 4, b.y + b.height - 4]].map(([x, y]) => document.elementFromPoint(x, y)?.id), card);
+  check("nothing of the menu is over the Airlock's panel", at.every((id) => id === "view"), at);
+  await page.screenshot({ path: join(SHOTS, "shell-menu-airlock.png") });
+  // The mark opens the visitor's tabs and the way home, and nothing of a world's.
+  await press(mark());
+  await wait(500);
+  const airlockTabs = (await hud.locator('[role="tab"]:visible').allInnerTexts()).map((t) => t.trim());
+  check("its sheet has the way home and the visitor's own tabs only", (await sheetOpen()) && airlockTabs.includes("Travel") && !airlockTabs.some((t) => ["Room", "People", "Camera", "Panels"].includes(t)), airlockTabs);
+  await page.keyboard.press("Escape");
+  check("closed again: the Airlock has the keys", await holds(async () => !(await sheetOpen()) && (await active()) === "frame"), await active());
+  // Home, pressed over the Airlock.
+  await press(mark());
+  await wait(400);
+  await goTab("Travel");
+  await press(hud.getByRole("button", { name: /^Home/ }).last());
+  for (let i = 0; i < 40 && !frameNamed("/walk/"); i++) await wait(250);
+  check("Home, pressed over the Airlock, is the room at once", !!frameNamed("/walk/"), page.frames().map((f) => new URL(f.url()).pathname));
+
+  // Again, and on through the door this time, by a real press on the Airlock's own button.
+  doorName = await toTheAirlock();
+  if (airlock()) {
+    await page.mouse.click(...(await (async () => { const b = await continueOn().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; })()));
+    const next = () => page.frames().find((f) => f.url().startsWith(OTHER));
+    for (let i = 0; i < 80 && !next(); i++) await wait(250);
+    for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
+    await wait(2000);
+    const then = await page.evaluate(() => { const b = window.__bitportalShell.below; return { speaks: b.speaks, title: b.world?.title, level: b.world?.level }; });
+    check("the next world is under the same menu, with its own name", !!next() && then.speaks && then.title === doorName && then.level === "full", then);
+    check("and has the keys as it arrives, with the sheet down", (await active()) === "frame" && !(await sheetOpen()), await active());
+    await page.screenshot({ path: join(SHOTS, "shell-menu-next-world.png") });
+  } else check("the Airlock asks a second time", false);
+}
 
 const refused = await page.evaluate(() => window.__refused);
 check("17.1 (2): nothing was refused by the shell's policy", refused.length === 0, refused);
