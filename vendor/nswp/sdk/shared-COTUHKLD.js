@@ -18,27 +18,14 @@ import {
   LEVEL_WORDS,
   MUSIC_DUCK,
   MUSIC_RANGE,
-  PANEL_LIMITS,
   STRIDE,
-  cleanLook,
-  cleanPin,
-  cleanPlace,
-  cleanRecords,
-  cleanSource,
-  createLibrary,
-  facing,
   fileStore,
-  inFront,
   levelStep,
   musicFade,
   musicToHear,
-  newId,
   nextLevel,
-  nextLook,
-  saveFile,
-  tagAlong,
-  wrapText
-} from "./shared-BMAZ7AUG.js";
+  saveFile
+} from "./shared-AXAM7SKM.js";
 import {
   FEED_LIMITS,
   ICONS,
@@ -47,7 +34,7 @@ import {
   holdFullscreen,
   resumeFullscreen,
   rgb
-} from "./shared-WTJ6UI3X.js";
+} from "./shared-HHYFOE7N.js";
 import {
   RUN,
   addDeskControls,
@@ -61,7 +48,7 @@ import {
   setAimScale,
   showsModels,
   watchFov
-} from "./shared-4OUGBV3U.js";
+} from "./shared-55TX2T4S.js";
 import {
   arriveAs,
   arriveWith,
@@ -86,7 +73,7 @@ import {
 } from "./shared-KUNAPS23.js";
 
 // packages/sdk/src/three.ts
-import * as THREE20 from "three";
+import * as THREE21 from "three";
 
 // packages/sdk/src/turn.ts
 import * as THREE from "three";
@@ -367,7 +354,7 @@ function createConsole(controls, opts) {
       });
     });
     const current = view.sections.find((s) => s.id === section);
-    const items = (current?.items ?? []).filter((item) => item.kind !== "line");
+    const items = (current?.items ?? []).filter((item) => item.kind !== "line" && item.kind !== "slider");
     const lines = (current?.items ?? []).filter((item) => item.kind === "line");
     noteNow = current?.note ?? "";
     g.font = `400 ${Math.round(24 * k)}px ${SANS}`;
@@ -709,7 +696,7 @@ function createConsole(controls, opts) {
         mount,
         section: open ? current?.id ?? "" : "",
         sections: open ? view.sections.map((s) => s.label) : [],
-        buttons: open ? [...current?.items.filter((i) => i.kind !== "line").map((i) => i.label) ?? [], ...linePages > 1 ? [`Page ${linePage + 1} of ${linePages}`] : []] : opener.visible ? ["Menu"] : [],
+        buttons: open ? [...current?.items.filter((i) => i.kind !== "line" && i.kind !== "slider").map((i) => i.label) ?? [], ...linePages > 1 ? [`Page ${linePage + 1} of ${linePages}`] : []] : opener.visible ? ["Menu"] : [],
         lines: open ? current?.items.filter((i) => i.kind === "line").map((i) => i.label) ?? [] : [],
         linesPage: { page: open ? linePage + 1 : 0, pages: open ? linePages : 0 },
         note: open ? current?.note ?? "" : "",
@@ -1426,11 +1413,11 @@ var SHA2_32B = class extends HashMD {
     this.H = IV[7] | 0;
   }
   get() {
-    const { A, B, C, D, E, F, G, H: H4 } = this;
-    return [A, B, C, D, E, F, G, H4];
+    const { A, B, C, D, E, F, G, H: H5 } = this;
+    return [A, B, C, D, E, F, G, H5];
   }
   // prettier-ignore
-  set(A, B, C, D, E, F, G, H4) {
+  set(A, B, C, D, E, F, G, H5) {
     this.A = A | 0;
     this.B = B | 0;
     this.C = C | 0;
@@ -1438,7 +1425,7 @@ var SHA2_32B = class extends HashMD {
     this.E = E | 0;
     this.F = F | 0;
     this.G = G | 0;
-    this.H = H4 | 0;
+    this.H = H5 | 0;
   }
   _cloneInto(to) {
     (to ||= new this.constructor()).set(...this.get());
@@ -1454,13 +1441,13 @@ var SHA2_32B = class extends HashMD {
       const s1 = rotr(W22, 17) ^ rotr(W22, 19) ^ W22 >>> 10;
       SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
     }
-    let { A, B, C, D, E, F, G, H: H4 } = this;
+    let { A, B, C, D, E, F, G, H: H5 } = this;
     for (let i = 0; i < 64; i++) {
       const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-      const T1 = H4 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
+      const T1 = H5 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
       const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
       const T2 = sigma0 + Maj(A, B, C) | 0;
-      H4 = G;
+      H5 = G;
       G = F;
       F = E;
       E = D + T1 | 0;
@@ -1476,8 +1463,8 @@ var SHA2_32B = class extends HashMD {
     E = E + this.E | 0;
     F = F + this.F | 0;
     G = G + this.G | 0;
-    H4 = H4 + this.H | 0;
-    this.set(A, B, C, D, E, F, G, H4);
+    H5 = H5 + this.H | 0;
+    this.set(A, B, C, D, E, F, G, H5);
   }
   roundClean() {
     clean(SHA256_W);
@@ -2204,9 +2191,9 @@ function normalizeZ(c, points) {
   const invertedZs = FpInvertBatch(c.Fp, points.map((p) => p.Z));
   return points.map((p, i) => c.fromAffine(p.toAffine(invertedZs[i])));
 }
-function validateW(W4, bits, min = 1) {
-  if (!Number.isSafeInteger(W4) || W4 < min || W4 > bits)
-    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W4);
+function validateW(W5, bits, min = 1) {
+  if (!Number.isSafeInteger(W5) || W5 < min || W5 > bits)
+    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W5);
 }
 function validateTableBytes(numPoints, fpBytes) {
   const bytes = numPoints * (4 * fpBytes + 128);
@@ -2253,8 +2240,8 @@ function oddMultiples(p, size) {
     t.push(t[j - 1].add(dbl));
   return t;
 }
-function wnafDigits(n, W4) {
-  const size = 2 ** W4;
+function wnafDigits(n, W5) {
+  const size = 2 ** W5;
   const half = size / 2;
   const mask = BigInt(size - 1);
   const d = [];
@@ -2271,11 +2258,11 @@ function wnafDigits(n, W4) {
   }
   return d;
 }
-function signedWindowDigits(n, W4, windows) {
-  const size = 2 ** W4;
+function signedWindowDigits(n, W5, windows) {
+  const size = 2 ** W5;
   const half = size / 2;
   const mask = BigInt(size - 1);
-  const shiftBy = BigInt(W4);
+  const shiftBy = BigInt(W5);
   const d = [];
   for (let w = 0; w < windows; w++) {
     let v = Number(n & mask);
@@ -2335,9 +2322,9 @@ var ScalarMultiplier = class {
    * @param W - window size
    * @param bits - scalar bitlength the table must cover
    */
-  buildWnafTable(point, W4, bits) {
-    const windows = Math.ceil(bits / W4) + 1;
-    const half = 2 ** (W4 - 1);
+  buildWnafTable(point, W5, bits) {
+    const windows = Math.ceil(bits / W5) + 1;
+    const half = 2 ** (W5 - 1);
     const comp = [];
     let base = point;
     for (let w = 0; w < windows; w++) {
@@ -2348,7 +2335,7 @@ var ScalarMultiplier = class {
       }
       base = comp[comp.length - 1].double();
     }
-    return { W: W4, bits, windows, comp };
+    return { W: W5, bits, windows, comp };
   }
   /**
    * Implements ec multiplication using precomputed signed fixed-window wNAF tables.
@@ -2360,9 +2347,9 @@ var ScalarMultiplier = class {
    * @returns real and fake (for const-time) points
    */
   wnafCachedCT(precomputes, n) {
-    const { W: W4, windows, comp } = precomputes;
-    const half = 2 ** (W4 - 1);
-    const digits = signedWindowDigits(n, W4, windows);
+    const { W: W5, windows, comp } = precomputes;
+    const half = 2 ** (W5 - 1);
+    const digits = signedWindowDigits(n, W5, windows);
     let p = this.ZERO;
     let f = this.BASE;
     for (let w = 0; w < windows; w++) {
@@ -2383,11 +2370,11 @@ var ScalarMultiplier = class {
   // Cache key is point identity plus (W, bits); at most two entries exist per point (public-width
   // `Fn.BITS` and blinded `Fn.BITS + BLIND_BITS`). Callers must not reuse the same point with
   // incompatible `transform(...)` layouts and expect a separate cache entry.
-  getWnafPrecomputes(W4, point, bits, transform) {
+  getWnafPrecomputes(W5, point, bits, transform) {
     let entries = this.wnafPrecomputes.get(point);
-    let comp = entries?.find((entry) => entry.W === W4 && entry.bits === bits);
+    let comp = entries?.find((entry) => entry.W === W5 && entry.bits === bits);
     if (!comp) {
-      comp = this.buildWnafTable(point, W4, bits);
+      comp = this.buildWnafTable(point, W5, bits);
       if (typeof transform === "function")
         comp = { ...comp, comp: transform(comp.comp) };
       if (!entries) {
@@ -2414,10 +2401,10 @@ var ScalarMultiplier = class {
   // ECDH peer keys) skip building a throwaway cached table in favor of a small fixed-window
   // multiply. `n` must be < 2^bits.
   runCT(point, n, bits, transform) {
-    const W4 = getWindowSize(point);
-    if (W4 === 1)
+    const W5 = getWindowSize(point);
+    if (W5 === 1)
       return this.fixedWindowCT(point, n, bits);
-    return this.wnafCachedCT(this.getWnafPrecomputes(W4, point, bits, transform), n);
+    return this.wnafCachedCT(this.getWnafPrecomputes(W5, point, bits, transform), n);
   }
   mulCT(point, scalar, transform) {
     this.validateMulInput(point, scalar);
@@ -2451,20 +2438,20 @@ var ScalarMultiplier = class {
    * (this path needs no fake accumulator — its op-count is already scalar-independent).
    */
   fixedWindowCT(point, n, bits) {
-    const W4 = FW_WINDOW;
-    const size = 1 << W4;
-    const mask = bitMask(W4);
+    const W5 = FW_WINDOW;
+    const size = 1 << W5;
+    const mask = bitMask(W5);
     const table = new Array(size);
     table[0] = this.ZERO;
     for (let i = 1; i < size; i++)
       table[i] = table[i - 1].add(point);
-    const windows = Math.ceil(bits / W4);
+    const windows = Math.ceil(bits / W5);
     let acc = this.ZERO;
     for (let window2 = windows - 1; window2 >= 0; window2--) {
       if (window2 !== windows - 1)
-        for (let d = 0; d < W4; d++)
+        for (let d = 0; d < W5; d++)
           acc = acc.double();
-      const digit = Number(n >> BigInt(window2 * W4) & mask);
+      const digit = Number(n >> BigInt(window2 * W5) & mask);
       let sel = table[0];
       for (let i = 1; i < size; i++)
         sel = i === digit ? table[i] : sel;
@@ -2490,22 +2477,22 @@ var ScalarMultiplier = class {
     this.assertPoint(point);
     if (!isPosBig(scalar))
       throw new Error("invalid scalar");
-    const W4 = getWindowSize(point);
-    if (W4 === 1 || scalar >= this.Point.Fn.ORDER)
+    const W5 = getWindowSize(point);
+    if (W5 === 1 || scalar >= this.Point.Fn.ORDER)
       return mulAddUnsafe(this.Point, [point], [scalar], true);
-    const precomputes = this.getWnafPrecomputes(W4, point, this.bits, transform);
+    const precomputes = this.getWnafPrecomputes(W5, point, this.bits, transform);
     return this.wnafCachedCT(precomputes, scalar).p;
   }
   // Remembers the window size used for precomputed wNAF multiplication of the given point
   // and drops any previously built tables. Usually only the base point is precomputed.
   // W=1 resets the point to the un-precomputed (table-less) paths.
   // W is additionally capped so tables stay under ~2 GiB ({@link TABLE_BYTES_MAX}).
-  setWindowSize(point, W4) {
+  setWindowSize(point, W5) {
     this.assertPoint(point);
-    validateW(W4, this.bits);
-    const windows = Math.ceil((this.bits + BLIND_BITS) / W4) + 1;
-    validateTableBytes(windows * 2 ** (W4 - 1), this.Point.Fp.BYTES);
-    pointWindowSizes.set(point, W4);
+    validateW(W5, this.bits);
+    const windows = Math.ceil((this.bits + BLIND_BITS) / W5) + 1;
+    validateTableBytes(windows * 2 ** (W5 - 1), this.Point.Fp.BYTES);
+    pointWindowSizes.set(point, W5);
     this.wnafPrecomputes.delete(point);
   }
   // True when a window size is set: tables themselves are built lazily on first multiply.
@@ -6425,7 +6412,7 @@ function figureAction(controls, leaving = () => ({})) {
 
 // packages/sdk/src/presence.ts
 import * as THREE10 from "three";
-import { bubbleSeconds, buildTints, cleanItemsRule as cleanItemsRule2, cleanTints, ENTRY_CLEAR, itemCoordinate as itemCoordinate3, parseTints, pickEntryPlace, decodeLook as decodeLook2, spawnOffset } from "@nswp/core";
+import { bubbleSeconds, buildTints, cleanItemsRule as cleanItemsRule3, cleanTints, ENTRY_CLEAR, itemCoordinate as itemCoordinate3, parseTints, pickEntryPlace, decodeLook as decodeLook2, spawnOffset } from "@nswp/core";
 
 // packages/sdk/src/figure.ts
 import * as THREE6 from "three";
@@ -6848,8 +6835,8 @@ function buildHead(b, look, main, accent, omit) {
 }
 function buildBody(b, look, main, accent, omit, proven = false) {
   const k = look.build === "slight" ? 0.86 : look.build === "broad" ? 1.2 : 1;
-  const cloth = (row, rows, side, sides, turn = 0) => {
-    const a = (side + 0.5) / sides * Math.PI * 2 + turn;
+  const cloth = (row, rows, side, sides, turn2 = 0) => {
+    const a = (side + 0.5) / sides * Math.PI * 2 + turn2;
     switch (look.pattern) {
       case "halves":
         return Math.cos(a) > 0 ? accent : main;
@@ -6863,7 +6850,7 @@ function buildBody(b, look, main, accent, omit, proven = false) {
         return main;
     }
   };
-  const turned = (profile, sides, band, turn = 0) => b.lathe(profile, [0, 0, 0], sides, (row, side) => row === 0 ? { glow: 0.4 } : row === band ? { glow: 0.75 } : { color: cloth(row, profile.length - 1, side, sides, turn), shade: 0.9 + row % 2 * 0.18 }, { turn });
+  const turned = (profile, sides, band, turn2 = 0) => b.lathe(profile, [0, 0, 0], sides, (row, side) => row === 0 ? { glow: 0.4 } : row === band ? { glow: 0.75 } : { color: cloth(row, profile.length - 1, side, sides, turn2), shade: 0.9 + row % 2 * 0.18 }, { turn: turn2 });
   let chest;
   switch (look.body) {
     case "coat":
@@ -7294,7 +7281,7 @@ import {
   buildHit,
   buildShot,
   buildState,
-  cleanItemsRule,
+  cleanItemsRule as cleanItemsRule2,
   isPose,
   createRate as createRate3,
   GRAVITY,
@@ -7310,6 +7297,39 @@ import {
   struck
 } from "@nswp/core";
 import * as THREE8 from "three";
+
+// packages/sdk/src/hold.ts
+import { cleanItemsRule } from "@nswp/core";
+var SCRIPT_KEPT = "nswp:item-scripts";
+function scriptAllowed(sha2562) {
+  try {
+    return JSON.parse(globalThis.localStorage?.getItem(SCRIPT_KEPT) ?? "[]").includes(sha2562);
+  } catch {
+    return false;
+  }
+}
+function allowScript(sha2562) {
+  try {
+    const kept2 = JSON.parse(globalThis.localStorage?.getItem(SCRIPT_KEPT) ?? "[]").filter((x) => typeof x === "string" && x !== sha2562);
+    globalThis.localStorage?.setItem(SCRIPT_KEPT, JSON.stringify([...kept2, sha2562].slice(-64)));
+  } catch {
+  }
+}
+function mayHold(described, o) {
+  if (cleanItemsRule(o.rule) === "none") return { ok: false, said: "Nothing carried is drawn or works in this place." };
+  if (!showsItems()) return { ok: false, said: "You have items turned off. Turn them on to hold one." };
+  if (!described) return { ok: false, said: "That item's description couldn't be found." };
+  if (!(described.behaviors.includes("holdable") || described.fits.includes("hand-right") || described.fits.includes("hand-left"))) return { ok: false, said: `${described.title} isn't something to hold.` };
+  if (described.use === "granted") return { ok: false, said: `${described.title} has to be granted by its maker, which can't be checked here yet.` };
+  if (described.script && o.scripts && !scriptAllowed(described.script.sha256)) {
+    if (o.asked.sha !== described.script.sha256) {
+      o.asked.sha = described.script.sha256;
+      return { ok: false, said: `${described.title} does things of its own, with code written by its maker (${described.maker.slice(0, 8)}\u2026). It runs shut away on your device: it can't reach the network, your account or anything of this world. Press Hold again to let it.` };
+    }
+    allowScript(described.script.sha256);
+  }
+  return { ok: true };
+}
 
 // packages/sdk/src/item-box.ts
 import { cleanAsk, createRate as createRate2, ITEM_ASKS } from "@nswp/core";
@@ -7374,36 +7394,6 @@ function runInBox(script, on, opts = {}) {
 }
 
 // packages/sdk/src/play.ts
-var SCRIPT_KEPT = "nswp:item-scripts";
-function scriptAllowed(sha2562) {
-  try {
-    return JSON.parse(globalThis.localStorage?.getItem(SCRIPT_KEPT) ?? "[]").includes(sha2562);
-  } catch {
-    return false;
-  }
-}
-function allowScript(sha2562) {
-  try {
-    const kept2 = JSON.parse(globalThis.localStorage?.getItem(SCRIPT_KEPT) ?? "[]").filter((x) => typeof x === "string" && x !== sha2562);
-    globalThis.localStorage?.setItem(SCRIPT_KEPT, JSON.stringify([...kept2, sha2562].slice(-64)));
-  } catch {
-  }
-}
-function mayHold(described, o) {
-  if (cleanItemsRule(o.rule) === "none") return { ok: false, said: "Nothing carried is drawn or works in this place." };
-  if (!showsItems()) return { ok: false, said: "You have items turned off. Turn them on to hold one." };
-  if (!described) return { ok: false, said: "That item's description couldn't be found." };
-  if (!(described.behaviors.includes("holdable") || described.fits.includes("hand-right") || described.fits.includes("hand-left"))) return { ok: false, said: `${described.title} isn't something to hold.` };
-  if (described.use === "granted") return { ok: false, said: `${described.title} has to be granted by its maker, which can't be checked here yet.` };
-  if (described.script && o.scripts && !scriptAllowed(described.script.sha256)) {
-    if (o.asked.sha !== described.script.sha256) {
-      o.asked.sha = described.script.sha256;
-      return { ok: false, said: `${described.title} does things of its own, with code written by its maker (${described.maker.slice(0, 8)}\u2026). It runs shut away on your device: it can't reach the network, your account or anything of this world. Press Hold again to let it.` };
-    }
-    allowScript(described.script.sha256);
-  }
-  return { ok: true };
-}
 function drawn(width, height, paint) {
   if (typeof document === "undefined") {
     const blank = new THREE8.Sprite(new THREE8.SpriteMaterial({ transparent: true, depthTest: false, depthWrite: false }));
@@ -7508,8 +7498,8 @@ function createPlay(o) {
   let landed = 0;
   let taken = 0;
   let nextId = Math.floor(Math.random() * 1e3);
-  const active = () => cleanItemsRule(o.rule()) !== "none" && showsItems();
-  const muted = (pubkey) => cleanItemsRule(o.rule()) === "allowed" && !!o.itemsMuted?.(pubkey);
+  const active = () => cleanItemsRule2(o.rule()) !== "none" && showsItems();
+  const muted = (pubkey) => cleanItemsRule2(o.rule()) === "allowed" && !!o.itemsMuted?.(pubkey);
   const hud = new THREE8.Group();
   hud.userData.nswpNoHit = true;
   if (!o.deferred) o.camera.add(hud);
@@ -8595,7 +8585,7 @@ function createPresence(d) {
       a.head.add(a.light);
     }
   };
-  const itemsRule = () => d.items ? cleanItemsRule2(d.itemsRule?.()) : "none";
+  const itemsRule = () => d.items ? cleanItemsRule3(d.itemsRule?.()) : "none";
   const canBeHeld = (item) => item.behaviors.includes("holdable") || item.fits.includes("hand-right") || item.fits.includes("hand-left");
   let mine = "";
   let holdTurn = Promise.resolve();
@@ -9274,7 +9264,7 @@ function createPresence(d) {
       changed();
     },
     setHolding(itemIn2, tints) {
-      const turn = async () => {
+      const turn2 = async () => {
         const item = itemCoordinate3(itemIn2);
         const put = () => {
           mine = "";
@@ -9305,7 +9295,7 @@ function createPresence(d) {
         await play?.held(described, model);
         return { ok: true, said: `You are holding ${described.title}. People here can see it.` };
       };
-      const result = holdTurn.then(turn, turn);
+      const result = holdTurn.then(turn2, turn2);
       holdTurn = result.then(() => changed(), () => changed());
       return result;
     },
@@ -11748,10 +11738,170 @@ function createXrInput(opts) {
 }
 
 // packages/sdk/src/panels.ts
-import * as THREE15 from "three";
+import * as THREE16 from "three";
 
 // packages/sdk/src/keyboard.ts
 import * as THREE14 from "three";
+
+// packages/sdk/src/panel-store.ts
+var PANEL_LOOKS = [
+  { name: "Solid", opacity: 1, dark: 1 },
+  { name: "Dark parts see-through", opacity: 1, dark: 0.4 },
+  { name: "Dark parts clear", opacity: 1, dark: 0.08 },
+  { name: "All of it faint", opacity: 0.6, dark: 0.35 }
+];
+function cleanLook(input) {
+  const l = input && typeof input === "object" ? input : {};
+  return { opacity: finite(l.opacity) ? clamp(l.opacity, 0.15, 1) : 1, dark: finite(l.dark) ? clamp(l.dark, 0, 1) : 1 };
+}
+function nextLook(now) {
+  const at = PANEL_LOOKS.findIndex((l) => Math.abs(l.opacity - now.opacity) < 0.01 && Math.abs(l.dark - now.dark) < 0.01);
+  return PANEL_LOOKS[(at + 1) % PANEL_LOOKS.length];
+}
+var PANEL_LIMITS = {
+  count: 24,
+  titleChars: 80,
+  noteChars: 4e3,
+  srcChars: 2048,
+  minWidth: 0.3,
+  maxWidth: 3,
+  /** A panel is never kept further from the middle of a world than this, in metres. */
+  reach: 500,
+  /** The largest file of the visitor's own that is kept, in bytes. */
+  fileBytes: 64 * 1024 * 1024
+};
+var ID = /^[a-z0-9-]{4,40}$/;
+var finite = (n) => typeof n === "number" && Number.isFinite(n);
+var clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+function tidy(text, max, lines = false) {
+  if (typeof text !== "string") return "";
+  const cleaned = text.replace(lines ? /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g : /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ");
+  return [...lines ? cleaned : cleaned.replace(/\s+/g, " ").trim()].slice(0, max).join("");
+}
+function cleanPlace(input) {
+  if (!input || typeof input !== "object") return null;
+  const p = input;
+  const at = p.position;
+  if (!Array.isArray(at) || at.length !== 3 || !at.every(finite) || at.some((n) => Math.abs(n) > PANEL_LIMITS.reach)) return null;
+  if (!finite(p.width)) return null;
+  return {
+    position: [at[0], at[1], at[2]],
+    yaw: finite(p.yaw) ? (p.yaw % 360 + 360) % 360 : 0,
+    pitch: finite(p.pitch) ? clamp(p.pitch, -60, 60) : 0,
+    width: clamp(p.width, PANEL_LIMITS.minWidth, PANEL_LIMITS.maxWidth)
+  };
+}
+function cleanSource(input) {
+  if (!input || typeof input !== "object") return null;
+  const s = input;
+  const title = tidy(s.title, PANEL_LIMITS.titleChars);
+  if (s.kind === "note") {
+    const text = tidy(s.text, PANEL_LIMITS.noteChars, true);
+    return text.trim() || title ? { kind: "note", title, text } : null;
+  }
+  if (s.kind === "picture" || s.kind === "video") {
+    if (typeof s.src !== "string" || s.src.length === 0 || s.src.length > PANEL_LIMITS.srcChars) return null;
+    if (!/^(kept:[a-z0-9-]{4,40}|https:\/\/|\/|\.\/|blob:)/.test(s.src)) return null;
+    return { kind: s.kind, title, src: s.src };
+  }
+  return null;
+}
+function cleanRecords(input) {
+  if (!Array.isArray(input)) return [];
+  const out = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((r) => r.id === item.id)) continue;
+    const source = cleanSource(item.source);
+    const place = cleanPlace(item.place);
+    if (!source || !place || "src" in source && source.src.startsWith("blob:")) continue;
+    const look = item.look ? cleanLook(item.look) : null;
+    const pin = cleanPin(item.pin);
+    out.push({ id: item.id, source, place, ...look && (look.opacity < 1 || look.dark < 1) ? { look } : {}, ...pin ? { pin } : {} });
+    if (out.length === PANEL_LIMITS.count) break;
+  }
+  return out;
+}
+function cleanPin(input) {
+  if (!Array.isArray(input) || input.length !== 3 || !input.every(finite)) return null;
+  const z = clamp(input[2], -6, -0.25);
+  return [clamp(input[0], -4, 4), clamp(input[1], -2.5, 2.5), z];
+}
+var turn = (from, to) => ((to - from) % 360 + 540) % 360 - 180;
+function tagAlong(now, head, dt, o = {}) {
+  const ease = Math.min(1, dt * 5);
+  const off = turn(now.yaw, head.yaw);
+  const turning = Math.abs(off) > (o.turn ?? 38) || now.turning && Math.abs(off) > 3;
+  const [dx, dy, dz] = [head.position[0] - now.position[0], head.position[1] - now.position[1], head.position[2] - now.position[2]];
+  const far = Math.hypot(dx, dy, dz);
+  const moving = far > (o.reach ?? 0.4) || now.moving && far > 0.03;
+  return {
+    yaw: turning ? ((now.yaw + off * ease) % 360 + 360) % 360 : now.yaw,
+    position: moving ? [now.position[0] + dx * ease, now.position[1] + dy * ease, now.position[2] + dz * ease] : now.position,
+    turning,
+    moving
+  };
+}
+function facing(at, head) {
+  const [dx, dy, dz] = [head[0] - at[0], head[1] - at[1], head[2] - at[2]];
+  const flat = Math.hypot(dx, dz);
+  if (flat < 1e-6) return { yaw: 0, pitch: 0 };
+  const deg = 180 / Math.PI;
+  return { yaw: (Math.atan2(dx, dz) * deg % 360 + 360) % 360, pitch: clamp(-Math.atan2(dy, flat) * deg, -35, 35) };
+}
+function inFront(head, yawDegrees, already = 0, distance = 1.3) {
+  const step = Math.ceil(already % 7 / 2) * 48 * (already % 2 ? -1 : 1);
+  const a = (yawDegrees + step) * Math.PI / 180;
+  return [head[0] - Math.sin(a) * distance, clamp(head[1] - 0.05, 0.6, 3), head[2] - Math.cos(a) * distance];
+}
+function newId(random = Math.random) {
+  return `p-${Array.from({ length: 10 }, () => Math.floor(random() * 36).toString(36)).join("")}`;
+}
+function wrapText(text, width, measure, maxLines = 40) {
+  const out = [];
+  for (const paragraph of text.split("\n")) {
+    let line = "";
+    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+      const next = line ? `${line} ${word}` : word;
+      if (measure(next) <= width || !line) line = next;
+      else {
+        out.push(line);
+        line = word;
+      }
+      while (measure(line) > width && line.length > 1) {
+        let cut = line.length - 1;
+        while (cut > 1 && measure(line.slice(0, cut)) > width) cut--;
+        out.push(line.slice(0, cut));
+        line = line.slice(cut);
+      }
+    }
+    out.push(line);
+    if (out.length > maxLines) break;
+  }
+  if (out.length > maxLines) {
+    out.length = maxLines;
+    out[maxLines - 1] = `${out[maxLines - 1].replace(/.$/u, "")}\u2026`;
+  }
+  return out;
+}
+var LIBRARY_LIMITS = { count: 60, thumbChars: 6e4 };
+function cleanLibrary(input) {
+  if (!Array.isArray(input)) return [];
+  const out = [];
+  for (const item of input) {
+    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((x) => x.id === item.id)) continue;
+    if (item.kind !== "picture" && item.kind !== "video") continue;
+    const thumb = typeof item.thumb === "string" && item.thumb.length <= LIBRARY_LIMITS.thumbChars && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(item.thumb) ? item.thumb : "";
+    out.push({ id: item.id, kind: item.kind, title: tidy(item.title, PANEL_LIMITS.titleChars), bytes: finite(item.bytes) && item.bytes >= 0 ? item.bytes : 0, addedAt: finite(item.addedAt) ? item.addedAt : 0, thumb });
+  }
+  return out.sort((a, b) => b.addedAt - a.addedAt).slice(0, LIBRARY_LIMITS.count);
+}
+function libraryPage(items, page, perPage) {
+  const pages = Math.max(1, Math.ceil(items.length / perPage));
+  const at = Math.min(pages - 1, Math.max(0, Math.floor(page)));
+  return { items: items.slice(at * perPage, (at + 1) * perPage), page: at, pages };
+}
+
+// packages/sdk/src/keyboard.ts
 var W3 = 1024;
 var SHOW = 300;
 var KEYS = 520;
@@ -12017,6 +12167,279 @@ function createKeyboard(o) {
   return api;
 }
 
+// packages/sdk/src/library.ts
+import * as THREE15 from "three";
+async function thumbnail(file, kind) {
+  const draw = (source, w, h) => {
+    if (!w || !h) return "";
+    const canvas = document.createElement("canvas");
+    canvas.width = 240;
+    canvas.height = Math.max(1, Math.round(240 * h / w));
+    canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL("image/jpeg", 0.7);
+    return data.length <= LIBRARY_LIMITS.thumbChars ? data : "";
+  };
+  try {
+    if (kind === "picture") {
+      const bitmap = await createImageBitmap(file);
+      const data = draw(bitmap, bitmap.width, bitmap.height);
+      bitmap.close();
+      return data;
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "auto";
+      video.src = url;
+      await new Promise((resolve, reject) => {
+        video.addEventListener("loadeddata", () => resolve(), { once: true });
+        video.addEventListener("error", () => reject(new Error("unreadable")), { once: true });
+        setTimeout(() => reject(new Error("slow")), 4e3);
+      });
+      return draw(video, video.videoWidth, video.videoHeight);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch {
+    return "";
+  }
+}
+var W4 = 1024;
+var H3 = 768;
+var COLS = 4;
+var ROWS = 2;
+var TOP = 96;
+var FOOT = 104;
+var WIDTH2 = 1.1;
+function createLibrary(o) {
+  const accent = `#${new THREE15.Color(o.accent ?? 16758364).getHexString()}`;
+  const ink = o.textColor ?? "#eef5fb";
+  let items = [];
+  if (o.keep) {
+    try {
+      items = cleanLibrary(JSON.parse(localStorage.getItem(`${o.keep}:library`) ?? "[]"));
+    } catch {
+    }
+  }
+  const save = () => {
+    stale = true;
+    o.onChange?.();
+    if (!o.keep) return;
+    try {
+      localStorage.setItem(`${o.keep}:library`, JSON.stringify(items));
+    } catch {
+    }
+  };
+  const canvas = document.createElement("canvas");
+  canvas.width = W4;
+  canvas.height = H3;
+  const g = canvas.getContext("2d");
+  const texture = new THREE15.CanvasTexture(canvas);
+  texture.colorSpace = THREE15.SRGBColorSpace;
+  texture.anisotropy = 8;
+  const board = new THREE15.Mesh(new THREE15.PlaneGeometry(WIDTH2, WIDTH2 * H3 / W4), new THREE15.MeshBasicMaterial({ map: texture, toneMapped: false }));
+  board.name = "library";
+  const group = new THREE15.Group();
+  group.name = "library";
+  group.add(board);
+  group.visible = false;
+  o.scene.add(group);
+  let page = 0;
+  let removing = false;
+  let aimed = null;
+  let stale = true;
+  let regions = [];
+  const thumbs = /* @__PURE__ */ new Map();
+  const thumbOf = (item) => {
+    if (!item.thumb) return null;
+    let image = thumbs.get(item.id);
+    if (!image) {
+      image = new Image();
+      image.onload = () => stale = true;
+      image.src = item.thumb;
+      thumbs.set(item.id, image);
+    }
+    return image.complete && image.naturalWidth ? image : null;
+  };
+  const paint = () => {
+    stale = false;
+    regions = [];
+    const shown2 = libraryPage(items, page, COLS * ROWS);
+    page = shown2.page;
+    g.fillStyle = "#0a1018";
+    g.fillRect(0, 0, W4, H3);
+    g.fillStyle = "#101a26";
+    g.fillRect(0, 0, W4, TOP);
+    g.fillStyle = ink;
+    g.textBaseline = "middle";
+    g.textAlign = "left";
+    g.font = "bold 40px system-ui, sans-serif";
+    g.fillText(removing ? "Select one to remove it" : "Your pictures and video", 36, TOP / 2 + 2, W4 - 200);
+    const button = (id, label, x, y, w, h, on = false) => {
+      regions.push({ id, x, y, w, h });
+      const lit = aimed === id || on;
+      g.fillStyle = lit ? accent : "#162231";
+      g.beginPath();
+      g.roundRect(x, y, w, h, 16);
+      g.fill();
+      g.fillStyle = lit ? "#04070b" : ink;
+      g.textAlign = "center";
+      g.font = "bold 30px system-ui, sans-serif";
+      g.fillText(label, x + w / 2, y + h / 2 + 2, w - 16);
+      g.textAlign = "left";
+    };
+    button("close", "Close", W4 - 164, 18, 140, TOP - 36);
+    if (shown2.items.length === 0) {
+      g.fillStyle = ink;
+      g.globalAlpha = 0.8;
+      g.font = "34px system-ui, sans-serif";
+      g.textAlign = "center";
+      g.fillText("Nothing here yet.", W4 / 2, H3 / 2 - 40);
+      g.fillText("Hang a picture or video on a flat screen,", W4 / 2, H3 / 2 + 10);
+      g.fillText("or take a picture with the camera.", W4 / 2, H3 / 2 + 56);
+      g.textAlign = "left";
+      g.globalAlpha = 1;
+    }
+    const cellW = (W4 - 48) / COLS;
+    const cellH = (H3 - TOP - FOOT - 24) / ROWS;
+    shown2.items.forEach((item, i) => {
+      const [x, y] = [24 + i % COLS * cellW + 10, TOP + 12 + Math.floor(i / COLS) * cellH + 8];
+      const [w, h] = [cellW - 20, cellH - 16];
+      const id = `item:${item.id}`;
+      regions.push({ id, x, y, w, h });
+      g.fillStyle = aimed === id ? accent : "#162231";
+      g.beginPath();
+      g.roundRect(x, y, w, h, 14);
+      g.fill();
+      const image = thumbOf(item);
+      const [px, py, pw, ph] = [x + 8, y + 8, w - 16, h - 60];
+      g.fillStyle = "#05090e";
+      g.fillRect(px, py, pw, ph);
+      if (image) {
+        const scale = Math.min(pw / image.naturalWidth, ph / image.naturalHeight);
+        const [dw, dh] = [image.naturalWidth * scale, image.naturalHeight * scale];
+        g.drawImage(image, px + (pw - dw) / 2, py + (ph - dh) / 2, dw, dh);
+      }
+      if (item.kind === "video") {
+        g.fillStyle = "rgba(4, 7, 11, 0.7)";
+        g.beginPath();
+        g.arc(px + pw / 2, py + ph / 2, 30, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = ink;
+        g.beginPath();
+        g.moveTo(px + pw / 2 - 10, py + ph / 2 - 15);
+        g.lineTo(px + pw / 2 + 16, py + ph / 2);
+        g.lineTo(px + pw / 2 - 10, py + ph / 2 + 15);
+        g.fill();
+      }
+      g.fillStyle = aimed === id ? "#04070b" : ink;
+      g.font = "26px system-ui, sans-serif";
+      g.fillText(item.title || (item.kind === "video" ? "A video" : "A picture"), x + 12, y + h - 26, w - 24);
+    });
+    const fy = H3 - FOOT + 14;
+    if (shown2.pages > 1) {
+      button("prev", "Earlier", 24, fy, 170, FOOT - 28);
+      button("next", "Later", 206, fy, 170, FOOT - 28);
+      g.fillStyle = ink;
+      g.font = "28px system-ui, sans-serif";
+      g.fillText(`${shown2.page + 1} of ${shown2.pages}`, 400, fy + (FOOT - 28) / 2 + 2);
+    }
+    if (items.length) button("removing", removing ? "Stop removing" : "Remove one", W4 - 300, fy, 276, FOOT - 28, removing);
+    texture.needsUpdate = true;
+  };
+  const at = new THREE15.Vector3();
+  const facing2 = new THREE15.Vector3();
+  const api = {
+    group,
+    list: () => items,
+    async add(file, name = "") {
+      const kind = file.type.startsWith("image/") ? "picture" : file.type.startsWith("video/") ? "video" : null;
+      if (!kind || file.size > PANEL_LIMITS.fileBytes || items.length >= LIBRARY_LIMITS.count) return null;
+      const id = newId();
+      if (await fileStore("readwrite", (s) => s.put(file, id)) === void 0) return null;
+      const item = { id, kind, title: name.replace(/\.[a-z0-9]+$/i, "").slice(0, PANEL_LIMITS.titleChars), bytes: file.size, addedAt: Math.floor(Date.now() / 1e3), thumb: await thumbnail(file, kind) };
+      items = cleanLibrary([item, ...items]);
+      save();
+      return items.find((x) => x.id === id) ?? null;
+    },
+    async remove(id) {
+      if (!items.some((x) => x.id === id)) return;
+      items = items.filter((x) => x.id !== id);
+      thumbs.delete(id);
+      await fileStore("readwrite", (s) => s.delete(id));
+      save();
+    },
+    get showing() {
+      return group.visible;
+    },
+    set showing(v) {
+      if (v === group.visible) return;
+      group.visible = v;
+      removing = false;
+      aimed = null;
+      stale = true;
+      if (v) {
+        o.camera.getWorldPosition(at);
+        o.camera.getWorldDirection(facing2);
+        facing2.y = 0;
+        if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
+        facing2.normalize();
+        group.position.set(at.x + facing2.x * 1.15, Math.max(0.8, at.y - 0.05), at.z + facing2.z * 1.15);
+        group.rotation.set(0, Math.atan2(-facing2.x, -facing2.z), 0);
+      }
+      o.onChange?.();
+    },
+    pick(raycaster) {
+      if (!group.visible) return null;
+      const hit = raycaster.intersectObject(board, false)[0];
+      if (!hit?.uv) return null;
+      const [x, y] = [hit.uv.x * W4, (1 - hit.uv.y) * H3];
+      const r = regions.find((q) => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h);
+      return `lib:${r?.id ?? ""}`;
+    },
+    aim(hit) {
+      const id = hit?.startsWith("lib:") ? hit.slice(4) || null : null;
+      if (id === aimed) return;
+      aimed = id;
+      stale = true;
+    },
+    press(hit) {
+      if (!group.visible || !hit.startsWith("lib:")) return;
+      const id = hit.slice(4);
+      if (id === "close") api.showing = false;
+      else if (id === "prev") page--;
+      else if (id === "next") page++;
+      else if (id === "removing") removing = !removing;
+      else if (id.startsWith("item:")) {
+        const item = items.find((x) => x.id === id.slice(5));
+        if (item && removing) void api.remove(item.id);
+        else if (item) o.onChoose(item);
+      }
+      stale = true;
+    },
+    pointOf(hit) {
+      const r = hit.startsWith("lib:") ? regions.find((q) => q.id === hit.slice(4)) : null;
+      if (!r || !group.visible) return null;
+      const height = WIDTH2 * H3 / W4;
+      group.updateMatrixWorld(true);
+      return board.localToWorld(new THREE15.Vector3(((r.x + r.w / 2) / W4 - 0.5) * WIDTH2, (0.5 - (r.y + r.h / 2) / H3) * height, 0));
+    },
+    info: () => ({ showing: group.visible, page, pages: libraryPage(items, page, COLS * ROWS).pages, removing, cells: regions.map((r) => r.id) }),
+    update() {
+      if (group.visible && stale) paint();
+    },
+    dispose() {
+      o.scene.remove(group);
+      board.geometry.dispose();
+      board.material.dispose();
+      texture.dispose();
+    }
+  };
+  return api;
+}
+
 // packages/sdk/src/panels.ts
 var BAR = 0.085;
 var GAP = 0.012;
@@ -12027,27 +12450,27 @@ function canvasTexture(width, height, draw) {
   canvas.width = width;
   canvas.height = height;
   draw(canvas.getContext("2d"), width, height);
-  const texture = new THREE15.CanvasTexture(canvas);
-  texture.colorSpace = THREE15.SRGBColorSpace;
+  const texture = new THREE16.CanvasTexture(canvas);
+  texture.colorSpace = THREE16.SRGBColorSpace;
   texture.anisotropy = 8;
   return texture;
 }
 function noteTexture(source, ink) {
-  const W4 = 1024;
+  const W5 = 1024;
   const pad = 56;
   const measure = document.createElement("canvas").getContext("2d");
   measure.font = "40px system-ui, sans-serif";
-  const lines = wrapText(source.text, W4 - pad * 2, (s) => measure.measureText(s).width);
-  const H4 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
-  const texture = canvasTexture(W4, H4, (g) => {
+  const lines = wrapText(source.text, W5 - pad * 2, (s) => measure.measureText(s).width);
+  const H5 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
+  const texture = canvasTexture(W5, H5, (g) => {
     g.fillStyle = "#0a1018";
-    g.fillRect(0, 0, W4, H4);
+    g.fillRect(0, 0, W5, H5);
     g.fillStyle = ink;
     g.textBaseline = "top";
     g.font = "40px system-ui, sans-serif";
     lines.forEach((line, i) => g.fillText(line, pad, pad + i * 56));
   });
-  return { texture, aspect: W4 / H4 };
+  return { texture, aspect: W5 / H5 };
 }
 function glyphTexture(glyph, ink) {
   return canvasTexture(128, 128, (g) => {
@@ -12114,9 +12537,9 @@ function barTexture(title, ink) {
   });
 }
 function createPanels(o) {
-  const accent = new THREE15.Color(o.accent ?? 16758364);
+  const accent = new THREE16.Color(o.accent ?? 16758364);
   const ink = o.textColor ?? "#eef5fb";
-  const root = new THREE15.Group();
+  const root = new THREE16.Group();
   root.name = "panels";
   o.scene.add(root);
   const live = /* @__PURE__ */ new Map();
@@ -12125,13 +12548,13 @@ function createPanels(o) {
   const glyph = (g) => glyphs.get(g) ?? (glyphs.set(g, glyphTexture(g, ink)), glyphs.get(g));
   const frameShape = (() => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE15.Color(1186340);
+    b.tone = new THREE16.Color(1186340);
     b.light = accent.clone();
     b.box([1, 1, 0.022], [0, 0, 0], { bevel: 8e-3 });
     return b.geometry();
   })();
-  const head = new THREE15.Vector3();
-  const at = new THREE15.Vector3();
+  const head = new THREE16.Vector3();
+  const at = new THREE16.Vector3();
   const headV3 = () => {
     o.camera.getWorldPosition(head);
     return [head.x, head.y, head.z];
@@ -12220,10 +12643,10 @@ function createPanels(o) {
   };
   const presenting = () => !!o.session?.();
   let follow = null;
-  const anchorAt = new THREE15.Vector3();
-  const anchorTurn = new THREE15.Quaternion();
-  const offset = new THREE15.Vector3();
-  const UP = new THREE15.Vector3(0, 1, 0);
+  const anchorAt = new THREE16.Vector3();
+  const anchorTurn = new THREE16.Quaternion();
+  const offset = new THREE16.Vector3();
+  const UP = new THREE16.Vector3(0, 1, 0);
   const anchor = (dt) => {
     o.camera.getWorldPosition(anchorAt);
     if (!presenting()) {
@@ -12264,20 +12687,20 @@ function createPanels(o) {
     save();
     if (p.source.kind === "custom") p.source.onClose?.();
   };
-  const flat = (texture, w = 1, h = 1) => new THREE15.Mesh(new THREE15.PlaneGeometry(w, h), new THREE15.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
+  const flat = (texture, w = 1, h = 1) => new THREE16.Mesh(new THREE16.PlaneGeometry(w, h), new THREE16.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
   const open = (content, opts = {}) => {
     const source = content.kind === "custom" ? content : cleanSource(content);
     if (!source) throw new Error("nswp-sdk: a panel needs something to show (a note with words, or a picture or video with an address).");
     if (live.size >= PANEL_LIMITS.count && !(opts.id && live.has(opts.id))) throw new Error(`nswp-sdk: ${PANEL_LIMITS.count} panels are open. Put one away first.`);
     const id = opts.id ?? newId();
     live.get(id)?.close();
-    const group = new THREE15.Group();
+    const group = new THREE16.Group();
     group.name = `panel:${id}`;
     const body = flat(null);
     body.name = `${id}:body`;
     const bar = flat(barTexture(source.title || (source.kind === "note" ? "Note" : source.kind === "picture" ? "Picture" : source.kind === "video" ? "Video" : ""), ink), 1, BAR);
     bar.name = `${id}:bar`;
-    const frame = new THREE15.Mesh(frameShape, metal);
+    const frame = new THREE16.Mesh(frameShape, metal);
     frame.name = "frame";
     frame.raycast = () => {
     };
@@ -12331,7 +12754,7 @@ function createPanels(o) {
         save();
       },
       place() {
-        const e = new THREE15.Euler().setFromQuaternion(group.quaternion, "YXZ");
+        const e = new THREE16.Euler().setFromQuaternion(group.quaternion, "YXZ");
         const round = (n) => Math.round(n * 1e3) / 1e3;
         return { position: group.position.toArray().map(round), yaw: round((e.y / DEG % 360 + 360) % 360), pitch: round(e.x / DEG), width: round(p.width) };
       },
@@ -12369,8 +12792,8 @@ function createPanels(o) {
           const image = new Image();
           image.onload = () => {
             if (!live.has(id)) return;
-            const texture = new THREE15.Texture(image);
-            texture.colorSpace = THREE15.SRGBColorSpace;
+            const texture = new THREE16.Texture(image);
+            texture.colorSpace = THREE16.SRGBColorSpace;
             texture.needsUpdate = true;
             show(texture, image.naturalWidth / Math.max(1, image.naturalHeight));
           };
@@ -12383,8 +12806,8 @@ function createPanels(o) {
           p.video = video;
           video.addEventListener("loadedmetadata", () => {
             if (!live.has(id) || !video.videoWidth) return;
-            const texture = new THREE15.VideoTexture(video);
-            texture.colorSpace = THREE15.SRGBColorSpace;
+            const texture = new THREE16.VideoTexture(video);
+            texture.colorSpace = THREE16.SRGBColorSpace;
             show(texture, video.videoWidth / video.videoHeight);
           });
           const mark = () => {
@@ -12451,9 +12874,9 @@ function createPanels(o) {
   const tint = (hit, on) => {
     const found = hit ? find(hit) : null;
     const mesh = found?.[0].buttons.get(found[1]);
-    if (mesh) mesh.material.color.copy(on || found[1] === "pin" && found[0].pinAt ? accent : new THREE15.Color(16777215));
+    if (mesh) mesh.material.color.copy(on || found[1] === "pin" && found[0].pinAt ? accent : new THREE16.Color(16777215));
   };
-  const lit = (p) => p.buttons.get("pin").material.color.copy(p.pinAt ? accent : new THREE15.Color(16777215));
+  const lit = (p) => p.buttons.get("pin").material.color.copy(p.pinAt ? accent : new THREE16.Color(16777215));
   const api = {
     open,
     async openFile(file) {
@@ -12686,14 +13109,14 @@ function addPanelControls(controls, panels, o) {
 }
 
 // packages/sdk/src/floor-mark.ts
-import * as THREE16 from "three";
+import * as THREE17 from "three";
 var MOST3 = 140;
 var TURNS = 16;
 function createFloorMarks(accent, opts = {}) {
   const y = opts.height ?? 0.02;
-  const group = new THREE16.Group();
+  const group = new THREE17.Group();
   group.name = "floor-marks";
-  const paint = (opacity) => new THREE16.MeshBasicMaterial({ color: accent, transparent: true, opacity, depthTest: false, depthWrite: false });
+  const paint = (opacity) => new THREE17.MeshBasicMaterial({ color: accent, transparent: true, opacity, depthTest: false, depthWrite: false });
   const flat = (o) => {
     o.rotation.x = -Math.PI / 2;
     o.renderOrder = 5;
@@ -12703,19 +13126,19 @@ function createFloorMarks(accent, opts = {}) {
     group.add(o);
     return o;
   };
-  const ring = flat(new THREE16.Mesh(new THREE16.RingGeometry(0.26, 0.34, 48), paint(0.85)));
-  const dot = flat(new THREE16.Mesh(new THREE16.CircleGeometry(0.14, 28), paint(0.95)));
-  const halo = flat(new THREE16.Mesh(new THREE16.RingGeometry(0.26, 0.3, 48), paint(0.7)));
-  const line = flat(new THREE16.InstancedMesh(new THREE16.CircleGeometry(0.07, 14), paint(0.8), MOST3));
+  const ring = flat(new THREE17.Mesh(new THREE17.RingGeometry(0.26, 0.34, 48), paint(0.85)));
+  const dot = flat(new THREE17.Mesh(new THREE17.CircleGeometry(0.14, 28), paint(0.95)));
+  const halo = flat(new THREE17.Mesh(new THREE17.RingGeometry(0.26, 0.3, 48), paint(0.7)));
+  const line = flat(new THREE17.InstancedMesh(new THREE17.CircleGeometry(0.07, 14), paint(0.8), MOST3));
   line.rotation.x = 0;
   line.frustumCulled = false;
-  const knots = flat(new THREE16.InstancedMesh(new THREE16.RingGeometry(0.1, 0.15, 24), paint(0.85), TURNS));
+  const knots = flat(new THREE17.InstancedMesh(new THREE17.RingGeometry(0.1, 0.15, 24), paint(0.85), TURNS));
   knots.rotation.x = 0;
   knots.frustumCulled = false;
-  const place = new THREE16.Matrix4();
-  const lie = new THREE16.Quaternion().setFromEuler(new THREE16.Euler(-Math.PI / 2, 0, 0));
-  const at = new THREE16.Vector3();
-  const one = new THREE16.Vector3(1, 1, 1);
+  const place = new THREE17.Matrix4();
+  const lie = new THREE17.Quaternion().setFromEuler(new THREE17.Euler(-Math.PI / 2, 0, 0));
+  const at = new THREE17.Vector3();
+  const one = new THREE17.Vector3(1, 1, 1);
   let shown2 = { ring: null, dot: null, dots: 0, turns: 0 };
   return {
     group,
@@ -13279,125 +13702,6 @@ function createBag(opts) {
 
 // packages/sdk/src/bagging.ts
 import { cleanSettings, decodeNaddr as decodeNaddr2, ITEM_KIND as ITEM_KIND2, itemCoordinate as itemCoordinate5, TINT_PALETTE } from "@nswp/core";
-
-// packages/sdk/src/item-preview.ts
-import * as THREE17 from "three";
-var KEPT = 36;
-function createItemPreviews(o) {
-  const size = o.size ?? 256;
-  const watchers3 = /* @__PURE__ */ new Set();
-  const ready = /* @__PURE__ */ new Map();
-  let stage;
-  const keyOf = (item, tints) => `${item.id}|${item.model.sha256}|${JSON.stringify(tints ?? {})}`;
-  const stageNow = () => {
-    if (stage !== void 0) return stage;
-    if (typeof document === "undefined") return stage = null;
-    try {
-      const renderer = new THREE17.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
-      renderer.setPixelRatio(1);
-      renderer.setSize(size, size, false);
-      renderer.setClearColor(0, 0);
-      const scene = new THREE17.Scene();
-      scene.add(new THREE17.HemisphereLight(16777215, 2699837, 1.7));
-      const key = new THREE17.DirectionalLight(16777215, 2.4);
-      key.position.set(1.6, 2.6, 2.2);
-      const rim = new THREE17.DirectionalLight(12572927, 1.3);
-      rim.position.set(-2, 1.2, -2.4);
-      const pivot = new THREE17.Group();
-      scene.add(key, rim, pivot);
-      const camera = new THREE17.PerspectiveCamera(28, 1, 0.01, 50);
-      return stage = { renderer, scene, camera, pivot };
-    } catch {
-      return stage = null;
-    }
-  };
-  const draw = (made, angle, onto) => {
-    const s = stageNow();
-    if (!s) return null;
-    s.pivot.clear();
-    s.pivot.add(made.object);
-    made.object.position.copy(made.middle).multiplyScalar(-1);
-    s.pivot.rotation.set(0, angle, 0);
-    const away = made.radius / Math.sin(THREE17.MathUtils.degToRad(s.camera.fov / 2)) * 1.08;
-    s.camera.position.set(0, away * 0.3, away * 0.95);
-    s.camera.lookAt(0, 0, 0);
-    s.camera.near = Math.max(5e-3, away - made.radius * 2);
-    s.camera.far = away + made.radius * 2;
-    s.camera.updateProjectionMatrix();
-    s.renderer.render(s.scene, s.camera);
-    s.pivot.clear();
-    const canvas = onto ?? document.createElement("canvas");
-    if (!onto) canvas.width = canvas.height = size;
-    const g = canvas.getContext("2d");
-    if (!g) return null;
-    g.clearRect(0, 0, size, size);
-    g.drawImage(s.renderer.domElement, 0, 0, size, size);
-    return canvas;
-  };
-  const want = (item, tints) => {
-    const key = keyOf(item, tints);
-    const had = ready.get(key);
-    if (had !== void 0) return had;
-    if (!stageNow()) return null;
-    ready.set(key, null);
-    for (const old of ready.keys()) {
-      if (ready.size <= KEPT) break;
-      if (old !== key) ready.delete(old);
-    }
-    void o.model(item, tints).then(
-      (object) => {
-        if (!ready.has(key)) return;
-        let frames = 0;
-        let solids = 0;
-        object.traverse((part) => {
-          const mesh = part;
-          if (!mesh.isMesh) return;
-          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          if (materials.every((m) => m.wireframe === true)) frames++;
-          else solids++;
-        });
-        if (frames > 0 && solids === 0) return void again(key);
-        const box = new THREE17.Box3().setFromObject(object);
-        const ball = box.getBoundingSphere(new THREE17.Sphere());
-        if (!Number.isFinite(ball.radius) || ball.radius <= 0) return void ready.delete(key);
-        ready.set(key, { object, middle: ball.center.clone(), radius: ball.radius, still: null, live: null });
-        for (const fn of watchers3) fn();
-      },
-      () => void again(key)
-    );
-    return null;
-  };
-  const AGAIN_MS3 = 6e3;
-  const tries = /* @__PURE__ */ new Map();
-  function again(key) {
-    const n = (tries.get(key) ?? 0) + 1;
-    tries.set(key, n);
-    if (n > 5) return;
-    setTimeout(() => {
-      if (ready.get(key) !== null) return;
-      ready.delete(key);
-      for (const fn of watchers3) fn();
-    }, AGAIN_MS3 * n);
-  }
-  return {
-    still(item, tints) {
-      const made = want(item, tints);
-      if (!made) return null;
-      return made.still ??= draw(made, -0.62, null);
-    },
-    turning(item, tints, moving = true) {
-      const made = want(item, tints);
-      if (!made) return null;
-      const angle = moving ? (typeof performance === "undefined" ? 0 : performance.now()) / 1e3 * 0.7 : -0.62;
-      return made.live = draw(made, angle, made.live);
-    },
-    onChange(fn) {
-      watchers3.add(fn);
-    }
-  };
-}
-
-// packages/sdk/src/bagging.ts
 var HELD_KEY = "nswp:holding";
 function keptHolding() {
   try {
@@ -13437,8 +13741,7 @@ function addBagControls(controls, opts) {
   let asking = "";
   let taking = "";
   const say = (text) => controls.say(text);
-  const model = items.model;
-  const previews = opts.previews === void 0 ? model ? createItemPreviews({ model: (item, tints) => model(item, tints) }) : null : opts.previews;
+  const previews = opts.previews ?? null;
   const still = (item) => () => {
     const described = items.known(item);
     return described && previews && showsItems() ? previews.still(described, bag.tints(item)) : null;
@@ -13786,6 +14089,130 @@ function addBagControls(controls, opts) {
   }, 400);
   watch.unref?.();
   return { refresh };
+}
+
+// packages/sdk/src/item-preview.ts
+import * as THREE18 from "three";
+var KEPT = 36;
+function createItemPreviews(o) {
+  const size = o.size ?? 256;
+  const watchers3 = /* @__PURE__ */ new Set();
+  const ready = /* @__PURE__ */ new Map();
+  let stage;
+  const keyOf = (item, tints) => `${item.id}|${item.model.sha256}|${JSON.stringify(tints ?? {})}`;
+  const stageNow = () => {
+    if (stage !== void 0) return stage;
+    if (typeof document === "undefined") return stage = null;
+    try {
+      const renderer = new THREE18.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+      renderer.setPixelRatio(1);
+      renderer.setSize(size, size, false);
+      renderer.setClearColor(0, 0);
+      const scene = new THREE18.Scene();
+      scene.add(new THREE18.HemisphereLight(16777215, 2699837, 1.7));
+      const key = new THREE18.DirectionalLight(16777215, 2.4);
+      key.position.set(1.6, 2.6, 2.2);
+      const rim = new THREE18.DirectionalLight(12572927, 1.3);
+      rim.position.set(-2, 1.2, -2.4);
+      const pivot = new THREE18.Group();
+      scene.add(key, rim, pivot);
+      const camera = new THREE18.PerspectiveCamera(28, 1, 0.01, 50);
+      return stage = { renderer, scene, camera, pivot };
+    } catch {
+      return stage = null;
+    }
+  };
+  const draw = (made, angle, onto) => {
+    const s = stageNow();
+    if (!s) return null;
+    s.pivot.clear();
+    s.pivot.add(made.object);
+    made.object.position.copy(made.middle).multiplyScalar(-1);
+    s.pivot.rotation.set(0, angle, 0);
+    const away = made.radius / Math.sin(THREE18.MathUtils.degToRad(s.camera.fov / 2)) * 1.08;
+    s.camera.position.set(0, away * 0.3, away * 0.95);
+    s.camera.lookAt(0, 0, 0);
+    s.camera.near = Math.max(5e-3, away - made.radius * 2);
+    s.camera.far = away + made.radius * 2;
+    s.camera.updateProjectionMatrix();
+    s.renderer.render(s.scene, s.camera);
+    s.pivot.clear();
+    const canvas = onto ?? document.createElement("canvas");
+    if (!onto) canvas.width = canvas.height = size;
+    const g = canvas.getContext("2d");
+    if (!g) return null;
+    g.clearRect(0, 0, size, size);
+    g.drawImage(s.renderer.domElement, 0, 0, size, size);
+    return canvas;
+  };
+  const want = (item, tints) => {
+    const key = keyOf(item, tints);
+    const had = ready.get(key);
+    if (had !== void 0) return had;
+    if (!stageNow()) return null;
+    ready.set(key, null);
+    for (const old of ready.keys()) {
+      if (ready.size <= KEPT) break;
+      if (old !== key) ready.delete(old);
+    }
+    void o.model(item, tints).then(
+      (object) => {
+        if (!ready.has(key)) return;
+        let frames = 0;
+        let solids = 0;
+        object.traverse((part) => {
+          const mesh = part;
+          if (!mesh.isMesh) return;
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          if (materials.every((m) => m.wireframe === true)) frames++;
+          else solids++;
+        });
+        if (frames > 0 && solids === 0) return void again(key);
+        const box = new THREE18.Box3().setFromObject(object);
+        const ball = box.getBoundingSphere(new THREE18.Sphere());
+        if (!Number.isFinite(ball.radius) || ball.radius <= 0) return void ready.delete(key);
+        ready.set(key, { object, middle: ball.center.clone(), radius: ball.radius, still: null, live: null });
+        for (const fn of watchers3) fn();
+      },
+      () => void again(key)
+    );
+    return null;
+  };
+  const AGAIN_MS3 = 6e3;
+  const tries = /* @__PURE__ */ new Map();
+  function again(key) {
+    const n = (tries.get(key) ?? 0) + 1;
+    tries.set(key, n);
+    if (n > 5) return;
+    setTimeout(() => {
+      if (ready.get(key) !== null) return;
+      ready.delete(key);
+      for (const fn of watchers3) fn();
+    }, AGAIN_MS3 * n);
+  }
+  return {
+    still(item, tints) {
+      const made = want(item, tints);
+      if (!made) return null;
+      return made.still ??= draw(made, -0.62, null);
+    },
+    turning(item, tints, moving = true) {
+      const made = want(item, tints);
+      if (!made) return null;
+      const angle = moving ? (typeof performance === "undefined" ? 0 : performance.now()) / 1e3 * 0.7 : -0.62;
+      return made.live = draw(made, angle, made.live);
+    },
+    onChange(fn) {
+      watchers3.add(fn);
+    }
+  };
+}
+
+// packages/sdk/src/bag-pictures.ts
+function addBagControls2(controls, opts) {
+  const model = opts.items.model;
+  const previews = opts.previews === void 0 ? model ? createItemPreviews({ model: (item, tints) => model(item, tints) }) : null : opts.previews;
+  return addBagControls(controls, { ...opts, previews });
 }
 
 // packages/sdk/src/thumb-presses.ts
@@ -14323,9 +14750,9 @@ function addAchievementControls(controls, opts) {
 }
 
 // packages/sdk/src/chamber.ts
-import * as THREE18 from "three";
+import * as THREE19 from "three";
 var R = 1.8;
-var H3 = 2.8;
+var H4 = 2.8;
 var BAYS = 10;
 var DOOR_W = 1.04;
 var DOOR_H = 2.2;
@@ -14348,16 +14775,16 @@ function signTexture(lines, color) {
     const y = rows.length === 1 ? 192 : rows.length === 2 ? 138 + i * 118 : 92 + i * 100;
     g.fillText(line, 512, y, 944);
   });
-  const texture = new THREE18.CanvasTexture(canvas);
-  texture.colorSpace = THREE18.SRGBColorSpace;
+  const texture = new THREE19.CanvasTexture(canvas);
+  texture.colorSpace = THREE19.SRGBColorSpace;
   return texture;
 }
 function createChamber(accent, opts = {}) {
-  const light = new THREE18.Color(accent);
+  const light = new THREE19.Color(accent);
   const metal = createAlloy(light, { gloss: 0.5, speed: 0.9 });
   const builder = () => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE18.Color(1317668);
+    b.tone = new THREE19.Color(1317668);
     b.light = light.clone();
     return b;
   };
@@ -14369,13 +14796,13 @@ function createChamber(accent, opts = {}) {
   const wallShape = builder();
   for (let i = 1; i < BAYS; i++) {
     const a = i * 2 * Math.PI / BAYS;
-    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE18.MathUtils.radToDeg(a));
-    wallShape.box([bay, H3, 0.12], [0, H3 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
-    for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H3 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
+    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE19.MathUtils.radToDeg(a));
+    wallShape.box([bay, H4, 0.12], [0, H4 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
+    for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H4 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
   }
   wallShape.at([0, 0, -reach]);
-  for (const side of [-1, 1]) wallShape.box([(bay - DOOR_W) / 2, H3, 0.16], [side * (bay + DOOR_W) / 4, H3 / 2, 0], { bevel: 0.02 });
-  wallShape.box([DOOR_W, H3 - DOOR_H, 0.16], [0, DOOR_H + (H3 - DOOR_H) / 2, 0], { bevel: 0.02 });
+  for (const side of [-1, 1]) wallShape.box([(bay - DOOR_W) / 2, H4, 0.16], [side * (bay + DOOR_W) / 4, H4 / 2, 0], { bevel: 0.02 });
+  wallShape.box([DOOR_W, H4 - DOOR_H, 0.16], [0, DOOR_H + (H4 - DOOR_H) / 2, 0], { bevel: 0.02 });
   wallShape.line([-DOOR_W / 2, DOOR_H - 0.012, 0.082], [DOOR_W / 2, DOOR_H - 0.012, 0.082], 0.024, [0, 0, 1]);
   const walls = wallShape.build(metal);
   const lidShape = builder();
@@ -14389,31 +14816,31 @@ function createChamber(accent, opts = {}) {
     leaf.position.set(side * DOOR_W / 2, 0, -reach);
     return leaf;
   });
-  const sign = new THREE18.Mesh(new THREE18.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE18.MeshBasicMaterial({ transparent: true }));
-  sign.position.set(0, DOOR_H + (H3 - DOOR_H) / 2, -reach + 0.085);
-  const rising = new THREE18.Group();
+  const sign = new THREE19.Mesh(new THREE19.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE19.MeshBasicMaterial({ transparent: true }));
+  sign.position.set(0, DOOR_H + (H4 - DOOR_H) / 2, -reach + 0.085);
+  const rising = new THREE19.Group();
   rising.add(walls, ...leaves, sign);
-  const clear = new THREE18.Mesh(new THREE18.BufferGeometry().setAttribute("position", new THREE18.BufferAttribute(new Float32Array(9), 3)), new THREE18.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false }));
+  const clear = new THREE19.Mesh(new THREE19.BufferGeometry().setAttribute("position", new THREE19.BufferAttribute(new Float32Array(9), 3)), new THREE19.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false }));
   clear.frustumCulled = false;
   clear.renderOrder = CHAMBER_ORDER;
   clear.onBeforeRender = (renderer) => renderer.clearDepth();
   for (const part of [floor, walls, lid, ...leaves]) part.renderOrder = CHAMBER_ORDER + 1;
   sign.renderOrder = CHAMBER_ORDER + 1.3;
-  const depthOnly = (depth, o) => new THREE18.ShaderMaterial({ vertexShader: "void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: `void main() { gl_FragDepth = ${depth}; gl_FragColor = vec4(0.0); }`, colorWrite: false, depthTest: true, depthFunc: THREE18.AlwaysDepth, depthWrite: true, side: THREE18.DoubleSide, ...o });
+  const depthOnly = (depth, o) => new THREE19.ShaderMaterial({ vertexShader: "void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: `void main() { gl_FragDepth = ${depth}; gl_FragColor = vec4(0.0); }`, colorWrite: false, depthTest: true, depthFunc: THREE19.AlwaysDepth, depthWrite: true, side: THREE19.DoubleSide, ...o });
   const nearest2 = depthOnly("0.0", {});
   const farthest = depthOnly("1.0", { transparent: true });
-  const real = new THREE18.MeshBasicMaterial({ colorWrite: false, transparent: true, side: THREE18.DoubleSide });
+  const real = new THREE19.MeshBasicMaterial({ colorWrite: false, transparent: true, side: THREE19.DoubleSide });
   const shutOut = [];
   for (const part of [floor, walls, lid, ...leaves]) {
     for (const [material, order] of [[nearest2, SHUT_ORDER], [farthest, CHAMBER_ORDER + 1.1], [real, CHAMBER_ORDER + 1.2]]) {
-      const pass = new THREE18.Mesh(part.geometry, material);
+      const pass = new THREE19.Mesh(part.geometry, material);
       pass.renderOrder = order;
       pass.frustumCulled = false;
       part.add(pass);
       shutOut.push(pass);
     }
   }
-  const group = new THREE18.Group();
+  const group = new THREE19.Group();
   group.add(clear, floor, rising, lid);
   let door = 0;
   let presence = 1;
@@ -14424,7 +14851,7 @@ function createChamber(accent, opts = {}) {
     floor.scale.setScalar(Math.max(1e-3, Math.min(1, presence * 1.6)));
     floor.visible = presence > 2e-3;
     clear.visible = presence > 2e-3;
-    lid.position.y = H3 + (1 - up) * 3.5;
+    lid.position.y = H4 + (1 - up) * 3.5;
     lid.visible = presence > 0.5;
     const open = door * door * (3 - 2 * door);
     for (const leaf of leaves) leaf.scale.x = Math.max(0.02, 1 - open);
@@ -14480,8 +14907,8 @@ function createCrossing(o) {
   let hold;
   let shut = null;
   const moves = () => o.motion?.() ?? true;
-  const at = new THREE18.Vector3();
-  const facing2 = new THREE18.Vector3();
+  const at = new THREE19.Vector3();
+  const facing2 = new THREE19.Vector3();
   const place = () => {
     chamber?.dispose();
     const made = createChamber(o.accent, o.textColor ? { textColor: o.textColor } : {});
@@ -14584,16 +15011,16 @@ function createCrossing(o) {
 }
 
 // packages/sdk/src/camera.ts
-import * as THREE19 from "three";
+import * as THREE20 from "three";
 async function takePicture(renderer, scene, camera, opts = {}) {
   const width = Math.round(opts.width ?? 1920);
   const height = Math.round(opts.height ?? 1080);
   const hidden = (opts.hide ?? []).filter((o) => o.visible);
   const xrWasEnabled = renderer.xr.enabled;
   const previousTarget = renderer.getRenderTarget();
-  const target = new THREE19.WebGLRenderTarget(width, height, { samples: 4 });
-  target.texture.colorSpace = THREE19.SRGBColorSpace;
-  const eye = new THREE19.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
+  const target = new THREE20.WebGLRenderTarget(width, height, { samples: 4 });
+  target.texture.colorSpace = THREE20.SRGBColorSpace;
+  const eye = new THREE20.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
   camera.updateWorldMatrix(true, false);
   camera.matrixWorld.decompose(eye.position, eye.quaternion, eye.scale);
   eye.updateMatrixWorld(true);
@@ -14624,17 +15051,17 @@ async function takePicture(renderer, scene, camera, opts = {}) {
 }
 async function takeSelfie(renderer, scene, head, look, opts = {}) {
   head.updateWorldMatrix(true, false);
-  const at = new THREE19.Vector3();
-  const facing2 = new THREE19.Quaternion();
-  head.matrixWorld.decompose(at, facing2, new THREE19.Vector3());
-  const ahead = new THREE19.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
+  const at = new THREE20.Vector3();
+  const facing2 = new THREE20.Quaternion();
+  head.matrixWorld.decompose(at, facing2, new THREE20.Vector3());
+  const ahead = new THREE20.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
   if (ahead.lengthSq() < 1e-6) ahead.set(0, 0, -1);
   ahead.normalize();
   const figure = createFigure(look);
   figure.group.position.copy(at);
   figure.group.rotation.y = Math.atan2(-ahead.x, -ahead.z);
   scene.add(figure.group);
-  const eye = new THREE19.PerspectiveCamera(58, 1, 0.05, head.far);
+  const eye = new THREE20.PerspectiveCamera(58, 1, 0.05, head.far);
   eye.position.copy(at).addScaledVector(ahead, opts.reach ?? 1.7);
   eye.position.y = at.y + 0.08;
   eye.lookAt(at.x, at.y - 0.22, at.z);
@@ -14784,8 +15211,8 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   const previousTarget = renderer.getRenderTarget();
   const autoClearWas = renderer.autoClear;
   const fog = scene.fog;
-  const faceTarget = new THREE20.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE20.HalfFloatType });
-  const faceCamera = new THREE20.PerspectiveCamera(90, 1, 0.05, 700);
+  const faceTarget = new THREE21.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE21.HalfFloatType });
+  const faceCamera = new THREE21.PerspectiveCamera(90, 1, 0.05, 700);
   faceCamera.position.copy(position);
   let painter = null;
   try {
@@ -14795,7 +15222,7 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
     painter = paintPanorama(renderer, width);
     PANORAMA_VIEWS.forEach((view, i) => {
       faceCamera.up.fromArray(view.up);
-      faceCamera.lookAt(position.clone().add(new THREE20.Vector3().fromArray(view.forward)));
+      faceCamera.lookAt(position.clone().add(new THREE21.Vector3().fromArray(view.forward)));
       faceCamera.updateMatrixWorld(true);
       renderer.autoClear = true;
       renderer.setRenderTarget(faceTarget);
@@ -14814,24 +15241,24 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   }
 }
 function panoramaTexture(image) {
-  const texture = new THREE20.Texture(image);
-  texture.colorSpace = THREE20.SRGBColorSpace;
-  texture.wrapS = THREE20.RepeatWrapping;
+  const texture = new THREE21.Texture(image);
+  texture.colorSpace = THREE21.SRGBColorSpace;
+  texture.wrapS = THREE21.RepeatWrapping;
   texture.generateMipmaps = false;
-  texture.minFilter = THREE20.LinearFilter;
-  texture.magFilter = THREE20.LinearFilter;
+  texture.minFilter = THREE21.LinearFilter;
+  texture.magFilter = THREE21.LinearFilter;
   texture.needsUpdate = true;
   return texture;
 }
 function createPortalWindow(geometry, pano, opts = {}) {
   const reach = opts.reach ?? 1.5;
-  const material = new THREE20.ShaderMaterial({
+  const material = new THREE21.ShaderMaterial({
     uniforms: {
       pano: { value: pano },
       mask: { value: opts.mask ?? null },
       useMask: { value: opts.mask ? 1 : 0 },
-      toLocal: { value: new THREE20.Matrix3() },
-      center: { value: new THREE20.Vector3() },
+      toLocal: { value: new THREE21.Matrix3() },
+      center: { value: new THREE21.Vector3() },
       reach: { value: Number.isFinite(reach) ? reach : 0 }
     },
     vertexShader: `varying vec3 vWorld; varying vec2 vUv;
@@ -14851,10 +15278,10 @@ function createPortalWindow(geometry, pano, opts = {}) {
         gl_FragColor = vec4(texture2D(pano, vec2(lon / 6.283185307179586 + 0.5, lat / 3.141592653589793 + 0.5)).rgb, 1.0);
         #include <colorspace_fragment>
       }`,
-    side: THREE20.DoubleSide
+    side: THREE21.DoubleSide
   });
-  const mesh = new THREE20.Mesh(geometry, material);
-  const rotation = new THREE20.Matrix4();
+  const mesh = new THREE21.Mesh(geometry, material);
+  const rotation = new THREE21.Matrix4();
   mesh.onBeforeRender = () => {
     rotation.extractRotation(mesh.matrixWorld);
     material.uniforms.toLocal.value.setFromMatrix4(rotation).invert();
@@ -15008,10 +15435,10 @@ export {
   withinBudget,
   fitToSize,
   createItems,
-  runInBox,
   scriptAllowed,
   allowScript,
   mayHold,
+  runInBox,
   paintHealth,
   createPlay,
   textSprite,
@@ -15026,7 +15453,11 @@ export {
   INTENSE_COMFORT,
   isIntense,
   createXrInput,
+  PANEL_LOOKS,
+  PANEL_LIMITS,
+  LIBRARY_LIMITS,
   createKeyboard,
+  createLibrary,
   createPanels,
   addPanelControls,
   createFloorMarks,
@@ -15050,7 +15481,7 @@ export {
   addScoreControls,
   createBag,
   itemIn,
-  addBagControls,
+  addBagControls2 as addBagControls,
   TAP_MS,
   addItemControls,
   createDoorRatings,

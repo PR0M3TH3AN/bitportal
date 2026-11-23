@@ -2,16 +2,18 @@ import {
   addSoundControls,
   createSounds,
   download
-} from "./shared-BMAZ7AUG.js";
+} from "./shared-AXAM7SKM.js";
 import {
   mountMenu,
   portHere
-} from "./shared-KIWSQU2H.js";
+} from "./shared-GTITVE2T.js";
 import {
   ICONS,
   STANDARD_TABS,
-  standardTab
-} from "./shared-WTJ6UI3X.js";
+  fullscreenAction,
+  standardTab,
+  watchEscape
+} from "./shared-HHYFOE7N.js";
 import {
   helpWords
 } from "./shared-EGXGKKYY.js";
@@ -23,8 +25,9 @@ import {
   deskMovingSwitch,
   modelsSwitch,
   picturesSwitch
-} from "./shared-4OUGBV3U.js";
+} from "./shared-55TX2T4S.js";
 import {
+  arriveWith,
   changeSettings,
   currentSettings
 } from "./shared-KUNAPS23.js";
@@ -414,10 +417,14 @@ export {
   VISITOR_SWITCHES,
   addDeskControls,
   addSoundControls,
+  arriveWith,
   askDeskMoving,
+  changeSettings,
   chatSwitch,
   createSounds,
+  currentSettings,
   deskMovingSwitch,
+  fullscreenAction,
   helpWords,
   mergeView,
   modelsSwitch,
@@ -425,5 +432,6 @@ export {
   picturesSwitch,
   portBelow,
   portHere,
-  signInRows
+  signInRows,
+  watchEscape
 };

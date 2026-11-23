@@ -292,6 +292,36 @@ function cleanSongs(input) {
   }
   return out;
 }
+var JUKE_REPEATS = ["off", "all", "one"];
+var DEFAULT_HOW = { shuffle: false, repeat: "all", bar: false };
+var SKIP_SECONDS = 15;
+var RESTART_AFTER = 3;
+function cleanHow(input) {
+  const h = input && typeof input === "object" ? input : {};
+  return { shuffle: h.shuffle === true, repeat: JUKE_REPEATS.includes(h.repeat) ? h.repeat : DEFAULT_HOW.repeat, bar: h.bar === true };
+}
+function songClock(seconds) {
+  const s = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
+  const two = (n) => String(n).padStart(2, "0");
+  const [h, m, sec] = [Math.floor(s / 3600), Math.floor(s % 3600 / 60), s % 60];
+  return h ? `${h}:${two(m)}:${two(sec)}` : `${m}:${two(sec)}`;
+}
+function shuffledSongs(ids, first, random = Math.random) {
+  const rest = ids.filter((id) => id !== first);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return first !== null && ids.includes(first) ? [first, ...rest] : rest;
+}
+function songBeside(order, current, step, round) {
+  if (order.length === 0) return null;
+  const at = current === null ? -1 : order.indexOf(current);
+  if (at === -1) return order[0];
+  const to = at + step;
+  if (to >= 0 && to < order.length) return order[to];
+  return round ? order[(to + order.length) % order.length] : null;
+}
 function songRefusal(file, have) {
   const ext = (file.name ?? "").split(".").pop()?.toLowerCase() ?? "";
   const isSound = (file.type ?? "").startsWith("audio/") || SOUND_LIMITS.extensions.includes(ext);
@@ -302,166 +332,7 @@ function songRefusal(file, have) {
   return null;
 }
 
-// packages/sdk/src/panel-store.ts
-var PANEL_LOOKS = [
-  { name: "Solid", opacity: 1, dark: 1 },
-  { name: "Dark parts see-through", opacity: 1, dark: 0.4 },
-  { name: "Dark parts clear", opacity: 1, dark: 0.08 },
-  { name: "All of it faint", opacity: 0.6, dark: 0.35 }
-];
-function cleanLook(input) {
-  const l = input && typeof input === "object" ? input : {};
-  return { opacity: finite(l.opacity) ? clamp(l.opacity, 0.15, 1) : 1, dark: finite(l.dark) ? clamp(l.dark, 0, 1) : 1 };
-}
-function nextLook(now) {
-  const at = PANEL_LOOKS.findIndex((l) => Math.abs(l.opacity - now.opacity) < 0.01 && Math.abs(l.dark - now.dark) < 0.01);
-  return PANEL_LOOKS[(at + 1) % PANEL_LOOKS.length];
-}
-var PANEL_LIMITS = {
-  count: 24,
-  titleChars: 80,
-  noteChars: 4e3,
-  srcChars: 2048,
-  minWidth: 0.3,
-  maxWidth: 3,
-  /** A panel is never kept further from the middle of a world than this, in metres. */
-  reach: 500,
-  /** The largest file of the visitor's own that is kept, in bytes. */
-  fileBytes: 64 * 1024 * 1024
-};
-var ID = /^[a-z0-9-]{4,40}$/;
-var finite = (n) => typeof n === "number" && Number.isFinite(n);
-var clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
-function tidy(text, max, lines = false) {
-  if (typeof text !== "string") return "";
-  const cleaned = text.replace(lines ? /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g : /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ");
-  return [...lines ? cleaned : cleaned.replace(/\s+/g, " ").trim()].slice(0, max).join("");
-}
-function cleanPlace(input) {
-  if (!input || typeof input !== "object") return null;
-  const p = input;
-  const at = p.position;
-  if (!Array.isArray(at) || at.length !== 3 || !at.every(finite) || at.some((n) => Math.abs(n) > PANEL_LIMITS.reach)) return null;
-  if (!finite(p.width)) return null;
-  return {
-    position: [at[0], at[1], at[2]],
-    yaw: finite(p.yaw) ? (p.yaw % 360 + 360) % 360 : 0,
-    pitch: finite(p.pitch) ? clamp(p.pitch, -60, 60) : 0,
-    width: clamp(p.width, PANEL_LIMITS.minWidth, PANEL_LIMITS.maxWidth)
-  };
-}
-function cleanSource(input) {
-  if (!input || typeof input !== "object") return null;
-  const s = input;
-  const title = tidy(s.title, PANEL_LIMITS.titleChars);
-  if (s.kind === "note") {
-    const text = tidy(s.text, PANEL_LIMITS.noteChars, true);
-    return text.trim() || title ? { kind: "note", title, text } : null;
-  }
-  if (s.kind === "picture" || s.kind === "video") {
-    if (typeof s.src !== "string" || s.src.length === 0 || s.src.length > PANEL_LIMITS.srcChars) return null;
-    if (!/^(kept:[a-z0-9-]{4,40}|https:\/\/|\/|\.\/|blob:)/.test(s.src)) return null;
-    return { kind: s.kind, title, src: s.src };
-  }
-  return null;
-}
-function cleanRecords(input) {
-  if (!Array.isArray(input)) return [];
-  const out = [];
-  for (const item of input) {
-    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((r) => r.id === item.id)) continue;
-    const source = cleanSource(item.source);
-    const place = cleanPlace(item.place);
-    if (!source || !place || "src" in source && source.src.startsWith("blob:")) continue;
-    const look = item.look ? cleanLook(item.look) : null;
-    const pin = cleanPin(item.pin);
-    out.push({ id: item.id, source, place, ...look && (look.opacity < 1 || look.dark < 1) ? { look } : {}, ...pin ? { pin } : {} });
-    if (out.length === PANEL_LIMITS.count) break;
-  }
-  return out;
-}
-function cleanPin(input) {
-  if (!Array.isArray(input) || input.length !== 3 || !input.every(finite)) return null;
-  const z = clamp(input[2], -6, -0.25);
-  return [clamp(input[0], -4, 4), clamp(input[1], -2.5, 2.5), z];
-}
-var turn = (from, to) => ((to - from) % 360 + 540) % 360 - 180;
-function tagAlong(now, head, dt, o = {}) {
-  const ease = Math.min(1, dt * 5);
-  const off = turn(now.yaw, head.yaw);
-  const turning = Math.abs(off) > (o.turn ?? 38) || now.turning && Math.abs(off) > 3;
-  const [dx, dy, dz] = [head.position[0] - now.position[0], head.position[1] - now.position[1], head.position[2] - now.position[2]];
-  const far = Math.hypot(dx, dy, dz);
-  const moving = far > (o.reach ?? 0.4) || now.moving && far > 0.03;
-  return {
-    yaw: turning ? ((now.yaw + off * ease) % 360 + 360) % 360 : now.yaw,
-    position: moving ? [now.position[0] + dx * ease, now.position[1] + dy * ease, now.position[2] + dz * ease] : now.position,
-    turning,
-    moving
-  };
-}
-function facing(at, head) {
-  const [dx, dy, dz] = [head[0] - at[0], head[1] - at[1], head[2] - at[2]];
-  const flat = Math.hypot(dx, dz);
-  if (flat < 1e-6) return { yaw: 0, pitch: 0 };
-  const deg = 180 / Math.PI;
-  return { yaw: (Math.atan2(dx, dz) * deg % 360 + 360) % 360, pitch: clamp(-Math.atan2(dy, flat) * deg, -35, 35) };
-}
-function inFront(head, yawDegrees, already = 0, distance = 1.3) {
-  const step = Math.ceil(already % 7 / 2) * 48 * (already % 2 ? -1 : 1);
-  const a = (yawDegrees + step) * Math.PI / 180;
-  return [head[0] - Math.sin(a) * distance, clamp(head[1] - 0.05, 0.6, 3), head[2] - Math.cos(a) * distance];
-}
-function newId(random = Math.random) {
-  return `p-${Array.from({ length: 10 }, () => Math.floor(random() * 36).toString(36)).join("")}`;
-}
-function wrapText(text, width, measure, maxLines = 40) {
-  const out = [];
-  for (const paragraph of text.split("\n")) {
-    let line = "";
-    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-      const next = line ? `${line} ${word}` : word;
-      if (measure(next) <= width || !line) line = next;
-      else {
-        out.push(line);
-        line = word;
-      }
-      while (measure(line) > width && line.length > 1) {
-        let cut = line.length - 1;
-        while (cut > 1 && measure(line.slice(0, cut)) > width) cut--;
-        out.push(line.slice(0, cut));
-        line = line.slice(cut);
-      }
-    }
-    out.push(line);
-    if (out.length > maxLines) break;
-  }
-  if (out.length > maxLines) {
-    out.length = maxLines;
-    out[maxLines - 1] = `${out[maxLines - 1].replace(/.$/u, "")}\u2026`;
-  }
-  return out;
-}
-var LIBRARY_LIMITS = { count: 60, thumbChars: 6e4 };
-function cleanLibrary(input) {
-  if (!Array.isArray(input)) return [];
-  const out = [];
-  for (const item of input) {
-    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((x) => x.id === item.id)) continue;
-    if (item.kind !== "picture" && item.kind !== "video") continue;
-    const thumb = typeof item.thumb === "string" && item.thumb.length <= LIBRARY_LIMITS.thumbChars && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(item.thumb) ? item.thumb : "";
-    out.push({ id: item.id, kind: item.kind, title: tidy(item.title, PANEL_LIMITS.titleChars), bytes: finite(item.bytes) && item.bytes >= 0 ? item.bytes : 0, addedAt: finite(item.addedAt) ? item.addedAt : 0, thumb });
-  }
-  return out.sort((a, b) => b.addedAt - a.addedAt).slice(0, LIBRARY_LIMITS.count);
-}
-function libraryPage(items, page, perPage) {
-  const pages = Math.max(1, Math.ceil(items.length / perPage));
-  const at = Math.min(pages - 1, Math.max(0, Math.floor(page)));
-  return { items: items.slice(at * perPage, (at + 1) * perPage), page: at, pages };
-}
-
-// packages/sdk/src/library.ts
-import * as THREE from "three";
+// packages/sdk/src/file-store.ts
 var DB = "nswp-panels";
 function files() {
   return new Promise((resolve, reject) => {
@@ -483,276 +354,6 @@ async function fileStore(mode, run) {
     return void 0;
   }
 }
-async function thumbnail(file, kind) {
-  const draw = (source, w, h) => {
-    if (!w || !h) return "";
-    const canvas = document.createElement("canvas");
-    canvas.width = 240;
-    canvas.height = Math.max(1, Math.round(240 * h / w));
-    canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
-    const data = canvas.toDataURL("image/jpeg", 0.7);
-    return data.length <= LIBRARY_LIMITS.thumbChars ? data : "";
-  };
-  try {
-    if (kind === "picture") {
-      const bitmap = await createImageBitmap(file);
-      const data = draw(bitmap, bitmap.width, bitmap.height);
-      bitmap.close();
-      return data;
-    }
-    const url = URL.createObjectURL(file);
-    try {
-      const video = document.createElement("video");
-      video.muted = true;
-      video.playsInline = true;
-      video.preload = "auto";
-      video.src = url;
-      await new Promise((resolve, reject) => {
-        video.addEventListener("loadeddata", () => resolve(), { once: true });
-        video.addEventListener("error", () => reject(new Error("unreadable")), { once: true });
-        setTimeout(() => reject(new Error("slow")), 4e3);
-      });
-      return draw(video, video.videoWidth, video.videoHeight);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } catch {
-    return "";
-  }
-}
-var W = 1024;
-var H = 768;
-var COLS = 4;
-var ROWS = 2;
-var TOP = 96;
-var FOOT = 104;
-var WIDTH = 1.1;
-function createLibrary(o) {
-  const accent = `#${new THREE.Color(o.accent ?? 16758364).getHexString()}`;
-  const ink = o.textColor ?? "#eef5fb";
-  let items = [];
-  if (o.keep) {
-    try {
-      items = cleanLibrary(JSON.parse(localStorage.getItem(`${o.keep}:library`) ?? "[]"));
-    } catch {
-    }
-  }
-  const save = () => {
-    stale = true;
-    o.onChange?.();
-    if (!o.keep) return;
-    try {
-      localStorage.setItem(`${o.keep}:library`, JSON.stringify(items));
-    } catch {
-    }
-  };
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const g = canvas.getContext("2d");
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, WIDTH * H / W), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
-  board.name = "library";
-  const group = new THREE.Group();
-  group.name = "library";
-  group.add(board);
-  group.visible = false;
-  o.scene.add(group);
-  let page = 0;
-  let removing = false;
-  let aimed = null;
-  let stale = true;
-  let regions = [];
-  const thumbs = /* @__PURE__ */ new Map();
-  const thumbOf = (item) => {
-    if (!item.thumb) return null;
-    let image = thumbs.get(item.id);
-    if (!image) {
-      image = new Image();
-      image.onload = () => stale = true;
-      image.src = item.thumb;
-      thumbs.set(item.id, image);
-    }
-    return image.complete && image.naturalWidth ? image : null;
-  };
-  const paint = () => {
-    stale = false;
-    regions = [];
-    const shown = libraryPage(items, page, COLS * ROWS);
-    page = shown.page;
-    g.fillStyle = "#0a1018";
-    g.fillRect(0, 0, W, H);
-    g.fillStyle = "#101a26";
-    g.fillRect(0, 0, W, TOP);
-    g.fillStyle = ink;
-    g.textBaseline = "middle";
-    g.textAlign = "left";
-    g.font = "bold 40px system-ui, sans-serif";
-    g.fillText(removing ? "Select one to remove it" : "Your pictures and video", 36, TOP / 2 + 2, W - 200);
-    const button = (id, label, x, y, w, h, on = false) => {
-      regions.push({ id, x, y, w, h });
-      const lit = aimed === id || on;
-      g.fillStyle = lit ? accent : "#162231";
-      g.beginPath();
-      g.roundRect(x, y, w, h, 16);
-      g.fill();
-      g.fillStyle = lit ? "#04070b" : ink;
-      g.textAlign = "center";
-      g.font = "bold 30px system-ui, sans-serif";
-      g.fillText(label, x + w / 2, y + h / 2 + 2, w - 16);
-      g.textAlign = "left";
-    };
-    button("close", "Close", W - 164, 18, 140, TOP - 36);
-    if (shown.items.length === 0) {
-      g.fillStyle = ink;
-      g.globalAlpha = 0.8;
-      g.font = "34px system-ui, sans-serif";
-      g.textAlign = "center";
-      g.fillText("Nothing here yet.", W / 2, H / 2 - 40);
-      g.fillText("Hang a picture or video on a flat screen,", W / 2, H / 2 + 10);
-      g.fillText("or take a picture with the camera.", W / 2, H / 2 + 56);
-      g.textAlign = "left";
-      g.globalAlpha = 1;
-    }
-    const cellW = (W - 48) / COLS;
-    const cellH = (H - TOP - FOOT - 24) / ROWS;
-    shown.items.forEach((item, i) => {
-      const [x, y] = [24 + i % COLS * cellW + 10, TOP + 12 + Math.floor(i / COLS) * cellH + 8];
-      const [w, h] = [cellW - 20, cellH - 16];
-      const id = `item:${item.id}`;
-      regions.push({ id, x, y, w, h });
-      g.fillStyle = aimed === id ? accent : "#162231";
-      g.beginPath();
-      g.roundRect(x, y, w, h, 14);
-      g.fill();
-      const image = thumbOf(item);
-      const [px, py, pw, ph] = [x + 8, y + 8, w - 16, h - 60];
-      g.fillStyle = "#05090e";
-      g.fillRect(px, py, pw, ph);
-      if (image) {
-        const scale = Math.min(pw / image.naturalWidth, ph / image.naturalHeight);
-        const [dw, dh] = [image.naturalWidth * scale, image.naturalHeight * scale];
-        g.drawImage(image, px + (pw - dw) / 2, py + (ph - dh) / 2, dw, dh);
-      }
-      if (item.kind === "video") {
-        g.fillStyle = "rgba(4, 7, 11, 0.7)";
-        g.beginPath();
-        g.arc(px + pw / 2, py + ph / 2, 30, 0, Math.PI * 2);
-        g.fill();
-        g.fillStyle = ink;
-        g.beginPath();
-        g.moveTo(px + pw / 2 - 10, py + ph / 2 - 15);
-        g.lineTo(px + pw / 2 + 16, py + ph / 2);
-        g.lineTo(px + pw / 2 - 10, py + ph / 2 + 15);
-        g.fill();
-      }
-      g.fillStyle = aimed === id ? "#04070b" : ink;
-      g.font = "26px system-ui, sans-serif";
-      g.fillText(item.title || (item.kind === "video" ? "A video" : "A picture"), x + 12, y + h - 26, w - 24);
-    });
-    const fy = H - FOOT + 14;
-    if (shown.pages > 1) {
-      button("prev", "Earlier", 24, fy, 170, FOOT - 28);
-      button("next", "Later", 206, fy, 170, FOOT - 28);
-      g.fillStyle = ink;
-      g.font = "28px system-ui, sans-serif";
-      g.fillText(`${shown.page + 1} of ${shown.pages}`, 400, fy + (FOOT - 28) / 2 + 2);
-    }
-    if (items.length) button("removing", removing ? "Stop removing" : "Remove one", W - 300, fy, 276, FOOT - 28, removing);
-    texture.needsUpdate = true;
-  };
-  const at = new THREE.Vector3();
-  const facing2 = new THREE.Vector3();
-  const api = {
-    group,
-    list: () => items,
-    async add(file, name = "") {
-      const kind = file.type.startsWith("image/") ? "picture" : file.type.startsWith("video/") ? "video" : null;
-      if (!kind || file.size > PANEL_LIMITS.fileBytes || items.length >= LIBRARY_LIMITS.count) return null;
-      const id = newId();
-      if (await fileStore("readwrite", (s) => s.put(file, id)) === void 0) return null;
-      const item = { id, kind, title: name.replace(/\.[a-z0-9]+$/i, "").slice(0, PANEL_LIMITS.titleChars), bytes: file.size, addedAt: Math.floor(Date.now() / 1e3), thumb: await thumbnail(file, kind) };
-      items = cleanLibrary([item, ...items]);
-      save();
-      return items.find((x) => x.id === id) ?? null;
-    },
-    async remove(id) {
-      if (!items.some((x) => x.id === id)) return;
-      items = items.filter((x) => x.id !== id);
-      thumbs.delete(id);
-      await fileStore("readwrite", (s) => s.delete(id));
-      save();
-    },
-    get showing() {
-      return group.visible;
-    },
-    set showing(v) {
-      if (v === group.visible) return;
-      group.visible = v;
-      removing = false;
-      aimed = null;
-      stale = true;
-      if (v) {
-        o.camera.getWorldPosition(at);
-        o.camera.getWorldDirection(facing2);
-        facing2.y = 0;
-        if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
-        facing2.normalize();
-        group.position.set(at.x + facing2.x * 1.15, Math.max(0.8, at.y - 0.05), at.z + facing2.z * 1.15);
-        group.rotation.set(0, Math.atan2(-facing2.x, -facing2.z), 0);
-      }
-      o.onChange?.();
-    },
-    pick(raycaster) {
-      if (!group.visible) return null;
-      const hit = raycaster.intersectObject(board, false)[0];
-      if (!hit?.uv) return null;
-      const [x, y] = [hit.uv.x * W, (1 - hit.uv.y) * H];
-      const r = regions.find((q) => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h);
-      return `lib:${r?.id ?? ""}`;
-    },
-    aim(hit) {
-      const id = hit?.startsWith("lib:") ? hit.slice(4) || null : null;
-      if (id === aimed) return;
-      aimed = id;
-      stale = true;
-    },
-    press(hit) {
-      if (!group.visible || !hit.startsWith("lib:")) return;
-      const id = hit.slice(4);
-      if (id === "close") api.showing = false;
-      else if (id === "prev") page--;
-      else if (id === "next") page++;
-      else if (id === "removing") removing = !removing;
-      else if (id.startsWith("item:")) {
-        const item = items.find((x) => x.id === id.slice(5));
-        if (item && removing) void api.remove(item.id);
-        else if (item) o.onChoose(item);
-      }
-      stale = true;
-    },
-    pointOf(hit) {
-      const r = hit.startsWith("lib:") ? regions.find((q) => q.id === hit.slice(4)) : null;
-      if (!r || !group.visible) return null;
-      const height = WIDTH * H / W;
-      group.updateMatrixWorld(true);
-      return board.localToWorld(new THREE.Vector3(((r.x + r.w / 2) / W - 0.5) * WIDTH, (0.5 - (r.y + r.h / 2) / H) * height, 0));
-    },
-    info: () => ({ showing: group.visible, page, pages: libraryPage(items, page, COLS * ROWS).pages, removing, cells: regions.map((r) => r.id) }),
-    update() {
-      if (group.visible && stale) paint();
-    },
-    dispose() {
-      o.scene.remove(group);
-      board.geometry.dispose();
-      board.material.dispose();
-      texture.dispose();
-    }
-  };
-  return api;
-}
 
 // packages/sdk/src/sound.ts
 var FOREIGN_SOUND = { seconds: 4, peak: 0.7, fades: 25, gone: 45 };
@@ -764,6 +365,7 @@ function createSounds(o = {}) {
   const theme = cleanTheme(o.theme, base);
   const levelsKey = o.keep?.levels ?? "nswp:sound";
   const songsKey = o.keep?.songs ?? "nswp:jukebox";
+  const howKey = o.keep?.how ?? "nswp:jukebox:how";
   const read = (key) => {
     try {
       return JSON.parse(localStorage.getItem(key) ?? "null");
@@ -780,6 +382,7 @@ function createSounds(o = {}) {
   const came = arrivedSettings().sound;
   let levels = cleanLevels({ ...read(levelsKey), ...came });
   let songs = cleanSongs(read(songsKey));
+  let how = cleanHow(read(howKey));
   let disposed = false;
   if (came) write(levelsKey, levels);
   const stopReporting = reportSettings(
@@ -1018,7 +621,7 @@ function createSounds(o = {}) {
     let turning = false;
     let stopped = false;
     const curve = (rising) => Float32Array.from({ length: 32 }, (_, k) => (rising ? Math.sin : Math.cos)(k / 31 * Math.PI / 2));
-    const turn2 = () => {
+    const turn = () => {
       if (turning || stopped) return;
       turning = true;
       const from = decks[active];
@@ -1049,10 +652,10 @@ function createSounds(o = {}) {
     for (const d of decks) {
       d.audio.addEventListener("timeupdate", () => {
         if (d !== decks[active] || !Number.isFinite(d.audio.duration)) return;
-        if (d.audio.duration - d.audio.currentTime <= fade + 0.35) turn2();
+        if (d.audio.duration - d.audio.currentTime <= fade + 0.35) turn();
       });
       d.audio.addEventListener("ended", () => {
-        if (d === decks[active]) turn2();
+        if (d === decks[active]) turn();
       });
       d.audio.addEventListener("error", () => {
         if (stopped || d !== decks[active] || turning) return;
@@ -1090,7 +693,7 @@ function createSounds(o = {}) {
       /** Hand on to the next piece now. */
       next() {
         if (tracks.length < 2 || turning || stopped) return false;
-        turn2();
+        turn();
         return true;
       }
     };
@@ -1218,9 +821,23 @@ function createSounds(o = {}) {
       source.connect(ownMusic);
       juke.tap = ctx.createMediaStreamDestination();
       source.connect(juke.tap);
-      juke.audio.addEventListener("ended", () => void jukebox.next());
+      juke.audio.addEventListener("ended", () => {
+        if (how.repeat === "one") return void jukebox.play(juke.current?.id);
+        const after = songBeside(order(), juke.current?.id ?? null, 1, how.repeat === "all");
+        if (after) return void jukebox.play(after);
+        juke.audio.currentTime = 0;
+        stopOwn();
+      });
+      juke.audio.addEventListener("durationchange", () => changed());
     }
     return { audio: juke.audio, tap: juke.tap };
+  };
+  let chance = [];
+  const order = () => {
+    const ids = songs.map((s) => s.id);
+    if (!how.shuffle) return ids;
+    if (chance.length !== ids.length || ids.some((id) => !chance.includes(id))) chance = shuffledSongs(ids, juke.current?.id ?? null);
+    return chance;
   };
   const jukebox = {
     list: () => [...songs],
@@ -1272,16 +889,47 @@ function createSounds(o = {}) {
       return true;
     },
     pause: stopOwn,
+    // Asked for by a press, both go round: the last song's "next" is the first, whatever happens at a song's own end.
     async next() {
-      if (songs.length === 0) return false;
-      const at = songs.findIndex((s) => s.id === juke.current?.id);
-      return jukebox.play(songs[(at + 1) % songs.length].id);
+      const to = songBeside(order(), juke.current?.id ?? null, 1, true);
+      return to ? jukebox.play(to) : false;
+    },
+    async previous() {
+      if (juke.current && (juke.audio?.currentTime ?? 0) >= RESTART_AFTER) {
+        jukebox.seek(0);
+        return juke.playing ? true : jukebox.play();
+      }
+      const to = songBeside(order(), juke.current?.id ?? null, -1, true);
+      return to ? jukebox.play(to) : false;
+    },
+    seek(seconds) {
+      if (!juke.audio || !juke.current || !Number.isFinite(seconds)) return;
+      const most = Number.isFinite(juke.audio.duration) ? juke.audio.duration : seconds;
+      juke.audio.currentTime = Math.max(0, Math.min(seconds, most));
+      changed();
     },
     get playing() {
       return juke.playing;
     },
     get current() {
       return juke.current;
+    },
+    get position() {
+      return juke.current ? juke.audio?.currentTime ?? 0 : 0;
+    },
+    get duration() {
+      const d = juke.current ? juke.audio?.duration ?? 0 : 0;
+      return Number.isFinite(d) && d > 0 ? d : 0;
+    },
+    get how() {
+      return how;
+    },
+    setHow(patch) {
+      const was = how.shuffle;
+      how = cleanHow({ ...how, ...patch });
+      if (how.shuffle && !was) chance = [];
+      write(howKey, how);
+      changed();
     },
     output: () => player().tap.stream.getAudioTracks()[0]
   };
@@ -1384,7 +1032,30 @@ function addSoundControls(controls, sounds, opts = {}) {
     controls.say(added ? `${added === 1 ? "1 song" : `${added} songs`} added. Only you hear your music.${refused ? ` ${refused}` : ""}` : refused || "Nothing was added.");
     refresh();
   });
+  const juke = sounds.jukebox;
+  const clock = () => juke.duration ? `${songClock(juke.position)} of ${songClock(juke.duration)}` : songClock(juke.position);
+  const REPEAT_WORDS = { off: "Repeat: off", all: "Repeat: all your songs", one: "Repeat: this song" };
+  const playRow = () => ({
+    id: "juke-play",
+    section: "sound",
+    icon: () => juke.playing ? "pause" : "play",
+    on: () => juke.playing,
+    hidden: () => juke.list().length === 0,
+    hotbar: juke.how.bar && juke.list().length > 0,
+    label: () => juke.playing ? "Pause your music" : "Play your music",
+    short: () => juke.current?.title ?? "Your music",
+    act: async () => {
+      if (juke.playing) return juke.pause();
+      if (!await juke.play()) controls.say("Your music couldn't be played.");
+    }
+  });
+  let barWas = juke.how.bar && juke.list().length > 0;
   const refresh = () => {
+    const bar = juke.how.bar && juke.list().length > 0;
+    if (bar !== barWas) {
+      barWas = bar;
+      controls.add(playRow());
+    }
     for (const id of listed) controls.remove(id);
     const songs = sounds.jukebox.list();
     listed = songs.map((s) => `song-${s.id}`);
@@ -1455,32 +1126,89 @@ function addSoundControls(controls, sounds, opts = {}) {
       label: () => sounds.levels.hum ? "The room's hum: on" : "The room's hum: off",
       act: () => sounds.setLevels({ hum: !sounds.levels.hum })
     },
+    // ---- The visitor's own music. What is playing and where in it, with a bar to move along; the song before, play
+    // and pause, the song after; a little way back and on, for a menu that draws no bar (a headset's console); how it
+    // goes; then adding, taking out, and the songs themselves. The same rows wherever this is drawn.
+    {
+      id: "juke-place",
+      section: "sound",
+      icon: "music",
+      kind: "slider",
+      hidden: () => !juke.current,
+      on: () => juke.playing,
+      // "Your music", since the place may be playing a piece of its own, named in the row above.
+      label: () => `${juke.playing ? "Your music" : "Your music, paused"}: ${juke.current?.title ?? ""}`,
+      slider: { value: () => juke.position, max: () => juke.duration, text: clock },
+      act: (to) => juke.seek(Number(to))
+    },
+    {
+      id: "juke-previous",
+      section: "sound",
+      icon: "previous",
+      hidden: () => !juke.current,
+      label: "Previous song",
+      short: "Previous",
+      act: async () => void await juke.previous()
+    },
+    playRow(),
+    {
+      id: "juke-next",
+      section: "sound",
+      icon: "next",
+      hidden: () => juke.list().length < 2,
+      label: "Next song",
+      short: "Next",
+      act: () => void juke.next()
+    },
+    {
+      id: "juke-back",
+      section: "sound",
+      icon: "rewind",
+      hidden: () => !juke.current,
+      label: `Back ${SKIP_SECONDS} seconds`,
+      act: () => juke.seek(juke.position - SKIP_SECONDS)
+    },
+    {
+      id: "juke-forward",
+      section: "sound",
+      icon: "forward",
+      hidden: () => !juke.current,
+      label: `Forward ${SKIP_SECONDS} seconds`,
+      act: () => juke.seek(juke.position + SKIP_SECONDS)
+    },
+    {
+      id: "juke-shuffle",
+      section: "sound",
+      icon: "shuffle",
+      on: () => juke.how.shuffle,
+      hidden: () => juke.list().length < 2,
+      label: () => juke.how.shuffle ? "Shuffle: on" : "Shuffle: off",
+      act: () => juke.setHow({ shuffle: !juke.how.shuffle })
+    },
+    {
+      id: "juke-repeat",
+      section: "sound",
+      icon: "repeat",
+      on: () => juke.how.repeat !== "off",
+      hidden: () => juke.list().length === 0,
+      label: () => REPEAT_WORDS[juke.how.repeat],
+      act: () => juke.setHow({ repeat: JUKE_REPEATS[(JUKE_REPEATS.indexOf(juke.how.repeat) + 1) % JUKE_REPEATS.length] })
+    },
+    {
+      id: "juke-bar",
+      section: "sound",
+      icon: "pin",
+      on: () => juke.how.bar,
+      hidden: () => juke.list().length === 0,
+      label: () => juke.how.bar ? "Play and pause on your bar: on" : "Play and pause on your bar: off",
+      act: () => juke.setHow({ bar: !juke.how.bar })
+    },
     {
       id: "juke-add",
       section: "sound",
       icon: "save",
       label: "Add music from this device",
       act: () => picker.click()
-    },
-    {
-      id: "juke-play",
-      section: "sound",
-      icon: "note",
-      on: () => sounds.jukebox.playing,
-      hidden: () => sounds.jukebox.list().length === 0,
-      label: () => sounds.jukebox.playing ? "Pause your music" : "Play your music",
-      act: async () => {
-        if (sounds.jukebox.playing) return sounds.jukebox.pause();
-        if (!await sounds.jukebox.play()) controls.say("Your music couldn't be played.");
-      }
-    },
-    {
-      id: "juke-next",
-      section: "sound",
-      icon: "turn",
-      hidden: () => sounds.jukebox.list().length < 2,
-      label: "Next song",
-      act: () => void sounds.jukebox.next()
     },
     {
       id: "juke-remove",
@@ -1534,22 +1262,7 @@ export {
   MUSIC_DUCK,
   musicToHear,
   musicFade,
-  PANEL_LOOKS,
-  cleanLook,
-  nextLook,
-  PANEL_LIMITS,
-  cleanPlace,
-  cleanSource,
-  cleanRecords,
-  cleanPin,
-  tagAlong,
-  facing,
-  inFront,
-  newId,
-  wrapText,
-  LIBRARY_LIMITS,
   fileStore,
-  createLibrary,
   createSounds,
   addSoundControls,
   download,
