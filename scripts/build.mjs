@@ -51,6 +51,30 @@ await build({
   },
 });
 
+// The visitor's menu, for the page that keeps the screen (src/shell/menu.ts), is built by itself and not split with
+// the rest. Split with the room, it shared a file with it that names the renderer, and so the page that only frames
+// a world loaded all of Three.js to draw a menu (610 KB, measured). By itself everything it doesn't use is left
+// out: no part of the renderer is in it. The page loads it by its address, after the frame is on its way.
+await build({
+  entryPoints: { "shell/menu": join(root, "src/shell/menu.ts") },
+  bundle: true,
+  format: "esm",
+  target: "es2022",
+  minify: true,
+  outdir: out,
+  legalComments: "linked",
+  logLevel: "warning",
+  metafile: true,
+  alias: {
+    "@nswp/core": join(root, "vendor/nswp/nswp-core.js"),
+    "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
+    "nswp-sdk/ui": join(root, "vendor/nswp/sdk/ui.js"),
+  },
+}).then((built) => {
+  const three = Object.keys(built.metafile.inputs).filter((f) => f.includes("node_modules/three/") && Object.values(built.metafile.outputs).some((o) => (o.inputs[f]?.bytesInOutput ?? 0) > 0));
+  if (three.length) throw new Error(`The shell's menu must not carry the renderer, and now does: ${three.slice(0, 3).join(", ")}`);
+});
+
 cpSync(join(root, "public"), out, { recursive: true });
 // The kit's own sounds, served from this site like everything else: nothing is fetched from anywhere else.
 cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: true, filter: (f) => !/\.md$/.test(f) });

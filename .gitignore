@@ -5,3 +5,4 @@ dist/
 *.key
 # BitGate shadow reports: the operator's own, never committed.
 .shadow/
+.shots/
