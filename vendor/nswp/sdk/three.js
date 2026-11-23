@@ -10,6 +10,9 @@ import {
   JUMP_GRAVITY,
   JUMP_HEIGHT,
   JUMP_SPEED,
+  LIBRARY_LIMITS,
+  PANEL_LIMITS,
+  PANEL_LOOKS,
   TAP_MS,
   addAchievementControls,
   addBagControls,
@@ -38,6 +41,7 @@ import {
   createItems,
   createJump,
   createKeyboard,
+  createLibrary,
   createMessages,
   createPaidGate,
   createPanels,
@@ -96,7 +100,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-OWSUAQ4O.js";
+} from "./shared-COTUHKLD.js";
 import {
   addDoorControls,
   askWell,
@@ -120,20 +124,16 @@ import {
 } from "./shared-UBZ34GUM.js";
 import {
   CUES,
-  LIBRARY_LIMITS,
-  PANEL_LIMITS,
-  PANEL_LOOKS,
   addSoundControls,
-  createLibrary,
   createSounds,
   saveFile
-} from "./shared-BMAZ7AUG.js";
+} from "./shared-AXAM7SKM.js";
 import {
   createControls,
   fullscreenWaiting,
   prefersFullscreen,
   resumeFullscreen
-} from "./shared-WTJ6UI3X.js";
+} from "./shared-HHYFOE7N.js";
 import {
   DOUBLE_TAP,
   DRAG_LOOK,
@@ -169,7 +169,7 @@ import {
   strideOf,
   visitorFov,
   watchFov
-} from "./shared-4OUGBV3U.js";
+} from "./shared-55TX2T4S.js";
 import {
   PICTURE_LIMITS,
   arriveWith,

@@ -658,6 +658,13 @@ var VISITOR_SWITCHES = [
   "juke-play",
   "juke-next",
   "juke-remove",
+  "juke-place",
+  "juke-previous",
+  "juke-back",
+  "juke-forward",
+  "juke-shuffle",
+  "juke-repeat",
+  "juke-bar",
   // In Moving, which both fill: how they move at a desk, how fast they look round, and how they move in a headset
   // (fps.ts, desk.ts, input.ts) are the visitor's, each a setting that travels. What is the world's there is what
   // it does for them: a jump.
@@ -670,6 +677,7 @@ var VISITOR_SWITCHES = [
   "move-narrow",
   "move-fade"
 ];
+var visitorsOwnRow = (id) => VISITOR_SWITCHES.includes(id) || id.startsWith("juke-") || id.startsWith("song-");
 var picturesSwitch = (controls) => ({
   id: "people-pictures",
   section: "people",
@@ -815,6 +823,7 @@ export {
   hasMouse,
   createFps,
   VISITOR_SWITCHES,
+  visitorsOwnRow,
   picturesSwitch,
   modelsSwitch,
   chatSwitch,

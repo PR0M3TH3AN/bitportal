@@ -2,8 +2,8 @@ import {
   helpWords
 } from "./shared-EGXGKKYY.js";
 import {
-  VISITOR_SWITCHES
-} from "./shared-4OUGBV3U.js";
+  visitorsOwnRow
+} from "./shared-55TX2T4S.js";
 import {
   SUMMON_KEY,
   changeSettings,
@@ -161,8 +161,10 @@ var cardOf = (card) => ({
   ...card.now.length ? { now: card.now } : {},
   ...card.acts?.length ? { acts: card.acts } : {}
 });
-function describeWorld(view, state = {}, help = "") {
+function describeWorld(view, state = {}, help = "", own = false) {
   const onBar = new Set(view.hotbar.map((i) => i.id));
+  const leftOut = own ? CLIENTS.filter((id) => !MENU_VISITOR_TABS.includes(id)) : CLIENTS;
+  const kits = (id) => visitorsOwnRow(id) || own && id.startsWith("look-");
   const about = help.trim().length <= MENU_LIMITS.note ? help.trim() : "";
   return {
     title: view.title.slice(0, MENU_LIMITS.title),
@@ -173,7 +175,7 @@ function describeWorld(view, state = {}, help = "") {
     state,
     target: view.target ? [view.target, ...view.detail].slice(0, 6) : [],
     loading: view.loading,
-    sections: view.sections.filter((s) => !CLIENTS.includes(s.id)).map((s) => ({
+    sections: view.sections.filter((s) => !leftOut.includes(s.id)).map((s) => ({
       id: s.id,
       label: s.label,
       ...s.icon ? { icon: s.icon } : {},
@@ -181,7 +183,8 @@ function describeWorld(view, state = {}, help = "") {
       ...s.card ? { card: cardOf(s.card) } : {},
       // Not the way home, and not a switch that changes one of the visitor's travelling settings: those are the
       // client's own rows, which it draws itself inside this tab.
-      rows: s.items.filter((i) => !(s.id === "travel" && VISITORS_ROWS.includes(i.id)) && !VISITOR_SWITCHES.includes(i.id)).map((i) => rowOf(i, onBar.has(i.id)))
+      // Not the visitor's own rows, and not a bar that is moved along: no word of these carries one.
+      rows: s.items.filter((i) => !(s.id === "travel" && !own && VISITORS_ROWS.includes(i.id)) && !kits(i.id) && i.kind !== "slider").map((i) => rowOf(i, onBar.has(i.id)))
     })).filter((s) => s.rows.length > 0 || s.card || s.id === "help" && about)
   };
 }
@@ -237,7 +240,7 @@ function portAbove(controls, opts = {}) {
     waiting = null;
     if (!has) return;
     const view = controls.view();
-    const world = describeWorld(view, opts.state?.(), opts.help?.() ?? "");
+    const world = describeWorld(view, opts.state?.(), opts.help?.() ?? "", opts.own === true);
     const text = JSON.stringify(world);
     if (text !== last) {
       last = text;
