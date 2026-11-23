@@ -138,7 +138,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-FVQ32PEV.js";
+} from "./shared-5JDYS5AU.js";
 import {
   PICTURE_LIMITS,
   addDoorControls,
@@ -148,6 +148,7 @@ import {
   askWell,
   clientPanelOpen,
   clientSignsInAt,
+  createControls,
   currentForm,
   currentSettings,
   deviceForms,
@@ -171,7 +172,7 @@ import {
   startingForm,
   usedForm,
   vouchedWords
-} from "./shared-OTNZQF72.js";
+} from "./shared-L5SGJDCD.js";
 import {
   browserVoice,
   computerVoice,
@@ -180,7 +181,7 @@ import {
   recordVoice,
   toPcm16,
   wasRefreshed
-} from "./shared-HSSLV2V4.js";
+} from "./shared-DXWOPDGC.js";
 import "./shared-QLSLERQ3.js";
 export {
   CASUAL_COMFORT,
@@ -247,6 +248,7 @@ export {
   createBag,
   createChamber,
   createConsole,
+  createControls,
   createCrossing,
   createDoorRatings,
   createDragLook,

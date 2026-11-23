@@ -1,4 +1,4 @@
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/icons.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/icons.ts
 var ICONS = {
   home: "M4 11.5 12 4l8 7.5M6 10v10h12V10M10 20v-5h4v5",
   turn: "M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5",
@@ -46,24 +46,29 @@ var ICONS = {
   coin: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM14.6 9.6c-.5-1-1.4-1.6-2.6-1.6-1.5 0-2.6.8-2.6 2s1 1.7 2.6 2 2.6.8 2.6 2-1.1 2-2.6 2c-1.2 0-2.1-.6-2.6-1.6M12 6.5V8M12 16v1.5"
 };
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/settings.ts
-import { cleanSettings } from "@nswp/core";
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/settings.ts
+import { cleanMenuSettings, cleanSettings } from "@nswp/core";
 var arrived = {};
 var parts = /* @__PURE__ */ new Map();
+var takers = /* @__PURE__ */ new Map();
 function arriveWith(settings) {
   arrived = cleanSettings(settings);
 }
 function arrivedSettings() {
   return arrived;
 }
-function reportSettings(part, now) {
+function reportSettings(part, now, take) {
   parts.set(part, now);
+  if (take) takers.set(part, take);
+  else takers.delete(part);
   return () => {
-    if (parts.get(part) === now) parts.delete(part);
+    if (parts.get(part) !== now) return;
+    parts.delete(part);
+    takers.delete(part);
   };
 }
 function currentSettings() {
-  let out = { ...arrived };
+  let out = cleanSettings(arrived);
   for (const now of parts.values()) {
     let said = {};
     try {
@@ -75,7 +80,7 @@ function currentSettings() {
   return cleanSettings(out);
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/picture.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/picture.ts
 import { cleanPicture } from "@nswp/core";
 var PICTURES_KEY = "nswp:pictures";
 var PICTURE_LIMITS = { bytes: 3e6, size: 128, waitMs: 9e3 };
@@ -91,7 +96,7 @@ function showsPictures() {
   }
   shown = came ?? kept !== "0";
   if (came !== void 0) keep(shown);
-  reportSettings("pictures", () => ({ pictures: showsPictures() }));
+  reportSettings("pictures", () => ({ pictures: showsPictures() }), (now) => void (now.pictures !== void 0 && now.pictures !== shown && setShowsPictures(now.pictures)));
   return shown;
 }
 var keep = (on) => {
@@ -173,7 +178,7 @@ function loadPicture(address) {
   return asked;
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/theme.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/theme.ts
 var DEFAULT_THEME = { accent: "#ffb65c", ink: "#eef5fb", glass: "#0a1018", warn: "#ff7566", motion: true, scale: 1, wrist: "left" };
 var UI_PRESETS = [
   { id: "lantern", label: "Lantern", accent: "#ffb65c" },
@@ -222,7 +227,7 @@ function rgb(hex) {
   return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/client-frame.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/client-frame.ts
 var framed = () => {
   try {
     return typeof window !== "undefined" && window.parent !== window;
@@ -230,8 +235,35 @@ var framed = () => {
     return false;
   }
 };
+var copiedRefused = (copy, inFrame = framed()) => inFrame ? `What you copied can't be read in a world shown inside another page. Open this world by its own address, ${copy.charAt(0).toLowerCase()}${copy.slice(1)}, and press again.` : `What you copied couldn't be read here. ${copy}, allow this site to read what you copy, and press again.`;
+var mayShareScreen = (inFrame = framed()) => {
+  if (!inFrame) return true;
+  try {
+    const policy = document;
+    const says = policy.permissionsPolicy?.allowsFeature ?? policy.featurePolicy?.allowsFeature;
+    return typeof says === "function" ? says.call(policy.permissionsPolicy ?? policy.featurePolicy, "display-capture") === true : null;
+  } catch {
+    return null;
+  }
+};
+var framedBy = () => {
+  try {
+    const above = framed() ? location.ancestorOrigins?.[0] : void 0;
+    return above ? new URL(above).host : "";
+  } catch {
+    return "";
+  }
+};
+var screenNotHere = (by = framedBy()) => {
+  const named = `Sharing your screen isn't available in a world shown inside ${by}.`;
+  return [by && named.length <= 120 ? named : "Sharing your screen isn't available in a world shown inside another page.", "Open this world by its own address."];
+};
 var holds = false;
 var filled = false;
+var menuSpoken = 0;
+var saidHereAt = null;
+var menuHearer = null;
+var menuUnheard = [];
 var met = false;
 var watchers2 = /* @__PURE__ */ new Set();
 var signInAt = null;
@@ -289,6 +321,11 @@ function meetClient() {
     if (e.source !== window.parent) return;
     const said = e.data;
     if (!said || typeof said !== "object") return;
+    if (said.nswp === "menu") {
+      if (menuHearer) menuHearer(said);
+      else if (menuSpoken && menuUnheard.length < 32) menuUnheard.push(said);
+      return;
+    }
     if (said.nswp === "sign-in" && typeof said.open === "boolean") {
       const failed = !said.open && said.failed === true;
       if (failed) {
@@ -313,11 +350,19 @@ function meetClient() {
     at = `${location.pathname}${location.search}`.slice(0, 300);
   } catch {
   }
-  say({ nswp: "here", at });
+  const hello = () => {
+    saidHereAt = performance.now();
+    say({ nswp: "here", at, ...menuSpoken ? { menu: menuSpoken } : {} });
+  };
+  if (typeof queueMicrotask === "function") queueMicrotask(hello);
+  else hello();
 }
 meetClient();
+var saver = null;
+var handUp = (file) => saver?.handUp(file) ?? false;
+var savesWait = () => saver?.waits() ?? false;
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/form.ts
 var matches = (query) => {
   try {
     return typeof matchMedia === "function" && matchMedia(query).matches;
@@ -366,7 +411,7 @@ function watch() {
   );
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fullscreen.ts
 var resumed = false;
 var waiting = false;
 var FULL_KEY = "nswp:full";
@@ -533,7 +578,7 @@ var fullscreenButton = {
   }
 };
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/relay-book.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/relay-book.ts
 import { DISCOVERY, DISCOVERY_RELAYS, learnRelays, pickDiscovered, pickRelays, publishEvent, queryRelays, RELAY_DISCOVERY_KIND, WRAP_KIND } from "@nswp/core";
 var KEY2 = "nswp:relays";
 var notes = null;
@@ -574,7 +619,7 @@ async function sendWell(event, o) {
       tried.push(...rest);
     }
   }
-  if (took === 0 && mayBackUp(tried, !!o.publish) && event.kind !== WRAP_KIND) {
+  if (took === 0 && maySendBackUp(tried, o) && event.kind !== WRAP_KIND) {
     const more = (await foundRelays({ not: tried, now, ...o.query ? { query: o.query } : {} })).open;
     for (let round = 0; round < BACKUP_ROUNDS && took === 0; round++) {
       const batch = more.slice(round * BACKUP_AT_ONCE, (round + 1) * BACKUP_AT_ONCE);
@@ -632,13 +677,14 @@ function foundRelays(o = {}) {
 }
 var BACKUP_AT_ONCE = 4;
 var BACKUP_ROUNDS = 3;
-var mayBackUp = (relays, injected) => backup && relays.length > 0 && (injected || typeof document !== "undefined");
+var mayAskBackUp = (relays, o) => backup && relays.length > 0 && (!!o.query || typeof document !== "undefined");
+var maySendBackUp = (relays, o) => backup && relays.length > 0 && (o.publish ? !!o.query : !o.query && typeof document !== "undefined");
 async function queryBacked(relays, filter, timeoutMs = 4e3, o = {}) {
   const query = o.query ?? queryRelays;
   const now = o.now ?? (() => Date.now());
   const got = await query(relays, filter, timeoutMs);
   learnFrom(got.relays, now());
-  if (!mayBackUp(relays, !!o.query) || Object.values(got.relays).some((said) => said === "eose")) return got;
+  if (!mayAskBackUp(relays, o) || Object.values(got.relays).some((said) => said === "eose")) return got;
   const more = (await foundRelays({ not: relays, ...o })).open.slice(0, BACKUP_AT_ONCE);
   if (!more.length) return got;
   const again = await query(more, filter, timeoutMs).catch(() => null);
@@ -652,7 +698,7 @@ async function publishBacked(relays, event, o = {}) {
   const now = o.now ?? (() => Date.now());
   const sent = await publish(relays, event);
   learnFrom(sent.relays, now());
-  if (!mayBackUp(relays, !!o.publish) || event.kind === WRAP_KIND || Object.values(sent.relays).some((said) => said === "ok")) return sent;
+  if (!maySendBackUp(relays, o) || event.kind === WRAP_KIND || Object.values(sent.relays).some((said) => said === "ok")) return sent;
   const more = (await foundRelays({ not: relays, ...o.query ? { query: o.query } : {}, now })).open;
   const all = { ...sent.relays };
   for (let round = 0; round < BACKUP_ROUNDS; round++) {
@@ -667,7 +713,7 @@ async function publishBacked(relays, event, o = {}) {
   return { relays: all };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/chat.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/chat.ts
 import { CHAT_LIMITS, cleanChat } from "@nswp/core";
 var CHAT_KEY = "nswp:chat";
 var shown2 = null;
@@ -682,7 +728,7 @@ function showsChat() {
   }
   shown2 = came ?? kept !== "0";
   if (came !== void 0) keep2(shown2);
-  reportSettings("chat", () => ({ chat: showsChat() }));
+  reportSettings("chat", () => ({ chat: showsChat() }), (now) => void (now.chat !== void 0 && now.chat !== shown2 && setShowsChat(now.chat)));
   return shown2;
 }
 var keep2 = (on) => {
@@ -792,7 +838,7 @@ function wrapWords(text, measure, width, rows) {
   return kept;
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/feed.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/feed.ts
 import { CHAT_LIMITS as CHAT_LIMITS2, cleanChat as cleanChat2, cleanLine } from "@nswp/core";
 var FEED_LIMITS = { shown: 420, kept: 30 };
 function createUiFeed(changed, now = () => Date.now()) {
@@ -905,7 +951,7 @@ function ago(at, nowSec) {
   return new Date(at * 1e3).toISOString().slice(0, 10);
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/offer-icons.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/offer-icons.ts
 var OFFER_ICONS = {
   headset: "vr",
   people: "people",
@@ -925,7 +971,7 @@ var OFFER_LINE_ICONS = {
   home: "home"
 };
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/door-controls.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/door-controls.ts
 function vouchedWords(door) {
   if (door.vouched === "verified") return "Verified for this site";
   if (door.vouched === "listed") return door.listedBy ? `Listed by ${door.listedBy}, not verified` : "Listed, not verified";
@@ -990,7 +1036,378 @@ function addDoorControls(controls, opts) {
   return { refresh, choose, chosen: find };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/summon.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
+import { cleanSettings as cleanSettings2, PINS_MOST } from "@nswp/core";
+
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/letters.ts
+import { cleanMessage, MESSAGE_LIMITS } from "@nswp/core";
+function createUiLetters(changed, now = () => Date.now()) {
+  let opts = null;
+  let waiting2 = [];
+  let said = "";
+  let version = 0;
+  let count = 0;
+  const bump = () => {
+    version++;
+    changed();
+  };
+  return {
+    attach(next) {
+      opts = next;
+      waiting2 = [];
+      said = "";
+      bump();
+    },
+    detach() {
+      if (!opts) return;
+      opts = null;
+      waiting2 = [];
+      said = "";
+      bump();
+    },
+    touch: bump,
+    seen() {
+      opts?.seen?.();
+    },
+    send(text) {
+      const mine = opts;
+      if (!mine) return "There is nobody to write to: choose someone first.";
+      const words = cleanMessage(text);
+      if (!words) return null;
+      const line = { key: `new-${++count}`, mine: true, who: "You", text: words, at: Math.floor(now() / 1e3), state: "sending" };
+      waiting2.push(line);
+      said = "";
+      bump();
+      void mine.send(words).catch(() => ({ ok: false, said: "That wasn't sent." })).then((how) => {
+        if (opts !== mine) return;
+        if (how.ok) waiting2 = waiting2.filter((l) => l !== line);
+        else line.state = "failed";
+        said = how.said;
+        bump();
+      });
+      return null;
+    },
+    view() {
+      const name = typeof opts?.with === "function" ? opts.with() : opts?.with ?? "";
+      const lines = opts ? [...opts.lines().map((l) => ({ ...l, state: "out" })), ...waiting2].sort((a, b) => a.at - b.at) : [];
+      return {
+        ready: !!opts,
+        title: name ? `${name}, privately` : "Private messages",
+        with: name,
+        lines,
+        said,
+        lead: name ? `Private: only you and ${name} can read what is written here. A relay is told who it is for, and nothing more.` : "",
+        limit: MESSAGE_LIMITS.chars,
+        version
+      };
+    }
+  };
+}
+
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/model.ts
+var PRESENCES = ["full", "quiet", "hidden"];
+var CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
+function cleanKeys(now, k) {
+  const out = { ...now };
+  if (k && (k.menu === null || typeof k.menu === "string" && k.menu.length === 1)) out.menu = k.menu === null ? null : k.menu.toLowerCase();
+  if (k && typeof k.hotbar === "boolean") out.hotbar = k.hotbar;
+  if (k && (k.chat === null || typeof k.chat === "string" && k.chat.length === 1)) out.chat = k.chat === null ? null : k.chat.toLowerCase();
+  return out;
+}
+var read2 = (t) => typeof t === "function" ? t() : t ?? "";
+var STANDARD = [
+  { id: "travel", label: "Travel", icon: "door" },
+  // Who the visitor is here. It has something in it only for one who came through a client (ui/identity.ts).
+  { id: "you", label: "You", icon: "you" },
+  // How other people see them. A visitor's own client fills this in, in its own place: a look is changed there and
+  // nowhere else (ui/identity.ts, protocol/05-looks.md). In a world it is empty, and isn't shown.
+  { id: "figure", label: "Your look", icon: "look" },
+  { id: "room", label: "Room", icon: "room" },
+  { id: "people", label: "People", icon: "people" },
+  // Who the visitor follows (following.ts). Empty, and not shown, for a guest.
+  { id: "following", label: "Following", icon: "list" },
+  // Their private messages (messaging.ts). Empty, and not shown, for a guest.
+  { id: "messages", label: "Messages", icon: "chat" },
+  // A world's boards, where it keeps score (scoring.ts). Added by the world; empty, and not shown, otherwise.
+  { id: "scores", label: "Scores", icon: "list" },
+  // What a world marks, and which of it the visitor has earned (achieving.ts). Added by the world, like Scores.
+  { id: "achievements", label: "Achievements", icon: "check" },
+  // The items a visitor has, and the one in their hand (bagging.ts). Empty, and not shown, for a guest.
+  { id: "bag", label: "Bag", icon: "save" },
+  { id: "camera", label: "Camera", icon: "camera" },
+  { id: "panels", label: "Panels", icon: "panel" },
+  { id: "view", label: "View", icon: "vr" },
+  { id: "moving", label: "Moving", icon: "step" },
+  { id: "sound", label: "Sound", icon: "sound" },
+  // How the controls themselves look. Called "Display", since "your look" is how other people see you.
+  { id: "look", label: "Display", icon: "look", note: "How these controls look to you: their colour, the size of their text, whether things move. They go with you from world to world." },
+  { id: "help", label: "Help", icon: "help" }
+];
+var KEEPERS = { id: "guests", label: "Who comes in", icon: "people" };
+var STANDARD_TABS = STANDARD.flatMap((s) => s.id === "people" ? [s.id, KEEPERS.id] : [s.id]);
+var STANDARD_ORDER = ["back", "home", "go-home", "doors", "list", "vr", "room-join", "room-mic", "room-chat", "jump"];
+var rank = (id) => {
+  const i = STANDARD_ORDER.indexOf(id);
+  return i === -1 ? STANDARD_ORDER.length : i;
+};
+var inOrder = (list) => list.map((a, i) => [a, i]).sort((x, y) => rank(x[0].id) - rank(y[0].id) || x[1] - y[1]).map((x) => x[0]);
+var PINS_KEY = "nswp:ui:pins";
+function loadPins() {
+  try {
+    const kept = globalThis.localStorage?.getItem(PINS_KEY);
+    return kept === null || kept === void 0 ? null : cleanSettings2({ pins: JSON.parse(kept) }).pins ?? null;
+  } catch {
+    return null;
+  }
+}
+function savePins(pins) {
+  try {
+    globalThis.localStorage?.setItem(PINS_KEY, JSON.stringify(pins));
+  } catch {
+  }
+}
+var LOADING_WORDS = 80;
+function cleanLoading(state) {
+  if (!state || typeof state !== "object") return null;
+  const raw = typeof state.words === "string" ? state.words : "";
+  const words = [...raw.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim()].slice(0, LOADING_WORDS).join("").trim();
+  const f = state.fraction;
+  const fraction = typeof f === "number" && Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : null;
+  return { fraction, words };
+}
+function createControls(opts) {
+  const sections = STANDARD.map((s) => ({ ...s }));
+  for (const s of opts.sections ?? []) addSection(s);
+  const actions = [];
+  const listeners = /* @__PURE__ */ new Set();
+  const sayers = /* @__PURE__ */ new Set();
+  const signals = /* @__PURE__ */ new Set();
+  let visitor = loadVisitorTheme();
+  const came = arrivedSettings();
+  const brought = { ...came.text !== void 0 ? { scale: came.text } : {}, ...came.motion !== void 0 ? { motion: came.motion } : {}, ...came.wrist !== void 0 ? { wrist: came.wrist } : {} };
+  if (Object.keys(brought).length) {
+    visitor = { ...visitor, ...brought };
+    saveVisitorTheme(visitor);
+  }
+  reportSettings(
+    "look",
+    () => ({ ...visitor.scale !== void 0 ? { text: visitor.scale } : {}, ...visitor.motion !== void 0 ? { motion: visitor.motion } : {}, ...visitor.wrist !== void 0 ? { wrist: visitor.wrist } : {} }),
+    // Their client's menu changed one (settings.ts, `changeSettings`): as their own hand on it here would.
+    (now) => {
+      const patch = { ...now.text !== void 0 ? { scale: now.text } : {}, ...now.motion !== void 0 ? { motion: now.motion } : {}, ...now.wrist !== void 0 ? { wrist: now.wrist } : {} };
+      if (!Object.keys(patch).length) return;
+      visitor = { ...visitor, ...patch };
+      saveVisitorTheme(visitor);
+      theme = resolveTheme(opts.theme, visitor);
+      changed();
+    }
+  );
+  let pins = loadPins();
+  if (came.pins !== void 0) {
+    pins = [...came.pins];
+    savePins(pins);
+  }
+  reportSettings(
+    "pins",
+    () => pins ? { pins } : {},
+    (now) => {
+      if (now.pins === void 0) return;
+      pins = [...now.pins];
+      savePins(pins);
+      changed();
+    }
+  );
+  let theme = resolveTheme(opts.theme, visitor);
+  let target = "";
+  let detail = [];
+  let loading = null;
+  let presence = PRESENCES.includes(opts.presence) ? opts.presence : "full";
+  let corner = CORNERS.includes(opts.corner) ? opts.corner : "top-left";
+  let keys = cleanKeys({ menu: "m", hotbar: true, chat: "t" }, opts.keys);
+  let claimed = false;
+  const changed = () => {
+    for (const fn of listeners) fn();
+  };
+  const chat = createUiChat(changed);
+  const feed = createUiFeed(changed);
+  const letters = createUiLetters(changed);
+  function addSection(s) {
+    const i = sections.findIndex((x) => x.id === s.id);
+    if (i === -1) sections.push({ ...s });
+    else sections[i] = { ...sections[i], ...s };
+  }
+  const controls = {
+    get theme() {
+      return theme;
+    },
+    add(...more) {
+      for (const a of more) {
+        const i = actions.findIndex((x) => x.id === a.id);
+        if (i === -1) actions.push(a);
+        else actions[i] = a;
+      }
+      changed();
+    },
+    has: (id) => actions.some((x) => x.id === id),
+    remove(id) {
+      const i = actions.findIndex((x) => x.id === id);
+      if (i !== -1) actions.splice(i, 1);
+      changed();
+    },
+    addSection(s) {
+      addSection(s);
+      changed();
+    },
+    get presence() {
+      return presence;
+    },
+    setPresence(next) {
+      if (!PRESENCES.includes(next) || next === presence) return;
+      presence = next;
+      changed();
+    },
+    setCorner(next) {
+      if (!CORNERS.includes(next) || next === corner) return;
+      corner = next;
+      changed();
+    },
+    setKeys(next) {
+      keys = cleanKeys(keys, next);
+      changed();
+    },
+    claimInput(next) {
+      if (claimed === next) return;
+      claimed = next;
+      changed();
+    },
+    setLoading(state) {
+      const next = cleanLoading(state);
+      if (JSON.stringify(next) === JSON.stringify(loading)) return;
+      loading = next;
+      changed();
+    },
+    setTarget(text, more = []) {
+      const next = text ? more.filter((line) => typeof line === "string" && line.trim()).slice(0, 4) : [];
+      if (text === target && next.join("\n") === detail.join("\n")) return;
+      target = text;
+      detail = next;
+      changed();
+    },
+    say(text) {
+      for (const fn of sayers) fn(text);
+    },
+    run(id, typed, file) {
+      const a = actions.find((x) => x.id === id);
+      if (!a || a.hidden?.() || a.kind === "line") return false;
+      for (const fn of signals) fn("press");
+      void Promise.resolve().then(() => a.kind === "file" ? a.act(void 0, file) : a.act(a.kind === "field" ? typed : void 0)).catch(() => {
+      }).finally(changed);
+      return true;
+    },
+    setTheme(patch, keep4 = false) {
+      if (keep4) {
+        visitor = { ...visitor, ...patch };
+        saveVisitorTheme(visitor);
+      }
+      theme = resolveTheme({ ...opts.theme, ...keep4 ? {} : patch }, visitor);
+      changed();
+    },
+    get pins() {
+      return pins ?? [];
+    },
+    setPinned(section, pinned) {
+      const now = pins ?? [];
+      if (pinned === now.includes(section)) return true;
+      if (pinned && (now.length >= PINS_MOST || cleanSettings2({ pins: [section] }).pins?.length !== 1)) return false;
+      pins = pinned ? [...now, section] : now.filter((id) => id !== section);
+      savePins(pins);
+      changed();
+      return true;
+    },
+    view() {
+      const showing = inOrder(actions.filter((a) => !a.hidden?.()));
+      const pressable = showing.filter((a) => a.kind !== "line");
+      const bar = [...pressable.filter((a) => a.hotbar && a.lead), ...pressable.filter((a) => a.hotbar && !a.lead)].slice(0, 6);
+      const item = (a) => {
+        const slot = bar.indexOf(a);
+        return { id: a.id, label: read2(a.label), icon: (typeof a.icon === "function" ? a.icon() : a.icon) ?? null, on: a.on ? a.on() : null, tone: a.tone ?? "normal", key: slot === -1 ? "" : String(slot + 1), short: read2(a.short) || read2(a.label), kind: a.kind ?? "button", ...a.kind === "copy" ? { copy: read2(a.copy) } : {}, ...a.kind === "file" ? { accept: a.accept ?? [] } : {}, color: read2(a.color), ...a.picture ? { picture: a.picture } : {}, mark: (typeof a.mark === "function" ? a.mark() : a.mark) ?? null, faint: a.faint?.() === true };
+      };
+      const known = new Set(sections.map((s) => s.id));
+      const extra = [...new Set(showing.map((a) => a.section ?? "travel").filter((id) => !known.has(id)))].map((id) => ({ id, label: id }));
+      const shown3 = [...sections, ...extra].map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, note: read2(s.note), card: s.card?.() ?? null, items: showing.filter((a) => (a.section ?? "travel") === s.id).map(item), pinned: (pins ?? []).includes(s.id) })).filter((s) => s.items.length > 0 || s.note || s.card);
+      return {
+        title: opts.title,
+        address: opts.address ?? "",
+        target,
+        detail,
+        loading,
+        sections: shown3,
+        hotbar: bar.map(item),
+        // Only tabs this place has: a tab pinned in another world that isn't here is kept, and not shown.
+        pins: (pins ?? []).flatMap((id, i) => {
+          const tab = shown3.find((x) => x.id === id);
+          const n = bar.length + i + 1;
+          return tab ? [{ id, label: tab.label, icon: tab.icon, key: n <= 9 ? String(n) : "" }] : [];
+        }),
+        pinsFull: (pins ?? []).length >= PINS_MOST,
+        theme,
+        presence,
+        corner,
+        keys: claimed ? { menu: null, hotbar: false, chat: null } : keys,
+        chat: chat.view(),
+        feed: feed.view(),
+        letters: letters.view()
+      };
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    signal(name) {
+      for (const fn of signals) {
+        try {
+          fn(name);
+        } catch {
+        }
+      }
+    },
+    onSignal(fn) {
+      signals.add(fn);
+      return () => signals.delete(fn);
+    },
+    onSay(fn) {
+      sayers.add(fn);
+      return () => sayers.delete(fn);
+    },
+    chat,
+    feed,
+    letters
+  };
+  const keep3 = (patch) => controls.setTheme(patch, true);
+  controls.add(
+    ...UI_PRESETS.map(
+      (p) => ({ id: `look-${p.id}`, section: "look", kind: "swatch", color: p.accent, label: p.label, on: () => theme.accent === p.accent, act: () => keep3({ accent: p.accent }) })
+    ),
+    { id: "look-size", section: "look", icon: "size", label: () => theme.scale > 1 ? "Text: larger" : "Text: normal", on: () => theme.scale > 1, act: () => keep3({ scale: theme.scale > 1 ? 1 : 1.25 }) },
+    { id: "look-motion", section: "look", icon: "motion", label: () => theme.motion ? "Motion: on" : "Motion: off", on: () => theme.motion, act: () => keep3({ motion: !theme.motion }) },
+    {
+      id: "look-wrist",
+      section: "look",
+      icon: "menu",
+      label: () => theme.wrist === "off" ? "Wrist console: off" : `Wrist console: ${theme.wrist} hand`,
+      on: () => theme.wrist !== "off",
+      act: () => keep3({ wrist: theme.wrist === "left" ? "right" : theme.wrist === "right" ? "off" : "left" })
+    },
+    { id: "look-reset", section: "look", icon: "turn", label: "Back to this world's look", hidden: () => Object.keys(visitor).length === 0, act: () => {
+      visitor = {};
+      saveVisitorTheme({});
+      theme = resolveTheme(opts.theme, visitor);
+    } }
+  );
+  return controls;
+}
+
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/summon.ts
 var SUMMON_KEY = "Backquote";
 var SUMMON_HOLD = 600;
 var SUMMON_SLOP = 18;
@@ -1051,16 +1468,19 @@ export {
   DEFAULT_THEME,
   UI_PRESETS,
   cleanTheme,
-  loadVisitorTheme,
-  saveVisitorTheme,
   resolveTheme,
   rgb,
+  copiedRefused,
+  mayShareScreen,
+  screenNotHere,
   setMenuPlace,
   onClientScreen,
   clientSignsInAt,
   clientPanelOpen,
   onClientSignIn,
   askClientForSignIn,
+  handUp,
+  savesWait,
   deviceForms,
   formFor,
   arriveAs,
@@ -1089,14 +1509,13 @@ export {
   showsChat,
   setShowsChat,
   onChatChange,
-  createUiChat,
   wrapWords,
   FEED_LIMITS,
-  createUiFeed,
   ago,
   OFFER_ICONS,
   vouchedWords,
   addDoorControls,
+  createControls,
   SUMMON_KEY,
   SUMMON_HOLD,
   SUMMON_SLOP,

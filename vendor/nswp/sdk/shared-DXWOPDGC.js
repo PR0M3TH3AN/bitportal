@@ -1,4 +1,4 @@
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/stay.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/stay.ts
 var finite = (n) => typeof n === "number" && Number.isFinite(n);
 function cleanStood(input, now, maxAgeSec = 12 * 3600) {
   if (!input || typeof input !== "object") return null;
@@ -50,7 +50,7 @@ function createStay(o = {}) {
   };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/speech.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/speech.ts
 function toPcm16(samples, fromRate, toRate = 16e3) {
   if (!(fromRate > 0) || !(toRate > 0)) return new Int16Array(0);
   const step = fromRate / toRate;
@@ -298,7 +298,7 @@ function createVoice(o = {}) {
   };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keys.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keys.ts
 var chars = (row) => [...row].map((c) => ({ id: c, label: c, kind: "char", w: 1 }));
 var key = (id, label, kind, w) => ({ id, label, kind, w });
 function keyRows(layer, o = {}) {
@@ -396,7 +396,7 @@ var TextEntry = class {
   }
 };
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/term-keys.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/term-keys.ts
 var ESC = "\x1B";
 function ctrlCode(ch) {
   if (/^[a-zA-Z]$/.test(ch)) return String.fromCharCode(ch.toUpperCase().charCodeAt(0) - 64);
