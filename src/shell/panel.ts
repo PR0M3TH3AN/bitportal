@@ -86,6 +86,13 @@ const PANEL_FLOOR = 240;
 /** The box's own top and bottom edges (its border, in public/bitportal.css), which its height includes. */
 const PANEL_EDGES = 2;
 
+/** BitLogin's panel saying it signed out or locked: exactly that, and nothing else counts. */
+const isGone = (said: unknown): boolean => {
+  if (!said || typeof said !== "object") return false;
+  const m = said as { bitlogin?: unknown; v?: unknown; t?: unknown; why?: unknown };
+  return m.bitlogin === PROTOCOL && m.v === VERSION && m.t === "gone" && (m.why === "signed-out" || m.why === "locked");
+};
+
 export interface Panel {
   /** Whether it is up. */
   readonly open: boolean;
@@ -127,6 +134,8 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
     said: boolean;
     hello: ReturnType<typeof setInterval> | null;
     giveUp: ReturnType<typeof setTimeout> | null;
+    /** It said it signed out or locked while it was up: removed, not kept, when it closes. */
+    gone?: boolean;
   }
   let up: Up | null = null;
   /** The frame kept from the last opening, hidden, and the origin it was opened for. */
@@ -165,7 +174,7 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
     if (was.hello) clearInterval(was.hello);
     if (was.giveUp) clearTimeout(was.giveUp);
     was.scrim.remove();
-    if (keep && knowsShow && was.ready && !more?.failed) {
+    if (keep && knowsShow && was.ready && !was.gone && !more?.failed) {
       was.box.dataset.kept = "";
       say(was.frame, { t: "hide" });
       kept = { box: was.box, frame: was.frame, asker: was.asker, old: setTimeout(drop, KEEP_MS) };
@@ -177,6 +186,14 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
     up.said = true;
     o.told(true);
   };
+  // A kept panel says one thing while hidden: that it signed out, or locked (§SW19.8, `gone`). Its frame is removed
+  // at once. Only `why` is read, and only those two words; it says nothing of the account.
+  addEventListener("message", (e: MessageEvent) => {
+    if (e.origin !== o.at || !isGone(e.data)) return;
+    if (kept && e.source === kept.frame.contentWindow) drop();
+    // One that is up is what the visitor is looking at: it stays until it closes, and is not kept then.
+    else if (up && e.source === up.frame.contentWindow) up.gone = true;
+  });
   addEventListener("message", (e: MessageEvent) => {
     // Only BitLogin's own page, in the frame this page made for it, at BitLogin's own address. A hidden one is not heard.
     if (!up || e.source !== up.frame.contentWindow || e.origin !== o.at) return;
