@@ -1,9 +1,9 @@
-import { e as M, E as U, p as B, R as K, a as c, i as S } from "./bitlogin-shared-BgvdwPLe.js";
-import { r as I, v as O } from "./bitlogin-shared-8bKMreA1.js";
+import { e as M, E as U, p as B, R as K, a as c, i as S } from "./bitlogin-shared-CDSZpiZ4.js";
+import { r as I, v as O } from "./bitlogin-shared-Cj9s0_W_.js";
 import { W as D } from "./bitlogin-shared-DFaGPwU-.js";
 import { c as Ne } from "./bitlogin-shared-DFaGPwU-.js";
-import { r as q } from "./bitlogin-shared-B1xnBpIf.js";
-import { b as $, c as F, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-DYDjy9w2.js";
+import { r as q } from "./bitlogin-shared-CjWz8W3w.js";
+import { b as $, c as F, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-D6Hzbnis.js";
 import { readCachedSession as z } from "./bitlogin-session.js";
 const j = 6, R = 64;
 function v(n = j) {
@@ -489,7 +489,7 @@ function ee(n) {
       localStorage.removeItem(A);
     } catch {
     }
-    w = import("./bitlogin-shared-Ty-isA9X.js").then((e) => (e.init({
+    w = import("./bitlogin-shared-rBIJuiTA.js").then((e) => (e.init({
       appName: n,
       filters: ["nwc"],
       showBalance: !1,
