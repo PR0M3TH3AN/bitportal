@@ -134,3 +134,34 @@ describe("the menu is behind one switch, and the switch is off", () => {
     }
   });
 });
+
+describe("the Airlock is under the visitor's menu too", () => {
+  it("speaks the menu's words through the kit's own world's end, among its first files, and describes nothing", async () => {
+    const menu = await read("src/go/menu.ts");
+    expect([...menu.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]).sort()).toEqual(["nswp-sdk/menu-above", "nswp-sdk/ui"]);
+    // One small mark, away from the corner the Airlock's own links are in; and Home is the room.
+    expect(menu).toContain('createControls({ title: "The Airlock", address: location.host, presence: "quiet", corner: "bottom-left" });');
+    expect(menu).toContain('portAbove(controls, { home: () => location.assign("/walk/") });');
+    // Nothing is added to those controls: the menu over the Airlock is the way home and the visitor's own tabs.
+    expect(menu).not.toMatch(/controls\.(add|addSection)\(/);
+    // A plain import, never one that is waited for: loading the file is what puts `menu` in the page's `here`.
+    const airlock = await read("src/go/airlock.ts");
+    expect(airlock).toContain('import "./menu.js";');
+    expect(airlock).not.toMatch(/import\(["']\.\/menu\.js["']\)/);
+  });
+
+  it("says `here` once: the kit says it, and the Airlock's own hello doesn't say it again", async () => {
+    const airlock = await read("src/go/airlock.ts");
+    expect(airlock).toContain("helloShell({ saidByKit: true });");
+    const shell = await read("src/shared/shell.ts");
+    expect(shell).toContain('if (!o.saidByKit) say({ nswp: "here", at: location.pathname });');
+    expect(shell.split('nswp: "here"').length - 1).toBe(1);
+  });
+
+  it("has the sheet put away as each place arrives, so nothing of the menu is over what the place asks first", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain('o.view.addEventListener("load", () => menu.setOpen(false));');
+    // And a page of this site's own holds nothing of the visitor's to be left behind.
+    expect(menu).toContain("if (left && below.origin !== location.origin) controls.say(");
+  });
+});
