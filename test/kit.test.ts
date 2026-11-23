@@ -51,3 +51,38 @@ describe("the kit's menu, as a client carries it", () => {
     expect(core).not.toMatch(/^\/\/ (\.\.\/|\/)/m);
   });
 });
+
+describe("no entry of the kit's is left out without a word", () => {
+  const load = async () => (await import(/* @vite-ignore */ ["..", "scripts", "sdk-entries.mjs"].join("/"))) as { SDK_TAKEN: string[]; SDK_LEFT: Record<string, string>; sdkEntries(exported: unknown): string[] };
+  const kit = { ".": "./src/index.ts", "./three": "./src/three.ts", "./home": "./src/home.ts", "./ui": "./src/ui.ts", "./menu": "./src/menu.ts", "./menu-above": "./src/menu-above.ts", "./bag": "./src/bag-entry.ts", "./terminal": "./src/terminal.ts" };
+
+  it("takes the files the kit itself names for the entries this site uses", async () => {
+    const { sdkEntries } = await load();
+    expect(sdkEntries(kit)).toEqual(["./src/three.ts", "./src/home.ts", "./src/ui.ts", "./src/terminal.ts", "./src/menu.ts", "./src/menu-above.ts", "./src/bag-entry.ts"]);
+    // A file the kit renames is followed, since the name comes from the kit.
+    expect(sdkEntries({ ...kit, "./bag": "./src/bag.entry.ts" })).toContain("./src/bag.entry.ts");
+  });
+
+  it("stops where the kit has an entry this site hasn't named, and where one it takes is gone", async () => {
+    const { sdkEntries } = await load();
+    expect(() => sdkEntries({ ...kit, "./wallet": "./src/wallet.ts" })).toThrow(/doesn't know: nswp-sdk\/wallet\./);
+    const { "./bag": _gone, ...without } = kit;
+    expect(() => sdkEntries(without)).toThrow(/takes nswp-sdk\/bag, which the kit no longer has/);
+    expect(() => sdkEntries(undefined)).toThrow();
+  });
+
+  it("is what the vendor script builds from, and every entry it takes has its name in the build and the types", async () => {
+    const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+    const { SDK_TAKEN, SDK_LEFT } = await load();
+    const vendor = readFileSync(new URL("../scripts/vendor.mjs", import.meta.url), "utf8");
+    expect(vendor).toContain('const entries = sdkEntries(JSON.parse(readFileSync(join(repo, "packages/sdk/package.json"), "utf8")).exports);');
+    expect(vendor).not.toMatch(/packages\/sdk\/src\/[a-z-]+\.ts"\)/);
+    const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+    const types = readFileSync(new URL("../tsconfig.json", import.meta.url), "utf8");
+    for (const name of SDK_TAKEN) {
+      expect(build, name).toContain(`"nswp-sdk/${name.slice(2)}": join(root, "vendor/nswp/sdk/`);
+      expect(types, name).toContain(`"nswp-sdk/${name.slice(2)}": ["./vendor/nswp/sdk-types/`);
+    }
+    expect(Object.keys(SDK_LEFT)).toEqual(["."]);
+  });
+});
