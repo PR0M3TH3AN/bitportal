@@ -1,9 +1,9 @@
-import { e as M, E as U, p as B, R as K, a as c, i as S } from "./bitlogin-shared-CDSZpiZ4.js";
-import { r as I, v as O } from "./bitlogin-shared-Cj9s0_W_.js";
-import { W as D } from "./bitlogin-shared-BVd_kYfR.js";
-import { c as Ne } from "./bitlogin-shared-BVd_kYfR.js";
-import { r as q } from "./bitlogin-shared-CjWz8W3w.js";
-import { b as $, c as F, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-D6Hzbnis.js";
+import { e as M, E as U, p as B, R as K, a as c, i as S } from "./bitlogin-shared-BgvdwPLe.js";
+import { r as I, v as O } from "./bitlogin-shared-8bKMreA1.js";
+import { W as D } from "./bitlogin-shared-DFaGPwU-.js";
+import { c as Ne } from "./bitlogin-shared-DFaGPwU-.js";
+import { r as q } from "./bitlogin-shared-B1xnBpIf.js";
+import { b as $, c as F, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-DYDjy9w2.js";
 import { readCachedSession as z } from "./bitlogin-session.js";
 const j = 6, R = 64;
 function v(n = j) {
@@ -489,7 +489,7 @@ function ee(n) {
       localStorage.removeItem(A);
     } catch {
     }
-    w = import("./bitlogin-shared-rBIJuiTA.js").then((e) => (e.init({
+    w = import("./bitlogin-shared-Ty-isA9X.js").then((e) => (e.init({
       appName: n,
       filters: ["nwc"],
       showBalance: !1,
@@ -987,12 +987,13 @@ class x extends HTMLElement {
   }
   /** The accounts kept on this device, read again from the worker; the view is drawn again where it shows them. */
   async refreshAccounts() {
+    const e = JSON.stringify(this.accounts);
     try {
       this.accounts = (await this.worker.accountsList()).accounts;
     } catch {
       this.accounts = [];
     }
-    (this.screen === "welcome" || this.screen === "accounts" || this.screen === "dashboard") && this.render();
+    JSON.stringify(this.accounts) !== e && (this.screen === "welcome" || this.screen === "accounts" || this.screen === "dashboard") && this.render();
   }
   /** The account in hand is no longer the one signed in here: the host is told, and nothing of it is left. */
   endSession() {
@@ -1927,7 +1928,7 @@ class x extends HTMLElement {
   /** The session is gone from memory and sealed at rest: say so to the host, and ask to unlock. */
   showLocked() {
     const e = !!this.session;
-    this.session = null, g(this), this.releaseSigner(), e && this.dispatchEvent(new CustomEvent("bitlogin-logout")), this.lockNote = "", this.goto("unlock");
+    this.session = null, g(this), this.releaseSigner(), e && this.dispatchEvent(new CustomEvent("bitlogin-logout", { detail: { locked: !0 } })), this.lockNote = "", this.goto("unlock");
   }
   async noticeLocked() {
     if (!(!this.session || this.altSigner || !this.lock?.on))
