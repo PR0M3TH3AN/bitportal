@@ -32,6 +32,18 @@ const ownPage = (mode: PanelMode): boolean => mode === "account" || mode === "fi
  * panel older than "files", "wallet" and "library" says nothing to those, and its account page leads to them.
  */
 const OWN_PAGE_TRIES = 8;
+/**
+ * A panel kept between openings (BitLogin's docs/sign-in-window.md, §SW19.8): its frame stays, hidden, and is shown
+ * again with `show` instead of being loaded anew, which is most of what an opening costs. This long hidden and it is
+ * removed: BitLogin lets go of what its hidden panel holds after the same five minutes.
+ */
+const KEEP_MS = 5 * 60_000;
+/**
+ * How long a panel shown again has to say its size, which it does as it draws each screen (measured: under a tenth
+ * of a second). A panel older than `show` says nothing to it: the frame is then removed and a new one loaded, as
+ * before, and no frame is kept again by this page, so that wait is paid once.
+ */
+const SHOWN_MS = 1500;
 
 /** Where the world's menu is, as the world says: used to draw the panel in its place, and never trusted. */
 export interface MenuPlace {
@@ -77,18 +89,50 @@ const PANEL_EDGES = 2;
 export interface Panel {
   /** Whether it is up. */
   readonly open: boolean;
+  /** Whether a frame is being kept, hidden, for the next opening. */
+  readonly kept: boolean;
   /** Show it, for the page at `asker` (its origin, as the browser reported it). Does nothing if one is up. */
   show(asker: string, mode: PanelMode, menu: MenuPlace | null): void;
-  /** Take it away, if it is up: the place in the frame changed, or the visitor pressed outside it. */
+  /** Take it away, if it is up: the place in the frame changed, or the visitor pressed outside it. Its frame is kept. */
   close(): void;
+  /**
+   * Whose place is in the frame now (its origin). A panel kept for another origin's place is removed: it is shown
+   * again only for the place it was opened for.
+   */
+  placeIs(origin: string): void;
+  /** Remove a kept frame, and one that is up. */
+  drop(): void;
 }
 
 /**
  * The panel, for a page that holds the screen. `at` is the sign-in address's origin as it is reached from here (on
  * a development server, a local copy's). `told` is called as it comes up and as it goes.
+ *
+ * Between openings its frame is kept, hidden (§SW19.8). To a kept frame this page says `show` and `hide` and
+ * nothing else: `show` only from `show()` here, which is called only at the visitor's press, and only for the origin
+ * the frame was first opened for.
  */
 export function createPanel(o: { at: string; told(open: boolean, more?: { failed?: boolean; allowed?: boolean }): void }): Panel {
-  let up: { box: HTMLElement; scrim: HTMLElement; frame: HTMLIFrameElement; size: "menu" | "tall"; wished: number | null; menu: MenuPlace | null; ready: boolean; hello: ReturnType<typeof setInterval> | null; giveUp: ReturnType<typeof setTimeout> } | null = null;
+  interface Up {
+    box: HTMLElement;
+    scrim: HTMLElement;
+    frame: HTMLIFrameElement;
+    asker: string;
+    mode: PanelMode;
+    size: "menu" | "tall";
+    wished: number | null;
+    menu: MenuPlace | null;
+    ready: boolean;
+    /** Whether the world has been told it is up: once for each opening, however the frame came. */
+    said: boolean;
+    hello: ReturnType<typeof setInterval> | null;
+    giveUp: ReturnType<typeof setTimeout> | null;
+  }
+  let up: Up | null = null;
+  /** The frame kept from the last opening, hidden, and the origin it was opened for. */
+  let kept: { box: HTMLElement; frame: HTMLIFrameElement; asker: string; old: ReturnType<typeof setTimeout> } | null = null;
+  /** Whether the panel at this address has yet failed to answer `show`: one that has is never kept again. */
+  let knowsShow = true;
   const place = (): void => {
     if (!up) return;
     // What it wishes is its content's height; the box is that and its own two edges.
@@ -99,18 +143,42 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
     up.box.style.setProperty("--panel-bottom", `${p.bottom}px`);
     up.box.style.setProperty("--panel-height", `${p.height}px`);
   };
-  const end = (more?: { failed?: boolean; allowed?: boolean }): void => {
+  const say = (frame: HTMLIFrameElement, message: Record<string, unknown>): void => {
+    // Addressed to BitLogin's origin: nothing else that might be in the frame hears it.
+    try {
+      frame.contentWindow?.postMessage({ bitlogin: PROTOCOL, v: VERSION, ...message }, o.at);
+    } catch {
+      /* a frame that can't be spoken to is removed when its time is up */
+    }
+  };
+  const drop = (): void => {
+    if (!kept) return;
+    clearTimeout(kept.old);
+    kept.box.remove();
+    kept = null;
+  };
+  /** Take it down. A frame that had come up is kept, hidden and told so; one that never did is removed. */
+  const end = (more?: { failed?: boolean; allowed?: boolean }, keep = true): void => {
     if (!up) return;
     const was = up;
     up = null;
     if (was.hello) clearInterval(was.hello);
-    clearTimeout(was.giveUp);
-    was.box.remove();
+    if (was.giveUp) clearTimeout(was.giveUp);
     was.scrim.remove();
+    if (keep && knowsShow && was.ready && !more?.failed) {
+      was.box.dataset.kept = "";
+      say(was.frame, { t: "hide" });
+      kept = { box: was.box, frame: was.frame, asker: was.asker, old: setTimeout(drop, KEEP_MS) };
+    } else was.box.remove();
     o.told(false, more);
   };
+  const cameUp = (): void => {
+    if (!up || up.said) return;
+    up.said = true;
+    o.told(true);
+  };
   addEventListener("message", (e: MessageEvent) => {
-    // Only BitLogin's own page, in the frame this page made for it, at BitLogin's own address.
+    // Only BitLogin's own page, in the frame this page made for it, at BitLogin's own address. A hidden one is not heard.
     if (!up || e.source !== up.frame.contentWindow || e.origin !== o.at) return;
     const said = e.data as { bitlogin?: unknown; v?: unknown; t?: unknown; size?: unknown; height?: unknown; allowed?: unknown } | null;
     if (!said || typeof said !== "object" || said.bitlogin !== PROTOCOL || said.v !== VERSION) return;
@@ -119,15 +187,21 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
       up.ready = true;
       if (up.hello) clearInterval(up.hello);
       up.hello = null;
-      clearTimeout(up.giveUp);
+      if (up.giveUp) clearTimeout(up.giveUp);
+      up.giveUp = null;
       delete up.box.dataset.waiting;
       up.frame.focus();
-      o.told(true);
+      cameUp();
     } else if (said.t === "size" && (said.size === "menu" || said.size === "tall")) {
       // A wish: what it gets is this page's to say, and stays on the screen. With it, how tall its content is
       // (said again whenever that changes): the panel is then drawn that tall, within the same bounds.
       up.size = said.size;
       up.wished = num(said.height);
+      // A panel shown again has drawn its screen: it knew `show`.
+      if (up.ready && up.giveUp) {
+        clearTimeout(up.giveUp);
+        up.giveUp = null;
+      }
       place();
     } else if (said.t === "close") {
       end({ allowed: said.allowed === true });
@@ -139,58 +213,111 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
   addEventListener("keydown", (e: KeyboardEvent) => {
     if (up && e.key === "Escape") end();
   });
+  // The frame goes with this page, said plainly: nothing of the sign-in address's is left behind it.
+  addEventListener("pagehide", () => {
+    end(undefined, false);
+    drop();
+  });
+  const scrimFor = (): HTMLElement => {
+    const scrim = document.createElement("div");
+    scrim.className = "shell-scrim";
+    scrim.addEventListener("click", () => end());
+    return scrim;
+  };
+  /** A new frame, loaded from nothing and told who is asking until it says it heard. */
+  const anew = (asker: string, mode: PanelMode, menu: MenuPlace | null, said: boolean): void => {
+    const scrim = scrimFor();
+    const box = document.createElement("div");
+    box.className = "shell-panel";
+    box.dataset.waiting = "";
+    const wait = document.createElement("p");
+    wait.className = "shell-panel-wait";
+    let host = o.at;
+    try {
+      host = new URL(o.at).host;
+    } catch {
+      /* said as it is */
+    }
+    wait.textContent = `Asking ${host}…`;
+    const frame = document.createElement("iframe");
+    frame.title = "Sign in";
+    // A passkey may be used and made in it, by BitLogin's own address and nobody else. Nothing else is handed on.
+    frame.allow = `publickey-credentials-get ${o.at}; publickey-credentials-create ${o.at}`;
+    frame.referrerPolicy = "no-referrer";
+    // With the last slash: without it BitLogin serves its window's rules, which refuse to be framed.
+    frame.src = `${o.at}/connect/panel/`;
+    box.append(wait, frame);
+    let tries = 0;
+    const hello = (): void => {
+      // A panel that doesn't know "files" or "wallet" leaves them unanswered: after a moment it is asked for
+      // the account page instead, which every panel has, and which leads to both.
+      const as: PanelMode = (mode === "files" || mode === "wallet" || mode === "library") && tries++ >= OWN_PAGE_TRIES ? "account" : mode;
+      say(frame, { t: "hello", mode: as, ...(ownPage(as) ? {} : { world: asker }) });
+    };
+    up = { box, scrim, frame, asker, mode, size: "menu", wished: null, menu, ready: false, said, hello: null, giveUp: setTimeout(() => end({ failed: true }), READY_MS) };
+    // It is told once its page has loaded, and again until it says it heard: it can't speak first, since it only
+    // learns who is above it from being spoken to.
+    frame.addEventListener("load", () => {
+      if (!up || up.frame !== frame || up.ready || up.hello) return;
+      hello();
+      up.hello = setInterval(hello, HELLO_EVERY_MS);
+    });
+    place();
+    document.body.append(scrim, box);
+  };
   return {
     get open() {
       return !!up;
     },
+    get kept() {
+      return !!kept;
+    },
     show(asker, mode, menu) {
       if (up) return;
-      const scrim = document.createElement("div");
-      scrim.className = "shell-scrim";
-      scrim.addEventListener("click", () => end());
-      const box = document.createElement("div");
-      box.className = "shell-panel";
-      box.dataset.waiting = "";
-      const wait = document.createElement("p");
-      wait.className = "shell-panel-wait";
-      let host = o.at;
-      try {
-        host = new URL(o.at).host;
-      } catch {
-        /* said as it is */
-      }
-      wait.textContent = `Asking ${host}…`;
-      const frame = document.createElement("iframe");
-      frame.title = "Sign in";
-      // A passkey may be used and made in it, by BitLogin's own address and nobody else. Nothing else is handed on.
-      frame.allow = `publickey-credentials-get ${o.at}; publickey-credentials-create ${o.at}`;
-      frame.referrerPolicy = "no-referrer";
-      // With the last slash: without it BitLogin serves its window's rules, which refuse to be framed.
-      frame.src = `${o.at}/connect/panel/`;
-      box.append(wait, frame);
-      let said = 0;
-      const hello = (): void => {
-        // A panel that doesn't know "files" or "wallet" leaves them unanswered: after a moment it is asked for
-        // the account page instead, which every panel has, and which leads to both.
-        const as: PanelMode = (mode === "files" || mode === "wallet" || mode === "library") && said++ >= OWN_PAGE_TRIES ? "account" : mode;
-        // Addressed to BitLogin's origin: nothing else that might be in the frame hears who is asking.
-        try {
-          frame.contentWindow?.postMessage({ bitlogin: PROTOCOL, v: VERSION, t: "hello", mode: as, ...(ownPage(as) ? {} : { world: asker }) }, o.at);
-        } catch {
-          /* said again in a moment */
-        }
+      // Kept for another place: never shown for this one.
+      if (kept && kept.asker !== asker) drop();
+      if (!kept) return anew(asker, mode, menu, false);
+      const { box, frame } = kept;
+      clearTimeout(kept.old);
+      kept = null;
+      const scrim = scrimFor();
+      up = {
+        box,
+        scrim,
+        frame,
+        asker,
+        mode,
+        size: "menu",
+        wished: null,
+        menu,
+        ready: true,
+        said: false,
+        hello: null,
+        // It never drew: an older panel, or one that has gone wrong. Loaded anew, as every opening used to be.
+        giveUp: setTimeout(() => {
+          if (!up || up.frame !== frame) return;
+          const now = up;
+          up = null;
+          knowsShow = false;
+          now.scrim.remove();
+          now.box.remove();
+          anew(now.asker, now.mode, now.menu, now.said);
+        }, SHOWN_MS),
       };
-      up = { box, scrim, frame, size: "menu", wished: null, menu, ready: false, hello: null, giveUp: setTimeout(() => end({ failed: true }), READY_MS) };
-      // It is told once its page has loaded, and again until it says it heard: it can't speak first, since it only
-      // learns who is above it from being spoken to.
-      frame.addEventListener("load", () => {
-        if (!up || up.frame !== frame || up.ready || up.hello) return;
-        hello();
-        up.hello = setInterval(hello, HELLO_EVERY_MS);
-      });
       place();
-      document.body.append(scrim, box);
+      delete box.dataset.kept;
+      box.before(scrim);
+      say(frame, { t: "show", mode, ...(ownPage(mode) ? {} : { world: asker }) });
+      frame.focus();
+      cameUp();
     },
     close: () => end(),
+    placeIs(origin) {
+      if (kept && kept.asker !== origin) drop();
+    },
+    drop() {
+      end(undefined, false);
+      drop();
+    },
   };
 }

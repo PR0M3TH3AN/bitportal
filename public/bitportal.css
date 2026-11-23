@@ -366,6 +366,8 @@ body.shell { overflow: hidden; background: var(--bitportal-paper); min-height: 1
   transition: height .18s ease, bottom .18s ease; }
 .shell-panel iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #0d0b12; }
 .shell-panel[data-waiting] iframe { visibility: hidden; }
+/* Kept between openings, hidden: it keeps its size, so showing it again draws nothing anew, and takes no press. */
+.shell-panel[data-kept] { visibility: hidden; pointer-events: none; transition: none; }
 .shell-panel-wait { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; color: rgba(244, 241, 234, .7); font: 500 14px/1.4 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
 .shell-panel:not([data-waiting]) .shell-panel-wait { display: none; }
 @media (prefers-reduced-motion: reduce) { .shell-panel { transition: none; } }
