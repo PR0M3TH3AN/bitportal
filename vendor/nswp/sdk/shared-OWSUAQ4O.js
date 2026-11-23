@@ -1,41 +1,10 @@
 import {
-  FEED_LIMITS,
-  ICONS,
-  ago,
-  arriveAs,
-  arriveWith,
-  arrivedSettings,
-  askClientForSignIn,
   askWell,
-  clientSignsInAt,
-  copiedRefused,
-  createHeldButton,
-  currentForm,
-  currentSettings,
   foundRelays,
-  fullscreenAction,
-  handUp,
-  holdFullscreen,
   learnFrom,
-  loadPicture,
-  mayShareScreen,
-  onChatChange,
-  onClientScreen,
-  onPicturesChange,
   relayBackup,
-  reportSettings,
-  resumeFullscreen,
-  rgb,
-  savesWait,
-  screenNotHere,
-  sendWell,
-  setShowsChat,
-  setShowsPictures,
-  showsChat,
-  showsPictures,
-  startingForm,
-  wrapWords
-} from "./shared-L5SGJDCD.js";
+  sendWell
+} from "./shared-CAXNWR2L.js";
 import {
   LiveKeys,
   TextEntry,
@@ -44,12 +13,82 @@ import {
   placeKeys,
   placeLiveKeys,
   wasRefreshed
-} from "./shared-DXWOPDGC.js";
+} from "./shared-UBZ34GUM.js";
+import {
+  LEVEL_WORDS,
+  MUSIC_DUCK,
+  MUSIC_RANGE,
+  PANEL_LIMITS,
+  STRIDE,
+  cleanLook,
+  cleanPin,
+  cleanPlace,
+  cleanRecords,
+  cleanSource,
+  createLibrary,
+  facing,
+  fileStore,
+  inFront,
+  levelStep,
+  musicFade,
+  musicToHear,
+  newId,
+  nextLevel,
+  nextLook,
+  saveFile,
+  tagAlong,
+  wrapText
+} from "./shared-BMAZ7AUG.js";
+import {
+  FEED_LIMITS,
+  ICONS,
+  ago,
+  fullscreenAction,
+  holdFullscreen,
+  resumeFullscreen,
+  rgb
+} from "./shared-WTJ6UI3X.js";
+import {
+  RUN,
+  addDeskControls,
+  chatSwitch,
+  dotsBetween,
+  hasMouse,
+  mayAskHowTheyMove,
+  modelsSwitch,
+  onModelsChange,
+  picturesSwitch,
+  setAimScale,
+  showsModels,
+  watchFov
+} from "./shared-4OUGBV3U.js";
+import {
+  arriveAs,
+  arriveWith,
+  arrivedSettings,
+  askClientForSignIn,
+  clientSignsInAt,
+  copiedRefused,
+  createHeldButton,
+  currentForm,
+  currentSettings,
+  loadPicture,
+  mayShareScreen,
+  onChatChange,
+  onClientScreen,
+  onPicturesChange,
+  reportSettings,
+  savesWait,
+  screenNotHere,
+  showsChat,
+  showsPictures,
+  wrapWords
+} from "./shared-KUNAPS23.js";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
-import * as THREE21 from "three";
+// packages/sdk/src/three.ts
+import * as THREE20 from "three";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/turn.ts
+// packages/sdk/src/turn.ts
 import * as THREE from "three";
 function turnVisitor(rig, camera, degrees) {
   const head = camera.getWorldPosition(new THREE.Vector3());
@@ -61,7 +100,7 @@ function turnVisitor(rig, camera, degrees) {
   rig.rotation.y += a;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/console.ts
+// packages/sdk/src/console.ts
 import * as THREE2 from "three";
 var W = 1024;
 var H = 640;
@@ -441,16 +480,16 @@ function createConsole(controls, opts) {
     const pager = linePages > 1 ? { id: "", label: `Page ${linePage + 1} of ${linePages}`, icon: "turn", on: null, tone: "normal", key: "", short: "", kind: "button", color: "", mark: null, faint: false } : null;
     [...items, ...pager ? [pager] : []].forEach((item, i) => {
       const { x, y, w: cellW } = cellAt(i);
-      const tone2 = item.tone === "warn" ? rgb(t.warn) : A;
+      const tone = item.tone === "warn" ? rgb(t.warn) : A;
       button({ id: item === pager ? "lines-more" : `act:${item.id}`, x, y, w: cellW, h: cellH, label: item.label }, (hot) => {
         g.beginPath();
         g.roundRect(x, y, cellW, cellH, [18, 18, 6, 6]);
-        g.fillStyle = hot ? `rgba(${tone2}, 0.3)` : item.tone === "primary" || item.on ? `rgba(${tone2}, 0.16)` : `rgba(${I}, 0.05)`;
+        g.fillStyle = hot ? `rgba(${tone}, 0.3)` : item.tone === "primary" || item.on ? `rgba(${tone}, 0.16)` : `rgba(${I}, 0.05)`;
         g.fill();
         g.lineWidth = hot ? 4 : 2;
-        g.strokeStyle = hot || item.on ? `rgba(${tone2}, 1)` : `rgba(${tone2}, 0.4)`;
+        g.strokeStyle = hot || item.on ? `rgba(${tone}, 1)` : `rgba(${tone}, 0.4)`;
         g.stroke();
-        g.fillStyle = item.on ? `rgb(${tone2})` : `rgba(${I}, 0.22)`;
+        g.fillStyle = item.on ? `rgb(${tone})` : `rgba(${I}, 0.22)`;
         g.fillRect(x + 14, y + cellH - 7, cellW - 28, 3);
         g.strokeStyle = g.fillStyle = item.tone === "warn" ? t.warn : item.on ? t.accent : t.ink;
         const iconSize = Math.max(0, Math.min(40, cellH - 30));
@@ -693,7 +732,7 @@ function createConsole(controls, opts) {
   return con;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panorama.ts
+// packages/sdk/src/panorama.ts
 import * as THREE3 from "three";
 var PANORAMA_VIEWS = [
   { forward: [0, 0, -1], up: [0, 1, 0] },
@@ -767,7 +806,7 @@ function paintPanorama(renderer, width) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/headset.ts
+// packages/sdk/src/ui/headset.ts
 var granted = false;
 var waitingForGrant = /* @__PURE__ */ new Set();
 try {
@@ -860,120 +899,7 @@ function offerHeadset(title, enter, stay, opts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/desk.ts
-import { FOV_RANGE, LOOK_RANGE } from "@nswp/core";
-var DESK_PREFS_KEY = "nswp:desk";
-var LOOK_STEPS = [
-  { value: 0.5, word: "slow" },
-  { value: 0.75, word: "gentle" },
-  { value: 1, word: "normal" },
-  { value: 1.5, word: "quick" },
-  { value: 2, word: "fast" },
-  { value: 3, word: "fastest" }
-];
-var FOV_STEPS = [null, 60, 70, 80, 90, 100, 110];
-var clampLook = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(LOOK_RANGE[1], Math.max(LOOK_RANGE[0], v)) * 100) / 100 : 1;
-var clampFov = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(FOV_RANGE[1], Math.max(FOV_RANGE[0], v))) : null;
-var prefs = null;
-var watchers = /* @__PURE__ */ new Set();
-var keep = (p) => {
-  try {
-    localStorage.setItem(DESK_PREFS_KEY, JSON.stringify(p));
-  } catch {
-  }
-};
-function load() {
-  if (prefs) return prefs;
-  let kept2 = {};
-  try {
-    kept2 = JSON.parse(localStorage.getItem(DESK_PREFS_KEY) ?? "{}") ?? {};
-  } catch {
-  }
-  const came = arrivedSettings();
-  prefs = { look: clampLook(came.look ?? kept2.look), fov: came.fov !== void 0 ? clampFov(came.fov) : clampFov(kept2.fov) };
-  if (came.look !== void 0 || came.fov !== void 0) keep(prefs);
-  reportSettings(
-    "desk",
-    () => ({ look: load().look, ...load().fov === null ? {} : { fov: load().fov } }),
-    // Their client's menu changed one (settings.ts, `changeSettings`).
-    (now) => {
-      if (now.look !== void 0) setLookScale(now.look);
-      if (now.fov !== void 0) setVisitorFov(now.fov);
-    }
-  );
-  return prefs;
-}
-var change = (next) => {
-  prefs = next;
-  keep(next);
-  for (const w of watchers) w();
-};
-var lookScale = () => load().look;
-var aimScaleNow = 1;
-var aimScale = () => aimScaleNow;
-var setAimScale = (k) => void (aimScaleNow = Number.isFinite(k) ? Math.min(1, Math.max(0.3, k)) : 1);
-var setLookScale = (v) => change({ ...load(), look: clampLook(v) });
-var visitorFov = () => currentForm() === "desk" ? load().fov : null;
-var setVisitorFov = (v) => change({ ...load(), fov: v === null ? null : clampFov(v) });
-function onDeskChange(cb) {
-  watchers.add(cb);
-  return () => void watchers.delete(cb);
-}
-var after = (steps, at) => steps[(at + 1) % steps.length];
-function addDeskControls(controls, o) {
-  const lookAt = () => {
-    const now = lookScale();
-    let best = 0;
-    LOOK_STEPS.forEach((s, i) => {
-      if (Math.abs(s.value - now) < Math.abs(LOOK_STEPS[best].value - now)) best = i;
-    });
-    return best;
-  };
-  controls.add(
-    {
-      id: "look-speed",
-      section: "moving",
-      icon: "turn",
-      hidden: o.presenting,
-      label: () => `Look speed: ${LOOK_STEPS[lookAt()].word}`,
-      short: "Look speed",
-      act: () => {
-        setLookScale(after(LOOK_STEPS, lookAt()).value);
-        controls.say(`Look speed: ${LOOK_STEPS[lookAt()].word}. It is the same in every world.`);
-      }
-    },
-    {
-      id: "fov",
-      section: "view",
-      icon: "size",
-      // A touch screen's view is fitted to its window by the world, and a headset has its own.
-      hidden: () => o.presenting() || currentForm() !== "desk",
-      label: () => load().fov === null ? "Field of view: this world's own" : `Field of view: ${load().fov}\xB0`,
-      short: "View width",
-      act: () => {
-        const at = FOV_STEPS.indexOf(load().fov);
-        setVisitorFov(after(FOV_STEPS, at === -1 ? 0 : at));
-        controls.say(load().fov === null ? "Field of view: each world's own." : `Field of view: ${load().fov}\xB0, in every world.`);
-      }
-    }
-  );
-  onDeskChange(() => controls.setTarget(""));
-}
-function watchFov(camera, o = {}) {
-  const first = camera.fov;
-  const apply = () => {
-    if (o.presenting?.()) return;
-    const fov = visitorFov() ?? o.own?.() ?? first;
-    if (camera.fov === fov) return;
-    camera.fov = fov;
-    camera.updateProjectionMatrix();
-  };
-  onDeskChange(apply);
-  apply();
-  return apply;
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/fresh.ts
+// packages/sdk/src/fresh.ts
 function reloadAfresh() {
   let gone = false;
   const go = () => {
@@ -1075,7 +1001,7 @@ function watchFresh(o = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/fresh.ts
+// packages/sdk/src/ui/fresh.ts
 var writing = () => {
   const at = typeof document !== "undefined" ? document.activeElement : null;
   return !!at && (at.tagName === "INPUT" || at.tagName === "TEXTAREA" || at.isContentEditable === true);
@@ -1101,10 +1027,10 @@ function freshAction(controls, opts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
+// packages/sdk/src/ui/identity.ts
 import { encodeNpub as encodeNpub2, getPublicKey as getPublicKey2, shortNpub as shortNpub4, signerAt as signerAt3 } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
+// packages/sdk/src/index.ts
 import {
   arrivalParam,
   buildAirlockUrl,
@@ -1124,10 +1050,10 @@ import {
   WELL_KNOWN_PATH
 } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/file-hosts.ts
+// packages/sdk/src/file-hosts.ts
 import { DEFAULT_RELAYS, FILE_HOST_LIST_KIND, FILE_HOSTS, fileAt, onFileHost, parseFileHostList } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/hashes/_u64.js
+// node_modules/@noble/hashes/_u64.js
 var fromNumH = (n) => n / 2 ** 32 | 0;
 var fromNumL = (n) => n >>> 0;
 function setU64FromNum(view, byteOffset, n, isLE) {
@@ -1137,7 +1063,7 @@ function setU64FromNum(view, byteOffset, n, isLE) {
   view.setUint32(byteOffset + 4, isLE ? h : l, isLE);
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/hashes/utils.js
+// node_modules/@noble/hashes/utils.js
 function isBytes(a) {
   return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array" && "BYTES_PER_ELEMENT" in a && a.BYTES_PER_ELEMENT === 1;
 }
@@ -1294,7 +1220,7 @@ var oidNist = (suffix) => ({
   oid: Uint8Array.from([6, 9, 96, 134, 72, 1, 101, 3, 4, 2, suffix])
 });
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/hashes/_md.js
+// node_modules/@noble/hashes/_md.js
 function Chi(a, b, c) {
   return a & b ^ ~a & c;
 }
@@ -1407,7 +1333,7 @@ var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
   1541459225
 ]);
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/hashes/sha2.js
+// node_modules/@noble/hashes/sha2.js
 var SHA256_K = /* @__PURE__ */ Uint32Array.from([
   1116352408,
   1899447441,
@@ -1500,11 +1426,11 @@ var SHA2_32B = class extends HashMD {
     this.H = IV[7] | 0;
   }
   get() {
-    const { A, B, C, D, E, F, G, H: H5 } = this;
-    return [A, B, C, D, E, F, G, H5];
+    const { A, B, C, D, E, F, G, H: H4 } = this;
+    return [A, B, C, D, E, F, G, H4];
   }
   // prettier-ignore
-  set(A, B, C, D, E, F, G, H5) {
+  set(A, B, C, D, E, F, G, H4) {
     this.A = A | 0;
     this.B = B | 0;
     this.C = C | 0;
@@ -1512,7 +1438,7 @@ var SHA2_32B = class extends HashMD {
     this.E = E | 0;
     this.F = F | 0;
     this.G = G | 0;
-    this.H = H5 | 0;
+    this.H = H4 | 0;
   }
   _cloneInto(to) {
     (to ||= new this.constructor()).set(...this.get());
@@ -1528,13 +1454,13 @@ var SHA2_32B = class extends HashMD {
       const s1 = rotr(W22, 17) ^ rotr(W22, 19) ^ W22 >>> 10;
       SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
     }
-    let { A, B, C, D, E, F, G, H: H5 } = this;
+    let { A, B, C, D, E, F, G, H: H4 } = this;
     for (let i = 0; i < 64; i++) {
       const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-      const T1 = H5 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
+      const T1 = H4 + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
       const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
       const T2 = sigma0 + Maj(A, B, C) | 0;
-      H5 = G;
+      H4 = G;
       G = F;
       F = E;
       E = D + T1 | 0;
@@ -1550,8 +1476,8 @@ var SHA2_32B = class extends HashMD {
     E = E + this.E | 0;
     F = F + this.F | 0;
     G = G + this.G | 0;
-    H5 = H5 + this.H | 0;
-    this.set(A, B, C, D, E, F, G, H5);
+    H4 = H4 + this.H | 0;
+    this.set(A, B, C, D, E, F, G, H4);
   }
   roundClean() {
     clean(SHA256_W);
@@ -1572,11 +1498,11 @@ var sha256 = /* @__PURE__ */ createHasher(
   /* @__PURE__ */ oidNist(1)
 );
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/file-hosts.ts
+// packages/sdk/src/file-hosts.ts
 var ANYWHERE_KEY = "nswp:files-anywhere";
-var watchers2 = /* @__PURE__ */ new Set();
+var watchers = /* @__PURE__ */ new Set();
 var anywhere = null;
-var keep2 = (on) => {
+var keep = (on) => {
   try {
     if (on) globalThis.localStorage?.setItem(ANYWHERE_KEY, "on");
     else globalThis.localStorage?.removeItem(ANYWHERE_KEY);
@@ -1592,7 +1518,7 @@ function filesAnywhere() {
   } catch {
   }
   anywhere = came === false ? false : kept2 === "on";
-  if (came === false) keep2(false);
+  if (came === false) keep(false);
   reportSettings(
     "files-anywhere",
     () => filesAnywhere() ? {} : { filesAnywhere: false },
@@ -1603,12 +1529,12 @@ function filesAnywhere() {
 function setFilesAnywhere(on) {
   filesAnywhere();
   anywhere = on;
-  keep2(on);
-  for (const fn of watchers2) fn();
+  keep(on);
+  for (const fn of watchers) fn();
 }
 function onFileHostsChange(fn) {
-  watchers2.add(fn);
-  return () => void watchers2.delete(fn);
+  watchers.add(fn);
+  return () => void watchers.delete(fn);
 }
 var own = null;
 function learnFileHosts(pubkey, opts = {}) {
@@ -1622,7 +1548,7 @@ function learnFileHosts(pubkey, opts = {}) {
     hosts: [],
     asked: askWell({ kinds: [FILE_HOST_LIST_KIND], authors: [pubkey], limit: 4 }, { own: [], usual: opts.relays ?? DEFAULT_RELAYS, ...opts.query ? { query: opts.query } : {}, timeoutMs: 4e3, ...opts.now ? { now: opts.now } : {} }).then((got) => parseFileHostList(got.events, pubkey)).catch(() => []).then((hosts) => {
       mine.hosts = hosts;
-      if (own === mine) for (const fn of watchers2) fn();
+      if (own === mine) for (const fn of watchers) fn();
       return hosts;
     })
   };
@@ -1667,7 +1593,7 @@ async function fetchByHashSaying(sha2562, hint2, opts = {}) {
   return { bytes: null, wrong };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/utils.js
+// node_modules/@noble/curves/utils.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 function aarray(item, title, inner = () => {
 }) {
@@ -1799,7 +1725,7 @@ function validateObject(object, fields = {}, optFields = {}, title = "object") {
   iter(optFields, true);
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/abstract/modular.js
+// node_modules/@noble/curves/abstract/modular.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 var _0n2 = /* @__PURE__ */ BigInt(0);
 var _1n2 = /* @__PURE__ */ BigInt(1);
@@ -2251,7 +2177,7 @@ function mapHashToField(key, fieldOrder, isLE = false) {
   return isLE ? numberToBytesLE(reduced, fieldLen) : numberToBytesBE(reduced, fieldLen);
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/abstract/curve.js
+// node_modules/@noble/curves/abstract/curve.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 var _0n3 = /* @__PURE__ */ BigInt(0);
 var _1n3 = /* @__PURE__ */ BigInt(1);
@@ -2278,9 +2204,9 @@ function normalizeZ(c, points) {
   const invertedZs = FpInvertBatch(c.Fp, points.map((p) => p.Z));
   return points.map((p, i) => c.fromAffine(p.toAffine(invertedZs[i])));
 }
-function validateW(W5, bits, min = 1) {
-  if (!Number.isSafeInteger(W5) || W5 < min || W5 > bits)
-    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W5);
+function validateW(W4, bits, min = 1) {
+  if (!Number.isSafeInteger(W4) || W4 < min || W4 > bits)
+    throw new Error("invalid window size, expected [" + min + ".." + bits + "], got W=" + W4);
 }
 function validateTableBytes(numPoints, fpBytes) {
   const bytes = numPoints * (4 * fpBytes + 128);
@@ -2327,8 +2253,8 @@ function oddMultiples(p, size) {
     t.push(t[j - 1].add(dbl));
   return t;
 }
-function wnafDigits(n, W5) {
-  const size = 2 ** W5;
+function wnafDigits(n, W4) {
+  const size = 2 ** W4;
   const half = size / 2;
   const mask = BigInt(size - 1);
   const d = [];
@@ -2345,11 +2271,11 @@ function wnafDigits(n, W5) {
   }
   return d;
 }
-function signedWindowDigits(n, W5, windows) {
-  const size = 2 ** W5;
+function signedWindowDigits(n, W4, windows) {
+  const size = 2 ** W4;
   const half = size / 2;
   const mask = BigInt(size - 1);
-  const shiftBy = BigInt(W5);
+  const shiftBy = BigInt(W4);
   const d = [];
   for (let w = 0; w < windows; w++) {
     let v = Number(n & mask);
@@ -2409,9 +2335,9 @@ var ScalarMultiplier = class {
    * @param W - window size
    * @param bits - scalar bitlength the table must cover
    */
-  buildWnafTable(point, W5, bits) {
-    const windows = Math.ceil(bits / W5) + 1;
-    const half = 2 ** (W5 - 1);
+  buildWnafTable(point, W4, bits) {
+    const windows = Math.ceil(bits / W4) + 1;
+    const half = 2 ** (W4 - 1);
     const comp = [];
     let base = point;
     for (let w = 0; w < windows; w++) {
@@ -2422,7 +2348,7 @@ var ScalarMultiplier = class {
       }
       base = comp[comp.length - 1].double();
     }
-    return { W: W5, bits, windows, comp };
+    return { W: W4, bits, windows, comp };
   }
   /**
    * Implements ec multiplication using precomputed signed fixed-window wNAF tables.
@@ -2434,9 +2360,9 @@ var ScalarMultiplier = class {
    * @returns real and fake (for const-time) points
    */
   wnafCachedCT(precomputes, n) {
-    const { W: W5, windows, comp } = precomputes;
-    const half = 2 ** (W5 - 1);
-    const digits = signedWindowDigits(n, W5, windows);
+    const { W: W4, windows, comp } = precomputes;
+    const half = 2 ** (W4 - 1);
+    const digits = signedWindowDigits(n, W4, windows);
     let p = this.ZERO;
     let f = this.BASE;
     for (let w = 0; w < windows; w++) {
@@ -2457,11 +2383,11 @@ var ScalarMultiplier = class {
   // Cache key is point identity plus (W, bits); at most two entries exist per point (public-width
   // `Fn.BITS` and blinded `Fn.BITS + BLIND_BITS`). Callers must not reuse the same point with
   // incompatible `transform(...)` layouts and expect a separate cache entry.
-  getWnafPrecomputes(W5, point, bits, transform) {
+  getWnafPrecomputes(W4, point, bits, transform) {
     let entries = this.wnafPrecomputes.get(point);
-    let comp = entries?.find((entry) => entry.W === W5 && entry.bits === bits);
+    let comp = entries?.find((entry) => entry.W === W4 && entry.bits === bits);
     if (!comp) {
-      comp = this.buildWnafTable(point, W5, bits);
+      comp = this.buildWnafTable(point, W4, bits);
       if (typeof transform === "function")
         comp = { ...comp, comp: transform(comp.comp) };
       if (!entries) {
@@ -2488,10 +2414,10 @@ var ScalarMultiplier = class {
   // ECDH peer keys) skip building a throwaway cached table in favor of a small fixed-window
   // multiply. `n` must be < 2^bits.
   runCT(point, n, bits, transform) {
-    const W5 = getWindowSize(point);
-    if (W5 === 1)
+    const W4 = getWindowSize(point);
+    if (W4 === 1)
       return this.fixedWindowCT(point, n, bits);
-    return this.wnafCachedCT(this.getWnafPrecomputes(W5, point, bits, transform), n);
+    return this.wnafCachedCT(this.getWnafPrecomputes(W4, point, bits, transform), n);
   }
   mulCT(point, scalar, transform) {
     this.validateMulInput(point, scalar);
@@ -2525,20 +2451,20 @@ var ScalarMultiplier = class {
    * (this path needs no fake accumulator — its op-count is already scalar-independent).
    */
   fixedWindowCT(point, n, bits) {
-    const W5 = FW_WINDOW;
-    const size = 1 << W5;
-    const mask = bitMask(W5);
+    const W4 = FW_WINDOW;
+    const size = 1 << W4;
+    const mask = bitMask(W4);
     const table = new Array(size);
     table[0] = this.ZERO;
     for (let i = 1; i < size; i++)
       table[i] = table[i - 1].add(point);
-    const windows = Math.ceil(bits / W5);
+    const windows = Math.ceil(bits / W4);
     let acc = this.ZERO;
     for (let window2 = windows - 1; window2 >= 0; window2--) {
       if (window2 !== windows - 1)
-        for (let d = 0; d < W5; d++)
+        for (let d = 0; d < W4; d++)
           acc = acc.double();
-      const digit = Number(n >> BigInt(window2 * W5) & mask);
+      const digit = Number(n >> BigInt(window2 * W4) & mask);
       let sel = table[0];
       for (let i = 1; i < size; i++)
         sel = i === digit ? table[i] : sel;
@@ -2564,22 +2490,22 @@ var ScalarMultiplier = class {
     this.assertPoint(point);
     if (!isPosBig(scalar))
       throw new Error("invalid scalar");
-    const W5 = getWindowSize(point);
-    if (W5 === 1 || scalar >= this.Point.Fn.ORDER)
+    const W4 = getWindowSize(point);
+    if (W4 === 1 || scalar >= this.Point.Fn.ORDER)
       return mulAddUnsafe(this.Point, [point], [scalar], true);
-    const precomputes = this.getWnafPrecomputes(W5, point, this.bits, transform);
+    const precomputes = this.getWnafPrecomputes(W4, point, this.bits, transform);
     return this.wnafCachedCT(precomputes, scalar).p;
   }
   // Remembers the window size used for precomputed wNAF multiplication of the given point
   // and drops any previously built tables. Usually only the base point is precomputed.
   // W=1 resets the point to the un-precomputed (table-less) paths.
   // W is additionally capped so tables stay under ~2 GiB ({@link TABLE_BYTES_MAX}).
-  setWindowSize(point, W5) {
+  setWindowSize(point, W4) {
     this.assertPoint(point);
-    validateW(W5, this.bits);
-    const windows = Math.ceil((this.bits + BLIND_BITS) / W5) + 1;
-    validateTableBytes(windows * 2 ** (W5 - 1), this.Point.Fp.BYTES);
-    pointWindowSizes.set(point, W5);
+    validateW(W4, this.bits);
+    const windows = Math.ceil((this.bits + BLIND_BITS) / W4) + 1;
+    validateTableBytes(windows * 2 ** (W4 - 1), this.Point.Fp.BYTES);
+    pointWindowSizes.set(point, W4);
     this.wnafPrecomputes.delete(point);
   }
   // True when a window size is set: tables themselves are built lazily on first multiply.
@@ -2639,7 +2565,7 @@ function createKeygen(randomSecretKey, getPublicKey3) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/abstract/weierstrass.js
+// node_modules/@noble/curves/abstract/weierstrass.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 var divNearest = (num2, den) => (num2 + (num2 >= 0 ? den : -den) / _2n2) / den;
 function _splitEndoScalar(k, basis, n) {
@@ -3121,7 +3047,7 @@ function getWLengths(Fp, Fn) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@noble/curves/secp256k1.js
+// node_modules/@noble/curves/secp256k1.js
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 var secp256k1_CURVE = {
   p: BigInt("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"),
@@ -3284,7 +3210,7 @@ var schnorr = /* @__PURE__ */ (() => {
   });
 })();
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/room.ts
+// packages/sdk/src/room.ts
 import {
   buildHello,
   buildSay,
@@ -4229,10 +4155,10 @@ var room = {
   }
 };
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bring.ts
+// packages/sdk/src/bring.ts
 import { readBrought } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/index.ts
+// packages/sdk/src/index.ts
 var RETURN_KEY = "nswp:return-airlock";
 var SIGNER_KEY = "nswp:signer";
 var LOOK_KEY = "nswp:look";
@@ -4575,13 +4501,13 @@ function showFallback(dest) {
   go.focus();
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/front-room.ts
+// packages/sdk/src/front-room.ts
 import { ACCESS_MOST, accessFor, cleanAccess, cleanListing, DEFAULT_RELAYS as DEFAULT_RELAYS4, isHex64 as isHex642, LIST_KIND, listD, LISTING_KIND, listingSeller, OWNER_LIST_LIMITS, parseManifest as parseManifest2, priceWords, readListing, readReceipt, isOwnerListAsked, resolveOwnerList, scopeOfChange, shortNpub as shortNpub3, worldSubject, WORLD_KIND } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/following.ts
+// packages/sdk/src/following.ts
 import { decodeNpub, encodeNpub, shortNpub as shortNpub2 } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/profiles.ts
+// packages/sdk/src/profiles.ts
 import { cleanAbout, cleanName, cleanPicture, DEFAULT_RELAYS as DEFAULT_RELAYS3, isHex64, queryRelays as queryRelays2, verifyEvent as verifyEvent2 } from "@nswp/core";
 var KEY = "nswp:profiles";
 var MOST = 400;
@@ -4611,7 +4537,7 @@ function createProfiles(opts = {}) {
       return null;
     }
   })();
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   let kept2 = null;
   const all = () => {
     if (kept2) return kept2;
@@ -4652,16 +4578,16 @@ function createProfiles(opts = {}) {
       }
       if (answered) for (const k of wanted) book[k] = { ...book[k] ?? { name: "", picture: "", about: "", at: 0 }, asked: now() };
       save();
-      for (const fn of watchers4) fn();
+      for (const fn of watchers3) fn();
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/following.ts
+// packages/sdk/src/following.ts
 var PAGE = 24;
 function keyIn(text) {
   if (typeof text !== "string") return null;
@@ -4843,7 +4769,7 @@ function addFollowingControls(controls, opts) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/front-room.ts
+// packages/sdk/src/front-room.ts
 var GATE_TIMES = { grace: 120, look: 300, goodFor: 86400 };
 var LISTS_KEY = "nswp:owner-lists";
 function rememberedLists() {
@@ -4926,7 +4852,7 @@ function untilWords(until) {
 function createPaidGate(opts) {
   const now = opts.now ?? (() => Date.now());
   const sec = () => Math.floor(now() / 1e3);
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   let state = opts.listings && opts.listings.length === 0 ? "free" : "checking";
   let reason = "";
   let listings = [];
@@ -4962,7 +4888,7 @@ function createPaidGate(opts) {
   let listRetries = 0;
   let listTimer;
   const changed = () => {
-    for (const fn of [...watchers4]) {
+    for (const fn of [...watchers3]) {
       try {
         fn();
       } catch {
@@ -5277,13 +5203,13 @@ function createPaidGate(opts) {
     get guests() {
       return byInvitation ? [...invited] : null;
     },
-    async changeList(change2, key) {
+    async changeList(change, key) {
       const signer = opts.signer();
       const me = signer?.state === "unlocked" ? signer.pubkey : null;
       if (disposed || !lists || !signer || !me || !isKeeper(me)) return { ok: false, said: "Only one of this world's keepers, signed in here, can change who comes in." };
       if (!isHex642(key)) return { ok: false, said: "That isn't someone's key." };
       if (isKeeper(key)) return { ok: false, said: "That's one of this world's keepers: always let in, and never kept out." };
-      const scope = scopeOfChange(change2);
+      const scope = scopeOfChange(change);
       if (scope === "user-allow" && !byInvitation) return { ok: false, said: "This world isn't by invitation, so there is no list of who is let in." };
       if (changing) return { ok: false, said: "One change at a time: the last is still with your sign-in address." };
       const subject = lists.subjects.find((s) => rootOf(s).includes(me));
@@ -5293,7 +5219,7 @@ function createPaidGate(opts) {
       if (!found) {
         const standing = scope === "user-deny" ? listState : inviteState;
         if (standing === "reading" || standing === "unanswered") return { ok: false, said: "The list couldn't be read just now, so it isn't changed: one started now could wipe a list a relay is holding. Try again in a moment." };
-        const what = `${change2} ${key}`;
+        const what = `${change} ${key}`;
         if (!starting || starting.what !== what || sec() - starting.at > 60) {
           starting = { what, at: sec() };
           return { ok: false, again: true, said: `No ${scope === "user-allow" ? "guest" : "block"} list for this world was found. Press again to start one, naming only them.` };
@@ -5303,9 +5229,9 @@ function createPaidGate(opts) {
       starting = null;
       changing = true;
       changed();
-      const signed = await signer.guests({ world: subject, list: found, change: change2, key, ...none ? { none: true } : {} }).catch(() => null);
+      const signed = await signer.guests({ world: subject, list: found, change, key, ...none ? { none: true } : {} }).catch(() => null);
       changing = false;
-      if (!signed || disposed || !isOwnerListAsked(signed, { list: found, subject, change: change2, key, pubkey: me })) {
+      if (!signed || disposed || !isOwnerListAsked(signed, { list: found, subject, change, key, pubkey: me })) {
         changed();
         return { ok: false, said: "Nothing changed: your sign-in window said no, or can't change this world's list yet." };
       }
@@ -5313,7 +5239,7 @@ function createPaidGate(opts) {
       applyLists([signed]);
       void look();
       const sent = await sendWell(signed, { own: ownRelays, usual: opts.relays ?? DEFAULT_RELAYS4, ...opts.publish ? { publish: opts.publish } : {}, ...opts.query ? { query: opts.query } : {}, now }).catch(() => null);
-      const done = change2 === "allow" ? "Invited." : change2 === "unallow" ? "Taken off the list." : change2 === "block" ? "Kept out." : "No longer kept out.";
+      const done = change === "allow" ? "Invited." : change === "unallow" ? "Taken off the list." : change === "block" ? "Kept out." : "No longer kept out.";
       if (!sent || sent.took === 0) return { ok: true, said: `${done} It holds here, but no relay took the list yet, so nobody else sees the change.` };
       return { ok: true, said: `${done} Anyone can read this list.` };
     },
@@ -5349,8 +5275,8 @@ function createPaidGate(opts) {
       await look();
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     },
     info() {
       return { state, open: state === "free" || state === "open" || state === "ending", reason, why: why(), offers: offerList(), unread: Object.fromEntries(unread), until: state === "open" && held ? held.expiresAt : null, endsAt: endsAt ? Math.round(endsAt / 1e3) : null, signedIn: signedIn(), buying, listings: [...listings], lists: listState, changing, ownerBlocked: ownerBlocked.length, namedOnly, byInvitation, invites: inviteState, invited: invited.length };
@@ -5364,7 +5290,7 @@ function createPaidGate(opts) {
       clearTimeout(listTimer);
       clearInterval(lookTimer);
       unwatch?.();
-      watchers4.clear();
+      watchers3.clear();
     }
   };
 }
@@ -5390,7 +5316,7 @@ function addGateControls(controls, gate, opts = {}) {
       else controls.say("That didn't finish, and the way is still shut. If you did pay, press Buy again: it finds what you paid for and charges nothing more.");
     });
   };
-  const showing2 = () => (gate.state === "shut" || gate.state === "ending") && gate.reason !== "no-manifest" && gate.reason !== "not-own" && gate.reason !== "no-signer" && gate.reason !== "blocked" && gate.reason !== "not-invited";
+  const showing = () => (gate.state === "shut" || gate.state === "ending") && gate.reason !== "no-manifest" && gate.reason !== "not-own" && gate.reason !== "no-signer" && gate.reason !== "blocked" && gate.reason !== "not-invited";
   for (let i = 0; i < ACCESS_MOST; i++) {
     const offer = () => gate.offers[i];
     controls.add({
@@ -5407,14 +5333,14 @@ function addGateControls(controls, gate, opts = {}) {
         if (gate.byInvitation && !gate.signedIn) return "Sign in, to show you are invited";
         return gate.signedIn ? "Ask again what this costs" : "Sign in, to show what you hold";
       },
-      hidden: () => !showing2() || !offer() && (i > 0 || gate.offers.length > 0),
+      hidden: () => !showing() || !offer() && (i > 0 || gate.offers.length > 0),
       act: () => press(offer()?.listing)
     });
   }
   const refresh = () => {
     const closed = gate.state === "shut" || gate.state === "ending";
     if (!closed) saidFor = "";
-    else if (saidFor !== gate.state && (gate.state === "ending" || gate.read || !showing2())) {
+    else if (saidFor !== gate.state && (gate.state === "ending" || gate.read || !showing())) {
       saidFor = gate.state;
       controls.say(gate.why);
     }
@@ -5447,7 +5373,7 @@ function addOwnersScreen(controls, gate, opts) {
   });
   const listed = () => [...gate.guests ?? [], ...gate.ownerBlocked];
   const isGuest = (key) => (gate.guests ?? []).includes(key);
-  const change2 = (key, what) => {
+  const change = (key, what) => {
     if (inHeadset()) return controls.say(stepOut);
     const name = nameOf(key);
     const asking = what === "allow" ? `let ${name} in` : what === "unallow" ? `take ${name} off the list` : what === "block" ? `block ${name}` : `unblock ${name}`;
@@ -5472,7 +5398,7 @@ function addOwnersScreen(controls, gate, opts) {
         hidden: () => !gate.keeper || !gate.byInvitation,
         label: () => isGuest(key) ? `${nameOf(key)}: invited. Take them off the list` : `Let ${nameOf(key)} in`,
         short: () => isGuest(key) ? "Take off" : "Let in",
-        act: () => change2(key, isGuest(key) ? "unallow" : "allow")
+        act: () => change(key, isGuest(key) ? "unallow" : "allow")
       },
       {
         id: `guests-block-${key}`,
@@ -5482,7 +5408,7 @@ function addOwnersScreen(controls, gate, opts) {
         hidden: () => !gate.keeper,
         label: () => gate.ownerBlocked.includes(key) ? `${nameOf(key)}: kept out. Unblock them` : `Block ${nameOf(key)}`,
         short: () => gate.ownerBlocked.includes(key) ? "Unblock" : "Block",
-        act: () => change2(key, gate.ownerBlocked.includes(key) ? "unblock" : "block")
+        act: () => change(key, gate.ownerBlocked.includes(key) ? "unblock" : "block")
       }
     );
   };
@@ -5539,7 +5465,7 @@ function addOwnersScreen(controls, gate, opts) {
 var count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 var capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/people.ts
+// packages/sdk/src/people.ts
 import { DEFAULT_RELAYS as DEFAULT_RELAYS5, FOLLOWS_KIND, followsIn, isFollowAsked, isHex64 as isHex643, newestFollows, publishEvent as publishEvent2, queryRelays as queryRelays3, readRelayList, RELAY_LIST_KIND, verifyEvent as verifyEvent3 } from "@nswp/core";
 var KEPT_MOST = 4e5;
 var FRESH_MS2 = 6e4;
@@ -5557,9 +5483,9 @@ function createPeople(opts) {
       return null;
     }
   })();
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   const keyFor = (who) => `nswp:follows:${who}`;
   const readKept = (who) => {
@@ -5570,7 +5496,7 @@ function createPeople(opts) {
       return null;
     }
   };
-  const keep4 = (list) => {
+  const keep3 = (list) => {
     try {
       const text = JSON.stringify(list);
       if (text.length <= KEPT_MOST) store?.setItem(keyFor(list.pubkey), text);
@@ -5596,12 +5522,12 @@ function createPeople(opts) {
     const found = newestFollows((got?.events ?? []).filter((e) => verifyEvent3(e)), who);
     const list = found && kept2 ? kept2.created_at > found.created_at ? kept2 : found : found ?? kept2;
     if (kept2 && list === kept2 && answered && (!found || found.id !== kept2.id)) void sendWell(kept2, { own: own2, usual: usual(), publish, query, now }).catch(() => null);
-    if (list && list !== kept2) keep4(list);
+    if (list && list !== kept2) keep3(list);
     if (hand.pubkey() !== who) return;
     known = { who, list, answered, at: now() };
     changed();
   };
-  const load2 = async (fresh = false) => {
+  const load = async (fresh = false) => {
     const who = hand.pubkey();
     if (!who) {
       if (known) {
@@ -5618,13 +5544,13 @@ function createPeople(opts) {
     await looking;
     return known && known.who === who ? followsIn(known.list) : null;
   };
-  const change2 = async (pubkey, adding, name) => {
+  const change = async (pubkey, adding, name) => {
     const who = hand.pubkey();
     const them = name || "them";
     if (!who) return { ok: false, why: "signed-out", said: "Sign in to follow people." };
     if (!isHex643(pubkey) || pubkey === who) return { ok: false, why: "refused", said: "That isn't someone who can be followed." };
     if (!hand.ready()) return { ok: false, why: "not-allowed", said: "This place hasn't been let change who you follow." };
-    await load2(true);
+    await load(true);
     const at = known && known.who === who ? known : null;
     if (!at) return { ok: false, why: "unreachable", said: "Your follow list couldn't be looked for. Nothing was changed." };
     const list = at.list;
@@ -5642,7 +5568,7 @@ function createPeople(opts) {
     const asked = adding ? { add: pubkey } : { remove: pubkey };
     const signed = await hand.change(list, asked).catch(() => null);
     if (!signed || !isFollowAsked(signed, { list, ...asked, pubkey: who })) return { ok: false, why: "refused", said: "It couldn't be signed. Who you follow is as it was." };
-    keep4(signed);
+    keep3(signed);
     known = { who, list: signed, answered: true, at: now() };
     changed();
     const sent = await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
@@ -5654,17 +5580,17 @@ function createPeople(opts) {
     isFollowing(pubkey) {
       return known && known.who === hand.pubkey() && (known.list || known.answered) ? followsIn(known.list).includes(pubkey) : null;
     },
-    load: load2,
-    follow: (pubkey, name = "") => change2(pubkey, true, name),
-    unfollow: (pubkey, name = "") => change2(pubkey, false, name),
+    load,
+    follow: (pubkey, name = "") => change(pubkey, true, name),
+    unfollow: (pubkey, name = "") => change(pubkey, false, name),
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/saves.ts
+// packages/sdk/src/saves.ts
 import { cleanSlot, DEFAULT_RELAYS as DEFAULT_RELAYS6, fitsInSave, publishEvent as publishEvent3, queryRelays as queryRelays4, readRelayList as readRelayList2, RELAY_LIST_KIND as RELAY_LIST_KIND2, SAVE_KIND, SAVE_SLOT, verifyEvent as verifyEvent4 } from "@nswp/core";
 function createSaves(opts = {}) {
   const now = opts.now ?? (() => Date.now());
@@ -5717,7 +5643,7 @@ function createSaves(opts = {}) {
     const opened = await s.open(newest);
     return opened && opened.slot === slot ? { data: opened.data, at: opened.at } : null;
   };
-  const load2 = async (slotIn) => {
+  const load = async (slotIn) => {
     const slot = cleanSlot(slotIn ?? SAVE_SLOT);
     if (!slot) return null;
     const s = signer();
@@ -5753,10 +5679,10 @@ function createSaves(opts = {}) {
     if (await toAccount(data, slot, who).catch(() => false)) return { kept: "account", said: "Saved to your account." };
     return here ? { kept: "device", said: "Saved on this device. It didn't reach your account this time." } : { kept: "nowhere", said: "That wasn't saved." };
   };
-  return { load: load2, save, clear: (slot) => save("", slot) };
+  return { load, save, clear: (slot) => save("", slot) };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/signer.ts
+// packages/sdk/src/signer.ts
 import { isListSubject, isOwnerListAsked as isOwnerListAsked2, isAchievementAsked, cleanFileBytes, cleanFileName, cleanFileType, cleanInvoice, cleanListing as cleanListing2, cleanMessage, cleanTip, readReceipt as readReceipt2, fileUrlNames, cleanMore, cleanWalletUri, PROPOSE_KINDS, provesPayment, cleanOrigin, cleanSlot as cleanSlot2, fitsInSave as fitsInSave2, isFollowAsked as isFollowAsked2, isHex64 as isHex644, isReachAsked, isScoreAsked, isSealAsked, looksLikeWrap, isWhatWasAsked, looksLikeSave, readSignerReply, signerAddresses, signerAt as signerAt2, signerMessage, toLocal as toLocal2, verifyEvent as verifyEvent5, verifyRoomPass as verifyRoomPass3, WORLD_TAG } from "@nswp/core";
 var NONE = {
   state: "none",
@@ -5819,7 +5745,7 @@ function createWorldSigner(opts) {
   const real = opts.at ? namedAddresses(opts.at) : signerAt2(opts.under) ?? signerAddresses(opts.airlock);
   if (!real || typeof document === "undefined") return NONE;
   const test = new URLSearchParams(opts.search ?? location.search).get("signer") === "test";
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const pending = /* @__PURE__ */ new Map();
   const kept2 = /* @__PURE__ */ new Map();
   const askAbout = (request, read) => new Promise((done) => {
@@ -5872,7 +5798,7 @@ function createWorldSigner(opts) {
   const firstAnswer = /* @__PURE__ */ new Set();
   let n = 0;
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   const tell = (message) => frame?.contentWindow?.postMessage(signerMessage(message), origin);
   const showPage = () => {
@@ -5972,10 +5898,10 @@ function createWorldSigner(opts) {
       frame.style.cssText = "position:fixed;left:-10px;top:-10px;width:1px;height:1px;border:0;visibility:hidden;pointer-events:none";
       addEventListener("message", onMessage);
       frame.addEventListener("load", () => {
-        for (const after2 of [0, 400, 1200, 3e3]) {
+        for (const after of [0, 400, 1200, 3e3]) {
           setTimeout(() => {
             if (!answered && !disposed) tell({ t: "state", id: `s${++n}` });
-          }, after2);
+          }, after);
         }
       });
       frame.src = signerUrl;
@@ -6144,9 +6070,9 @@ function createWorldSigner(opts) {
       tell({ t: "want", id: `w${++n}`, more: wanted });
       return true;
     },
-    follow(list, change2) {
-      const add = "add" in change2 ? change2.add : void 0;
-      const remove = "remove" in change2 ? change2.remove : void 0;
+    follow(list, change) {
+      const add = "add" in change ? change.add : void 0;
+      const remove = "remove" in change ? change.remove : void 0;
       if (state !== "unlocked" || !frame || !more.includes("follows") || !isHex644(add ?? remove)) return Promise.resolve(null);
       return askAbout({ t: "follow", id: `w${++n}`, list, ...add ? { add } : { remove } }, (reply) => reply.t === "signed" && isFollowAsked2(reply.event, { list, ...add ? { add } : { remove }, pubkey }) ? reply.event : null);
     },
@@ -6179,8 +6105,8 @@ function createWorldSigner(opts) {
       return askAbout({ t: "achieve", id: `a${++n}`, world, achievement, title }, (reply) => reply.t === "signed" && isAchievementAsked(reply.event, { pubkey, world, id: achievement, title, origin: location.origin }) ? reply.event : null);
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     },
     whenAnswered(ms) {
       if (answered || disposed) return Promise.resolve();
@@ -6216,7 +6142,7 @@ function createWorldSigner(opts) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ui/identity.ts
+// packages/sdk/src/ui/identity.ts
 function signerNamed() {
   if (!signerAt3(arrival.signer())) return false;
   try {
@@ -6381,7 +6307,7 @@ function worldPeople() {
     hand: {
       pubkey: () => signer()?.state === "unlocked" ? signer().pubkey : null,
       ready: () => !!signer()?.more.includes("follows"),
-      change: (list, change2) => signer()?.follow(list, change2) ?? Promise.resolve(null)
+      change: (list, change) => signer()?.follow(list, change) ?? Promise.resolve(null)
     }
   });
 }
@@ -6497,15 +6423,15 @@ function figureAction(controls, leaving = () => ({})) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/presence.ts
+// packages/sdk/src/presence.ts
 import * as THREE10 from "three";
 import { bubbleSeconds, buildTints, cleanItemsRule as cleanItemsRule2, cleanTints, ENTRY_CLEAR, itemCoordinate as itemCoordinate3, parseTints, pickEntryPlace, decodeLook as decodeLook2, spawnOffset } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
+// packages/sdk/src/figure.ts
 import * as THREE6 from "three";
 import { generatedLook as generatedLook2, markGrid } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/alloy.ts
+// packages/sdk/src/alloy.ts
 import * as THREE4 from "three";
 var SKY_GLSL = `
 vec3 skyGlow(vec3 d, vec3 accent, vec3 ground){
@@ -6595,7 +6521,7 @@ function createAlloy(accent, opts = {}) {
   return material;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/mesh.ts
+// packages/sdk/src/mesh.ts
 import * as THREE5 from "three";
 var va = new THREE5.Vector3();
 var vb = new THREE5.Vector3();
@@ -6827,7 +6753,7 @@ var MeshBuilder = class {
   }
 };
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/figure.ts
+// packages/sdk/src/figure.ts
 var DARK = new THREE6.Color(659221);
 var DEPTH = 0.4;
 function nearest(color, palette) {
@@ -6922,8 +6848,8 @@ function buildHead(b, look, main, accent, omit) {
 }
 function buildBody(b, look, main, accent, omit, proven = false) {
   const k = look.build === "slight" ? 0.86 : look.build === "broad" ? 1.2 : 1;
-  const cloth = (row, rows, side, sides, turn2 = 0) => {
-    const a = (side + 0.5) / sides * Math.PI * 2 + turn2;
+  const cloth = (row, rows, side, sides, turn = 0) => {
+    const a = (side + 0.5) / sides * Math.PI * 2 + turn;
     switch (look.pattern) {
       case "halves":
         return Math.cos(a) > 0 ? accent : main;
@@ -6937,7 +6863,7 @@ function buildBody(b, look, main, accent, omit, proven = false) {
         return main;
     }
   };
-  const turned = (profile, sides, band, turn2 = 0) => b.lathe(profile, [0, 0, 0], sides, (row, side) => row === 0 ? { glow: 0.4 } : row === band ? { glow: 0.75 } : { color: cloth(row, profile.length - 1, side, sides, turn2), shade: 0.9 + row % 2 * 0.18 }, { turn: turn2 });
+  const turned = (profile, sides, band, turn = 0) => b.lathe(profile, [0, 0, 0], sides, (row, side) => row === 0 ? { glow: 0.4 } : row === band ? { glow: 0.75 } : { color: cloth(row, profile.length - 1, side, sides, turn), shade: 0.9 + row % 2 * 0.18 }, { turn });
   let chest;
   switch (look.body) {
     case "coat":
@@ -7048,7 +6974,7 @@ function createFigure(look, style = {}, facts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/blocks.ts
+// packages/sdk/src/blocks.ts
 import { cleanName as cleanName2, shortNpub as shortNpub5 } from "@nswp/core";
 var BLOCK_LIMIT = 500;
 var KEY2 = "nswp:blocked";
@@ -7097,310 +7023,12 @@ function storeBlocked(list, storage = local()) {
   }
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/sound-store.ts
-var CUES = [
-  "step",
-  // a footstep, walking
-  "land",
-  // arriving at the end of a jump: a step in a headset, or one taken at once
-  "bump",
-  // walking into something that can't be walked through
-  "grab",
-  "drop",
-  "hover",
-  "press",
-  "menuOpen",
-  "menuClose",
-  "cross",
-  // leaving through a door
-  "arrive",
-  // coming out of one
-  "join",
-  // someone is in the room who wasn't: the visitor, or another person
-  "leave",
-  "micOn",
-  "micOff",
-  "notice",
-  // the kit has something to say
-  "chat",
-  // someone in the room wrote something: heard from where they stand
-  "error"
-];
-var tone = (from, to, at, dur, gain, wave = "sine") => ({
-  kind: "tone",
-  wave,
-  from,
-  ...to === void 0 ? {} : { to },
-  at,
-  dur,
-  gain
-});
-var noise = (band, at, dur, gain) => ({ kind: "noise", band, at, dur, gain });
-var RECIPES = {
-  step: [noise(850, 0, 0.06, 0.2), tone(120, 70, 0, 0.07, 0.16)],
-  land: [tone(190, 62, 0, 0.16, 0.3), noise(480, 0, 0.11, 0.2)],
-  bump: [tone(96, 58, 0, 0.12, 0.28, "triangle"), noise(260, 0, 0.05, 0.14)],
-  grab: [tone(520, 780, 0, 0.07, 0.16, "triangle")],
-  drop: [tone(700, 420, 0, 0.08, 0.16, "triangle")],
-  hover: [tone(1400, void 0, 0, 0.025, 0.05)],
-  press: [tone(880, 1320, 0, 0.05, 0.15, "triangle")],
-  menuOpen: [tone(660, void 0, 0, 0.05, 0.12), tone(990, void 0, 0.05, 0.07, 0.12)],
-  menuClose: [tone(990, void 0, 0, 0.05, 0.12), tone(660, void 0, 0.05, 0.07, 0.12)],
-  cross: [tone(196, 784, 0, 0.5, 0.22), noise(1400, 0.05, 0.45, 0.07), tone(392, 1568, 0.1, 0.4, 0.08)],
-  arrive: [tone(784, 392, 0, 0.42, 0.2), tone(1176, 588, 0.04, 0.38, 0.08), noise(900, 0, 0.2, 0.05)],
-  join: [tone(523.25, void 0, 0, 0.09, 0.14), tone(783.99, void 0, 0.09, 0.14, 0.14)],
-  leave: [tone(783.99, void 0, 0, 0.09, 0.12), tone(523.25, void 0, 0.09, 0.14, 0.12)],
-  micOn: [tone(600, 900, 0, 0.08, 0.14)],
-  micOff: [tone(900, 600, 0, 0.08, 0.14)],
-  notice: [tone(1046.5, void 0, 0, 0.08, 0.09), tone(1318.5, void 0, 0.08, 0.12, 0.08)],
-  // Two soft syllables, low and falling at the end, with a breath in front: somebody said something. It is two
-  // octaves under the kit's own notice, which is high, clean and rises, so the two are never taken for each other.
-  chat: [noise(1900, 0, 0.03, 0.06), tone(360, 440, 5e-3, 0.07, 0.15, "triangle"), tone(330, 262, 0.1, 0.11, 0.13, "triangle")],
-  error: [tone(220, void 0, 0, 0.11, 0.13, "square"), tone(185, void 0, 0.14, 0.14, 0.13, "square")]
-};
-function cueRecipe(cue) {
-  return RECIPES[cue];
-}
-var SOUND_LIMITS = {
-  /** A world's own cue: a file this size at most, this long at most. Longer ones aren't sounds for something that happened. */
-  cueBytes: 512 * 1024,
-  cueSeconds: 3,
-  /** Kinds of file a world may name. */
-  extensions: ["ogg", "oga", "opus", "mp3", "m4a", "aac", "wav", "webm", "flac"],
-  /** Files for one cue: one is chosen each time, so a sound heard often isn't the same sound every time. */
-  variants: 6,
-  /** Pieces of music for one place: they play in turn. */
-  tracks: 8,
-  /** The visitor's own songs: this many, each this size at most. */
-  songs: 60,
-  songBytes: 40 * 1024 * 1024,
-  titleChars: 80
-};
-function ownSound(address, base) {
-  if (typeof address !== "string" || address.length > 2e3) return null;
-  let u;
-  let b;
-  try {
-    b = new URL(base);
-    u = new URL(address, b);
-  } catch {
-    return null;
-  }
-  if (u.origin !== b.origin || u.protocol !== "https:" && u.protocol !== "http:") return null;
-  const ext = u.pathname.split(".").pop()?.toLowerCase() ?? "";
-  if (!SOUND_LIMITS.extensions.includes(ext)) return null;
-  u.hash = "";
-  return u.href;
-}
-function ownSounds(value, base, limit) {
-  const out = [];
-  for (const v of Array.isArray(value) ? value : [value]) {
-    const address = ownSound(v, base);
-    if (address && !out.includes(address)) out.push(address);
-    if (out.length >= limit) break;
-  }
-  return out;
-}
-function cleanTheme(input, base) {
-  const out = { cues: {} };
-  if (!input || typeof input !== "object") return out;
-  const { cues, music, hum } = input;
-  if (cues && typeof cues === "object") {
-    for (const cue of CUES) {
-      const v = cues[cue];
-      if (v === null) out.cues[cue] = null;
-      else if (v !== void 0) {
-        const files2 = ownSounds(v, base, SOUND_LIMITS.variants);
-        if (files2.length) out.cues[cue] = files2;
-      }
-    }
-  }
-  if (music === null) out.music = null;
-  else if (music !== void 0) {
-    const tracks = ownSounds(music, base, SOUND_LIMITS.tracks);
-    if (tracks.length) out.music = tracks;
-  }
-  if (hum === null) out.hum = null;
-  else if (hum !== void 0) {
-    const address = ownSound(hum, base);
-    if (address) out.hum = address;
-  }
-  return out;
-}
-function cleanKit(input, folder, playsOgg) {
-  const out = { cues: {} };
-  if (!input || typeof input !== "object") return out;
-  const pick = (entry) => {
-    if (!entry || typeof entry !== "object") return entry;
-    const { ogg, mp3 } = entry;
-    return playsOgg ? ogg ?? mp3 : mp3 ?? ogg;
-  };
-  const many = (value, limit) => ownSounds((Array.isArray(value) ? value : [value]).map(pick), folder, limit);
-  const { cues, music, hum } = input;
-  if (cues && typeof cues === "object") {
-    for (const cue of CUES) {
-      const files2 = many(cues[cue], SOUND_LIMITS.variants);
-      if (files2.length) out.cues[cue] = files2;
-    }
-  }
-  const tracks = many(music, SOUND_LIMITS.tracks);
-  if (tracks.length) out.music = tracks;
-  const h = ownSound(pick(hum), folder);
-  if (h) out.hum = h;
-  return out;
-}
-function pieceName(address) {
-  let name = address;
-  try {
-    name = decodeURIComponent(new URL(address, "https://x.invalid/").pathname.split("/").pop() ?? "");
-  } catch {
-    name = address.split(/[/?#]/).filter(Boolean).pop() ?? "";
-  }
-  name = name.replace(/\.[a-z0-9]{2,5}$/i, "").replace(/[\u0000-\u001f]/g, "").trim();
-  return name.slice(0, 60) || "a piece with no name";
-}
-var STEP_LEVEL = 0.45;
-var JUMP_STEPS = { louder: 1.35, gap: 0.09 };
-var STRIDE = 0.75;
-var HEARD = { near: 2, far: 25, floor: 0.14, fall: 6 };
-function heardFrom(place) {
-  const d = Number.isFinite(place.distance) ? Math.max(0, place.distance) : HEARD.far;
-  const beyond = Math.max(0, d - HEARD.near);
-  const gain = Math.max(HEARD.floor, 1 / (1 + (beyond / HEARD.fall) ** 2));
-  const along = Math.min(1, beyond / (HEARD.far - HEARD.near));
-  const cutoff = Math.round(7e3 * (1100 / 7e3) ** along);
-  const side = Number.isFinite(place.pan) ? Math.max(-1, Math.min(1, place.pan)) : 0;
-  return { gain: Math.round(gain * 1e3) / 1e3, cutoff, pan: Math.round(side * 0.8 * 100) / 100, rate: 1 };
-}
-function stepShape(foot, random = Math.random) {
-  const right = Math.abs(Math.trunc(foot)) % 2 === 1;
-  const side = right ? 1 : -1;
-  return {
-    // Between a little over half and all of the step's level: a light tread now and then.
-    gain: STEP_LEVEL * (0.6 + 0.4 * random()),
-    // One foot falls a touch lower than the other, and each step is up to a semitone and a half either way.
-    rate: (1 + side * 0.025) * Math.pow(2, (random() * 2 - 1) * (1.5 / 12)),
-    cutoff: 1600 + random() * 3400,
-    pan: side * (0.08 + random() * 0.1)
-  };
-}
-function nextVariant(count2, last, random = Math.random) {
-  if (count2 <= 1) return 0;
-  if (last < 0 || last >= count2) return Math.min(count2 - 1, Math.floor(random() * count2));
-  const i = Math.floor(random() * (count2 - 1));
-  return i >= last ? i + 1 : i;
-}
-var DEFAULT_LEVELS = { off: false, effects: 0.7, music: 0.45, voices: 1, hearShared: false, shared: 0.7, hum: true };
-var LEVEL_STEPS = [0, 0.35, 0.7, 1];
-var LEVEL_WORDS = ["off", "low", "medium", "high"];
-var unit = (v, fallback) => typeof v === "number" && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback;
-function cleanLevels(input) {
-  const i = input && typeof input === "object" ? input : {};
-  return {
-    off: i.off === true,
-    effects: unit(i.effects, DEFAULT_LEVELS.effects),
-    music: unit(i.music, DEFAULT_LEVELS.music),
-    voices: unit(i.voices, DEFAULT_LEVELS.voices),
-    hearShared: i.hearShared === true,
-    shared: unit(i.shared, DEFAULT_LEVELS.shared),
-    hum: i.hum !== false
-  };
-}
-function levelStep(v) {
-  let best = 0;
-  LEVEL_STEPS.forEach((s, i) => {
-    if (Math.abs(s - v) < Math.abs(LEVEL_STEPS[best] - v)) best = i;
-  });
-  return best;
-}
-function nextLevel(v) {
-  return LEVEL_STEPS[(levelStep(v) + 1) % LEVEL_STEPS.length];
-}
-var MUSIC_RANGE = 12;
-var MUSIC_SOURCES = 2;
-var MUSIC_DUCK = 0.35;
-function musicToHear(sharing, hear) {
-  if (!hear) return [];
-  return sharing.filter((s) => !s.refused && Number.isFinite(s.metres) && s.metres <= MUSIC_RANGE).sort((a, b) => a.metres - b.metres || a.pubkey.localeCompare(b.pubkey)).slice(0, MUSIC_SOURCES).map((s) => s.pubkey);
-}
-function musicFade(metres) {
-  if (!(metres >= 0)) return 0;
-  const near = 2;
-  if (metres <= near) return 1;
-  if (metres >= MUSIC_RANGE) return 0;
-  const t = (metres - near) / (MUSIC_RANGE - near);
-  return (1 - t) * (1 - t);
-}
-function seeded(seed) {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  let a = h >>> 0;
-  return () => {
-    a = a + 1831565813 >>> 0;
-    let t = a;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-var ROOTS = [98, 110, 116.54, 130.81, 146.83, 155.56];
-var SCALES = [
-  [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3],
-  // major pentatonic: open, bright
-  [1, 6 / 5, 4 / 3, 3 / 2, 9 / 5],
-  // minor pentatonic: darker
-  [1, 9 / 8, 4 / 3, 3 / 2, 16 / 9],
-  // suspended: unresolved, still
-  [1, 5 / 4, 3 / 2, 15 / 8, 9 / 4]
-  // major seventh: warm
-];
-function ambiencePlan(seed) {
-  const r = seeded(`ambience:${seed}`);
-  const root = ROOTS[Math.floor(r() * ROOTS.length)];
-  const scale = SCALES[Math.floor(r() * SCALES.length)];
-  const fifth = scale.includes(3 / 2) ? 3 / 2 : scale[3];
-  const drones = [1, fifth, 2, scale[2] * 2].map((m) => ({ hz: root * m, detune: (r() - 0.5) * 14, swell: 11 + r() * 18 }));
-  const least = 3.5 + r() * 3;
-  return { root, scale, drones, colour: 500 + r() * 900, gap: [least, least + 3 + r() * 4] };
-}
-function songTitle(fileName) {
-  const raw = typeof fileName === "string" ? fileName : "";
-  const cleaned = raw.split(/[\\/]/).pop().replace(/\.[a-z0-9]{1,5}$/i, "").normalize("NFC").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ").replace(/[_\s]+/g, " ").trim();
-  return [...cleaned].slice(0, SOUND_LIMITS.titleChars).join("").trim() || "A song";
-}
-function cleanSongs(input) {
-  if (!Array.isArray(input)) return [];
-  const out = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const s of input) {
-    if (!s || typeof s !== "object") continue;
-    const { id, title, size, at } = s;
-    if (typeof id !== "string" || !/^[a-z0-9-]{4,40}$/.test(id) || seen.has(id)) continue;
-    seen.add(id);
-    out.push({ id, title: songTitle(title), size: typeof size === "number" && size > 0 ? Math.floor(size) : 0, at: typeof at === "number" && at > 0 ? Math.floor(at) : 0 });
-    if (out.length >= SOUND_LIMITS.songs) break;
-  }
-  return out;
-}
-function songRefusal(file, have) {
-  const ext = (file.name ?? "").split(".").pop()?.toLowerCase() ?? "";
-  const isSound = (file.type ?? "").startsWith("audio/") || SOUND_LIMITS.extensions.includes(ext);
-  if (!isSound) return "That isn't a sound file.";
-  if (!file.size) return "That file is empty.";
-  if (file.size > SOUND_LIMITS.songBytes) return `That file is over ${Math.round(SOUND_LIMITS.songBytes / 1024 / 1024)} MB, which is more than is kept here.`;
-  if (have >= SOUND_LIMITS.songs) return `${SOUND_LIMITS.songs} songs are kept here at most. Take one out first.`;
-  return null;
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/items.ts
+// packages/sdk/src/items.ts
 import { tintSlot } from "@nswp/core";
 import * as THREE7 from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/item-store.ts
+// packages/sdk/src/item-store.ts
 import { DEFAULT_RELAYS as DEFAULT_RELAYS7, ITEM_KIND, itemCoordinate as itemCoordinate2, MODEL_BUDGET, parseItem, queryRelays as queryRelays5, readGlb, SCRIPT_LIMITS, verifyEvent as verifyEvent6 } from "@nswp/core";
 var ITEM_BUDGET = {
   ...MODEL_BUDGET,
@@ -7408,9 +7036,9 @@ var ITEM_BUDGET = {
   sound: 15e4
 };
 var ITEMS_KEY = "nswp:items";
-var watchers3 = /* @__PURE__ */ new Set();
+var watchers2 = /* @__PURE__ */ new Set();
 var shown = null;
-var keep3 = (on) => {
+var keep2 = (on) => {
   try {
     if (on) globalThis.localStorage?.removeItem(ITEMS_KEY);
     else globalThis.localStorage?.setItem(ITEMS_KEY, "off");
@@ -7426,19 +7054,19 @@ function showsItems() {
   } catch {
   }
   shown = came ?? kept2 !== "off";
-  if (came !== void 0) keep3(shown);
+  if (came !== void 0) keep2(shown);
   reportSettings("items", () => ({ items: showsItems() }), (now) => void (now.items !== void 0 && now.items !== shown && setShowsItems(now.items)));
   return shown;
 }
 function setShowsItems(on) {
   showsItems();
   shown = on;
-  keep3(on);
-  for (const fn of watchers3) fn();
+  keep2(on);
+  for (const fn of watchers2) fn();
 }
 function onItemsChange(fn) {
-  watchers3.add(fn);
-  return () => void watchers3.delete(fn);
+  watchers2.add(fn);
+  return () => void watchers2.delete(fn);
 }
 var AGAIN_MS = 4e3;
 function createItemStore(opts = {}) {
@@ -7449,7 +7077,7 @@ function createItemStore(opts = {}) {
   const refused = /* @__PURE__ */ new Set();
   const described = /* @__PURE__ */ new Map();
   const settled = /* @__PURE__ */ new Map();
-  const files2 = /* @__PURE__ */ new Map();
+  const files = /* @__PURE__ */ new Map();
   const models = /* @__PURE__ */ new Map();
   const forgetSoon = (kept2, key, asked) => {
     setTimeout(() => {
@@ -7457,22 +7085,22 @@ function createItemStore(opts = {}) {
     }, AGAIN_MS);
   };
   const file = (named, most) => {
-    let got = files2.get(named.sha256);
+    let got = files.get(named.sha256);
     if (!got) {
       const asking = fetchByHashSaying(named.sha256, named.url, { most, viewer: viewer(), hosts, ...opts.fetchBytes ? { fetchBytes: opts.fetchBytes } : {} }).then(({ bytes, wrong }) => {
         if (bytes) refused.delete(named.sha256);
         else if (keptElsewhere(named.url)) refused.add(named.sha256);
-        else if (!wrong) forgetSoon(files2, named.sha256, asking);
+        else if (!wrong) forgetSoon(files, named.sha256, asking);
         return bytes;
-      }).catch(() => (forgetSoon(files2, named.sha256, asking), null));
+      }).catch(() => (forgetSoon(files, named.sha256, asking), null));
       got = asking;
-      files2.set(named.sha256, got);
+      files.set(named.sha256, got);
     }
     return got;
   };
   onFileHostsChange(() => {
     for (const sha of refused) {
-      files2.delete(sha);
+      files.delete(sha);
       models.delete(sha);
     }
     refused.clear();
@@ -7529,7 +7157,7 @@ function createItemStore(opts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/items.ts
+// packages/sdk/src/items.ts
 function applyTints(root, item, tints = {}) {
   root.traverse((o) => {
     const mesh = o;
@@ -7609,7 +7237,7 @@ function createItems(opts = {}) {
     holder.add(box);
     return holder;
   };
-  const load2 = (named) => {
+  const load = (named) => {
     const key = `${named.model.sha256}:${named.size.join(",")}`;
     let got = made.get(key);
     if (!got) {
@@ -7645,7 +7273,7 @@ function createItems(opts = {}) {
     ...store,
     async model(item, tints) {
       if (!showsItems()) return marker(item);
-      const got = await load2(item);
+      const got = await load(item);
       return got ? tinted(got.clone(true), item, tints) : marker(item);
     },
     marker,
@@ -7654,13 +7282,13 @@ function createItems(opts = {}) {
       const send = item.sends.find((x) => x.name === name);
       if (!send) return marker({ size: [0.03, 0.03, 0.1] });
       if (!showsItems()) return marker(send);
-      const got = await load2(send);
+      const got = await load(send);
       return got ? tinted(got.clone(true), item, tints) : marker(send);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/play.ts
+// packages/sdk/src/play.ts
 import {
   buildDid,
   buildHit,
@@ -7683,7 +7311,7 @@ import {
 } from "@nswp/core";
 import * as THREE8 from "three";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/item-box.ts
+// packages/sdk/src/item-box.ts
 import { cleanAsk, createRate as createRate2, ITEM_ASKS } from "@nswp/core";
 function runInBox(script, on, opts = {}) {
   if (typeof document === "undefined") return Promise.resolve(null);
@@ -7745,7 +7373,7 @@ function runInBox(script, on, opts = {}) {
   });
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/play.ts
+// packages/sdk/src/play.ts
 var SCRIPT_KEPT = "nswp:item-scripts";
 function scriptAllowed(sha2562) {
   try {
@@ -8656,48 +8284,11 @@ function createPlay(o) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/look-models.ts
+// packages/sdk/src/look-models.ts
 import { AVATAR_KIND as AVATAR_KIND2, decodeNaddr, DEFAULT_RELAYS as DEFAULT_RELAYS8, glbJson, LOOK_BUDGET, LOOK_MODELS_AT_ONCE, LOOK_NOTE_LIMIT as LOOK_NOTE_LIMIT2, verifyEvent as verifyEvent7, lookFacing, readGlb as readGlb2, withoutRequired } from "@nswp/core";
 import * as THREE9 from "three";
 import { GLTFLoader as GLTFLoader2 } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/models-switch.ts
-var MODELS_KEY = "nswp:models";
-var showing = null;
-var modelWatchers = /* @__PURE__ */ new Set();
-var keepModels = (on) => {
-  try {
-    if (on) globalThis.localStorage?.removeItem(MODELS_KEY);
-    else globalThis.localStorage?.setItem(MODELS_KEY, "off");
-  } catch {
-  }
-};
-function showsModels() {
-  if (showing !== null) return showing;
-  const came = arrivedSettings().models;
-  let kept2 = null;
-  try {
-    kept2 = globalThis.localStorage?.getItem(MODELS_KEY) ?? null;
-  } catch {
-  }
-  showing = came ?? kept2 !== "off";
-  if (came !== void 0) keepModels(showing);
-  reportSettings("models", () => ({ models: showsModels() }), (now) => void (now.models !== void 0 && now.models !== showing && setShowsModels(now.models)));
-  return showing;
-}
-function setShowsModels(on) {
-  showsModels();
-  showing = on;
-  keepModels(on);
-  for (const fn of modelWatchers) fn();
-}
-function onModelsChange(fn) {
-  modelWatchers.add(fn);
-  return () => void modelWatchers.delete(fn);
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/look-models.ts
 function lookBudget(world) {
   const mb = world?.maxFileSizeMb;
   const tris = world?.maxTriangles;
@@ -8711,14 +8302,14 @@ var AGAIN_MS2 = 4e3;
 function createLookModels(opts = {}) {
   const viewer = opts.viewer ?? (() => arrival.identity()?.pubkey ?? null);
   const hosts = { ...opts.relays ? { relays: opts.relays } : {}, ...opts.query ? { query: opts.query } : {}, ...opts.now ? { now: opts.now } : {} };
-  const files2 = /* @__PURE__ */ new Map();
+  const files = /* @__PURE__ */ new Map();
   const scenes = /* @__PURE__ */ new Map();
   const refusals = /* @__PURE__ */ new Map();
   onFileHostsChange(() => {
     for (const [sha, why] of refusals)
       if (why === "elsewhere") {
         refusals.delete(sha);
-        for (const key of [...files2.keys()]) if (key.startsWith(sha)) files2.delete(key);
+        for (const key of [...files.keys()]) if (key.startsWith(sha)) files.delete(key);
         for (const key of [...scenes.keys()]) if (key.startsWith(sha)) scenes.delete(key);
       }
   });
@@ -8728,14 +8319,14 @@ function createLookModels(opts = {}) {
   }, AGAIN_MS2);
   const bytes = (model, budget = LOOK_BUDGET) => {
     const key = keyOf(model, budget);
-    let got = files2.get(key);
+    let got = files.get(key);
     if (!got) {
       const asking = fetchByHashSaying(model.sha256, model.url, { most: budget.bytes, viewer: viewer(), hosts, ...opts.fetchBytes ? { fetchBytes: opts.fetchBytes } : {} }).then(({ bytes: b, wrong }) => {
         if (!b) {
           if (keptElsewhere(model.url)) refusals.set(model.sha256, "elsewhere");
           else {
             refusals.set(model.sha256, wrong ? "refused" : "missing");
-            if (!wrong) forgetSoon(files2, key, asking);
+            if (!wrong) forgetSoon(files, key, asking);
           }
           return null;
         }
@@ -8748,7 +8339,7 @@ function createLookModels(opts = {}) {
         return { bytes: b, count: read.count };
       });
       got = asking;
-      files2.set(key, got);
+      files.set(key, got);
     }
     return got;
   };
@@ -8853,7 +8444,7 @@ function chooseLooks(people, world, shows, most = LOOK_MODELS_AT_ONCE) {
   return out;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/presence.ts
+// packages/sdk/src/presence.ts
 import { LOOK_HEIGHT, lookHeight, markGrid as markGrid2 } from "@nswp/core";
 var ARRIVING_SECONDS = 6;
 var STANDING_EYES = 1.6;
@@ -9683,7 +9274,7 @@ function createPresence(d) {
       changed();
     },
     setHolding(itemIn2, tints) {
-      const turn2 = async () => {
+      const turn = async () => {
         const item = itemCoordinate3(itemIn2);
         const put = () => {
           mine = "";
@@ -9714,7 +9305,7 @@ function createPresence(d) {
         await play?.held(described, model);
         return { ok: true, said: `You are holding ${described.title}. People here can see it.` };
       };
-      const result = holdTurn.then(turn2, turn2);
+      const result = holdTurn.then(turn, turn);
       holdTurn = result.then(() => changed(), () => changed());
       return result;
     },
@@ -9992,532 +9583,11 @@ function createPresence(d) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/room-controls.ts
+// packages/sdk/src/room-controls.ts
 import * as THREE12 from "three";
 import { CHAT_LIMITS as CHAT_LIMITS2, cleanLightningAddress, DEFAULT_RELAYS as DEFAULT_RELAYS10, DELETION_KIND, encodeNpub as encodeNpub3, readRelayList as readRelayList4, RELAY_LIST_KIND as RELAY_LIST_KIND4, shortNpub as shortNpub7, verifyEvent as verifyEvent8 } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/ask-once.ts
-function mayAskHowTheyMove() {
-  try {
-    if (new URLSearchParams(globalThis.location?.search ?? "").get("ask") === "moving") return true;
-    return !globalThis.navigator?.webdriver;
-  } catch {
-    return false;
-  }
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/stroll.ts
-var WALK_SPEED = 2.4;
-var RUN = 1.75;
-var KEY_TURN = 1.9;
-var TOP_SPEED = WALK_SPEED * RUN;
-var DOUBLE_TAP = 400;
-var TAP_REACH = 6;
-var PATH_MOST = 12;
-var FACE_RATE = 2.8;
-var DRAG_LOOK = 5e-3;
-var TILT_LIMIT = 60 * Math.PI / 180;
-var LEVEL_RATE = 1.6;
-function dragTurn(yaw, pitch, dx, dy, speed = DRAG_LOOK) {
-  const clean2 = (v) => Number.isFinite(v) ? v : 0;
-  return { yaw: yaw + clean2(dx) * speed, pitch: Math.min(TILT_LIMIT, Math.max(-TILT_LIMIT, clean2(pitch) + clean2(dy) * speed)) };
-}
-function levelled(pitch, dt, rate = LEVEL_RATE) {
-  const step = Math.max(0, dt) * rate;
-  return Math.abs(pitch) <= step ? 0 : pitch - Math.sign(pitch) * step;
-}
-function createDragLook(o) {
-  let pitch = 0;
-  let active = true;
-  return {
-    drag(dx, dy) {
-      if (!active) return;
-      const next = dragTurn(o.rig.rotation.y, pitch, dx, dy, DRAG_LOOK * (o.scale?.() ?? 1));
-      o.rig.rotation.y = next.yaw;
-      pitch = next.pitch;
-      o.camera.rotation.x = pitch;
-    },
-    update(dt, s) {
-      if (!s.active) {
-        if (active && pitch !== 0) o.camera.rotation.x = 0;
-        active = false;
-        pitch = 0;
-        return;
-      }
-      active = true;
-      if (s.walking && pitch !== 0) {
-        pitch = levelled(pitch, dt);
-        o.camera.rotation.x = pitch;
-      }
-    },
-    level() {
-      pitch = 0;
-      o.camera.rotation.x = 0;
-    },
-    get pitch() {
-      return pitch;
-    }
-  };
-}
-function reachOf(fromX, fromZ, toX, toZ, reach = TAP_REACH) {
-  const dx = toX - fromX;
-  const dz = toZ - fromZ;
-  const far = Math.hypot(dx, dz);
-  if (!Number.isFinite(far) || far <= reach || far === 0) return [toX, toZ];
-  return [fromX + dx / far * reach, fromZ + dz / far * reach];
-}
-function dotsBetween(fromX, fromZ, toX, toZ, opts = {}) {
-  const gap = opts.gap ?? 0.4;
-  const clear = opts.clear ?? 0.45;
-  const short = opts.short ?? 0.3;
-  const most = opts.most ?? 40;
-  const dx = toX - fromX;
-  const dz = toZ - fromZ;
-  const far = Math.hypot(dx, dz);
-  const out = [];
-  if (!Number.isFinite(far) || far <= clear + short || !(gap > 0)) return out;
-  for (let d = far - short; d >= clear && out.length < most; d -= gap) out.push([fromX + dx / far * d, fromZ + dz / far * d]);
-  return out;
-}
-function createStepPace(o = {}) {
-  const speed = o.speed && o.speed > 0 ? o.speed : TOP_SPEED;
-  const now = o.now ?? (() => performance.now());
-  let readyAt = -Infinity;
-  return {
-    take(metres) {
-      const t = now();
-      if (t < readyAt) return false;
-      const far = Number.isFinite(metres) ? Math.max(0, metres) : 0;
-      readyAt = t + far / speed * 1e3;
-      return true;
-    },
-    get ready() {
-      return now() >= readyAt;
-    },
-    get wait() {
-      return Math.max(0, (readyAt - now()) / 1e3);
-    }
-  };
-}
-function createStroll(o) {
-  const speed = o.speed ?? WALK_SPEED;
-  const reach = o.reach ?? TAP_REACH;
-  const now = o.now ?? (() => performance.now());
-  let path = [];
-  let running = false;
-  let asked = -Infinity;
-  let heading = null;
-  const aim = (fx, fz, tx, tz) => {
-    const dx = tx - fx;
-    const dz = tz - fz;
-    if (Math.hypot(dx, dz) > 0.3) heading = Math.atan2(-dx, -dz);
-  };
-  const halt = () => {
-    path = [];
-    running = false;
-    heading = null;
-  };
-  return {
-    to(x, z, run) {
-      const t = now();
-      const again = t - asked <= DOUBLE_TAP;
-      asked = t;
-      const wasRunning = path.length > 0 && running;
-      if (!Number.isFinite(x) || !Number.isFinite(z)) return halt();
-      path = [[x, z]];
-      running = run === true || again || wasRunning;
-      aim(...o.where(), x, z);
-    },
-    tap(x, z) {
-      const t = now();
-      const again = t - asked <= DOUBLE_TAP;
-      asked = t;
-      if (!Number.isFinite(x) || !Number.isFinite(z)) return;
-      const [hx, hz] = o.where();
-      if (again || path.length === 0) {
-        const wasRunning = path.length > 0 && running;
-        path = [reachOf(hx, hz, x, z, reach)];
-        running = again || wasRunning;
-        aim(hx, hz, path[0][0], path[0][1]);
-        return;
-      }
-      const end = path[path.length - 1];
-      const next = reachOf(end[0], end[1], x, z, reach);
-      if (path.length < PATH_MOST && Math.hypot(next[0] - end[0], next[1] - end[1]) > 0.3) path.push(next);
-    },
-    reach(x, z) {
-      const from = path.length ? path[path.length - 1] : o.where();
-      return reachOf(from[0], from[1], x, z, reach);
-    },
-    stop: halt,
-    update(dt) {
-      const next = path[0];
-      if (!next) return;
-      const [x, z] = o.where();
-      const dx = next[0] - x;
-      const dz = next[1] - z;
-      const far = Math.hypot(dx, dz);
-      aim(x, z, next[0], next[1]);
-      const step = Math.min(far, speed * (running ? RUN : 1) * Math.min(Math.max(dt, 0), 0.1));
-      const arrived = () => {
-        path.shift();
-        if (path.length === 0) halt();
-      };
-      if (far < 0.02 || step <= 0) {
-        if (far < 0.02) arrived();
-        return;
-      }
-      const sx = dx / far * step;
-      const sz = dz / far * step;
-      if (!o.canStand(x + sx, z + sz)) {
-        halt();
-        o.onBlocked?.();
-        return;
-      }
-      o.move(sx, sz);
-      if (far - step < 0.02) arrived();
-    },
-    face(yaw, dt) {
-      if (heading === null || !(dt > 0)) return yaw;
-      const turn2 = ((heading - yaw + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-      const most = FACE_RATE * Math.min(dt, 0.1);
-      return yaw + Math.max(-most, Math.min(most, turn2 * Math.min(1, dt * 7)));
-    },
-    get going() {
-      return path.length > 0;
-    },
-    get running() {
-      return running;
-    },
-    get target() {
-      return path.length ? path[path.length - 1] : null;
-    },
-    get path() {
-      return path;
-    },
-    get heading() {
-      return heading;
-    }
-  };
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/fps.ts
-var LOOK_SPEED = 22e-4;
-var PITCH_LIMIT = 85 * Math.PI / 180;
-var SPRINT = RUN;
-function lookAfter(yaw, pitch, dx, dy, speed = LOOK_SPEED) {
-  const clean2 = (n) => Number.isFinite(n) ? n : 0;
-  return { yaw: yaw - clean2(dx) * speed, pitch: Math.min(PITCH_LIMIT, Math.max(-PITCH_LIMIT, pitch - clean2(dy) * speed)) };
-}
-function strideOf(held, yaw, speed, dt, sprint = SPRINT) {
-  const f = (held.forward ? 1 : 0) - (held.back ? 1 : 0);
-  const s = (held.right ? 1 : 0) - (held.left ? 1 : 0);
-  if (!f && !s) return [0, 0];
-  const pace = speed * (held.sprint ? sprint : 1) * Math.max(0, dt) / Math.hypot(f, s);
-  const sin = Math.sin(yaw);
-  const cos = Math.cos(yaw);
-  return [(s * cos - f * sin) * pace, (-s * sin - f * cos) * pace];
-}
-function heldKey(code) {
-  switch (code) {
-    case "KeyW":
-    case "ArrowUp":
-      return "forward";
-    case "KeyS":
-    case "ArrowDown":
-      return "back";
-    case "KeyA":
-    case "ArrowLeft":
-      return "left";
-    case "KeyD":
-    case "ArrowRight":
-      return "right";
-    case "ShiftLeft":
-    case "ShiftRight":
-      return "sprint";
-    default:
-      return null;
-  }
-}
-var DESK_KEY = "nswp:fps";
-var DESK_WORDS = {
-  intense: "Desk controls: intense",
-  casual: "Desk controls: casual",
-  nowIntense: "Intense: the mouse looks round. W, A, S, D walk, Shift runs, Space jumps, F uses what is in front of you, and Escape brings up this menu.",
-  nowCasual: "Casual: click where you want to stand, twice to run there, and drag to look round. W, A, S, D walk, Shift runs and Space jumps."
-};
-var hasMouse = () => startingForm() === "desk";
-function startsIntense(arrived, key = DESK_KEY) {
-  if (!hasMouse()) return false;
-  const prefers = arrivedSettings().intense;
-  if (typeof prefers === "boolean") return prefers;
-  try {
-    return arrived || localStorage.getItem(key) === "1";
-  } catch {
-    return arrived;
-  }
-}
-function keepIntense(on, key = DESK_KEY) {
-  try {
-    localStorage.setItem(key, on ? "1" : "0");
-  } catch {
-  }
-}
-function keptIntense(key = DESK_KEY) {
-  try {
-    return localStorage.getItem(key) !== null;
-  } catch {
-    return false;
-  }
-}
-var DESK_QUESTION = {
-  casual: "Casual: click to walk, drag to look",
-  intense: "Intense: the mouse looks, keys walk"
-};
-function createFps(o) {
-  const key = o.keep ?? DESK_KEY;
-  const mouse = hasMouse();
-  let enabled = startsIntense(o.arrived === true, key);
-  let answered = typeof arrivedSettings().intense === "boolean" || o.arrived === true || keptIntense(key);
-  if (mouse) {
-    if (typeof arrivedSettings().intense === "boolean" || o.arrived) keepIntense(enabled, key);
-    reportSettings("moving", () => answered ? { intense: enabled } : {}, (now) => void (typeof now.intense === "boolean" && setEnabled(now.intense)));
-  }
-  const held = {};
-  let pitch = 0;
-  let weLetGo = false;
-  let closedAt = -1;
-  let shown2 = false;
-  const looking = () => document.pointerLockElement === o.dom;
-  const active = () => enabled && !o.presenting();
-  const dot = document.createElement("div");
-  dot.setAttribute("aria-hidden", "true");
-  dot.style.cssText = "position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;opacity:.75;box-shadow:0 0 0 1px rgba(0,0,0,.55);pointer-events:none;z-index:5;display:none";
-  document.body.append(dot);
-  const look = () => {
-    if (!active() || o.hud?.open || looking()) return;
-    try {
-      const asked = o.dom.requestPointerLock();
-      asked?.catch?.(() => {
-      });
-    } catch {
-    }
-  };
-  const letGo = () => {
-    if (!looking()) return;
-    weLetGo = true;
-    document.exitPointerLock();
-  };
-  const free = (e) => !looking() && !o.hud?.open && e.target === o.dom && e.buttons === 0;
-  const onMove = (e) => {
-    if (!active() || !(looking() || free(e))) return;
-    const next = lookAfter(o.rig.rotation.y, pitch, e.movementX, e.movementY, LOOK_SPEED * lookScale() * aimScale());
-    o.rig.rotation.y = next.yaw;
-    pitch = next.pitch;
-    o.camera.rotation.x = pitch;
-  };
-  const onDown = (e) => {
-    if (!active() || e.button !== 0) return;
-    if (looking()) o.onUse();
-    else look();
-  };
-  const onLock = () => {
-    if (looking()) return;
-    for (const k of Object.keys(held)) held[k] = false;
-    if (active() && !weLetGo && o.hud && !o.hud.open) o.hud.setOpen(true);
-    weLetGo = false;
-  };
-  const typing = (e) => {
-    const t = e.target;
-    return !!t && (t.isContentEditable || t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT");
-  };
-  const onKey = (e) => {
-    if (!active() || typing(e)) return;
-    if (e.code === "Escape") {
-      if (e.defaultPrevented) {
-        if (looking()) letGo();
-        return;
-      }
-      if (looking()) {
-        letGo();
-        o.hud?.setOpen(true);
-      } else if (o.hud && !o.hud.open && performance.now() - closedAt > 80) o.hud.setOpen(true);
-      return;
-    }
-    if (o.hud?.open) return;
-    if (!looking() && !e.repeat) look();
-    const which = heldKey(e.code);
-    if (which) {
-      held[which] = true;
-      if (e.code.startsWith("Arrow")) e.preventDefault();
-      return;
-    }
-    if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) o.onUse();
-  };
-  const onKeyUp = (e) => {
-    const which = heldKey(e.code);
-    if (which) held[which] = false;
-  };
-  const onBlur = () => {
-    for (const k of Object.keys(held)) held[k] = false;
-  };
-  o.dom.addEventListener("mousedown", onDown);
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("pointerlockchange", onLock);
-  addEventListener("keydown", onKey);
-  addEventListener("keyup", onKeyUp);
-  addEventListener("blur", onBlur);
-  const stopSignals = o.controls.onSignal((name) => {
-    if (name === "menuOpen") letGo();
-    if (name === "menuClose") {
-      closedAt = performance.now();
-      setTimeout(look, 0);
-    }
-  });
-  const setEnabled = (on) => {
-    const next = on && mouse;
-    if (mouse) {
-      answered = true;
-      keepIntense(next, key);
-    }
-    if (next === enabled) return;
-    enabled = next;
-    if (!enabled) {
-      letGo();
-      pitch = 0;
-      o.camera.rotation.x = 0;
-      onBlur();
-      dot.style.display = "none";
-      o.dom.style.cursor = "";
-    }
-  };
-  o.controls.add({
-    id: "fps",
-    section: "moving",
-    icon: "step",
-    on: () => enabled,
-    // No mouse, no mouse look. And not in a headset, where it has no meaning.
-    hidden: () => !mouse || o.presenting(),
-    label: () => enabled ? DESK_WORDS.intense : DESK_WORDS.casual,
-    act: () => {
-      setEnabled(!enabled);
-      o.controls.say(enabled ? DESK_WORDS.nowIntense : DESK_WORDS.nowCasual);
-    }
-  });
-  let asking = false;
-  const answer = (intense) => {
-    asking = false;
-    setEnabled(intense);
-    o.controls.say(intense ? DESK_WORDS.nowIntense : DESK_WORDS.nowCasual);
-  };
-  o.controls.addSection({ id: "how-you-move-desk", label: "How you move", icon: "step", note: () => asking ? "You can change this whenever you like, in Moving." : "" });
-  o.controls.add(
-    { id: "desk-casual", section: "how-you-move-desk", icon: "step", hidden: () => !asking || o.presenting(), label: DESK_QUESTION.casual, act: () => answer(false) },
-    { id: "desk-intense", section: "how-you-move-desk", icon: "look", hidden: () => !asking || o.presenting(), label: DESK_QUESTION.intense, act: () => answer(true) }
-  );
-  const stopAskingDesk = o.controls.onSignal((name) => {
-    if (name === "menuClose" && asking) answer(false);
-  });
-  let askTimer = 0;
-  if (mouse && !answered && mayAskHowTheyMove()) {
-    askTimer = window.setTimeout(() => {
-      if (answered || o.presenting() || o.mayAsk?.() === false) return;
-      asking = true;
-      o.controls.signal("show:how-you-move-desk");
-    }, 1200);
-  }
-  const at = o.camera.position.clone();
-  return {
-    get enabled() {
-      return enabled;
-    },
-    setEnabled,
-    get looking() {
-      return looking();
-    },
-    update(dt) {
-      if (!active()) {
-        if (looking()) letGo();
-        if (shown2) {
-          shown2 = false;
-          dot.style.display = "none";
-          o.dom.style.cursor = "";
-        }
-        return false;
-      }
-      const aiming = !o.hud?.open;
-      if (aiming !== shown2) {
-        shown2 = aiming;
-        dot.style.display = aiming ? "block" : "none";
-      }
-      o.dom.style.cursor = aiming ? "none" : "";
-      if (o.hud?.open) return true;
-      const [dx, dz] = strideOf(held, o.rig.rotation.y, o.speed ?? 2.4, dt);
-      if (!dx && !dz) return true;
-      o.camera.getWorldPosition(at);
-      if (o.canStand(at.x + dx, at.z + dz)) {
-        o.rig.position.x += dx;
-        o.rig.position.z += dz;
-      } else if (o.canStand(at.x + dx, at.z)) o.rig.position.x += dx;
-      else if (o.canStand(at.x, at.z + dz)) o.rig.position.z += dz;
-      else o.onBlocked?.();
-      return true;
-    },
-    dispose() {
-      clearTimeout(askTimer);
-      stopAskingDesk();
-      letGo();
-      dot.remove();
-      stopSignals();
-      o.controls.remove("fps");
-      o.dom.removeEventListener("mousedown", onDown);
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("pointerlockchange", onLock);
-      removeEventListener("keydown", onKey);
-      removeEventListener("keyup", onKeyUp);
-      removeEventListener("blur", onBlur);
-    }
-  };
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/visitor-switches.ts
-var picturesSwitch = (controls) => ({
-  id: "people-pictures",
-  section: "people",
-  icon: "selfie",
-  on: () => showsPictures(),
-  label: () => showsPictures() ? "Profile pictures: on" : "Profile pictures: off",
-  short: "Pictures",
-  act: () => {
-    setShowsPictures(!showsPictures());
-    controls.say(showsPictures() ? "People's own pictures are shown over their names. Each is fetched from wherever its owner keeps it, which tells that place your address." : "No pictures are fetched or shown, here or in the next world.");
-  }
-});
-var modelsSwitch = (controls) => ({
-  id: "people-models",
-  section: "people",
-  icon: "people",
-  on: () => showsModels(),
-  label: () => showsModels() ? "Show people's own models: on" : "Show people's own models: off",
-  short: "Models",
-  act: () => {
-    setShowsModels(!showsModels());
-    controls.say(showsModels() ? "People who wear a model of their own are drawn as it here, and in the next world that draws them." : "Everyone is drawn as their simple look, here and in the next world.");
-  }
-});
-var chatSwitch = (tell) => ({
-  id: "room-chat-show",
-  section: "room",
-  icon: "chat",
-  label: () => showsChat() ? "Written chat: on" : "Written chat: off",
-  on: () => showsChat(),
-  act: () => {
-    setShowsChat(!showsChat());
-    tell(showsChat() ? "What people write in a room is shown to you, and you can write. It goes only to the people in the room, and is kept nowhere." : "Nothing anyone writes is shown to you, here or in the next world, and nobody is told.");
-  }
-});
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/messages.ts
+// packages/sdk/src/messages.ts
 import { DEFAULT_RELAYS as DEFAULT_RELAYS9, isHex64 as isHex645, looksLikeWrap as looksLikeWrap2, MESSAGE_RELAYS_KIND, publishEvent as publishEvent4, queryRelays as queryRelays7, readMessageRelays, readRelayList as readRelayList3, RELAY_LIST_KIND as RELAY_LIST_KIND3, WRAP_KIND, wrapSeal, writtenWith } from "@nswp/core";
 var MOST2 = 300;
 var FRESH_MS3 = 45e3;
@@ -10535,10 +9605,10 @@ function createMessages(opts) {
       return null;
     }
   })();
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const newcomers = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   let who = null;
   let state = "off";
@@ -10620,7 +9690,7 @@ function createMessages(opts) {
     looked = now();
     changed();
   };
-  const load2 = async (fresh = false) => {
+  const load = async (fresh = false) => {
     const me = hand.ready() ? hand.pubkey() : null;
     if (me !== who || !me && state !== "off") {
       reset(me);
@@ -10643,7 +9713,7 @@ function createMessages(opts) {
     state: () => hand.ready() && hand.pubkey() === who && who ? state : "off",
     inbox: () => [...inbox],
     offered,
-    load: load2,
+    load,
     async setUp() {
       const me = hand.pubkey();
       if (!me || !hand.ready()) return { ok: false, said: "Sign in first." };
@@ -10655,7 +9725,7 @@ function createMessages(opts) {
       inbox = relays;
       state = "ready";
       changed();
-      void load2(true);
+      void load(true);
       return { ok: true, said: `Private messages now reach you at ${relays.map((r) => r.replace(/^wss:\/\//, "")).join(", ")}.` };
     },
     conversations() {
@@ -10709,8 +9779,8 @@ function createMessages(opts) {
       return n;
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     },
     onNew(fn) {
       newcomers.add(fn);
@@ -10719,7 +9789,7 @@ function createMessages(opts) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/messaging.ts
+// packages/sdk/src/messaging.ts
 import { shortNpub as shortNpub6, MESSAGE_LIMITS } from "@nswp/core";
 import * as THREE11 from "three";
 var W2 = 768;
@@ -10982,7 +10052,7 @@ function addMessagingControls(controls, opts) {
   return { refresh, write };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/room-controls.ts
+// packages/sdk/src/room-controls.ts
 function roomNameFromHash(hash) {
   for (const part of hash.replace(/^#/, "").split("&")) {
     if (part.startsWith("room=")) {
@@ -12049,10 +11119,10 @@ function addRoomControls(controls, presence, opts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/input.ts
+// packages/sdk/src/input.ts
 import * as THREE13 from "three";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/actions.ts
+// packages/sdk/src/actions.ts
 var NO_PAD = { stick: [0, 0], from: "none", trigger: 0, squeeze: 0, primary: false, secondary: false, press: false };
 function deadzone(x, y, inner = 0.2) {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return [0, 0];
@@ -12127,7 +11197,7 @@ function saveComfort(comfort) {
   } catch {
   }
 }
-var WALK_SPEED2 = 1.8;
+var WALK_SPEED = 1.8;
 var RUN_FACTOR = RUN;
 var TURN_SPEED = 110;
 var BACK_STEP = 1;
@@ -12181,7 +11251,7 @@ var Locomotion = class {
         if (strafe !== 0 || y !== 0) {
           pushed = true;
           if (p.pad.press) this.running = true;
-          const pace = WALK_SPEED2 * (this.running ? RUN_FACTOR : 1) * dt / Math.max(1, Math.hypot(strafe, y));
+          const pace = WALK_SPEED * (this.running ? RUN_FACTOR : 1) * dt / Math.max(1, Math.hypot(strafe, y));
           intent.walk[0] += strafe * pace;
           intent.walk[1] += y * pace;
           sliding = true;
@@ -12213,7 +11283,7 @@ var Locomotion = class {
   }
 };
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/input.ts
+// packages/sdk/src/input.ts
 var unpointable = (root) => root.traverse((o) => void (o.raycast = () => {
 }));
 function controllerModel(accent) {
@@ -12457,9 +11527,9 @@ function createXrInput(opts) {
       if (held.get(i)?.by === "pinch") release(i);
     }));
   });
-  const setComfort = (patch, keep4 = false) => {
+  const setComfort = (patch, keep3 = false) => {
     comfort = { ...comfort, ...cleanComfort(patch) };
-    if (keep4) {
+    if (keep3) {
       saveComfort(comfort);
       answered = true;
     }
@@ -12476,7 +11546,7 @@ function createXrInput(opts) {
     const hidden = () => !headset;
     const note = () => comfort.move === "steps" ? "With a controller: push a stick forward, point at the floor and let go to step there. Flick the other stick to turn. Squeeze the grip to pick things up. Pointing and selecting does everything too." : "With a controller: one stick walks, the other turns. If it makes you feel unwell, go back to stepping: it is the comfortable way.";
     controls.addSection({ id: "moving", label: "Moving", icon: "step", note });
-    const change2 = (patch) => {
+    const change = (patch) => {
       setComfort(patch, true);
       controls.addSection({ id: "moving", label: "Moving", icon: "step", note });
     };
@@ -12493,13 +11563,13 @@ function createXrInput(opts) {
         short: "Style",
         act: () => {
           const intense = !isIntense(comfort);
-          change2(intense ? INTENSE_COMFORT : CASUAL_COMFORT);
+          change(intense ? INTENSE_COMFORT : CASUAL_COMFORT);
           controls.say(
             intense ? "Intense: one stick walks, the other turns, smoothly, with the whole view. If it makes you feel unwell, go back to casual." : "Casual: point at the floor to step there, and turn a notch at a time. The comfortable way."
           );
         }
       },
-      { id: "move-mode", section: "moving", icon: "step", hidden, on: () => comfort.move === "smooth", label: () => comfort.move === "steps" ? "Moving in steps. Walk smoothly instead" : "Walking smoothly. Move in steps instead", short: "Walk", act: () => change2({ move: comfort.move === "steps" ? "smooth" : "steps" }) },
+      { id: "move-mode", section: "moving", icon: "step", hidden, on: () => comfort.move === "smooth", label: () => comfort.move === "steps" ? "Moving in steps. Walk smoothly instead" : "Walking smoothly. Move in steps instead", short: "Walk", act: () => change({ move: comfort.move === "steps" ? "smooth" : "steps" }) },
       {
         id: "turn-mode",
         section: "moving",
@@ -12509,9 +11579,9 @@ function createXrInput(opts) {
         label: () => comfort.turn === "smooth" ? "Turning smoothly. Turn in steps instead" : `Turning ${comfort.turnStep}\xB0 at a time. Change`,
         short: "Turn",
         // In steps of 30, then 45, then 90, then smoothly, and round again.
-        act: () => change2(comfort.turn === "smooth" ? { turn: "steps", turnStep: 30 } : comfort.turnStep === 30 ? { turnStep: 45 } : comfort.turnStep === 45 ? { turnStep: 90 } : { turn: "smooth" })
+        act: () => change(comfort.turn === "smooth" ? { turn: "steps", turnStep: 30 } : comfort.turnStep === 30 ? { turnStep: 45 } : comfort.turnStep === 45 ? { turnStep: 90 } : { turn: "smooth" })
       },
-      { id: "move-hand", section: "moving", icon: "motion", hidden, label: () => `The ${comfort.moveHand} stick moves you. Swap hands`, short: "Hands", act: () => change2({ moveHand: comfort.moveHand === "left" ? "right" : "left" }) },
+      { id: "move-hand", section: "moving", icon: "motion", hidden, label: () => `The ${comfort.moveHand} stick moves you. Swap hands`, short: "Hands", act: () => change({ moveHand: comfort.moveHand === "left" ? "right" : "left" }) },
       {
         id: "move-narrow",
         section: "moving",
@@ -12520,7 +11590,7 @@ function createXrInput(opts) {
         on: () => comfort.narrow,
         label: () => comfort.narrow ? "The view narrows while you move. Turn that off" : "Narrow the view while you move",
         short: "Narrow",
-        act: () => change2({ narrow: !comfort.narrow })
+        act: () => change({ narrow: !comfort.narrow })
       },
       {
         // A jump the kit makes (a step, being stepped aside) fades to black and back: casual's default, intense's not.
@@ -12531,7 +11601,7 @@ function createXrInput(opts) {
         on: () => comfort.fade,
         label: () => comfort.fade ? "The view fades when you step. Turn that off" : "Fade the view when you step",
         short: "Fade",
-        act: () => change2({ fade: !comfort.fade })
+        act: () => change({ fade: !comfort.fade })
       }
     );
     let asking = false;
@@ -12677,171 +11747,11 @@ function createXrInput(opts) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
-import * as THREE16 from "three";
+// packages/sdk/src/panels.ts
+import * as THREE15 from "three";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keyboard.ts
+// packages/sdk/src/keyboard.ts
 import * as THREE14 from "three";
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panel-store.ts
-var PANEL_LOOKS = [
-  { name: "Solid", opacity: 1, dark: 1 },
-  { name: "Dark parts see-through", opacity: 1, dark: 0.4 },
-  { name: "Dark parts clear", opacity: 1, dark: 0.08 },
-  { name: "All of it faint", opacity: 0.6, dark: 0.35 }
-];
-function cleanLook(input) {
-  const l = input && typeof input === "object" ? input : {};
-  return { opacity: finite(l.opacity) ? clamp(l.opacity, 0.15, 1) : 1, dark: finite(l.dark) ? clamp(l.dark, 0, 1) : 1 };
-}
-function nextLook(now) {
-  const at = PANEL_LOOKS.findIndex((l) => Math.abs(l.opacity - now.opacity) < 0.01 && Math.abs(l.dark - now.dark) < 0.01);
-  return PANEL_LOOKS[(at + 1) % PANEL_LOOKS.length];
-}
-var PANEL_LIMITS = {
-  count: 24,
-  titleChars: 80,
-  noteChars: 4e3,
-  srcChars: 2048,
-  minWidth: 0.3,
-  maxWidth: 3,
-  /** A panel is never kept further from the middle of a world than this, in metres. */
-  reach: 500,
-  /** The largest file of the visitor's own that is kept, in bytes. */
-  fileBytes: 64 * 1024 * 1024
-};
-var ID = /^[a-z0-9-]{4,40}$/;
-var finite = (n) => typeof n === "number" && Number.isFinite(n);
-var clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
-function tidy(text, max, lines = false) {
-  if (typeof text !== "string") return "";
-  const cleaned = text.replace(lines ? /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g : /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, " ");
-  return [...lines ? cleaned : cleaned.replace(/\s+/g, " ").trim()].slice(0, max).join("");
-}
-function cleanPlace(input) {
-  if (!input || typeof input !== "object") return null;
-  const p = input;
-  const at = p.position;
-  if (!Array.isArray(at) || at.length !== 3 || !at.every(finite) || at.some((n) => Math.abs(n) > PANEL_LIMITS.reach)) return null;
-  if (!finite(p.width)) return null;
-  return {
-    position: [at[0], at[1], at[2]],
-    yaw: finite(p.yaw) ? (p.yaw % 360 + 360) % 360 : 0,
-    pitch: finite(p.pitch) ? clamp(p.pitch, -60, 60) : 0,
-    width: clamp(p.width, PANEL_LIMITS.minWidth, PANEL_LIMITS.maxWidth)
-  };
-}
-function cleanSource(input) {
-  if (!input || typeof input !== "object") return null;
-  const s = input;
-  const title = tidy(s.title, PANEL_LIMITS.titleChars);
-  if (s.kind === "note") {
-    const text = tidy(s.text, PANEL_LIMITS.noteChars, true);
-    return text.trim() || title ? { kind: "note", title, text } : null;
-  }
-  if (s.kind === "picture" || s.kind === "video") {
-    if (typeof s.src !== "string" || s.src.length === 0 || s.src.length > PANEL_LIMITS.srcChars) return null;
-    if (!/^(kept:[a-z0-9-]{4,40}|https:\/\/|\/|\.\/|blob:)/.test(s.src)) return null;
-    return { kind: s.kind, title, src: s.src };
-  }
-  return null;
-}
-function cleanRecords(input) {
-  if (!Array.isArray(input)) return [];
-  const out = [];
-  for (const item of input) {
-    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((r) => r.id === item.id)) continue;
-    const source = cleanSource(item.source);
-    const place = cleanPlace(item.place);
-    if (!source || !place || "src" in source && source.src.startsWith("blob:")) continue;
-    const look = item.look ? cleanLook(item.look) : null;
-    const pin = cleanPin(item.pin);
-    out.push({ id: item.id, source, place, ...look && (look.opacity < 1 || look.dark < 1) ? { look } : {}, ...pin ? { pin } : {} });
-    if (out.length === PANEL_LIMITS.count) break;
-  }
-  return out;
-}
-function cleanPin(input) {
-  if (!Array.isArray(input) || input.length !== 3 || !input.every(finite)) return null;
-  const z = clamp(input[2], -6, -0.25);
-  return [clamp(input[0], -4, 4), clamp(input[1], -2.5, 2.5), z];
-}
-var turn = (from, to) => ((to - from) % 360 + 540) % 360 - 180;
-function tagAlong(now, head, dt, o = {}) {
-  const ease = Math.min(1, dt * 5);
-  const off = turn(now.yaw, head.yaw);
-  const turning = Math.abs(off) > (o.turn ?? 38) || now.turning && Math.abs(off) > 3;
-  const [dx, dy, dz] = [head.position[0] - now.position[0], head.position[1] - now.position[1], head.position[2] - now.position[2]];
-  const far = Math.hypot(dx, dy, dz);
-  const moving = far > (o.reach ?? 0.4) || now.moving && far > 0.03;
-  return {
-    yaw: turning ? ((now.yaw + off * ease) % 360 + 360) % 360 : now.yaw,
-    position: moving ? [now.position[0] + dx * ease, now.position[1] + dy * ease, now.position[2] + dz * ease] : now.position,
-    turning,
-    moving
-  };
-}
-function facing(at, head) {
-  const [dx, dy, dz] = [head[0] - at[0], head[1] - at[1], head[2] - at[2]];
-  const flat = Math.hypot(dx, dz);
-  if (flat < 1e-6) return { yaw: 0, pitch: 0 };
-  const deg = 180 / Math.PI;
-  return { yaw: (Math.atan2(dx, dz) * deg % 360 + 360) % 360, pitch: clamp(-Math.atan2(dy, flat) * deg, -35, 35) };
-}
-function inFront(head, yawDegrees, already = 0, distance = 1.3) {
-  const step = Math.ceil(already % 7 / 2) * 48 * (already % 2 ? -1 : 1);
-  const a = (yawDegrees + step) * Math.PI / 180;
-  return [head[0] - Math.sin(a) * distance, clamp(head[1] - 0.05, 0.6, 3), head[2] - Math.cos(a) * distance];
-}
-function newId(random = Math.random) {
-  return `p-${Array.from({ length: 10 }, () => Math.floor(random() * 36).toString(36)).join("")}`;
-}
-function wrapText(text, width, measure, maxLines = 40) {
-  const out = [];
-  for (const paragraph of text.split("\n")) {
-    let line = "";
-    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-      const next = line ? `${line} ${word}` : word;
-      if (measure(next) <= width || !line) line = next;
-      else {
-        out.push(line);
-        line = word;
-      }
-      while (measure(line) > width && line.length > 1) {
-        let cut = line.length - 1;
-        while (cut > 1 && measure(line.slice(0, cut)) > width) cut--;
-        out.push(line.slice(0, cut));
-        line = line.slice(cut);
-      }
-    }
-    out.push(line);
-    if (out.length > maxLines) break;
-  }
-  if (out.length > maxLines) {
-    out.length = maxLines;
-    out[maxLines - 1] = `${out[maxLines - 1].replace(/.$/u, "")}\u2026`;
-  }
-  return out;
-}
-var LIBRARY_LIMITS = { count: 60, thumbChars: 6e4 };
-function cleanLibrary(input) {
-  if (!Array.isArray(input)) return [];
-  const out = [];
-  for (const item of input) {
-    if (!item || typeof item !== "object" || typeof item.id !== "string" || !ID.test(item.id) || out.some((x) => x.id === item.id)) continue;
-    if (item.kind !== "picture" && item.kind !== "video") continue;
-    const thumb = typeof item.thumb === "string" && item.thumb.length <= LIBRARY_LIMITS.thumbChars && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(item.thumb) ? item.thumb : "";
-    out.push({ id: item.id, kind: item.kind, title: tidy(item.title, PANEL_LIMITS.titleChars), bytes: finite(item.bytes) && item.bytes >= 0 ? item.bytes : 0, addedAt: finite(item.addedAt) ? item.addedAt : 0, thumb });
-  }
-  return out.sort((a, b) => b.addedAt - a.addedAt).slice(0, LIBRARY_LIMITS.count);
-}
-function libraryPage(items, page, perPage) {
-  const pages = Math.max(1, Math.ceil(items.length / perPage));
-  const at = Math.min(pages - 1, Math.max(0, Math.floor(page)));
-  return { items: items.slice(at * perPage, (at + 1) * perPage), page: at, pages };
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/keyboard.ts
 var W3 = 1024;
 var SHOW = 300;
 var KEYS = 520;
@@ -13107,301 +12017,7 @@ function createKeyboard(o) {
   return api;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/library.ts
-import * as THREE15 from "three";
-var DB = "nswp-panels";
-function files() {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DB, 1);
-    open.onupgradeneeded = () => open.result.createObjectStore("files");
-    open.onsuccess = () => resolve(open.result);
-    open.onerror = () => reject(open.error);
-  });
-}
-async function fileStore(mode, run) {
-  try {
-    const db = await files();
-    return await new Promise((resolve, reject) => {
-      const request = run(db.transaction("files", mode).objectStore("files"));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  } catch {
-    return void 0;
-  }
-}
-async function thumbnail(file, kind) {
-  const draw = (source, w, h) => {
-    if (!w || !h) return "";
-    const canvas = document.createElement("canvas");
-    canvas.width = 240;
-    canvas.height = Math.max(1, Math.round(240 * h / w));
-    canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
-    const data = canvas.toDataURL("image/jpeg", 0.7);
-    return data.length <= LIBRARY_LIMITS.thumbChars ? data : "";
-  };
-  try {
-    if (kind === "picture") {
-      const bitmap = await createImageBitmap(file);
-      const data = draw(bitmap, bitmap.width, bitmap.height);
-      bitmap.close();
-      return data;
-    }
-    const url = URL.createObjectURL(file);
-    try {
-      const video = document.createElement("video");
-      video.muted = true;
-      video.playsInline = true;
-      video.preload = "auto";
-      video.src = url;
-      await new Promise((resolve, reject) => {
-        video.addEventListener("loadeddata", () => resolve(), { once: true });
-        video.addEventListener("error", () => reject(new Error("unreadable")), { once: true });
-        setTimeout(() => reject(new Error("slow")), 4e3);
-      });
-      return draw(video, video.videoWidth, video.videoHeight);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } catch {
-    return "";
-  }
-}
-var W4 = 1024;
-var H3 = 768;
-var COLS = 4;
-var ROWS = 2;
-var TOP = 96;
-var FOOT = 104;
-var WIDTH2 = 1.1;
-function createLibrary(o) {
-  const accent = `#${new THREE15.Color(o.accent ?? 16758364).getHexString()}`;
-  const ink = o.textColor ?? "#eef5fb";
-  let items = [];
-  if (o.keep) {
-    try {
-      items = cleanLibrary(JSON.parse(localStorage.getItem(`${o.keep}:library`) ?? "[]"));
-    } catch {
-    }
-  }
-  const save = () => {
-    stale = true;
-    o.onChange?.();
-    if (!o.keep) return;
-    try {
-      localStorage.setItem(`${o.keep}:library`, JSON.stringify(items));
-    } catch {
-    }
-  };
-  const canvas = document.createElement("canvas");
-  canvas.width = W4;
-  canvas.height = H3;
-  const g = canvas.getContext("2d");
-  const texture = new THREE15.CanvasTexture(canvas);
-  texture.colorSpace = THREE15.SRGBColorSpace;
-  texture.anisotropy = 8;
-  const board = new THREE15.Mesh(new THREE15.PlaneGeometry(WIDTH2, WIDTH2 * H3 / W4), new THREE15.MeshBasicMaterial({ map: texture, toneMapped: false }));
-  board.name = "library";
-  const group = new THREE15.Group();
-  group.name = "library";
-  group.add(board);
-  group.visible = false;
-  o.scene.add(group);
-  let page = 0;
-  let removing = false;
-  let aimed = null;
-  let stale = true;
-  let regions = [];
-  const thumbs = /* @__PURE__ */ new Map();
-  const thumbOf = (item) => {
-    if (!item.thumb) return null;
-    let image = thumbs.get(item.id);
-    if (!image) {
-      image = new Image();
-      image.onload = () => stale = true;
-      image.src = item.thumb;
-      thumbs.set(item.id, image);
-    }
-    return image.complete && image.naturalWidth ? image : null;
-  };
-  const paint = () => {
-    stale = false;
-    regions = [];
-    const shown2 = libraryPage(items, page, COLS * ROWS);
-    page = shown2.page;
-    g.fillStyle = "#0a1018";
-    g.fillRect(0, 0, W4, H3);
-    g.fillStyle = "#101a26";
-    g.fillRect(0, 0, W4, TOP);
-    g.fillStyle = ink;
-    g.textBaseline = "middle";
-    g.textAlign = "left";
-    g.font = "bold 40px system-ui, sans-serif";
-    g.fillText(removing ? "Select one to remove it" : "Your pictures and video", 36, TOP / 2 + 2, W4 - 200);
-    const button = (id, label, x, y, w, h, on = false) => {
-      regions.push({ id, x, y, w, h });
-      const lit = aimed === id || on;
-      g.fillStyle = lit ? accent : "#162231";
-      g.beginPath();
-      g.roundRect(x, y, w, h, 16);
-      g.fill();
-      g.fillStyle = lit ? "#04070b" : ink;
-      g.textAlign = "center";
-      g.font = "bold 30px system-ui, sans-serif";
-      g.fillText(label, x + w / 2, y + h / 2 + 2, w - 16);
-      g.textAlign = "left";
-    };
-    button("close", "Close", W4 - 164, 18, 140, TOP - 36);
-    if (shown2.items.length === 0) {
-      g.fillStyle = ink;
-      g.globalAlpha = 0.8;
-      g.font = "34px system-ui, sans-serif";
-      g.textAlign = "center";
-      g.fillText("Nothing here yet.", W4 / 2, H3 / 2 - 40);
-      g.fillText("Hang a picture or video on a flat screen,", W4 / 2, H3 / 2 + 10);
-      g.fillText("or take a picture with the camera.", W4 / 2, H3 / 2 + 56);
-      g.textAlign = "left";
-      g.globalAlpha = 1;
-    }
-    const cellW = (W4 - 48) / COLS;
-    const cellH = (H3 - TOP - FOOT - 24) / ROWS;
-    shown2.items.forEach((item, i) => {
-      const [x, y] = [24 + i % COLS * cellW + 10, TOP + 12 + Math.floor(i / COLS) * cellH + 8];
-      const [w, h] = [cellW - 20, cellH - 16];
-      const id = `item:${item.id}`;
-      regions.push({ id, x, y, w, h });
-      g.fillStyle = aimed === id ? accent : "#162231";
-      g.beginPath();
-      g.roundRect(x, y, w, h, 14);
-      g.fill();
-      const image = thumbOf(item);
-      const [px, py, pw, ph] = [x + 8, y + 8, w - 16, h - 60];
-      g.fillStyle = "#05090e";
-      g.fillRect(px, py, pw, ph);
-      if (image) {
-        const scale = Math.min(pw / image.naturalWidth, ph / image.naturalHeight);
-        const [dw, dh] = [image.naturalWidth * scale, image.naturalHeight * scale];
-        g.drawImage(image, px + (pw - dw) / 2, py + (ph - dh) / 2, dw, dh);
-      }
-      if (item.kind === "video") {
-        g.fillStyle = "rgba(4, 7, 11, 0.7)";
-        g.beginPath();
-        g.arc(px + pw / 2, py + ph / 2, 30, 0, Math.PI * 2);
-        g.fill();
-        g.fillStyle = ink;
-        g.beginPath();
-        g.moveTo(px + pw / 2 - 10, py + ph / 2 - 15);
-        g.lineTo(px + pw / 2 + 16, py + ph / 2);
-        g.lineTo(px + pw / 2 - 10, py + ph / 2 + 15);
-        g.fill();
-      }
-      g.fillStyle = aimed === id ? "#04070b" : ink;
-      g.font = "26px system-ui, sans-serif";
-      g.fillText(item.title || (item.kind === "video" ? "A video" : "A picture"), x + 12, y + h - 26, w - 24);
-    });
-    const fy = H3 - FOOT + 14;
-    if (shown2.pages > 1) {
-      button("prev", "Earlier", 24, fy, 170, FOOT - 28);
-      button("next", "Later", 206, fy, 170, FOOT - 28);
-      g.fillStyle = ink;
-      g.font = "28px system-ui, sans-serif";
-      g.fillText(`${shown2.page + 1} of ${shown2.pages}`, 400, fy + (FOOT - 28) / 2 + 2);
-    }
-    if (items.length) button("removing", removing ? "Stop removing" : "Remove one", W4 - 300, fy, 276, FOOT - 28, removing);
-    texture.needsUpdate = true;
-  };
-  const at = new THREE15.Vector3();
-  const facing2 = new THREE15.Vector3();
-  const api = {
-    group,
-    list: () => items,
-    async add(file, name = "") {
-      const kind = file.type.startsWith("image/") ? "picture" : file.type.startsWith("video/") ? "video" : null;
-      if (!kind || file.size > PANEL_LIMITS.fileBytes || items.length >= LIBRARY_LIMITS.count) return null;
-      const id = newId();
-      if (await fileStore("readwrite", (s) => s.put(file, id)) === void 0) return null;
-      const item = { id, kind, title: name.replace(/\.[a-z0-9]+$/i, "").slice(0, PANEL_LIMITS.titleChars), bytes: file.size, addedAt: Math.floor(Date.now() / 1e3), thumb: await thumbnail(file, kind) };
-      items = cleanLibrary([item, ...items]);
-      save();
-      return items.find((x) => x.id === id) ?? null;
-    },
-    async remove(id) {
-      if (!items.some((x) => x.id === id)) return;
-      items = items.filter((x) => x.id !== id);
-      thumbs.delete(id);
-      await fileStore("readwrite", (s) => s.delete(id));
-      save();
-    },
-    get showing() {
-      return group.visible;
-    },
-    set showing(v) {
-      if (v === group.visible) return;
-      group.visible = v;
-      removing = false;
-      aimed = null;
-      stale = true;
-      if (v) {
-        o.camera.getWorldPosition(at);
-        o.camera.getWorldDirection(facing2);
-        facing2.y = 0;
-        if (facing2.lengthSq() < 1e-6) facing2.set(0, 0, -1);
-        facing2.normalize();
-        group.position.set(at.x + facing2.x * 1.15, Math.max(0.8, at.y - 0.05), at.z + facing2.z * 1.15);
-        group.rotation.set(0, Math.atan2(-facing2.x, -facing2.z), 0);
-      }
-      o.onChange?.();
-    },
-    pick(raycaster) {
-      if (!group.visible) return null;
-      const hit = raycaster.intersectObject(board, false)[0];
-      if (!hit?.uv) return null;
-      const [x, y] = [hit.uv.x * W4, (1 - hit.uv.y) * H3];
-      const r = regions.find((q) => x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h);
-      return `lib:${r?.id ?? ""}`;
-    },
-    aim(hit) {
-      const id = hit?.startsWith("lib:") ? hit.slice(4) || null : null;
-      if (id === aimed) return;
-      aimed = id;
-      stale = true;
-    },
-    press(hit) {
-      if (!group.visible || !hit.startsWith("lib:")) return;
-      const id = hit.slice(4);
-      if (id === "close") api.showing = false;
-      else if (id === "prev") page--;
-      else if (id === "next") page++;
-      else if (id === "removing") removing = !removing;
-      else if (id.startsWith("item:")) {
-        const item = items.find((x) => x.id === id.slice(5));
-        if (item && removing) void api.remove(item.id);
-        else if (item) o.onChoose(item);
-      }
-      stale = true;
-    },
-    pointOf(hit) {
-      const r = hit.startsWith("lib:") ? regions.find((q) => q.id === hit.slice(4)) : null;
-      if (!r || !group.visible) return null;
-      const height = WIDTH2 * H3 / W4;
-      group.updateMatrixWorld(true);
-      return board.localToWorld(new THREE15.Vector3(((r.x + r.w / 2) / W4 - 0.5) * WIDTH2, (0.5 - (r.y + r.h / 2) / H3) * height, 0));
-    },
-    info: () => ({ showing: group.visible, page, pages: libraryPage(items, page, COLS * ROWS).pages, removing, cells: regions.map((r) => r.id) }),
-    update() {
-      if (group.visible && stale) paint();
-    },
-    dispose() {
-      o.scene.remove(group);
-      board.geometry.dispose();
-      board.material.dispose();
-      texture.dispose();
-    }
-  };
-  return api;
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/panels.ts
+// packages/sdk/src/panels.ts
 var BAR = 0.085;
 var GAP = 0.012;
 var BUTTON = 0.062;
@@ -13411,27 +12027,27 @@ function canvasTexture(width, height, draw) {
   canvas.width = width;
   canvas.height = height;
   draw(canvas.getContext("2d"), width, height);
-  const texture = new THREE16.CanvasTexture(canvas);
-  texture.colorSpace = THREE16.SRGBColorSpace;
+  const texture = new THREE15.CanvasTexture(canvas);
+  texture.colorSpace = THREE15.SRGBColorSpace;
   texture.anisotropy = 8;
   return texture;
 }
 function noteTexture(source, ink) {
-  const W5 = 1024;
+  const W4 = 1024;
   const pad = 56;
   const measure = document.createElement("canvas").getContext("2d");
   measure.font = "40px system-ui, sans-serif";
-  const lines = wrapText(source.text, W5 - pad * 2, (s) => measure.measureText(s).width);
-  const H5 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
-  const texture = canvasTexture(W5, H5, (g) => {
+  const lines = wrapText(source.text, W4 - pad * 2, (s) => measure.measureText(s).width);
+  const H4 = Math.round(Math.min(2048, Math.max(360, pad * 2 + lines.length * 56 + 12)));
+  const texture = canvasTexture(W4, H4, (g) => {
     g.fillStyle = "#0a1018";
-    g.fillRect(0, 0, W5, H5);
+    g.fillRect(0, 0, W4, H4);
     g.fillStyle = ink;
     g.textBaseline = "top";
     g.font = "40px system-ui, sans-serif";
     lines.forEach((line, i) => g.fillText(line, pad, pad + i * 56));
   });
-  return { texture, aspect: W5 / H5 };
+  return { texture, aspect: W4 / H4 };
 }
 function glyphTexture(glyph, ink) {
   return canvasTexture(128, 128, (g) => {
@@ -13498,9 +12114,9 @@ function barTexture(title, ink) {
   });
 }
 function createPanels(o) {
-  const accent = new THREE16.Color(o.accent ?? 16758364);
+  const accent = new THREE15.Color(o.accent ?? 16758364);
   const ink = o.textColor ?? "#eef5fb";
-  const root = new THREE16.Group();
+  const root = new THREE15.Group();
   root.name = "panels";
   o.scene.add(root);
   const live = /* @__PURE__ */ new Map();
@@ -13509,13 +12125,13 @@ function createPanels(o) {
   const glyph = (g) => glyphs.get(g) ?? (glyphs.set(g, glyphTexture(g, ink)), glyphs.get(g));
   const frameShape = (() => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE16.Color(1186340);
+    b.tone = new THREE15.Color(1186340);
     b.light = accent.clone();
     b.box([1, 1, 0.022], [0, 0, 0], { bevel: 8e-3 });
     return b.geometry();
   })();
-  const head = new THREE16.Vector3();
-  const at = new THREE16.Vector3();
+  const head = new THREE15.Vector3();
+  const at = new THREE15.Vector3();
   const headV3 = () => {
     o.camera.getWorldPosition(head);
     return [head.x, head.y, head.z];
@@ -13604,10 +12220,10 @@ function createPanels(o) {
   };
   const presenting = () => !!o.session?.();
   let follow = null;
-  const anchorAt = new THREE16.Vector3();
-  const anchorTurn = new THREE16.Quaternion();
-  const offset = new THREE16.Vector3();
-  const UP = new THREE16.Vector3(0, 1, 0);
+  const anchorAt = new THREE15.Vector3();
+  const anchorTurn = new THREE15.Quaternion();
+  const offset = new THREE15.Vector3();
+  const UP = new THREE15.Vector3(0, 1, 0);
   const anchor = (dt) => {
     o.camera.getWorldPosition(anchorAt);
     if (!presenting()) {
@@ -13648,20 +12264,20 @@ function createPanels(o) {
     save();
     if (p.source.kind === "custom") p.source.onClose?.();
   };
-  const flat = (texture, w = 1, h = 1) => new THREE16.Mesh(new THREE16.PlaneGeometry(w, h), new THREE16.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
+  const flat = (texture, w = 1, h = 1) => new THREE15.Mesh(new THREE15.PlaneGeometry(w, h), new THREE15.MeshBasicMaterial({ map: texture, color: texture ? 16777215 : 659480, toneMapped: false }));
   const open = (content, opts = {}) => {
     const source = content.kind === "custom" ? content : cleanSource(content);
     if (!source) throw new Error("nswp-sdk: a panel needs something to show (a note with words, or a picture or video with an address).");
     if (live.size >= PANEL_LIMITS.count && !(opts.id && live.has(opts.id))) throw new Error(`nswp-sdk: ${PANEL_LIMITS.count} panels are open. Put one away first.`);
     const id = opts.id ?? newId();
     live.get(id)?.close();
-    const group = new THREE16.Group();
+    const group = new THREE15.Group();
     group.name = `panel:${id}`;
     const body = flat(null);
     body.name = `${id}:body`;
     const bar = flat(barTexture(source.title || (source.kind === "note" ? "Note" : source.kind === "picture" ? "Picture" : source.kind === "video" ? "Video" : ""), ink), 1, BAR);
     bar.name = `${id}:bar`;
-    const frame = new THREE16.Mesh(frameShape, metal);
+    const frame = new THREE15.Mesh(frameShape, metal);
     frame.name = "frame";
     frame.raycast = () => {
     };
@@ -13715,7 +12331,7 @@ function createPanels(o) {
         save();
       },
       place() {
-        const e = new THREE16.Euler().setFromQuaternion(group.quaternion, "YXZ");
+        const e = new THREE15.Euler().setFromQuaternion(group.quaternion, "YXZ");
         const round = (n) => Math.round(n * 1e3) / 1e3;
         return { position: group.position.toArray().map(round), yaw: round((e.y / DEG % 360 + 360) % 360), pitch: round(e.x / DEG), width: round(p.width) };
       },
@@ -13753,8 +12369,8 @@ function createPanels(o) {
           const image = new Image();
           image.onload = () => {
             if (!live.has(id)) return;
-            const texture = new THREE16.Texture(image);
-            texture.colorSpace = THREE16.SRGBColorSpace;
+            const texture = new THREE15.Texture(image);
+            texture.colorSpace = THREE15.SRGBColorSpace;
             texture.needsUpdate = true;
             show(texture, image.naturalWidth / Math.max(1, image.naturalHeight));
           };
@@ -13767,8 +12383,8 @@ function createPanels(o) {
           p.video = video;
           video.addEventListener("loadedmetadata", () => {
             if (!live.has(id) || !video.videoWidth) return;
-            const texture = new THREE16.VideoTexture(video);
-            texture.colorSpace = THREE16.SRGBColorSpace;
+            const texture = new THREE15.VideoTexture(video);
+            texture.colorSpace = THREE15.SRGBColorSpace;
             show(texture, video.videoWidth / video.videoHeight);
           });
           const mark = () => {
@@ -13835,9 +12451,9 @@ function createPanels(o) {
   const tint = (hit, on) => {
     const found = hit ? find(hit) : null;
     const mesh = found?.[0].buttons.get(found[1]);
-    if (mesh) mesh.material.color.copy(on || found[1] === "pin" && found[0].pinAt ? accent : new THREE16.Color(16777215));
+    if (mesh) mesh.material.color.copy(on || found[1] === "pin" && found[0].pinAt ? accent : new THREE15.Color(16777215));
   };
-  const lit = (p) => p.buttons.get("pin").material.color.copy(p.pinAt ? accent : new THREE16.Color(16777215));
+  const lit = (p) => p.buttons.get("pin").material.color.copy(p.pinAt ? accent : new THREE15.Color(16777215));
   const api = {
     open,
     async openFile(file) {
@@ -14069,15 +12685,15 @@ function addPanelControls(controls, panels, o) {
   );
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/floor-mark.ts
-import * as THREE17 from "three";
+// packages/sdk/src/floor-mark.ts
+import * as THREE16 from "three";
 var MOST3 = 140;
 var TURNS = 16;
 function createFloorMarks(accent, opts = {}) {
   const y = opts.height ?? 0.02;
-  const group = new THREE17.Group();
+  const group = new THREE16.Group();
   group.name = "floor-marks";
-  const paint = (opacity) => new THREE17.MeshBasicMaterial({ color: accent, transparent: true, opacity, depthTest: false, depthWrite: false });
+  const paint = (opacity) => new THREE16.MeshBasicMaterial({ color: accent, transparent: true, opacity, depthTest: false, depthWrite: false });
   const flat = (o) => {
     o.rotation.x = -Math.PI / 2;
     o.renderOrder = 5;
@@ -14087,19 +12703,19 @@ function createFloorMarks(accent, opts = {}) {
     group.add(o);
     return o;
   };
-  const ring = flat(new THREE17.Mesh(new THREE17.RingGeometry(0.26, 0.34, 48), paint(0.85)));
-  const dot = flat(new THREE17.Mesh(new THREE17.CircleGeometry(0.14, 28), paint(0.95)));
-  const halo = flat(new THREE17.Mesh(new THREE17.RingGeometry(0.26, 0.3, 48), paint(0.7)));
-  const line = flat(new THREE17.InstancedMesh(new THREE17.CircleGeometry(0.07, 14), paint(0.8), MOST3));
+  const ring = flat(new THREE16.Mesh(new THREE16.RingGeometry(0.26, 0.34, 48), paint(0.85)));
+  const dot = flat(new THREE16.Mesh(new THREE16.CircleGeometry(0.14, 28), paint(0.95)));
+  const halo = flat(new THREE16.Mesh(new THREE16.RingGeometry(0.26, 0.3, 48), paint(0.7)));
+  const line = flat(new THREE16.InstancedMesh(new THREE16.CircleGeometry(0.07, 14), paint(0.8), MOST3));
   line.rotation.x = 0;
   line.frustumCulled = false;
-  const knots = flat(new THREE17.InstancedMesh(new THREE17.RingGeometry(0.1, 0.15, 24), paint(0.85), TURNS));
+  const knots = flat(new THREE16.InstancedMesh(new THREE16.RingGeometry(0.1, 0.15, 24), paint(0.85), TURNS));
   knots.rotation.x = 0;
   knots.frustumCulled = false;
-  const place = new THREE17.Matrix4();
-  const lie = new THREE17.Quaternion().setFromEuler(new THREE17.Euler(-Math.PI / 2, 0, 0));
-  const at = new THREE17.Vector3();
-  const one = new THREE17.Vector3(1, 1, 1);
+  const place = new THREE16.Matrix4();
+  const lie = new THREE16.Quaternion().setFromEuler(new THREE16.Euler(-Math.PI / 2, 0, 0));
+  const at = new THREE16.Vector3();
+  const one = new THREE16.Vector3(1, 1, 1);
   let shown2 = { ring: null, dot: null, dots: 0, turns: 0 };
   return {
     group,
@@ -14150,7 +12766,7 @@ function createFloorMarks(accent, opts = {}) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/gate-size.ts
+// packages/sdk/src/gate-size.ts
 var PORTAL_WIDTH = 1.5;
 var PORTAL_HEIGHT = 2.1;
 var PORTAL_SPRING = PORTAL_HEIGHT - PORTAL_WIDTH / 2;
@@ -14158,7 +12774,7 @@ var PORTAL_SIGN_HEIGHT = PORTAL_HEIGHT + 0.72;
 var DOOR_REACH = 3.05;
 var DOOR_SPACING = 2.5;
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/door-layout.ts
+// packages/sdk/src/door-layout.ts
 var SLACK = 1e-6;
 function doorRow(count2, apart = DOOR_SPACING) {
   const step = Math.max(apart, DOOR_SPACING);
@@ -14187,7 +12803,7 @@ function doorsTooClose(doors) {
   return close;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/jump.ts
+// packages/sdk/src/jump.ts
 var JUMP_HEIGHT = 0.45;
 var JUMP_GRAVITY = 9.8;
 var JUMP_SPEED = Math.sqrt(2 * JUMP_GRAVITY * JUMP_HEIGHT);
@@ -14272,7 +12888,7 @@ function addJump(controls, o) {
   return jump;
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/sign.ts
+// packages/sdk/src/sign.ts
 function viewScale(metres, opts) {
   const least = opts.least ?? 0.15;
   const most = opts.most ?? 1.5;
@@ -14280,7 +12896,7 @@ function viewScale(metres, opts) {
   return Math.min(most, Math.max(least, metres / opts.at));
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/scores.ts
+// packages/sdk/src/scores.ts
 import { cleanBoard, cleanScore, DEFAULT_RELAYS as DEFAULT_RELAYS11, publishEvent as publishEvent5, queryRelays as queryRelays8, rankScores, readRelayList as readRelayList5, RELAY_LIST_KIND as RELAY_LIST_KIND5, SCORE_KIND, scoreWords, worldCoordinate } from "@nswp/core";
 function createScores(opts) {
   const world = worldCoordinate(opts.world);
@@ -14299,9 +12915,9 @@ function createScores(opts) {
       return null;
     }
   })();
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   const keyFor = (who) => `nswp:scores:${world}:${who ?? "guest"}`;
   const read = (who) => {
@@ -14403,13 +13019,13 @@ function createScores(opts) {
       return b ? scoreWords(b, score) : String(score);
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/scoring.ts
+// packages/sdk/src/scoring.ts
 import { shortNpub as shortNpub8 } from "@nswp/core";
 function addScoreControls(controls, opts) {
   const { scores } = opts;
@@ -14497,7 +13113,7 @@ function addScoreControls(controls, opts) {
   return { refresh };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bag.ts
+// packages/sdk/src/bag.ts
 import { BAG_KIND, bagIn, bagTints, changeBag, tintBag, DEFAULT_RELAYS as DEFAULT_RELAYS12, itemCoordinate as itemCoordinate4, newestBag, publishEvent as publishEvent6, queryRelays as queryRelays9, readRelayList as readRelayList6, RELAY_LIST_KIND as RELAY_LIST_KIND6, SITE_MARKS, verifyEvent as verifyEvent9 } from "@nswp/core";
 var FRESH_MS4 = 6e4;
 function createBag(opts) {
@@ -14513,9 +13129,9 @@ function createBag(opts) {
       return null;
     }
   })();
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   const keyFor = (who) => `nswp:bag:${who}`;
   const readKept = (who) => {
@@ -14526,7 +13142,7 @@ function createBag(opts) {
       return null;
     }
   };
-  const keep4 = (bag) => {
+  const keep3 = (bag) => {
     try {
       store?.setItem(keyFor(bag.pubkey), JSON.stringify(bag));
     } catch {
@@ -14550,12 +13166,12 @@ function createBag(opts) {
     const found = newestBag((got?.events ?? []).filter((e) => verifyEvent9(e)), who);
     const bag = found && kept2 ? kept2.created_at > found.created_at ? kept2 : found : found ?? kept2;
     if (kept2 && bag === kept2 && answered && (!found || found.id !== kept2.id)) void sendWell(kept2, { own: own2, usual: usual(), publish, query, now }).catch(() => null);
-    if (bag && bag !== kept2) keep4(bag);
+    if (bag && bag !== kept2) keep3(bag);
     if (opts.me() !== who) return;
     known = { who, bag, answered, at: now() };
     changed();
   };
-  const load2 = async (fresh = false) => {
+  const load = async (fresh = false) => {
     const who = opts.me();
     if (!who) {
       if (known) {
@@ -14572,7 +13188,7 @@ function createBag(opts) {
     await looking;
     return known && known.who === who ? bagIn(known.bag) : null;
   };
-  const change2 = async (itemIn2, adding, title) => {
+  const change = async (itemIn2, adding, title) => {
     const who = opts.me();
     const it = title || "It";
     const item = itemCoordinate4(itemIn2);
@@ -14580,7 +13196,7 @@ function createBag(opts) {
     if (!opts.hand) return { ok: false, why: "read-only", said: "Your bag is changed at your home, not from here." };
     if (!item) return { ok: false, why: "refused", said: "That isn't an item." };
     if (!opts.hand.ready()) return { ok: false, why: "not-allowed", said: "This place hasn't been let change your bag." };
-    await load2(true);
+    await load(true);
     const at = known && known.who === who ? known : null;
     if (!at) return { ok: false, why: "unreachable", said: "Your bag couldn't be looked for. Nothing was changed." };
     if (!at.bag) {
@@ -14598,7 +13214,7 @@ function createBag(opts) {
     const signed = made ? await opts.hand.sign(made).catch(() => null) : null;
     const same = signed && verifyEvent9(signed) && signed.pubkey === who && signed.kind === BAG_KIND && JSON.stringify(signed.tags.filter((t) => !SITE_MARKS.includes(t[0] ?? ""))) === JSON.stringify(made.tags);
     if (!signed || !same) return { ok: false, why: "refused", said: "It couldn't be signed. Your bag is as it was." };
-    keep4(signed);
+    keep3(signed);
     known = { who, bag: signed, answered: true, at: now() };
     changed();
     const sent = await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
@@ -14618,13 +13234,13 @@ function createBag(opts) {
   const writeTints = async (item) => {
     const who = opts.me();
     if (!who || !opts.hand?.ready()) return;
-    await load2(true);
+    await load(true);
     const at = known && known.who === who ? known : null;
     const made = at?.bag ? tintBag(at.bag, { item, tints: keptTints()[item] ?? {}, now: now() / 1e3 }) : null;
     const signed = made ? await opts.hand.sign(made).catch(() => null) : null;
     const same = signed && verifyEvent9(signed) && signed.pubkey === who && signed.kind === BAG_KIND && JSON.stringify(signed.tags.filter((t) => !SITE_MARKS.includes(t[0] ?? ""))) === JSON.stringify(made.tags);
     if (!signed || !same) return;
-    keep4(signed);
+    keep3(signed);
     known = { who, bag: signed, answered: true, at: now() };
     changed();
     await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
@@ -14650,26 +13266,26 @@ function createBag(opts) {
       tintTimers.set(item, setTimeout(() => void writeTints(item).catch(() => null), 2500));
     },
     items: () => known && known.who === opts.me() ? bagIn(known.bag) : null,
-    load: load2,
+    load,
     canChange: () => !!opts.hand,
-    add: (item, title = "") => change2(item, true, title),
-    remove: (item, title = "") => change2(item, false, title),
+    add: (item, title = "") => change(item, true, title),
+    remove: (item, title = "") => change(item, false, title),
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bagging.ts
+// packages/sdk/src/bagging.ts
 import { cleanSettings, decodeNaddr as decodeNaddr2, ITEM_KIND as ITEM_KIND2, itemCoordinate as itemCoordinate5, TINT_PALETTE } from "@nswp/core";
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/item-preview.ts
-import * as THREE18 from "three";
+// packages/sdk/src/item-preview.ts
+import * as THREE17 from "three";
 var KEPT = 36;
 function createItemPreviews(o) {
   const size = o.size ?? 256;
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const ready = /* @__PURE__ */ new Map();
   let stage;
   const keyOf = (item, tints) => `${item.id}|${item.model.sha256}|${JSON.stringify(tints ?? {})}`;
@@ -14677,19 +13293,19 @@ function createItemPreviews(o) {
     if (stage !== void 0) return stage;
     if (typeof document === "undefined") return stage = null;
     try {
-      const renderer = new THREE18.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+      const renderer = new THREE17.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
       renderer.setPixelRatio(1);
       renderer.setSize(size, size, false);
       renderer.setClearColor(0, 0);
-      const scene = new THREE18.Scene();
-      scene.add(new THREE18.HemisphereLight(16777215, 2699837, 1.7));
-      const key = new THREE18.DirectionalLight(16777215, 2.4);
+      const scene = new THREE17.Scene();
+      scene.add(new THREE17.HemisphereLight(16777215, 2699837, 1.7));
+      const key = new THREE17.DirectionalLight(16777215, 2.4);
       key.position.set(1.6, 2.6, 2.2);
-      const rim = new THREE18.DirectionalLight(12572927, 1.3);
+      const rim = new THREE17.DirectionalLight(12572927, 1.3);
       rim.position.set(-2, 1.2, -2.4);
-      const pivot = new THREE18.Group();
+      const pivot = new THREE17.Group();
       scene.add(key, rim, pivot);
-      const camera = new THREE18.PerspectiveCamera(28, 1, 0.01, 50);
+      const camera = new THREE17.PerspectiveCamera(28, 1, 0.01, 50);
       return stage = { renderer, scene, camera, pivot };
     } catch {
       return stage = null;
@@ -14702,7 +13318,7 @@ function createItemPreviews(o) {
     s.pivot.add(made.object);
     made.object.position.copy(made.middle).multiplyScalar(-1);
     s.pivot.rotation.set(0, angle, 0);
-    const away = made.radius / Math.sin(THREE18.MathUtils.degToRad(s.camera.fov / 2)) * 1.08;
+    const away = made.radius / Math.sin(THREE17.MathUtils.degToRad(s.camera.fov / 2)) * 1.08;
     s.camera.position.set(0, away * 0.3, away * 0.95);
     s.camera.lookAt(0, 0, 0);
     s.camera.near = Math.max(5e-3, away - made.radius * 2);
@@ -14741,11 +13357,11 @@ function createItemPreviews(o) {
           else solids++;
         });
         if (frames > 0 && solids === 0) return void again(key);
-        const box = new THREE18.Box3().setFromObject(object);
-        const ball = box.getBoundingSphere(new THREE18.Sphere());
+        const box = new THREE17.Box3().setFromObject(object);
+        const ball = box.getBoundingSphere(new THREE17.Sphere());
         if (!Number.isFinite(ball.radius) || ball.radius <= 0) return void ready.delete(key);
         ready.set(key, { object, middle: ball.center.clone(), radius: ball.radius, still: null, live: null });
-        for (const fn of watchers4) fn();
+        for (const fn of watchers3) fn();
       },
       () => void again(key)
     );
@@ -14760,7 +13376,7 @@ function createItemPreviews(o) {
     setTimeout(() => {
       if (ready.get(key) !== null) return;
       ready.delete(key);
-      for (const fn of watchers4) fn();
+      for (const fn of watchers3) fn();
     }, AGAIN_MS3 * n);
   }
   return {
@@ -14776,12 +13392,12 @@ function createItemPreviews(o) {
       return made.live = draw(made, angle, made.live);
     },
     onChange(fn) {
-      watchers4.add(fn);
+      watchers3.add(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bagging.ts
+// packages/sdk/src/bagging.ts
 var HELD_KEY = "nswp:holding";
 function keptHolding() {
   try {
@@ -14828,7 +13444,7 @@ function addBagControls(controls, opts) {
     return described && previews && showsItems() ? previews.still(described, bag.tints(item)) : null;
   };
   const titleOf = (item) => items.known(item)?.title ?? item.split(":")[2] ?? "an item";
-  const change2 = (item, adding) => {
+  const change = (item, adding) => {
     const now = async () => {
       const done = await (adding ? bag.add(item, titleOf(item)) : bag.remove(item, titleOf(item)));
       say(done.said);
@@ -14854,7 +13470,7 @@ function addBagControls(controls, opts) {
     const described = await items.describe(item);
     if (!described) return say("No description of that item could be found, so it wasn't put in your bag.");
     chosen = item;
-    change2(item, true);
+    change(item, true);
   };
   let cardActs = [];
   let putAway = false;
@@ -15051,10 +13667,10 @@ function addBagControls(controls, opts) {
           }
         });
       }
-      if (bag.canChange()) add({ id: "bag-remove", icon: "close", label: `Take ${titleOf(item)} out of my bag`, act: () => change2(item, false) });
+      if (bag.canChange()) add({ id: "bag-remove", icon: "close", label: `Take ${titleOf(item)} out of my bag`, act: () => change(item, false) });
     } else if (chosen && offers().includes(chosen)) {
       const item = chosen;
-      add({ id: "bag-take", icon: "save", tone: "primary", label: `Put ${titleOf(item)} in my bag`, act: () => change2(item, true) });
+      add({ id: "bag-take", icon: "save", tone: "primary", label: `Put ${titleOf(item)} in my bag`, act: () => change(item, true) });
     }
     cardActs = shown2.slice(firstOfTheirs);
     if (holding && holding !== chosen) add(away());
@@ -15172,7 +13788,7 @@ function addBagControls(controls, opts) {
   return { refresh };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/thumb-presses.ts
+// packages/sdk/src/thumb-presses.ts
 var THUMBS_KEY = "nswp:thumbs";
 var THUMB_FIRST = 78;
 var THUMB_SECOND = 54;
@@ -15248,13 +13864,13 @@ function createThumbPresses(o) {
   };
   press(first, () => o.use());
   press(second, () => o.second());
-  let showing2 = { side: "" };
+  let showing = { side: "" };
   let attached = false;
   return {
     show(does, side, theme) {
       if (!does || !does.use && !does.second) {
         host.style.display = "none";
-        showing2 = { side: "" };
+        showing = { side: "" };
         return;
       }
       if (!attached) {
@@ -15274,7 +13890,7 @@ function createThumbPresses(o) {
       second.setAttribute("aria-label", does.second);
       sightEl.hidden = !does.use;
       host.style.display = "block";
-      showing2 = { side };
+      showing = { side };
     },
     info() {
       if (host.style.display === "none") return { sight: false, side: "", buttons: [] };
@@ -15282,7 +13898,7 @@ function createThumbPresses(o) {
         const r = b.getBoundingClientRect();
         return { label: b.textContent ?? "", x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
       };
-      return { sight: !sightEl.hidden, side: showing2.side, buttons: [first, second].filter((b) => !b.hidden).map(box) };
+      return { sight: !sightEl.hidden, side: showing.side, buttons: [first, second].filter((b) => !b.hidden).map(box) };
     },
     dispose() {
       host.remove();
@@ -15291,7 +13907,7 @@ function createThumbPresses(o) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/item-controls.ts
+// packages/sdk/src/item-controls.ts
 var TAP_MS = 320;
 function addItemControls(controls, o) {
   let shown2 = "";
@@ -15393,14 +14009,14 @@ function addItemControls(controls, o) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/door-ratings.ts
+// packages/sdk/src/door-ratings.ts
 import { DEFAULT_RELAYS as DEFAULT_RELAYS13, queryRelays as queryRelays10, RATING_KIND, tallyMark, tallyRatings, worldCoordinate as worldCoordinate2 } from "@nswp/core";
 var FRESH_MS5 = 5 * 6e4;
 function createDoorRatings(opts) {
   const now = opts.now ?? (() => Date.now());
   const query = opts.query ?? queryRelays10;
   const doors = new Map(opts.doors.map((d) => [worldCoordinate2(d.world), d.url]).filter(([world]) => world));
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   let events = [];
   let asked = 0;
   let askedFor = null;
@@ -15420,7 +14036,7 @@ function createDoorRatings(opts) {
           events = [];
           askedFor = null;
           asked = 0;
-          for (const fn of watchers4) fn();
+          for (const fn of watchers3) fn();
         }
         return;
       }
@@ -15431,7 +14047,7 @@ function createDoorRatings(opts) {
       if (opts.me() !== me) return;
       const byId = new Map((got?.events ?? []).filter((e) => e.kind === RATING_KIND).map((e) => [e.id, e]));
       events = [...byId.values()];
-      for (const fn of watchers4) fn();
+      for (const fn of watchers3) fn();
     },
     tally,
     mark: (world) => tallyMark(tally(world)),
@@ -15445,13 +14061,13 @@ function createDoorRatings(opts) {
       return `Rated ${stars}, by ${t.mine ? `you and ${them}` : them}`;
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/person-lines.ts
+// packages/sdk/src/person-lines.ts
 function ordinal(n) {
   const tens = n % 100;
   const last = n % 10;
@@ -15463,9 +14079,9 @@ function someOf(names, most = 3) {
   return rest > 0 ? `${shown2} and ${rest} more` : shown2;
 }
 function worldPersonLines(o) {
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   let asked = 0;
   const read = () => {
@@ -15491,13 +14107,13 @@ function worldPersonLines(o) {
       return out;
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     }
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/achievements.ts
+// packages/sdk/src/achievements.ts
 import { achievementsIn, cleanAchievementId, DEFAULT_RELAYS as DEFAULT_RELAYS14, publishEvent as publishEvent7, queryRelays as queryRelays11, readRelayList as readRelayList7, RELAY_LIST_KIND as RELAY_LIST_KIND7, ACHIEVEMENT_KIND, worldCoordinate as worldCoordinate3 } from "@nswp/core";
 function createAchievements(opts) {
   const world = worldCoordinate3(opts.world);
@@ -15515,10 +14131,10 @@ function createAchievements(opts) {
       return null;
     }
   })();
-  const watchers4 = /* @__PURE__ */ new Set();
+  const watchers3 = /* @__PURE__ */ new Set();
   const earners = /* @__PURE__ */ new Set();
   const changed = () => {
-    for (const fn of watchers4) fn();
+    for (const fn of watchers3) fn();
   };
   const keyFor = (who) => `nswp:achievements:${world}:${who ?? "guest"}`;
   const held = /* @__PURE__ */ new Map();
@@ -15615,8 +14231,8 @@ function createAchievements(opts) {
       return list.filter((a) => theirs.has(a.id));
     },
     onChange(fn) {
-      watchers4.add(fn);
-      return () => void watchers4.delete(fn);
+      watchers3.add(fn);
+      return () => void watchers3.delete(fn);
     },
     onEarn(fn) {
       earners.add(fn);
@@ -15625,7 +14241,7 @@ function createAchievements(opts) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/achieving.ts
+// packages/sdk/src/achieving.ts
 function addAchievementControls(controls, opts) {
   const a = opts.achievements;
   let shown2 = [];
@@ -15706,762 +14322,10 @@ function addAchievementControls(controls, opts) {
   return { refresh };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/sound.ts
-var FOREIGN_SOUND = { seconds: 4, peak: 0.7, fades: 25, gone: 45 };
-var GAP2 = { step: 0.14, hover: 0.08, bump: 0.5, land: 0.2, notice: 0.25, chat: 0.3 };
-var JUMP = 1.2;
-function createSounds(o = {}) {
-  const ctx = o.context ?? new AudioContext();
-  const base = o.base ?? location.href;
-  const theme = cleanTheme(o.theme, base);
-  const levelsKey = o.keep?.levels ?? "nswp:sound";
-  const songsKey = o.keep?.songs ?? "nswp:jukebox";
-  const read = (key) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) ?? "null");
-    } catch {
-      return null;
-    }
-  };
-  const write = (key, value) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-    }
-  };
-  const came = arrivedSettings().sound;
-  let levels = cleanLevels({ ...read(levelsKey), ...came });
-  let songs = cleanSongs(read(songsKey));
-  let disposed = false;
-  if (came) write(levelsKey, levels);
-  const stopReporting = reportSettings(
-    "sound",
-    () => ({ sound: { off: levels.off, effects: levels.effects, music: levels.music, voices: levels.voices, hum: levels.hum } }),
-    // Their client's menu changed a volume (settings.ts, `changeSettings`): as their own hand on it here would.
-    (now) => {
-      if (!now.sound || disposed) return;
-      levels = cleanLevels({ ...levels, ...now.sound });
-      write(levelsKey, levels);
-      apply();
-      changed();
-    }
-  );
-  const master = ctx.createGain();
-  const limiter = ctx.createDynamicsCompressor();
-  limiter.threshold.value = -14;
-  limiter.knee.value = 10;
-  limiter.ratio.value = 12;
-  limiter.attack.value = 3e-3;
-  limiter.release.value = 0.25;
-  const meter = ctx.createAnalyser();
-  meter.fftSize = 1024;
-  master.connect(limiter);
-  limiter.connect(meter);
-  limiter.connect(ctx.destination);
-  const effects = ctx.createGain();
-  const placeMusic = ctx.createGain();
-  const ownMusic = ctx.createGain();
-  for (const g of [effects, placeMusic, ownMusic]) g.connect(master);
-  const humGain = ctx.createGain();
-  humGain.connect(placeMusic);
-  const listeners = /* @__PURE__ */ new Set();
-  const changed = () => {
-    for (const fn of listeners) {
-      try {
-        fn(levels);
-      } catch (err) {
-        console.error("nswp-sdk sound listener failed", err);
-      }
-    }
-  };
-  const juke = { audio: null, url: "", current: null, playing: false, tap: null };
-  const apply = () => {
-    const t = ctx.currentTime;
-    master.gain.setTargetAtTime(levels.off ? 0 : 1, t, 0.05);
-    effects.gain.setTargetAtTime(levels.effects, t, 0.05);
-    placeMusic.gain.setTargetAtTime(levels.music * (juke.playing ? 0.1 : 1), t, 0.4);
-    ownMusic.gain.setTargetAtTime(levels.music, t, 0.05);
-    humGain.gain.setTargetAtTime(levels.hum ? 1 : 0, t, 0.3);
-  };
-  apply();
-  let noiseBuffer = null;
-  const noise2 = () => {
-    if (noiseBuffer) return noiseBuffer;
-    noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const data = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    return noiseBuffer;
-  };
-  const playPart = (p, when, to = effects, rate = 1) => {
-    const start = when + p.at;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, start);
-    gain.gain.linearRampToValueAtTime(p.gain, start + Math.min(6e-3, p.dur / 3));
-    gain.gain.exponentialRampToValueAtTime(8e-4, start + p.dur);
-    gain.connect(to);
-    if (p.kind === "tone") {
-      const osc = ctx.createOscillator();
-      osc.type = p.wave;
-      osc.frequency.setValueAtTime(p.from * rate, start);
-      if (p.to !== void 0) osc.frequency.exponentialRampToValueAtTime(p.to * rate, start + p.dur);
-      osc.connect(gain);
-      osc.start(start);
-      osc.stop(start + p.dur + 0.02);
-    } else {
-      const src = ctx.createBufferSource();
-      src.buffer = noise2();
-      const band = ctx.createBiquadFilter();
-      band.type = "bandpass";
-      band.frequency.value = p.band * rate;
-      band.Q.value = 1.1;
-      src.connect(band);
-      band.connect(gain);
-      src.start(start, Math.random() * 0.5);
-      src.stop(start + p.dur + 0.02);
-    }
-  };
-  const CUE_LOUDNESS = 0.14;
-  const loudnessOf = (buffer) => {
-    let sum = 0;
-    let n = 0;
-    for (let c = 0; c < buffer.numberOfChannels; c++) {
-      const data = buffer.getChannelData(c);
-      for (let i = 0; i < data.length; i += 4) {
-        sum += data[i] * data[i];
-        n++;
-      }
-    }
-    return n ? Math.sqrt(sum / n) : 0;
-  };
-  const loadCue = async (address) => {
-    try {
-      const res = await fetch(address);
-      if (!res.ok) return null;
-      const bytes = await res.arrayBuffer();
-      if (bytes.byteLength > SOUND_LIMITS.cueBytes) return null;
-      const buffer = await ctx.decodeAudioData(bytes);
-      if (buffer.duration > SOUND_LIMITS.cueSeconds || disposed) return null;
-      const loud = loudnessOf(buffer);
-      return { buffer, gain: loud > CUE_LOUDNESS ? CUE_LOUDNESS / loud : 1 };
-    } catch {
-      return null;
-    }
-  };
-  const own2 = /* @__PURE__ */ new Map();
-  const fromKit = /* @__PURE__ */ new Map();
-  const loadInto = (into, files2) => {
-    for (const [cue, addresses] of Object.entries(files2)) {
-      for (const address of addresses ?? []) {
-        void loadCue(address).then((loaded) => {
-          if (loaded) into.set(cue, [...into.get(cue) ?? [], loaded]);
-        });
-      }
-    }
-  };
-  let kit = { cues: {} };
-  const kitReady = o.kit ? (async () => {
-    try {
-      const folder = new URL(o.kit.endsWith("/") ? o.kit : `${o.kit}/`, base).href;
-      const res = await fetch(new URL("sounds.json", folder).href);
-      if (!res.ok) return;
-      const playsOgg = new Audio().canPlayType('audio/ogg; codecs="opus"') !== "";
-      kit = cleanKit(await res.json(), folder, playsOgg);
-    } catch {
-    }
-  })() : Promise.resolve();
-  let cuesAsked = false;
-  const loadCues = () => {
-    if (cuesAsked || disposed) return;
-    cuesAsked = true;
-    loadInto(own2, theme.cues);
-    void kitReady.then(() => {
-      const rest = Object.fromEntries(Object.entries(kit.cues).filter(([cue]) => theme.cues[cue] === void 0));
-      loadInto(fromKit, rest);
-    });
-  };
-  const last = /* @__PURE__ */ new Map();
-  const lastVariant = /* @__PURE__ */ new Map();
-  let foot = 0;
-  const shaped = (shape) => {
-    const soft = ctx.createBiquadFilter();
-    soft.type = "lowpass";
-    soft.frequency.value = shape.cutoff;
-    soft.Q.value = 0.5;
-    const level = ctx.createGain();
-    level.gain.value = shape.gain;
-    soft.connect(level);
-    if (typeof ctx.createStereoPanner === "function") {
-      const side = ctx.createStereoPanner();
-      side.pan.value = shape.pan;
-      level.connect(side);
-      side.connect(effects);
-    } else level.connect(effects);
-    return soft;
-  };
-  let foreignPlayed = 0;
-  const play = (cue, from) => {
-    if (disposed || levels.off || levels.effects <= 0 || ctx.state !== "running") return;
-    if (theme.cues[cue] === null) return;
-    const now = ctx.currentTime;
-    if (now - (last.get(cue) ?? -1) < (GAP2[cue] ?? 0.03)) return;
-    last.set(cue, now);
-    sound(cue, now, from);
-  };
-  const sound = (cue, at, from, louder = 1) => {
-    const now = at;
-    const stepped = cue === "step" ? stepShape(foot++) : null;
-    const shape = stepped ? { ...stepped, gain: stepped.gain * louder } : from ? heardFrom(from) : null;
-    const out = shape ? shaped(shape) : effects;
-    const files2 = own2.get(cue) ?? fromKit.get(cue);
-    if (files2?.length) {
-      const which = nextVariant(files2.length, lastVariant.get(cue) ?? -1);
-      lastVariant.set(cue, which);
-      const src = ctx.createBufferSource();
-      src.buffer = files2[which].buffer;
-      if (shape) src.playbackRate.value = shape.rate;
-      const level = ctx.createGain();
-      level.gain.value = files2[which].gain;
-      src.connect(level);
-      level.connect(out);
-      src.start(now);
-      return;
-    }
-    for (const part of cueRecipe(cue)) playPart(part, now + 5e-3, out, shape?.rate ?? 1);
-  };
-  const jumped = () => {
-    if (disposed || levels.off || levels.effects <= 0 || ctx.state !== "running") return;
-    if (theme.cues.step === null) return;
-    const now = ctx.currentTime;
-    sound("step", now, void 0, JUMP_STEPS.louder);
-    sound("step", now + JUMP_STEPS.gap, void 0, JUMP_STEPS.louder);
-    last.set("step", now + JUMP_STEPS.gap);
-  };
-  let walked = 0;
-  const moved = (metres) => {
-    if (!(metres > 5e-4)) return;
-    if (metres > JUMP) {
-      walked = 0;
-      return play("land");
-    }
-    walked += metres;
-    if (walked >= STRIDE) {
-      walked = 0;
-      play("step");
-    }
-  };
-  const loopPlayer = (tracks, into, opts = {}) => {
-    const fade = opts.fade ?? 2;
-    const out = ctx.createGain();
-    out.gain.value = opts.gain ?? 1;
-    out.connect(into);
-    const deck = () => {
-      const audio = new Audio();
-      audio.preload = "auto";
-      const gain = ctx.createGain();
-      gain.gain.value = 0;
-      ctx.createMediaElementSource(audio).connect(gain);
-      gain.connect(out);
-      return { audio, gain };
-    };
-    const decks = [deck(), deck()];
-    let active = 0;
-    let index = 0;
-    let heard = 0;
-    let turning = false;
-    let stopped = false;
-    const curve = (rising) => Float32Array.from({ length: 32 }, (_, k) => (rising ? Math.sin : Math.cos)(k / 31 * Math.PI / 2));
-    const turn2 = () => {
-      if (turning || stopped) return;
-      turning = true;
-      const from = decks[active];
-      const to = decks[1 - active];
-      index = (index + 1) % tracks.length;
-      to.audio.src = tracks[index];
-      to.audio.currentTime = 0;
-      void to.audio.play().then(
-        () => {
-          const t = ctx.currentTime + 0.02;
-          from.gain.gain.cancelScheduledValues(t);
-          to.gain.gain.cancelScheduledValues(t);
-          from.gain.gain.setValueCurveAtTime(curve(false), t, fade);
-          to.gain.gain.setValueCurveAtTime(curve(true), t, fade);
-          active = 1 - active;
-          heard = index;
-          opts.onTurn?.();
-          setTimeout(() => {
-            from.audio.pause();
-            turning = false;
-          }, (fade + 0.1) * 1e3);
-        },
-        () => {
-          turning = false;
-        }
-      );
-    };
-    for (const d of decks) {
-      d.audio.addEventListener("timeupdate", () => {
-        if (d !== decks[active] || !Number.isFinite(d.audio.duration)) return;
-        if (d.audio.duration - d.audio.currentTime <= fade + 0.35) turn2();
-      });
-      d.audio.addEventListener("ended", () => {
-        if (d === decks[active]) turn2();
-      });
-      d.audio.addEventListener("error", () => {
-        if (stopped || d !== decks[active] || turning) return;
-        stopped = true;
-        opts.onFail?.();
-      });
-    }
-    const first = decks[0];
-    first.audio.src = tracks[0];
-    void first.audio.play().then(
-      () => first.gain.gain.setTargetAtTime(1, ctx.currentTime, 0.8),
-      () => {
-      }
-    );
-    return {
-      stop() {
-        stopped = true;
-        for (const d of decks) {
-          d.audio.pause();
-          d.audio.removeAttribute("src");
-        }
-        out.disconnect();
-      },
-      /** How many times one piece has handed on to the next. For tests. */
-      get index() {
-        return index;
-      },
-      /** Where the piece that is heard now is kept. */
-      get now() {
-        return tracks[heard];
-      },
-      get count() {
-        return tracks.length;
-      },
-      /** Hand on to the next piece now. */
-      next() {
-        if (tracks.length < 2 || turning || stopped) return false;
-        turn2();
-        return true;
-      }
-    };
-  };
-  let kind = theme.music === null ? "none" : theme.music ? "world" : "made";
-  let stopMusic = null;
-  let pieces = null;
-  let stopHum = null;
-  let humAddress = null;
-  let musicAsked = false;
-  const startMusic = () => {
-    if (musicAsked || disposed) return;
-    musicAsked = true;
-    loadCues();
-    void kitReady.then(() => {
-      if (disposed) return;
-      humAddress = theme.hum === null ? null : theme.hum ?? kit.hum ?? null;
-      if (humAddress) stopHum = loopPlayer([humAddress], humGain, { gain: 0.55 }).stop;
-      const tracks = theme.music === null ? null : theme.music ?? kit.music ?? null;
-      if (theme.music === void 0 && kit.music) kind = "kit";
-      changed();
-      if (theme.music === null) return;
-      if (tracks) {
-        const player2 = loopPlayer(tracks, placeMusic, {
-          gain: 0.6,
-          onTurn: () => changed(),
-          onFail: () => {
-            stopMusic?.();
-            pieces = null;
-            kind = "made";
-            stopMusic = madeMusic();
-            changed();
-          }
-        });
-        pieces = player2;
-        stopMusic = player2.stop;
-        changed();
-        return;
-      }
-      stopMusic = madeMusic();
-    });
-  };
-  const madeMusic = () => {
-    const plan = ambiencePlan(o.seed ?? location.host);
-    const bed = ctx.createGain();
-    bed.gain.value = 0.12;
-    const colour = ctx.createBiquadFilter();
-    colour.type = "lowpass";
-    colour.frequency.value = plan.colour;
-    colour.connect(bed);
-    bed.connect(placeMusic);
-    const running = [];
-    plan.drones.forEach((d, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = i < 2 ? "sine" : "triangle";
-      osc.frequency.value = d.hz;
-      osc.detune.value = d.detune;
-      const swell = ctx.createGain();
-      swell.gain.value = i < 2 ? 0.3 : 0.14;
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 1 / d.swell;
-      const depth = ctx.createGain();
-      depth.gain.value = swell.gain.value * 0.8;
-      lfo.connect(depth);
-      depth.connect(swell.gain);
-      osc.connect(swell);
-      swell.connect(colour);
-      osc.start();
-      lfo.start();
-      running.push(osc, lfo);
-    });
-    const random = seeded(`notes:${o.seed ?? location.host}`);
-    let timer;
-    const note = () => {
-      if (disposed) return;
-      if (ctx.state === "running" && !levels.off && levels.music > 0) {
-        const hz = plan.root * plan.scale[Math.floor(random() * plan.scale.length)] * (random() < 0.5 ? 2 : 4);
-        const t = ctx.currentTime + 0.05;
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = hz;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.11, t + 0.5);
-        g.gain.exponentialRampToValueAtTime(8e-4, t + 4.5);
-        osc.connect(g);
-        g.connect(bed);
-        osc.start(t);
-        osc.stop(t + 4.6);
-      }
-      timer = setTimeout(note, (plan.gap[0] + random() * (plan.gap[1] - plan.gap[0])) * 1e3);
-    };
-    timer = setTimeout(note, 1500);
-    return () => {
-      clearTimeout(timer);
-      for (const n of running) {
-        try {
-          n.stop();
-        } catch {
-        }
-      }
-      bed.disconnect();
-    };
-  };
-  const wake = () => {
-    void ctx.resume().then(startMusic, () => {
-    });
-    if (ctx.state === "running") startMusic();
-  };
-  const onTouch = () => wake();
-  addEventListener("pointerdown", onTouch, true);
-  addEventListener("keydown", onTouch, true);
-  if (ctx.state === "running") startMusic();
-  const keepSongs = () => write(songsKey, songs);
-  const stopOwn = () => {
-    juke.audio?.pause();
-    juke.playing = false;
-    apply();
-    changed();
-  };
-  const player = () => {
-    if (!juke.audio || !juke.tap) {
-      juke.audio = new Audio();
-      const source = ctx.createMediaElementSource(juke.audio);
-      source.connect(ownMusic);
-      juke.tap = ctx.createMediaStreamDestination();
-      source.connect(juke.tap);
-      juke.audio.addEventListener("ended", () => void jukebox.next());
-    }
-    return { audio: juke.audio, tap: juke.tap };
-  };
-  const jukebox = {
-    list: () => [...songs],
-    async add(file) {
-      const refusal = songRefusal({ type: file.type, size: file.size, ...file.name ? { name: file.name } : {} }, songs.length);
-      if (refusal) return refusal;
-      const id = `song-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-      const kept2 = await fileStore("readwrite", (s) => s.put(file, `song:${id}`));
-      if (kept2 === void 0) return "This browser couldn't keep that file.";
-      songs = cleanSongs([...songs, { id, title: songTitle(file.name ?? ""), size: file.size, at: Math.floor(Date.now() / 1e3) }]);
-      keepSongs();
-      changed();
-      return null;
-    },
-    async remove(id) {
-      if (juke.current?.id === id) {
-        stopOwn();
-        juke.current = null;
-      }
-      songs = songs.filter((s) => s.id !== id);
-      keepSongs();
-      await fileStore("readwrite", (s) => s.delete(`song:${id}`));
-      changed();
-    },
-    async play(id) {
-      const song = id ? songs.find((s) => s.id === id) : juke.current ?? songs[0];
-      if (!song || disposed) return false;
-      player();
-      if (juke.current?.id !== song.id || !juke.url) {
-        const file = await fileStore("readonly", (s) => s.get(`song:${song.id}`));
-        if (!file) return false;
-        if (juke.url) URL.revokeObjectURL(juke.url);
-        juke.url = URL.createObjectURL(file);
-        juke.audio.src = juke.url;
-        juke.current = song;
-      }
-      try {
-        await ctx.resume();
-        await juke.audio.play();
-      } catch {
-        juke.playing = false;
-        apply();
-        changed();
-        return false;
-      }
-      juke.playing = true;
-      apply();
-      changed();
-      return true;
-    },
-    pause: stopOwn,
-    async next() {
-      if (songs.length === 0) return false;
-      const at = songs.findIndex((s) => s.id === juke.current?.id);
-      return jukebox.play(songs[(at + 1) % songs.length].id);
-    },
-    get playing() {
-      return juke.playing;
-    },
-    get current() {
-      return juke.current;
-    },
-    output: () => player().tap.stream.getAudioTracks()[0]
-  };
-  const samples = new Float32Array(meter.fftSize);
-  return {
-    play,
-    moved,
-    bump: () => play("bump"),
-    jumped,
-    get levels() {
-      return levels;
-    },
-    setLevels(patch) {
-      levels = cleanLevels({ ...levels, ...patch });
-      write(levelsKey, levels);
-      apply();
-      changed();
-    },
-    jukebox,
-    onChange(fn) {
-      listeners.add(fn);
-      fn(levels);
-      return () => listeners.delete(fn);
-    },
-    get music() {
-      return kind;
-    },
-    get piece() {
-      return pieces ? { name: pieceName(pieces.now), of: pieces.count } : null;
-    },
-    nextPiece() {
-      return pieces?.next() ?? false;
-    },
-    get hasHum() {
-      return !!humAddress;
-    },
-    async decode(bytes) {
-      try {
-        const buffer = await ctx.decodeAudioData(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
-        if (!(buffer.duration > 0) || buffer.duration > FOREIGN_SOUND.seconds) return null;
-        let peak = 0;
-        for (let c = 0; c < buffer.numberOfChannels; c++) for (const x of buffer.getChannelData(c)) peak = Math.max(peak, Math.abs(x));
-        return { buffer, gain: peak > 0 ? Math.min(1, FOREIGN_SOUND.peak / peak) : 1 };
-      } catch {
-        return null;
-      }
-    },
-    playForeign(sound2, from) {
-      if (disposed || levels.off || levels.effects <= 0 || ctx.state !== "running") return;
-      const far = from && Number.isFinite(from.distance) ? Math.max(0, from.distance) : 0;
-      const reach = far <= FOREIGN_SOUND.fades ? 1 : Math.max(0, 1 - (far - FOREIGN_SOUND.fades) / (FOREIGN_SOUND.gone - FOREIGN_SOUND.fades));
-      if (reach <= 0) return;
-      const src = ctx.createBufferSource();
-      src.buffer = sound2.buffer;
-      const level = ctx.createGain();
-      level.gain.value = sound2.gain * reach;
-      src.connect(level);
-      level.connect(from ? shaped(heardFrom(from)) : effects);
-      src.start();
-      foreignPlayed++;
-    },
-    get foreignPlayed() {
-      return foreignPlayed;
-    },
-    loudness() {
-      meter.getFloatTimeDomainData(samples);
-      return Math.sqrt(samples.reduce((s, x) => s + x * x, 0) / samples.length);
-    },
-    dispose() {
-      stopReporting();
-      disposed = true;
-      removeEventListener("pointerdown", onTouch, true);
-      removeEventListener("keydown", onTouch, true);
-      stopMusic?.();
-      stopHum?.();
-      juke.audio?.pause();
-      if (juke.url) URL.revokeObjectURL(juke.url);
-      master.disconnect();
-    }
-  };
-}
-function addSoundControls(controls, sounds, opts = {}) {
-  const word = (v) => LEVEL_WORDS[levelStep(v)];
-  let listed = [];
-  const picker = document.createElement("input");
-  picker.type = "file";
-  picker.accept = "audio/*";
-  picker.multiple = true;
-  picker.hidden = true;
-  document.body.append(picker);
-  picker.addEventListener("change", async () => {
-    let added = 0;
-    let refused = "";
-    for (const file of [...picker.files ?? []]) {
-      const no = await sounds.jukebox.add(file);
-      if (no) refused = no;
-      else added++;
-    }
-    picker.value = "";
-    controls.say(added ? `${added === 1 ? "1 song" : `${added} songs`} added. Only you hear your music.${refused ? ` ${refused}` : ""}` : refused || "Nothing was added.");
-    refresh();
-  });
-  const refresh = () => {
-    for (const id of listed) controls.remove(id);
-    const songs = sounds.jukebox.list();
-    listed = songs.map((s) => `song-${s.id}`);
-    controls.addSection({
-      id: "sound",
-      label: "Sound",
-      icon: "sound",
-      note: () => `${sounds.levels.off ? "All sound is off. " : ""}${sounds.music === "none" ? "This place has no music of its own." : sounds.music === "world" ? "This place plays its own music." : sounds.music === "kit" ? "This place plays the music every world starts with." : "This place's music is made by your browser, from its name."} Your own music is kept in this browser, for this site, and only you hear it.`
-    });
-    songs.forEach(
-      (s, i) => controls.add({
-        id: listed[i],
-        section: "sound",
-        icon: "note",
-        on: () => sounds.jukebox.playing && sounds.jukebox.current?.id === s.id,
-        label: () => sounds.jukebox.playing && sounds.jukebox.current?.id === s.id ? `Playing: ${s.title}` : s.title,
-        act: async () => {
-          if (sounds.jukebox.playing && sounds.jukebox.current?.id === s.id) sounds.jukebox.pause();
-          else if (!await sounds.jukebox.play(s.id)) controls.say(`${s.title} couldn't be played.`);
-        }
-      })
-    );
-  };
-  const level = (id, name, key) => ({
-    id,
-    section: "sound",
-    label: () => `${name}: ${word(sounds.levels[key])}`,
-    on: () => sounds.levels[key] > 0,
-    act: () => sounds.setLevels({ [key]: nextLevel(sounds.levels[key]) })
-  });
-  controls.addSection({ id: "sound", label: "Sound", icon: "sound" });
-  controls.add(
-    {
-      id: "sound-all",
-      section: "sound",
-      icon: () => sounds.levels.off ? "soundOff" : "sound",
-      on: () => !sounds.levels.off,
-      label: () => sounds.levels.off ? "All sound: off" : "All sound: on",
-      act: () => sounds.setLevels({ off: !sounds.levels.off })
-    },
-    level("sound-effects", "Effects", "effects"),
-    level("sound-music", "Music", "music"),
-    {
-      // What the place is playing, by name, so a visitor can say which piece they mean. Pressing goes on to the next.
-      id: "sound-piece",
-      section: "sound",
-      icon: "note",
-      hidden: () => sounds.music === "none" || sounds.music === "made" || !sounds.piece,
-      label: () => {
-        const p = sounds.piece;
-        if (!p) return "This place's music";
-        return `Playing here: ${p.name}${p.of > 1 ? `. Next of ${p.of}` : ""}`;
-      },
-      act: () => {
-        const p = sounds.piece;
-        if (!p) return;
-        if (sounds.nextPiece()) controls.say(`Going on from ${p.name} to this place's next piece.`);
-        else controls.say(`${p.name} is the only piece this place has. Music: off, above, silences it.`);
-      }
-    },
-    level("sound-voices", "Voices", "voices"),
-    {
-      id: "sound-hum",
-      section: "sound",
-      icon: "sound",
-      on: () => sounds.levels.hum,
-      hidden: () => !(opts.hasHum ? opts.hasHum() : sounds.hasHum),
-      label: () => sounds.levels.hum ? "The room's hum: on" : "The room's hum: off",
-      act: () => sounds.setLevels({ hum: !sounds.levels.hum })
-    },
-    {
-      id: "juke-add",
-      section: "sound",
-      icon: "save",
-      label: "Add music from this device",
-      act: () => picker.click()
-    },
-    {
-      id: "juke-play",
-      section: "sound",
-      icon: "note",
-      on: () => sounds.jukebox.playing,
-      hidden: () => sounds.jukebox.list().length === 0,
-      label: () => sounds.jukebox.playing ? "Pause your music" : "Play your music",
-      act: async () => {
-        if (sounds.jukebox.playing) return sounds.jukebox.pause();
-        if (!await sounds.jukebox.play()) controls.say("Your music couldn't be played.");
-      }
-    },
-    {
-      id: "juke-next",
-      section: "sound",
-      icon: "turn",
-      hidden: () => sounds.jukebox.list().length < 2,
-      label: "Next song",
-      act: () => void sounds.jukebox.next()
-    },
-    {
-      id: "juke-remove",
-      section: "sound",
-      icon: "exit",
-      hidden: () => !sounds.jukebox.current,
-      label: () => `Take out ${sounds.jukebox.current?.title ?? "this song"}`,
-      act: async () => {
-        const song = sounds.jukebox.current;
-        if (!song) return;
-        await sounds.jukebox.remove(song.id);
-        controls.say(`${song.title} was taken out of this browser.`);
-        refresh();
-      }
-    }
-  );
-  refresh();
-  controls.onSignal((name) => {
-    if (CUES.includes(name) && !opts.quiet?.(name)) sounds.play(name);
-  });
-  controls.onSay(() => void (opts.quiet?.("notice") || sounds.play("notice")));
-  sounds.onChange(() => refresh());
-  return { refresh };
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/chamber.ts
-import * as THREE19 from "three";
+// packages/sdk/src/chamber.ts
+import * as THREE18 from "three";
 var R = 1.8;
-var H4 = 2.8;
+var H3 = 2.8;
 var BAYS = 10;
 var DOOR_W = 1.04;
 var DOOR_H = 2.2;
@@ -16484,16 +14348,16 @@ function signTexture(lines, color) {
     const y = rows.length === 1 ? 192 : rows.length === 2 ? 138 + i * 118 : 92 + i * 100;
     g.fillText(line, 512, y, 944);
   });
-  const texture = new THREE19.CanvasTexture(canvas);
-  texture.colorSpace = THREE19.SRGBColorSpace;
+  const texture = new THREE18.CanvasTexture(canvas);
+  texture.colorSpace = THREE18.SRGBColorSpace;
   return texture;
 }
 function createChamber(accent, opts = {}) {
-  const light = new THREE19.Color(accent);
+  const light = new THREE18.Color(accent);
   const metal = createAlloy(light, { gloss: 0.5, speed: 0.9 });
   const builder = () => {
     const b = new MeshBuilder().at();
-    b.tone = new THREE19.Color(1317668);
+    b.tone = new THREE18.Color(1317668);
     b.light = light.clone();
     return b;
   };
@@ -16505,13 +14369,13 @@ function createChamber(accent, opts = {}) {
   const wallShape = builder();
   for (let i = 1; i < BAYS; i++) {
     const a = i * 2 * Math.PI / BAYS;
-    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE19.MathUtils.radToDeg(a));
-    wallShape.box([bay, H4, 0.12], [0, H4 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
-    for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H4 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
+    wallShape.at([Math.sin(a) * reach, 0, -Math.cos(a) * reach], -THREE18.MathUtils.radToDeg(a));
+    wallShape.box([bay, H3, 0.12], [0, H3 / 2, 0], { bevel: 0.02, shade: i % 2 ? 1 : 0.86, panel: { margin: 0.12, depth: 0.02, faces: "z+ z-" } });
+    for (const x of [-bay * 0.26, bay * 0.26]) for (const z of [0.062, -0.062]) wallShape.line([x, 0.3, z], [x, H3 - 0.3, z], 0.03, [0, 0, Math.sign(z)], { flow: i });
   }
   wallShape.at([0, 0, -reach]);
-  for (const side of [-1, 1]) wallShape.box([(bay - DOOR_W) / 2, H4, 0.16], [side * (bay + DOOR_W) / 4, H4 / 2, 0], { bevel: 0.02 });
-  wallShape.box([DOOR_W, H4 - DOOR_H, 0.16], [0, DOOR_H + (H4 - DOOR_H) / 2, 0], { bevel: 0.02 });
+  for (const side of [-1, 1]) wallShape.box([(bay - DOOR_W) / 2, H3, 0.16], [side * (bay + DOOR_W) / 4, H3 / 2, 0], { bevel: 0.02 });
+  wallShape.box([DOOR_W, H3 - DOOR_H, 0.16], [0, DOOR_H + (H3 - DOOR_H) / 2, 0], { bevel: 0.02 });
   wallShape.line([-DOOR_W / 2, DOOR_H - 0.012, 0.082], [DOOR_W / 2, DOOR_H - 0.012, 0.082], 0.024, [0, 0, 1]);
   const walls = wallShape.build(metal);
   const lidShape = builder();
@@ -16525,31 +14389,31 @@ function createChamber(accent, opts = {}) {
     leaf.position.set(side * DOOR_W / 2, 0, -reach);
     return leaf;
   });
-  const sign = new THREE19.Mesh(new THREE19.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE19.MeshBasicMaterial({ transparent: true }));
-  sign.position.set(0, DOOR_H + (H4 - DOOR_H) / 2, -reach + 0.085);
-  const rising = new THREE19.Group();
+  const sign = new THREE18.Mesh(new THREE18.PlaneGeometry(DOOR_W * 0.94, DOOR_W * 0.94 * (384 / 1024)), new THREE18.MeshBasicMaterial({ transparent: true }));
+  sign.position.set(0, DOOR_H + (H3 - DOOR_H) / 2, -reach + 0.085);
+  const rising = new THREE18.Group();
   rising.add(walls, ...leaves, sign);
-  const clear = new THREE19.Mesh(new THREE19.BufferGeometry().setAttribute("position", new THREE19.BufferAttribute(new Float32Array(9), 3)), new THREE19.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false }));
+  const clear = new THREE18.Mesh(new THREE18.BufferGeometry().setAttribute("position", new THREE18.BufferAttribute(new Float32Array(9), 3)), new THREE18.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false }));
   clear.frustumCulled = false;
   clear.renderOrder = CHAMBER_ORDER;
   clear.onBeforeRender = (renderer) => renderer.clearDepth();
   for (const part of [floor, walls, lid, ...leaves]) part.renderOrder = CHAMBER_ORDER + 1;
   sign.renderOrder = CHAMBER_ORDER + 1.3;
-  const depthOnly = (depth, o) => new THREE19.ShaderMaterial({ vertexShader: "void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: `void main() { gl_FragDepth = ${depth}; gl_FragColor = vec4(0.0); }`, colorWrite: false, depthTest: true, depthFunc: THREE19.AlwaysDepth, depthWrite: true, side: THREE19.DoubleSide, ...o });
+  const depthOnly = (depth, o) => new THREE18.ShaderMaterial({ vertexShader: "void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: `void main() { gl_FragDepth = ${depth}; gl_FragColor = vec4(0.0); }`, colorWrite: false, depthTest: true, depthFunc: THREE18.AlwaysDepth, depthWrite: true, side: THREE18.DoubleSide, ...o });
   const nearest2 = depthOnly("0.0", {});
   const farthest = depthOnly("1.0", { transparent: true });
-  const real = new THREE19.MeshBasicMaterial({ colorWrite: false, transparent: true, side: THREE19.DoubleSide });
+  const real = new THREE18.MeshBasicMaterial({ colorWrite: false, transparent: true, side: THREE18.DoubleSide });
   const shutOut = [];
   for (const part of [floor, walls, lid, ...leaves]) {
     for (const [material, order] of [[nearest2, SHUT_ORDER], [farthest, CHAMBER_ORDER + 1.1], [real, CHAMBER_ORDER + 1.2]]) {
-      const pass = new THREE19.Mesh(part.geometry, material);
+      const pass = new THREE18.Mesh(part.geometry, material);
       pass.renderOrder = order;
       pass.frustumCulled = false;
       part.add(pass);
       shutOut.push(pass);
     }
   }
-  const group = new THREE19.Group();
+  const group = new THREE18.Group();
   group.add(clear, floor, rising, lid);
   let door = 0;
   let presence = 1;
@@ -16560,7 +14424,7 @@ function createChamber(accent, opts = {}) {
     floor.scale.setScalar(Math.max(1e-3, Math.min(1, presence * 1.6)));
     floor.visible = presence > 2e-3;
     clear.visible = presence > 2e-3;
-    lid.position.y = H4 + (1 - up) * 3.5;
+    lid.position.y = H3 + (1 - up) * 3.5;
     lid.visible = presence > 0.5;
     const open = door * door * (3 - 2 * door);
     for (const leaf of leaves) leaf.scale.x = Math.max(0.02, 1 - open);
@@ -16616,8 +14480,8 @@ function createCrossing(o) {
   let hold;
   let shut = null;
   const moves = () => o.motion?.() ?? true;
-  const at = new THREE19.Vector3();
-  const facing2 = new THREE19.Vector3();
+  const at = new THREE18.Vector3();
+  const facing2 = new THREE18.Vector3();
   const place = () => {
     chamber?.dispose();
     const made = createChamber(o.accent, o.textColor ? { textColor: o.textColor } : {});
@@ -16719,37 +14583,17 @@ function createCrossing(o) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/camera.ts
-import * as THREE20 from "three";
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/save-file.ts
-function download(blob, name) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  link.rel = "noopener";
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 3e4);
-}
-function saveFile(blob, name) {
-  if (handUp(blob)) return true;
-  download(blob, name);
-  return false;
-}
-
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/camera.ts
+// packages/sdk/src/camera.ts
+import * as THREE19 from "three";
 async function takePicture(renderer, scene, camera, opts = {}) {
   const width = Math.round(opts.width ?? 1920);
   const height = Math.round(opts.height ?? 1080);
   const hidden = (opts.hide ?? []).filter((o) => o.visible);
   const xrWasEnabled = renderer.xr.enabled;
   const previousTarget = renderer.getRenderTarget();
-  const target = new THREE20.WebGLRenderTarget(width, height, { samples: 4 });
-  target.texture.colorSpace = THREE20.SRGBColorSpace;
-  const eye = new THREE20.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
+  const target = new THREE19.WebGLRenderTarget(width, height, { samples: 4 });
+  target.texture.colorSpace = THREE19.SRGBColorSpace;
+  const eye = new THREE19.PerspectiveCamera(camera.fov, width / height, camera.near, camera.far);
   camera.updateWorldMatrix(true, false);
   camera.matrixWorld.decompose(eye.position, eye.quaternion, eye.scale);
   eye.updateMatrixWorld(true);
@@ -16780,17 +14624,17 @@ async function takePicture(renderer, scene, camera, opts = {}) {
 }
 async function takeSelfie(renderer, scene, head, look, opts = {}) {
   head.updateWorldMatrix(true, false);
-  const at = new THREE20.Vector3();
-  const facing2 = new THREE20.Quaternion();
-  head.matrixWorld.decompose(at, facing2, new THREE20.Vector3());
-  const ahead = new THREE20.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
+  const at = new THREE19.Vector3();
+  const facing2 = new THREE19.Quaternion();
+  head.matrixWorld.decompose(at, facing2, new THREE19.Vector3());
+  const ahead = new THREE19.Vector3(0, 0, -1).applyQuaternion(facing2).setY(0);
   if (ahead.lengthSq() < 1e-6) ahead.set(0, 0, -1);
   ahead.normalize();
   const figure = createFigure(look);
   figure.group.position.copy(at);
   figure.group.rotation.y = Math.atan2(-ahead.x, -ahead.z);
   scene.add(figure.group);
-  const eye = new THREE20.PerspectiveCamera(58, 1, 0.05, head.far);
+  const eye = new THREE19.PerspectiveCamera(58, 1, 0.05, head.far);
   eye.position.copy(at).addScaledVector(ahead, opts.reach ?? 1.7);
   eye.position.y = at.y + 0.08;
   eye.lookAt(at.x, at.y - 0.22, at.z);
@@ -16846,7 +14690,7 @@ function addCameraControls(controls, d) {
     controls.say(text);
   };
   let latest = null;
-  const keep4 = (capture) => {
+  const keep3 = (capture) => {
     latest = capture;
     d.onCapture?.(capture);
     if (presenting()) {
@@ -16863,7 +14707,7 @@ function addCameraControls(controls, d) {
     try {
       const hide = d.hide?.() ?? [];
       const blob = kind === "selfie" ? await takeSelfie(d.renderer, d.scene, d.camera, d.look?.() ?? plain, { hide }) : await takePicture(d.renderer, d.scene, d.camera, { hide });
-      keep4({ kind, blob, name: `${name}-${kind === "selfie" ? "selfie-" : ""}${stamp()}.jpg` });
+      keep3({ kind, blob, name: `${name}-${kind === "selfie" ? "selfie-" : ""}${stamp()}.jpg` });
     } catch {
       tell("That picture couldn't be taken on this device.");
     }
@@ -16871,7 +14715,7 @@ function addCameraControls(controls, d) {
   const finish = (blob) => {
     clip = null;
     d.recording?.(false);
-    keep4({ kind: "clip", blob, name: `${name}-clip-${stamp()}.${blob.type.includes("mp4") ? "mp4" : "webm"}` });
+    keep3({ kind: "clip", blob, name: `${name}-clip-${stamp()}.${blob.type.includes("mp4") ? "mp4" : "webm"}` });
   };
   controls.addSection({ id: "camera", label: "Camera", icon: "camera", note: () => clip ? `Recording: ${Math.floor(clip.seconds())} s. Others in the room can see that you are.` : last });
   controls.add(
@@ -16932,7 +14776,7 @@ function addCameraControls(controls, d) {
   };
 }
 
-// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/three.ts
+// packages/sdk/src/three.ts
 async function capturePanorama(renderer, scene, position, opts = {}) {
   const width = panoramaWidth(opts.width);
   const hidden = (opts.hide ?? []).filter((o) => o.visible);
@@ -16940,8 +14784,8 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   const previousTarget = renderer.getRenderTarget();
   const autoClearWas = renderer.autoClear;
   const fog = scene.fog;
-  const faceTarget = new THREE21.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE21.HalfFloatType });
-  const faceCamera = new THREE21.PerspectiveCamera(90, 1, 0.05, 700);
+  const faceTarget = new THREE20.WebGLRenderTarget(Math.min(2048, width / 2), Math.min(2048, width / 2), { type: THREE20.HalfFloatType });
+  const faceCamera = new THREE20.PerspectiveCamera(90, 1, 0.05, 700);
   faceCamera.position.copy(position);
   let painter = null;
   try {
@@ -16951,7 +14795,7 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
     painter = paintPanorama(renderer, width);
     PANORAMA_VIEWS.forEach((view, i) => {
       faceCamera.up.fromArray(view.up);
-      faceCamera.lookAt(position.clone().add(new THREE21.Vector3().fromArray(view.forward)));
+      faceCamera.lookAt(position.clone().add(new THREE20.Vector3().fromArray(view.forward)));
       faceCamera.updateMatrixWorld(true);
       renderer.autoClear = true;
       renderer.setRenderTarget(faceTarget);
@@ -16970,24 +14814,24 @@ async function capturePanorama(renderer, scene, position, opts = {}) {
   }
 }
 function panoramaTexture(image) {
-  const texture = new THREE21.Texture(image);
-  texture.colorSpace = THREE21.SRGBColorSpace;
-  texture.wrapS = THREE21.RepeatWrapping;
+  const texture = new THREE20.Texture(image);
+  texture.colorSpace = THREE20.SRGBColorSpace;
+  texture.wrapS = THREE20.RepeatWrapping;
   texture.generateMipmaps = false;
-  texture.minFilter = THREE21.LinearFilter;
-  texture.magFilter = THREE21.LinearFilter;
+  texture.minFilter = THREE20.LinearFilter;
+  texture.magFilter = THREE20.LinearFilter;
   texture.needsUpdate = true;
   return texture;
 }
 function createPortalWindow(geometry, pano, opts = {}) {
   const reach = opts.reach ?? 1.5;
-  const material = new THREE21.ShaderMaterial({
+  const material = new THREE20.ShaderMaterial({
     uniforms: {
       pano: { value: pano },
       mask: { value: opts.mask ?? null },
       useMask: { value: opts.mask ? 1 : 0 },
-      toLocal: { value: new THREE21.Matrix3() },
-      center: { value: new THREE21.Vector3() },
+      toLocal: { value: new THREE20.Matrix3() },
+      center: { value: new THREE20.Vector3() },
       reach: { value: Number.isFinite(reach) ? reach : 0 }
     },
     vertexShader: `varying vec3 vWorld; varying vec2 vUv;
@@ -17007,10 +14851,10 @@ function createPortalWindow(geometry, pano, opts = {}) {
         gl_FragColor = vec4(texture2D(pano, vec2(lon / 6.283185307179586 + 0.5, lat / 3.141592653589793 + 0.5)).rgb, 1.0);
         #include <colorspace_fragment>
       }`,
-    side: THREE21.DoubleSide
+    side: THREE20.DoubleSide
   });
-  const mesh = new THREE21.Mesh(geometry, material);
-  const rotation = new THREE21.Matrix4();
+  const mesh = new THREE20.Mesh(geometry, material);
+  const rotation = new THREE20.Matrix4();
   mesh.onBeforeRender = () => {
     rotation.extractRotation(mesh.matrixWorld);
     material.uniforms.toLocal.value.setFromMatrix4(rotation).invert();
@@ -17125,15 +14969,6 @@ async function addViewControls(controls, d) {
 export {
   turnVisitor,
   createConsole,
-  LOOK_STEPS,
-  FOV_STEPS,
-  lookScale,
-  setLookScale,
-  visitorFov,
-  setVisitorFov,
-  onDeskChange,
-  addDeskControls,
-  watchFov,
   watchFresh,
   freshAction,
   readProfile,
@@ -17166,7 +15001,6 @@ export {
   createAlloy,
   MeshBuilder,
   createFigure,
-  CUES,
   ITEM_BUDGET,
   showsItems,
   setShowsItems,
@@ -17183,31 +15017,6 @@ export {
   textSprite,
   speechSprite,
   createPresence,
-  WALK_SPEED,
-  RUN,
-  KEY_TURN,
-  TOP_SPEED,
-  DOUBLE_TAP,
-  TAP_REACH,
-  PATH_MOST,
-  FACE_RATE,
-  DRAG_LOOK,
-  TILT_LIMIT,
-  LEVEL_RATE,
-  dragTurn,
-  levelled,
-  createDragLook,
-  reachOf,
-  dotsBetween,
-  createStepPace,
-  createStroll,
-  LOOK_SPEED,
-  PITCH_LIMIT,
-  SPRINT,
-  lookAfter,
-  strideOf,
-  heldKey,
-  createFps,
   createMessages,
   addMessagingControls,
   addRoomControls,
@@ -17217,11 +15026,7 @@ export {
   INTENSE_COMFORT,
   isIntense,
   createXrInput,
-  PANEL_LOOKS,
-  PANEL_LIMITS,
-  LIBRARY_LIMITS,
   createKeyboard,
-  createLibrary,
   createPanels,
   addPanelControls,
   createFloorMarks,
@@ -17254,12 +15059,9 @@ export {
   worldPersonLines,
   createAchievements,
   addAchievementControls,
-  createSounds,
-  addSoundControls,
   CHAMBER_ORDER,
   createChamber,
   createCrossing,
-  saveFile,
   takePicture,
   takeSelfie,
   canRecord,

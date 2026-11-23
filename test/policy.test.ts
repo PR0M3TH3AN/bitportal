@@ -162,7 +162,10 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     // One place writes what a page may embed: the sign-in address, after whatever a page is given by name. Left
     // to itself a page is given nothing, and may be embedded by nobody.
     expect(build).toContain('`frame-src ${[...frames, signInOrigin].join(" ")}`');
-    expect(build.split("frame-src").length - 1).toBe(1);
+    // Written there, and once more where the rules of the page that keeps the screen are written out whole to be
+    // checked against what that one place made (below): a check, which can stop a build and can't change a header.
+    expect(build.split("frame-src").length - 1).toBe(2);
+    expect(build.split("frame-src").slice(1).map((after) => after.startsWith(" 'self' ${[...shellWorlds, signInOrigin]") || after.startsWith(' ${[...frames, signInOrigin].join(" ")}`'))).toEqual([true, true]);
     expect(build).toContain(`const rulesFor = ({ frames = [], framedBy = "'none'" } = {}) =>`);
     expect(build).toContain("const csp = rulesFor();");
     expect(build).toContain(`"script-src 'self'"`);
@@ -181,6 +184,12 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     expect(build).toContain(`const cspFramed = rulesFor({ framedBy: "'self'" });`);
     expect(build).toContain(`const cspRoom = rulesFor({ frames: ["'self'"], framedBy: "'self'" });`);
     expect(build).toContain(`const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });`);
+    // Its rules are written out a second time, whole, and the build stops if the two differ: the page draws the
+    // visitor's menu over other people's worlds and frames the sign-in address's panel, so none of these words may
+    // change by a change made somewhere else (NSWP docs/plans/the-clients-menu.md, 17.1).
+    expect(build).toContain("const cspShellWritten = `default-src 'self'; script-src 'self'; worker-src 'self'; frame-src 'self' ${[...shellWorlds, signInOrigin].join(\" \")}; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https: wss:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;");
+    expect(build).toContain("if (cspShell !== cspShellWritten) throw new Error(");
+    expect(build.indexOf("if (cspShell !== cspShellWritten)")).toBeLessThan(build.indexOf('{ source: "/shell(/.*)?"'));
     expect(build).toContain('{ source: "/walk(/.*)?", headers: guards(cspRoom) },');
     expect(build).toContain('{ source: "/go(/.*)?", headers: guards(cspFramed) },');
     expect(build).toContain('{ source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },');

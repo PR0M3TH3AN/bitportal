@@ -1,0 +1,788 @@
+import {
+  arrivedSettings,
+  askClientForScreen,
+  clientHoldsScreen,
+  clientScreenFilled,
+  createUiChat,
+  currentForm,
+  framed,
+  meetClient,
+  onClientScreen,
+  reportSettings
+} from "./shared-KUNAPS23.js";
+
+// packages/sdk/src/ui/icons.ts
+var ICONS = {
+  home: "M4 11.5 12 4l8 7.5M6 10v10h12V10M10 20v-5h4v5",
+  turn: "M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5",
+  room: "M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2.5 20a6 6 0 0 1 12 0M16.5 11.5a2.5 2.5 0 1 0 0-5M17.5 14.6A5 5 0 0 1 21.5 20",
+  leave: "M10 4H5v16h5M14 8l4 4-4 4M18 12H9",
+  mic: "M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3ZM6 11a6 6 0 0 0 12 0M12 17v4M9 21h6",
+  micOff: "M9 9v2a3 3 0 0 0 4.6 2.5M15 10.5V6a3 3 0 0 0-5.7-1.3M6 11a6 6 0 0 0 9.6 4.8M18 11a6 6 0 0 1-.4 2.2M12 17v4M9 21h6M4 4l16 16",
+  list: "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
+  vr: "M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3.5l-2-2.5h-3L8.5 17H5a2 2 0 0 1-2-2V9ZM8 12h.01M16 12h.01",
+  exit: "M18 6 6 18M6 6l12 12",
+  look: "M12 3s6 6.3 6 11a6 6 0 0 1-12 0c0-4.7 6-11 6-11ZM9 14a3 3 0 0 0 3 3",
+  help: "M9.2 9a3 3 0 1 1 4.6 2.5c-1 .7-1.8 1.4-1.8 2.7M12 18h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z",
+  menu: "M4 7h16M4 12h16M4 17h10",
+  /** An arched doorway: this project's mark for a way through. */
+  door: "M7 21V10a5 5 0 0 1 10 0v11M5 21h14M14.5 14h.01",
+  link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.700l1-1",
+  save: "M7 4h10v17l-5-3.5L7 21V4Z",
+  pin: "M9 4h6l-1 6 3 3H7l3-3-1-6ZM12 13v7",
+  step: "M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.800-6 10-6 10ZM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
+  size: "M4 18 9 6l5 12M5.700 14h6.600M15 18l3.500-8 3.500 8M16 15.700h5",
+  /** Filling the screen: four corners drawn out. */
+  full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
+  motion: "M3 12h4l3-7 4 14 3-7h4",
+  check: "M5 12.500 10 17.500 19 7",
+  camera: "M4 8h3l1.5-2h7L17 8h3v11H4ZM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z",
+  selfie: "M4 5h16v14H4ZM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.5 19a4.5 4.5 0 0 1 9 0",
+  record: "M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  /** A panel: a frame with a bar along its top. */
+  panel: "M4 5h16v14H4ZM4 9h16M15 7h.01M17.5 7h.01",
+  note: "M6 3h9l4 4v14H6ZM14 3v5h5M9 13h7M9 17h5",
+  /** A loudspeaker, sounding and crossed out. */
+  sound: "M4 9.500v5h3.500L13 19V5L7.500 9.500ZM16.500 9a4.500 4.500 0 0 1 0 6M19 6.500a8 8 0 0 1 0 11",
+  soundOff: "M4 9.500v5h3.500L13 19V5L7.500 9.500ZM16.500 9.500l4.500 5M21 9.500l-4.500 5",
+  you: "M12 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM5 20.5a7 7 0 0 1 14 0",
+  close: "M6 6l12 12M18 6 6 18",
+  key: "M14.5 9.5a3.5 3.5 0 1 0-3.4 3.5L4 20v-3h3v-3h3l1.6-1.6M16 8h.01",
+  chat: "M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM8 10h8M8 13h5",
+  people: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a6 6 0 0 1 12 0M16 11a2.5 2.5 0 1 0 0-5M21 20a5 5 0 0 0-4-4.9",
+  // What a door says its world offers (door-offers.ts), where no drawing above already says it.
+  bag: "M6 8h12l1.2 12H4.8L6 8ZM9 8V6.5a3 3 0 0 1 6 0V8",
+  trophy: "M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4",
+  tip: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z",
+  // An envelope: a world that is by invitation (the eighth thing a door shows).
+  invite: "M4 6h16v12H4ZM4 7l8 6 8-6",
+  coin: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM14.6 9.6c-.5-1-1.4-1.6-2.6-1.6-1.5 0-2.6.8-2.6 2s1 1.7 2.6 2 2.6.8 2.6 2-1.1 2-2.6 2c-1.2 0-2.1-.6-2.6-1.6M12 6.5V8M12 16v1.5"
+};
+
+// packages/sdk/src/ui/theme.ts
+var DEFAULT_THEME = { accent: "#ffb65c", ink: "#eef5fb", glass: "#0a1018", warn: "#ff7566", motion: true, scale: 1, wrist: "left" };
+var UI_PRESETS = [
+  { id: "lantern", label: "Lantern", accent: "#ffb65c" },
+  { id: "ion", label: "Ion", accent: "#62d9ff" },
+  { id: "verdant", label: "Verdant", accent: "#4fd08b" },
+  { id: "rose", label: "Rose", accent: "#ff8fb1" },
+  { id: "paper", label: "Paper", accent: "#f2f3f6" }
+];
+var KEY = "nswp:ui";
+var HEX = /^#[0-9a-f]{6}$/i;
+function cleanTheme(input) {
+  const out = {};
+  if (!input || typeof input !== "object") return out;
+  const t = input;
+  for (const k of ["accent", "ink", "glass", "warn"]) if (typeof t[k] === "string" && HEX.test(t[k])) out[k] = t[k].toLowerCase();
+  if (typeof t.motion === "boolean") out.motion = t.motion;
+  if (typeof t.scale === "number" && Number.isFinite(t.scale)) out.scale = Math.min(1.5, Math.max(0.85, t.scale));
+  if (t.wrist === "left" || t.wrist === "right" || t.wrist === "off") out.wrist = t.wrist;
+  return out;
+}
+function loadVisitorTheme() {
+  try {
+    return cleanTheme(JSON.parse(globalThis.localStorage?.getItem(KEY) ?? "{}"));
+  } catch {
+    return {};
+  }
+}
+function saveVisitorTheme(theme) {
+  try {
+    globalThis.localStorage?.setItem(KEY, JSON.stringify(cleanTheme(theme)));
+  } catch {
+  }
+}
+function prefersStill() {
+  try {
+    return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  } catch {
+    return false;
+  }
+}
+function resolveTheme(world = {}, visitor = loadVisitorTheme()) {
+  return { ...DEFAULT_THEME, ...prefersStill() ? { motion: false } : {}, ...cleanTheme(world), ...cleanTheme(visitor) };
+}
+function rgb(hex) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
+}
+
+// packages/sdk/src/ui/fullscreen.ts
+var resumed = false;
+var waiting = false;
+var FULL_KEY = "nswp:full";
+var prefers = false;
+var keepFull = (on) => {
+  prefers = on;
+  try {
+    if (on) localStorage.setItem(FULL_KEY, "1");
+    else localStorage.removeItem(FULL_KEY);
+  } catch {
+  }
+};
+var prefersFullscreen = () => prefers;
+var held = false;
+var holdFullscreen = (on) => {
+  held = on;
+};
+function resumeFullscreen(presenting = () => false) {
+  if (resumed || typeof document === "undefined") return;
+  resumed = true;
+  const came = arrivedSettings().full;
+  let kept = false;
+  try {
+    kept = localStorage.getItem(FULL_KEY) === "1";
+  } catch {
+  }
+  if (came === void 0) prefers = kept;
+  else keepFull(came);
+  reportSettings("screen", () => ({ full: prefers }));
+  meetClient();
+  const mayAsk = framed();
+  waiting = prefers && (document.fullscreenEnabled && !document.fullscreenElement || mayAsk);
+  if (!waiting) return;
+  const presses = ["keydown", "pointerdown", "pointerup", "touchend"];
+  const stop = () => {
+    waiting = false;
+    for (const type of presses) removeEventListener(type, onPress, true);
+    document.removeEventListener("fullscreenchange", onChange);
+    forget();
+  };
+  const onChange = () => {
+    if (document.fullscreenElement || clientScreenFilled()) stop();
+  };
+  const forget = onClientScreen(onChange);
+  const onPress = (e) => {
+    if (e.code === "Escape" || held || presenting() || document.fullscreenElement) return;
+    if (clientHoldsScreen()) return void (clientScreenFilled() ? stop() : askClientForScreen(true));
+    if (!document.fullscreenEnabled) return;
+    void document.documentElement.requestFullscreen().then(stop, () => {
+    });
+  };
+  for (const type of presses) addEventListener(type, onPress, true);
+  document.addEventListener("fullscreenchange", onChange);
+  onChange();
+}
+var isFilled = () => clientHoldsScreen() ? clientScreenFilled() : !!document.fullscreenElement;
+var canFill = () => clientHoldsScreen() || document.fullscreenEnabled;
+var fullscreenWaiting = () => waiting && canFill() && !isFilled();
+function fullscreenAction(controls, presenting) {
+  resumeFullscreen(presenting);
+  presentingNow = presenting;
+  watchEscape();
+  setTimeout(() => {
+    if (waiting && !held && !presenting() && canFill() && !isFilled()) controls.say("Press any key, or click, to fill the screen again.");
+  }, 600);
+  onClientScreen(() => controls.setTarget(""));
+  return {
+    id: "fullscreen",
+    section: "view",
+    icon: "full",
+    on: () => prefers,
+    // Not every browser lets a page fill the screen (a phone's often won't), and a headset already does.
+    hidden: () => !canFill() || presenting(),
+    // It says what they prefer, in every world, and whether the screen is filled just now.
+    label: () => !prefers ? "Fullscreen: off" : isFilled() ? "Fullscreen: on, in every world" : "Fullscreen: on, in every world. Press to fill the screen again",
+    act: async () => {
+      const fill = !isFilled();
+      if (!fill) keepFull(false);
+      if (clientHoldsScreen()) {
+        if (fill) keepFull(true);
+        askClientForScreen(fill);
+        return void controls.setTarget("");
+      }
+      try {
+        if (fill) {
+          await document.documentElement.requestFullscreen();
+          keepFull(true);
+        } else await leaveFullscreen();
+      } catch {
+        controls.say("This browser wouldn't go fullscreen.");
+      }
+      controls.setTarget("");
+    }
+  };
+}
+var keyboard = () => typeof navigator === "undefined" ? void 0 : navigator.keyboard;
+var holding = false;
+var leaving = false;
+var watching = false;
+var leftByBrowser = /* @__PURE__ */ new Set();
+function onBrowserLeftFullscreen(fn) {
+  leftByBrowser.add(fn);
+  return () => void leftByBrowser.delete(fn);
+}
+function watchEscape() {
+  if (watching || typeof document === "undefined") return;
+  watching = true;
+  let wasFilled = !!document.fullscreenElement;
+  const onChange = () => {
+    const filled = !!document.fullscreenElement;
+    if (filled) {
+      holding = false;
+      try {
+        const asked = keyboard()?.lock?.(["Escape"]);
+        if (asked) void asked.then(() => holding = !!document.fullscreenElement, () => holding = false);
+      } catch {
+      }
+    } else {
+      holding = false;
+      try {
+        keyboard()?.unlock?.();
+      } catch {
+      }
+      if (wasFilled && !leaving) for (const fn of [...leftByBrowser]) fn();
+      leaving = false;
+    }
+    wasFilled = filled;
+  };
+  document.addEventListener("fullscreenchange", onChange);
+}
+var escapeHeld = () => holding && typeof document !== "undefined" && !!document.fullscreenElement;
+function escapeDoes(state) {
+  if (state.menuOpen) return state.held ? "leave-fullscreen" : "close-menu";
+  return state.held ? "open-menu" : "nothing";
+}
+async function leaveFullscreen() {
+  if (typeof document === "undefined" || !document.fullscreenElement) return;
+  leaving = true;
+  try {
+    await document.exitFullscreen();
+  } catch {
+    leaving = false;
+  }
+}
+var presentingNow = () => false;
+var fullscreenButton = {
+  shown() {
+    if (typeof document === "undefined" || presentingNow()) return false;
+    return canFill() && !isFilled() && currentForm() === "desk";
+  },
+  label: "Full screen",
+  async press(controls) {
+    if (clientHoldsScreen()) {
+      keepFull(true);
+      askClientForScreen(true);
+      return;
+    }
+    try {
+      await document.documentElement.requestFullscreen();
+      keepFull(true);
+    } catch {
+      controls?.say("This browser wouldn't go fullscreen.");
+    }
+  }
+};
+
+// packages/sdk/src/ui/feed.ts
+import { CHAT_LIMITS, cleanChat, cleanLine } from "@nswp/core";
+var FEED_LIMITS = { shown: 420, kept: 30 };
+function createUiFeed(changed, now = () => Date.now()) {
+  let opts = null;
+  let posts = [];
+  let loading = false;
+  let said = "";
+  let version = 0;
+  let count = 0;
+  let asked = 0;
+  const bump = () => {
+    version++;
+    changed();
+  };
+  const sort = () => {
+    posts.sort((a, b) => b.at - a.at);
+    const kept = posts.filter((p, i) => p.state !== "out" || i < FEED_LIMITS.kept);
+    posts = kept;
+  };
+  return {
+    attach(next) {
+      opts = next;
+      posts = [];
+      loading = false;
+      said = "";
+      asked = 0;
+      bump();
+    },
+    detach() {
+      if (!opts) return;
+      opts = null;
+      posts = [];
+      loading = false;
+      said = "";
+      bump();
+    },
+    opened() {
+      const mine = opts;
+      if (!mine?.load || loading || asked && now() - asked < 6e4) return;
+      asked = now();
+      loading = true;
+      bump();
+      void mine.load().catch(() => null).then((got) => {
+        if (opts !== mine) return;
+        loading = false;
+        if (!got) said = "Your earlier posts couldn't be fetched just now.";
+        else {
+          const seen = new Set(posts.map((p) => p.key));
+          for (const p of got) {
+            const text = cleanLine(p.text, FEED_LIMITS.shown);
+            if (!text || seen.has(p.id) || !Number.isFinite(p.at)) continue;
+            seen.add(p.id);
+            posts.push({ key: p.id, text, at: p.at, state: "out", id: p.id });
+          }
+          sort();
+        }
+        bump();
+      });
+    },
+    send(text) {
+      const mine = opts;
+      if (!mine) return "There is nothing to post with: sign in first.";
+      const words = cleanChat(text);
+      if (!words) return null;
+      const post = { key: `new-${++count}`, text: words, at: Math.floor(now() / 1e3), state: "sending" };
+      posts.unshift(post);
+      said = "";
+      bump();
+      void mine.send(words).catch(() => ({ ok: false, said: "That wasn't sent." })).then((how) => {
+        if (opts !== mine) return;
+        post.state = how.ok ? "out" : "failed";
+        if (how.ok && how.id) post.id = how.id;
+        said = how.said;
+        bump();
+      });
+      return null;
+    },
+    remove(key) {
+      const mine = opts;
+      const post = posts.find((p) => p.key === key);
+      if (!mine?.remove || !post?.id || post.state !== "out") return "That post can't be deleted from here.";
+      const id = post.id;
+      post.state = "removing";
+      said = "";
+      bump();
+      void mine.remove(id).catch(() => ({ ok: false, said: "That wasn't deleted." })).then((how) => {
+        if (opts !== mine) return;
+        if (how.ok) posts = posts.filter((p) => p !== post);
+        else post.state = "out";
+        said = how.said;
+        bump();
+      });
+      return null;
+    },
+    view() {
+      const who = typeof opts?.who === "function" ? opts.who() : opts?.who ?? "";
+      const back = opts?.remove ? "and deleting it later only asks relays to drop it: copies may remain" : "and it can't be taken back";
+      const lead = `Public, like a tweet: anyone can read what you send out here, as ${who}, ${back}.${opts?.marked ? ` Each post is marked as sent from ${opts.marked}.` : ""}`;
+      return { ready: !!opts, title: "My public feed", who, posts, loading, said, lead, limit: CHAT_LIMITS.chars, removable: !!opts?.remove, version };
+    }
+  };
+}
+function ago(at, nowSec) {
+  const s = Math.max(0, nowSec - at);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  const days = Math.floor(s / 86400);
+  if (days < 30) return days === 1 ? "1 day ago" : `${days} days ago`;
+  return new Date(at * 1e3).toISOString().slice(0, 10);
+}
+
+// packages/sdk/src/ui/model.ts
+import { cleanSettings, PINS_MOST } from "@nswp/core";
+
+// packages/sdk/src/ui/letters.ts
+import { cleanMessage, MESSAGE_LIMITS } from "@nswp/core";
+function createUiLetters(changed, now = () => Date.now()) {
+  let opts = null;
+  let waiting2 = [];
+  let said = "";
+  let version = 0;
+  let count = 0;
+  const bump = () => {
+    version++;
+    changed();
+  };
+  return {
+    attach(next) {
+      opts = next;
+      waiting2 = [];
+      said = "";
+      bump();
+    },
+    detach() {
+      if (!opts) return;
+      opts = null;
+      waiting2 = [];
+      said = "";
+      bump();
+    },
+    touch: bump,
+    seen() {
+      opts?.seen?.();
+    },
+    send(text) {
+      const mine = opts;
+      if (!mine) return "There is nobody to write to: choose someone first.";
+      const words = cleanMessage(text);
+      if (!words) return null;
+      const line = { key: `new-${++count}`, mine: true, who: "You", text: words, at: Math.floor(now() / 1e3), state: "sending" };
+      waiting2.push(line);
+      said = "";
+      bump();
+      void mine.send(words).catch(() => ({ ok: false, said: "That wasn't sent." })).then((how) => {
+        if (opts !== mine) return;
+        if (how.ok) waiting2 = waiting2.filter((l) => l !== line);
+        else line.state = "failed";
+        said = how.said;
+        bump();
+      });
+      return null;
+    },
+    view() {
+      const name = typeof opts?.with === "function" ? opts.with() : opts?.with ?? "";
+      const lines = opts ? [...opts.lines().map((l) => ({ ...l, state: "out" })), ...waiting2].sort((a, b) => a.at - b.at) : [];
+      return {
+        ready: !!opts,
+        title: name ? `${name}, privately` : "Private messages",
+        with: name,
+        lines,
+        said,
+        lead: name ? `Private: only you and ${name} can read what is written here. A relay is told who it is for, and nothing more.` : "",
+        limit: MESSAGE_LIMITS.chars,
+        version
+      };
+    }
+  };
+}
+
+// packages/sdk/src/ui/model.ts
+var PRESENCES = ["full", "quiet", "hidden"];
+var CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
+function cleanKeys(now, k) {
+  const out = { ...now };
+  if (k && (k.menu === null || typeof k.menu === "string" && k.menu.length === 1)) out.menu = k.menu === null ? null : k.menu.toLowerCase();
+  if (k && typeof k.hotbar === "boolean") out.hotbar = k.hotbar;
+  if (k && (k.chat === null || typeof k.chat === "string" && k.chat.length === 1)) out.chat = k.chat === null ? null : k.chat.toLowerCase();
+  return out;
+}
+var read = (t) => typeof t === "function" ? t() : t ?? "";
+var STANDARD = [
+  { id: "travel", label: "Travel", icon: "door" },
+  // Who the visitor is here. It has something in it only for one who came through a client (ui/identity.ts).
+  { id: "you", label: "You", icon: "you" },
+  // How other people see them. A visitor's own client fills this in, in its own place: a look is changed there and
+  // nowhere else (ui/identity.ts, protocol/05-looks.md). In a world it is empty, and isn't shown.
+  { id: "figure", label: "Your look", icon: "look" },
+  { id: "room", label: "Room", icon: "room" },
+  { id: "people", label: "People", icon: "people" },
+  // Who the visitor follows (following.ts). Empty, and not shown, for a guest.
+  { id: "following", label: "Following", icon: "list" },
+  // Their private messages (messaging.ts). Empty, and not shown, for a guest.
+  { id: "messages", label: "Messages", icon: "chat" },
+  // A world's boards, where it keeps score (scoring.ts). Added by the world; empty, and not shown, otherwise.
+  { id: "scores", label: "Scores", icon: "list" },
+  // What a world marks, and which of it the visitor has earned (achieving.ts). Added by the world, like Scores.
+  { id: "achievements", label: "Achievements", icon: "check" },
+  // The items a visitor has, and the one in their hand (bagging.ts). Empty, and not shown, for a guest.
+  { id: "bag", label: "Bag", icon: "save" },
+  { id: "camera", label: "Camera", icon: "camera" },
+  { id: "panels", label: "Panels", icon: "panel" },
+  { id: "view", label: "View", icon: "vr" },
+  { id: "moving", label: "Moving", icon: "step" },
+  { id: "sound", label: "Sound", icon: "sound" },
+  // How the controls themselves look. Called "Display", since "your look" is how other people see you.
+  { id: "look", label: "Display", icon: "look", note: "How these controls look to you: their colour, the size of their text, whether things move. They go with you from world to world." },
+  { id: "help", label: "Help", icon: "help" }
+];
+var KEEPERS = { id: "guests", label: "Who comes in", icon: "people" };
+var STANDARD_TABS = STANDARD.flatMap((s) => s.id === "people" ? [s.id, KEEPERS.id] : [s.id]);
+var standardTab = (id) => {
+  const s = id === KEEPERS.id ? KEEPERS : STANDARD.find((x) => x.id === id);
+  return s ? { label: s.label, icon: s.icon ?? null } : null;
+};
+var STANDARD_ORDER = ["back", "home", "go-home", "doors", "list", "vr", "room-join", "room-mic", "room-chat", "jump"];
+var rank = (id) => {
+  const i = STANDARD_ORDER.indexOf(id);
+  return i === -1 ? STANDARD_ORDER.length : i;
+};
+var inOrder = (list) => list.map((a, i) => [a, i]).sort((x, y) => rank(x[0].id) - rank(y[0].id) || x[1] - y[1]).map((x) => x[0]);
+var PINS_KEY = "nswp:ui:pins";
+function loadPins() {
+  try {
+    const kept = globalThis.localStorage?.getItem(PINS_KEY);
+    return kept === null || kept === void 0 ? null : cleanSettings({ pins: JSON.parse(kept) }).pins ?? null;
+  } catch {
+    return null;
+  }
+}
+function savePins(pins) {
+  try {
+    globalThis.localStorage?.setItem(PINS_KEY, JSON.stringify(pins));
+  } catch {
+  }
+}
+var LOADING_WORDS = 80;
+function cleanLoading(state) {
+  if (!state || typeof state !== "object") return null;
+  const raw = typeof state.words === "string" ? state.words : "";
+  const words = [...raw.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim()].slice(0, LOADING_WORDS).join("").trim();
+  const f = state.fraction;
+  const fraction = typeof f === "number" && Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : null;
+  return { fraction, words };
+}
+function createControls(opts) {
+  const sections = STANDARD.map((s) => ({ ...s }));
+  for (const s of opts.sections ?? []) addSection(s);
+  const actions = [];
+  const listeners = /* @__PURE__ */ new Set();
+  const sayers = /* @__PURE__ */ new Set();
+  const signals = /* @__PURE__ */ new Set();
+  let visitor = loadVisitorTheme();
+  const came = arrivedSettings();
+  const brought = { ...came.text !== void 0 ? { scale: came.text } : {}, ...came.motion !== void 0 ? { motion: came.motion } : {}, ...came.wrist !== void 0 ? { wrist: came.wrist } : {} };
+  if (Object.keys(brought).length) {
+    visitor = { ...visitor, ...brought };
+    saveVisitorTheme(visitor);
+  }
+  reportSettings(
+    "look",
+    () => ({ ...visitor.scale !== void 0 ? { text: visitor.scale } : {}, ...visitor.motion !== void 0 ? { motion: visitor.motion } : {}, ...visitor.wrist !== void 0 ? { wrist: visitor.wrist } : {} }),
+    // Their client's menu changed one (settings.ts, `changeSettings`): as their own hand on it here would.
+    (now) => {
+      const patch = { ...now.text !== void 0 ? { scale: now.text } : {}, ...now.motion !== void 0 ? { motion: now.motion } : {}, ...now.wrist !== void 0 ? { wrist: now.wrist } : {} };
+      if (!Object.keys(patch).length) return;
+      visitor = { ...visitor, ...patch };
+      saveVisitorTheme(visitor);
+      theme = resolveTheme(opts.theme, visitor);
+      changed();
+    }
+  );
+  let pins = loadPins();
+  if (came.pins !== void 0) {
+    pins = [...came.pins];
+    savePins(pins);
+  }
+  reportSettings(
+    "pins",
+    () => pins ? { pins } : {},
+    (now) => {
+      if (now.pins === void 0) return;
+      pins = [...now.pins];
+      savePins(pins);
+      changed();
+    }
+  );
+  let theme = resolveTheme(opts.theme, visitor);
+  let target = "";
+  let detail = [];
+  let loading = null;
+  let presence = PRESENCES.includes(opts.presence) ? opts.presence : "full";
+  let corner = CORNERS.includes(opts.corner) ? opts.corner : "top-left";
+  let keys = cleanKeys({ menu: "m", hotbar: true, chat: "t" }, opts.keys);
+  let claimed = false;
+  const changed = () => {
+    for (const fn of listeners) fn();
+  };
+  const chat = createUiChat(changed);
+  const feed = createUiFeed(changed);
+  const letters = createUiLetters(changed);
+  function addSection(s) {
+    const i = sections.findIndex((x) => x.id === s.id);
+    if (i === -1) sections.push({ ...s });
+    else sections[i] = { ...sections[i], ...s };
+  }
+  const controls = {
+    get theme() {
+      return theme;
+    },
+    add(...more) {
+      for (const a of more) {
+        const i = actions.findIndex((x) => x.id === a.id);
+        if (i === -1) actions.push(a);
+        else actions[i] = a;
+      }
+      changed();
+    },
+    has: (id) => actions.some((x) => x.id === id),
+    remove(id) {
+      const i = actions.findIndex((x) => x.id === id);
+      if (i !== -1) actions.splice(i, 1);
+      changed();
+    },
+    addSection(s) {
+      addSection(s);
+      changed();
+    },
+    get presence() {
+      return presence;
+    },
+    setPresence(next) {
+      if (!PRESENCES.includes(next) || next === presence) return;
+      presence = next;
+      changed();
+    },
+    setCorner(next) {
+      if (!CORNERS.includes(next) || next === corner) return;
+      corner = next;
+      changed();
+    },
+    setKeys(next) {
+      keys = cleanKeys(keys, next);
+      changed();
+    },
+    claimInput(next) {
+      if (claimed === next) return;
+      claimed = next;
+      changed();
+    },
+    setLoading(state) {
+      const next = cleanLoading(state);
+      if (JSON.stringify(next) === JSON.stringify(loading)) return;
+      loading = next;
+      changed();
+    },
+    setTarget(text, more = []) {
+      const next = text ? more.filter((line) => typeof line === "string" && line.trim()).slice(0, 4) : [];
+      if (text === target && next.join("\n") === detail.join("\n")) return;
+      target = text;
+      detail = next;
+      changed();
+    },
+    say(text) {
+      for (const fn of sayers) fn(text);
+    },
+    run(id, typed, file) {
+      const a = actions.find((x) => x.id === id);
+      if (!a || a.hidden?.() || a.kind === "line") return false;
+      for (const fn of signals) fn("press");
+      void Promise.resolve().then(() => a.kind === "file" ? a.act(void 0, file) : a.act(a.kind === "field" ? typed : void 0)).catch(() => {
+      }).finally(changed);
+      return true;
+    },
+    setTheme(patch, keep2 = false) {
+      if (keep2) {
+        visitor = { ...visitor, ...patch };
+        saveVisitorTheme(visitor);
+      }
+      theme = resolveTheme({ ...opts.theme, ...keep2 ? {} : patch }, visitor);
+      changed();
+    },
+    get pins() {
+      return pins ?? [];
+    },
+    setPinned(section, pinned) {
+      const now = pins ?? [];
+      if (pinned === now.includes(section)) return true;
+      if (pinned && (now.length >= PINS_MOST || cleanSettings({ pins: [section] }).pins?.length !== 1)) return false;
+      pins = pinned ? [...now, section] : now.filter((id) => id !== section);
+      savePins(pins);
+      changed();
+      return true;
+    },
+    view() {
+      const showing = inOrder(actions.filter((a) => !a.hidden?.()));
+      const pressable = showing.filter((a) => a.kind !== "line");
+      const bar = [...pressable.filter((a) => a.hotbar && a.lead), ...pressable.filter((a) => a.hotbar && !a.lead)].slice(0, 6);
+      const item = (a) => {
+        const slot = bar.indexOf(a);
+        return { id: a.id, label: read(a.label), icon: (typeof a.icon === "function" ? a.icon() : a.icon) ?? null, on: a.on ? a.on() : null, tone: a.tone ?? "normal", key: slot === -1 ? "" : String(slot + 1), short: read(a.short) || read(a.label), kind: a.kind ?? "button", ...a.kind === "copy" ? { copy: read(a.copy) } : {}, ...a.kind === "file" ? { accept: a.accept ?? [] } : {}, color: read(a.color), ...a.picture ? { picture: a.picture } : {}, mark: (typeof a.mark === "function" ? a.mark() : a.mark) ?? null, faint: a.faint?.() === true };
+      };
+      const known = new Set(sections.map((s) => s.id));
+      const extra = [...new Set(showing.map((a) => a.section ?? "travel").filter((id) => !known.has(id)))].map((id) => ({ id, label: id }));
+      const shown = [...sections, ...extra].map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, note: read(s.note), card: s.card?.() ?? null, items: showing.filter((a) => (a.section ?? "travel") === s.id).map(item), pinned: (pins ?? []).includes(s.id) })).filter((s) => s.items.length > 0 || s.note || s.card);
+      return {
+        title: opts.title,
+        address: opts.address ?? "",
+        target,
+        detail,
+        loading,
+        sections: shown,
+        hotbar: bar.map(item),
+        // Only tabs this place has: a tab pinned in another world that isn't here is kept, and not shown.
+        pins: (pins ?? []).flatMap((id, i) => {
+          const tab = shown.find((x) => x.id === id);
+          const n = bar.length + i + 1;
+          return tab ? [{ id, label: tab.label, icon: tab.icon, key: n <= 9 ? String(n) : "" }] : [];
+        }),
+        pinsFull: (pins ?? []).length >= PINS_MOST,
+        theme,
+        presence,
+        corner,
+        keys: claimed ? { menu: null, hotbar: false, chat: null } : keys,
+        chat: chat.view(),
+        feed: feed.view(),
+        letters: letters.view()
+      };
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    signal(name) {
+      for (const fn of signals) {
+        try {
+          fn(name);
+        } catch {
+        }
+      }
+    },
+    onSignal(fn) {
+      signals.add(fn);
+      return () => signals.delete(fn);
+    },
+    onSay(fn) {
+      sayers.add(fn);
+      return () => sayers.delete(fn);
+    },
+    chat,
+    feed,
+    letters
+  };
+  const keep = (patch) => controls.setTheme(patch, true);
+  controls.add(
+    ...UI_PRESETS.map(
+      (p) => ({ id: `look-${p.id}`, section: "look", kind: "swatch", color: p.accent, label: p.label, on: () => theme.accent === p.accent, act: () => keep({ accent: p.accent }) })
+    ),
+    { id: "look-size", section: "look", icon: "size", label: () => theme.scale > 1 ? "Text: larger" : "Text: normal", on: () => theme.scale > 1, act: () => keep({ scale: theme.scale > 1 ? 1 : 1.25 }) },
+    { id: "look-motion", section: "look", icon: "motion", label: () => theme.motion ? "Motion: on" : "Motion: off", on: () => theme.motion, act: () => keep({ motion: !theme.motion }) },
+    {
+      id: "look-wrist",
+      section: "look",
+      icon: "menu",
+      label: () => theme.wrist === "off" ? "Wrist console: off" : `Wrist console: ${theme.wrist} hand`,
+      on: () => theme.wrist !== "off",
+      act: () => keep({ wrist: theme.wrist === "left" ? "right" : theme.wrist === "right" ? "off" : "left" })
+    },
+    { id: "look-reset", section: "look", icon: "turn", label: "Back to this world's look", hidden: () => Object.keys(visitor).length === 0, act: () => {
+      visitor = {};
+      saveVisitorTheme({});
+      theme = resolveTheme(opts.theme, visitor);
+    } }
+  );
+  return controls;
+}
+
+export {
+  ICONS,
+  DEFAULT_THEME,
+  UI_PRESETS,
+  cleanTheme,
+  resolveTheme,
+  rgb,
+  prefersFullscreen,
+  holdFullscreen,
+  resumeFullscreen,
+  fullscreenWaiting,
+  fullscreenAction,
+  onBrowserLeftFullscreen,
+  escapeHeld,
+  escapeDoes,
+  leaveFullscreen,
+  fullscreenButton,
+  FEED_LIMITS,
+  ago,
+  STANDARD_TABS,
+  standardTab,
+  createControls
+};
