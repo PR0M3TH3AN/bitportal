@@ -16,7 +16,18 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "go"), { recursive: true });
 mkdirSync(join(out, "walk"), { recursive: true });
 
+// The visitor's menu, drawn by the page that keeps the screen (src/shell/menu.ts), is behind one switch, and the
+// switch is off: a site built the ordinary way has a shell that says nothing of a menu to any world, exactly as
+// before, and carries none of the menu's code. The menu takes over tabs a world then stops drawing (the Bag among
+// them), so it can't go out in parts: main has to be something that can be deployed at any time. It is turned on
+// only for a trial's own build, here, by whoever runs the build; never by a visitor, a link or anything a page reads.
+// The last change of the client's menu's step 2 turns it on for everyone, on the owner's word.
+//
+//   BITPORTAL_SHELL_MENU=1 npm run build      a trial's build: never deployed (scripts/check-shell-menu.mjs)
+const shellMenu = process.env.BITPORTAL_SHELL_MENU === "1";
+
 await build({
+  define: { SHELL_MENU: JSON.stringify(shellMenu) },
   entryPoints: {
     lobby: join(root, "src/lobby/main.ts"),
     landing: join(root, "src/landing/main.ts"),
@@ -36,7 +47,8 @@ await build({
   minify: true,
   outdir: out,
   // BitLogin is served as its own static files and loaded by URL at run time.
-  external: ["/vendor/bitlogin/*"],
+  // And the shell's menu, where a build has it, is a file of its own (below), loaded by its address.
+  external: ["/vendor/bitlogin/*", "/shell/menu.js"],
   legalComments: "linked",
   logLevel: "warning",
   alias: {
@@ -49,6 +61,30 @@ await build({
     "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
     "nswp-sdk/menu-above": join(root, "vendor/nswp/sdk/menu-above.js"),
   },
+});
+
+// The visitor's menu, for the page that keeps the screen (src/shell/menu.ts), is built by itself and not split with
+// the rest. Split with the room, it shared a file with it that names the renderer, and so the page that only frames
+// a world loaded all of Three.js to draw a menu (610 KB, measured). By itself everything it doesn't use is left
+// out: no part of the renderer is in it. The page loads it by its address, after the frame is on its way.
+if (shellMenu) await build({
+  entryPoints: { "shell/menu": join(root, "src/shell/menu.ts") },
+  bundle: true,
+  format: "esm",
+  target: "es2022",
+  minify: true,
+  outdir: out,
+  legalComments: "linked",
+  logLevel: "warning",
+  metafile: true,
+  alias: {
+    "@nswp/core": join(root, "vendor/nswp/nswp-core.js"),
+    "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
+    "nswp-sdk/ui": join(root, "vendor/nswp/sdk/ui.js"),
+  },
+}).then((built) => {
+  const three = Object.keys(built.metafile.inputs).filter((f) => f.includes("node_modules/three/") && Object.values(built.metafile.outputs).some((o) => (o.inputs[f]?.bytesInOutput ?? 0) > 0));
+  if (three.length) throw new Error(`The shell's menu must not carry the renderer, and now does: ${three.slice(0, 3).join(", ")}`);
 });
 
 cpSync(join(root, "public"), out, { recursive: true });
@@ -190,4 +226,5 @@ const { stampPage } = await import(join(root, "vendor/nswp/nswp-core.js"));
 const served = readFileSync(join(out, "vercel.json"), "utf8");
 const pages = (dir) => readdirSync(dir).flatMap((name) => (statSync(join(dir, name)).isDirectory() ? pages(join(dir, name)) : name.endsWith(".html") ? [join(dir, name)] : []));
 for (const page of pages(out)) writeFileSync(page, stampPage(readFileSync(page, "utf8"), `${kit ?? "0"} bitportal ${pkg.version}`, served));
+if (shellMenu) console.log("\nThe shell's menu is ON in this build. It is a trial's build and must not be deployed: `npm run deploy` refuses it.\n");
 console.log(`built dist/ (BitPortal ${pkg.version})`);

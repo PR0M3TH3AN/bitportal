@@ -3,7 +3,7 @@
  * the Airlock, each world. The frame's page changes at every door and this one never does, so a filled screen
  * stays filled.
  *
- * It does three things and nothing else:
+ * It does these things and nothing else:
  *
  * - **It fills the screen when the place in its frame asks,** at the visitor's press there, and says back whether
  *   it is filled (the kit's client-frame.ts; the same few words from this site's own Airlock). So the visitor's
@@ -14,11 +14,15 @@
  * - **It shows the sign-in address's panel when the place in its frame asks,** at the visitor's press there, over
  *   the world and in place of a window (panel.ts). So signing in doesn't give up the screen either.
  *
+ * - **It draws the visitor's menu over a world that speaks the menu's words** (menu.ts): one menu, theirs, the same
+ *   in every such world. A place that doesn't speak them draws its own, and this page draws none over it.
+ *
  * It can't see into a world it frames, or into the panel, and doesn't try to.
  */
 import { fromLocal, toLocal } from "@nswp/core";
 import { INSTANCE } from "../shared/instance.js";
 import { PLAIN_KEY, showsInShell } from "../shared/shell.js";
+import type { ShellMenu } from "./menu.js";
 import { createPanel, isPanelMode, readMenuPlace, type Panel, type PanelMode } from "./panel.js";
 
 const view = document.getElementById("view") as HTMLIFrameElement;
@@ -96,10 +100,34 @@ const cameUp = (): void => {
   awaited = null;
 };
 
+/**
+ * The words the frame says, for the menu (menu.ts). The menu's code is loaded after the frame has been sent on its
+ * way, so a place can say where it is before the menu is listening: its last `here` is kept, and said again to the
+ * menu as it starts. An answer that reaches a world late still stands (the kit's own rule).
+ */
+const menuHears = new Set<(e: MessageEvent) => void>();
+let lastHere: MessageEvent | null = null;
+const heardByMenu = {
+  addEventListener(_type: "message", fn: (e: MessageEvent) => void): void {
+    menuHears.add(fn);
+    // Once whoever is listening has finished being made.
+    const said = lastHere;
+    if (said) queueMicrotask(() => said === lastHere && said.source === view.contentWindow && menuHears.has(fn) && fn(said));
+  },
+  removeEventListener(_type: "message", fn: (e: MessageEvent) => void): void {
+    menuHears.delete(fn);
+  },
+};
+/** Whether the frame's page has finished loading since it was last sent somewhere. */
+let viewLoaded = false;
+let shellMenu: ShellMenu | null = null;
+
 addEventListener("message", (e: MessageEvent) => {
   if (e.source !== view.contentWindow) return;
   const said = e.data as { nswp?: unknown; fill?: unknown; at?: unknown; to?: unknown } | null;
   if (!said || typeof said !== "object") return;
+  if (said.nswp === "here") lastHere = e;
+  for (const fn of [...menuHears]) fn(e);
   if (said.nswp === "here") {
     cameUp();
     // A panel kept for the last place is not for this one, unless this is a page of the same origin.
@@ -125,6 +153,8 @@ addEventListener("message", (e: MessageEvent) => {
   } else if (said.nswp === "sign-in" && isPanelMode((said as { mode?: unknown }).mode)) {
     // Only at the visitor's own press in the frame: a world doesn't get to put a sign-in in front of someone.
     if (!panel || panel.open || !pressed()) return;
+    // The sheet is never under the panel: a world's own ask puts it away, as the menu's own row does.
+    if (shellMenu?.open) return;
     const mode = (said as { mode: PanelMode }).mode;
     const menu = readMenuPlace((said as { menu?: unknown }).menu);
     const asker = e.origin;
@@ -150,6 +180,7 @@ let heard = false;
 /** Waiting, after a page loaded without saying, for it to say so late. */
 let unheard: ReturnType<typeof setTimeout> | null = null;
 view.addEventListener("load", () => {
+  viewLoaded = true;
   // A panel that was up was for the place that has gone. Its frame is kept, hidden, until this place says whose it
   // is ("here"); a place that never says is never shown the panel at all.
   panel?.close();
@@ -219,7 +250,50 @@ const begin = async (): Promise<string> => {
   }
   return "/walk/";
 };
+/**
+ * Whether this page draws the visitor's menu at all. Set when the site is built, and off unless a trial's build
+ * turned it on (scripts/build.mjs): nothing a visitor does, and nothing a page or a link says, can change it. Off,
+ * this page says nothing of a menu to any place, so every place draws its own as it always has, and the menu's
+ * file isn't in the site.
+ */
+declare const SHELL_MENU: boolean;
+/** Show the panel for the place in the frame, at the visitor's press on this page's own menu. */
+const openPanel = (origin: string, mode: PanelMode): void => {
+  if (!panel || panel.open || !pressed()) return;
+  void (origin === location.origin ? Promise.resolve(true) : mayShow(origin)).then((may) => {
+    // Still the same place in the frame.
+    if (may && shellMenu?.below.origin === origin) panel?.show(origin, mode, null);
+  });
+};
 void begin().then((first) => {
   await_(first.startsWith("/") ? ROOM_PLAIN : first);
   view.src = first;
+  // Only in a build that has the menu: with it off, none of this is in the page at all.
+  if (SHELL_MENU) {
+    // The frame is on its way first. Then the menu: this site's own copy of the kit's, as a file of its own.
+    void (import("/shell/menu.js" as string) as Promise<typeof import("./menu.js")>)
+      .then(({ startMenu }) => {
+        let host = SIGN_IN;
+        try {
+          host = new URL(SIGN_IN).host;
+        } catch {
+          /* said as it is */
+        }
+        shellMenu = startMenu({
+          view,
+          hear: heardByMenu,
+          loaded: viewLoaded,
+          signInHost: host,
+          openPanel,
+          panelOpen: () => !!panel?.open,
+          goHome: () => {
+            await_(ROOM_PLAIN);
+            view.src = "/walk/";
+          },
+        });
+      })
+      .catch(() => {
+        /* without it every place draws its own menu, as before */
+      });
+  }
 });

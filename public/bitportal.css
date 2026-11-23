@@ -359,6 +359,9 @@ fieldset.identity input { width: 20px; height: 20px; accent-color: var(--bitport
 /* The page that holds the screen (/shell/): one frame that is the whole of it. */
 body.shell { overflow: hidden; background: var(--bitportal-paper); min-height: 100vh; margin: 0; }
 .shell-view { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: var(--bitportal-paper); }
+/* The visitor's menu (src/shell/menu.ts): a place of its own above the frame, and under the panel. The kit's menu
+   puts itself above everything in the place it is given; this keeps that inside, so the panel is always on top. */
+.shell-menu { position: relative; z-index: 1; }
 /* The sign-in address's panel, over the world (src/shell/panel.ts): where the world's menu is, and above it. */
 .shell-scrim { position: fixed; inset: 0; z-index: 2; background: rgba(4, 6, 12, .4); }
 .shell-panel { position: fixed; z-index: 3; left: var(--panel-left, 10px); bottom: var(--panel-bottom, 10px); width: var(--panel-width, 320px); height: var(--panel-height, 320px);
