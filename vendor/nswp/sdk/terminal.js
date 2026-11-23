@@ -4,15 +4,15 @@ import {
   keyBytes,
   pasteBytes,
   wasRefreshed
-} from "./shared-HSSLV2V4.js";
+} from "./shared-DXWOPDGC.js";
 import {
   __commonJS,
   __toESM
 } from "./shared-QLSLERQ3.js";
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@xterm/headless/lib-headless/xterm-headless.js
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@xterm/headless/lib-headless/xterm-headless.js
 var require_xterm_headless = __commonJS({
-  "../Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@xterm/headless/lib-headless/xterm-headless.js"(exports) {
+  "../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/node_modules/@xterm/headless/lib-headless/xterm-headless.js"(exports) {
     (() => {
       "use strict";
       var e = { 5639: (e2, t2, s2) => {
@@ -5056,11 +5056,11 @@ ${i3.join("\n")}
   }
 });
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/terminal.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/terminal.ts
 var import_headless = __toESM(require_xterm_headless(), 1);
 import * as THREE from "three";
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bridge-link.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bridge-link.ts
 import {
   BRIDGE_GRANT_KIND,
   BRIDGE_LIMITS,
@@ -5270,7 +5270,7 @@ function openBridgeLink(o) {
   };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bring-terminals.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/bring-terminals.ts
 import { DEFAULT_RELAYS } from "@nswp/core";
 var EACH = 4;
 var OPEN = "nswp:brought-open";
@@ -5363,7 +5363,7 @@ function addBroughtTerminals(o) {
   return { terminals: () => [...open], restore };
 }
 
-// ../Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/terminal.ts
+// ../../../home/user/Documents/GitHub/Nostr-Spatial-Web-Protocol--NSWP-/packages/sdk/src/terminal.ts
 var TERMINAL_COLUMNS = [60, 80, 100, 120, 140, 160];
 var BASE = ["#1b2430", "#ff6b6b", "#7bd88f", "#ffd166", "#6cb6ff", "#d699ff", "#5fd7d7", "#d7dee7", "#5c6b7c", "#ff8f8f", "#a5f0b4", "#ffe08a", "#9fd0ff", "#e6bcff", "#93eded", "#ffffff"];
 var BG = "#0a1018";
