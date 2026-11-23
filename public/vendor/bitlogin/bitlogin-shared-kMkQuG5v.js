@@ -1,4 +1,4 @@
-import { Q as We } from "./bitlogin-shared-Cj9s0_W_.js";
+import { g as We } from "./bitlogin-shared-8bKMreA1.js";
 function Ze(Pe, xe) {
   for (var we = 0; we < xe.length; we++) {
     const Ce = xe[we];
