@@ -126,7 +126,11 @@ addEventListener("message", (e: MessageEvent) => {
   if (e.source !== view.contentWindow) return;
   const said = e.data as { nswp?: unknown; fill?: unknown; at?: unknown; to?: unknown } | null;
   if (!said || typeof said !== "object") return;
-  if (said.nswp === "here") lastHere = e;
+  if (said.nswp === "here") {
+    lastHere = e;
+    // A new place has arrived: the menu's sheet, if it was left up in the last one, is put away.
+    shellMenu?.arrived();
+  }
   for (const fn of [...menuHears]) fn(e);
   if (said.nswp === "here") {
     cameUp();
@@ -172,8 +176,8 @@ addEventListener("message", (e: MessageEvent) => {
 });
 document.addEventListener("fullscreenchange", () => {
   tell();
-  // The keys are the world's: they go to whatever is in the frame, not to this page.
-  view.focus();
+  // The keys are the world's: they go to whatever is in the frame, not to this page, unless the menu's sheet is up.
+  if (!shellMenu?.open) view.focus();
 });
 /** Whether the page coming into the frame has said where it is, before its page finished loading. */
 let heard = false;
@@ -194,8 +198,10 @@ view.addEventListener("load", () => {
       unheard = null;
       forgetWhere();
     }, HELLO_MS);
-  // Each place that comes into the frame is given the keys as it arrives: a visitor walks on with no press.
-  view.focus();
+  // Each place that comes into the frame is given the keys as it arrives: a visitor walks on with no press. Not
+  // from under the menu's sheet: a page can finish loading long after it came up, and by then the visitor may have
+  // the sheet open, which has the keys while it is up.
+  if (!shellMenu?.open) view.focus();
   // Its page has loaded, so it has had its chance to say so: a little longer, and then the ordinary way.
   if (awaited) {
     clearTimeout(awaited.timer);
@@ -290,6 +296,7 @@ void begin().then((first) => {
             await_(ROOM_PLAIN);
             view.src = "/walk/";
           },
+          atRoom: () => !!lastHere && lastHere.origin === location.origin && typeof (lastHere.data as { at?: unknown }).at === "string" && (lastHere.data as { at: string }).at.startsWith("/walk/"),
         });
       })
       .catch(() => {

@@ -15,7 +15,7 @@
  *
  * It is loaded after the frame has been sent on its way, so a place is never slower to come up for it.
  */
-import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSettings, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, watchEscape, type MenuBelow, type TravelSettings } from "nswp-sdk/menu";
+import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSettings, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, watchEscape, type MenuBelow, type Sounds, type TravelSettings } from "nswp-sdk/menu";
 import { createControls } from "nswp-sdk/ui";
 import type { PanelMode } from "./panel.js";
 
@@ -34,6 +34,8 @@ export interface ShellMenuOptions {
   panelOpen(): boolean;
   /** Send the frame to the room, whatever is in it. */
   goHome(): void;
+  /** Whether the place in the frame is the room itself: this site's own, and home already. */
+  atRoom(): boolean;
 }
 
 export interface ShellMenu {
@@ -41,6 +43,14 @@ export interface ShellMenu {
   readonly open: boolean;
   /** Whether this page is drawing the menu for the place in the frame. */
   readonly shown: boolean;
+  /**
+   * A new place has come into the frame and said so: the sheet is put away, so nothing of the menu is over what the
+   * place shows first (the Airlock's question least of all), and the place has the keys as it arrives. Called when
+   * the place says `here`, which it does once, as its script starts. Not when the frame's page has finished
+   * loading: that can be many seconds later on a slow line, by when the visitor may have the sheet open in the new
+   * place, and it would close under their hand (found by this page's trial on a busy machine, 2026-11-23).
+   */
+  arrived(): void;
   readonly below: MenuBelow;
 }
 
@@ -81,12 +91,17 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   arriveWith(keptReport(storage()));
   // The visitor's own tabs. Display comes with the controls.
   const controls = createControls({ title: "BitPortal" });
+  // Made further down, once there are controls to hang its rows on; asked for before then, nothing is playing.
+  let sounds: Sounds | null = null;
   const below = portBelow(o.view, {
     controls,
     hear: o.hear,
     loaded: o.loaded,
     // Following and Messages are still a world's to fill, until this page runs them itself (the plan's step 3).
     also: ["following", "messages"],
+    // Whether the visitor's own music is playing here: a world is told, and steps its own music back so the two
+    // aren't heard on top of one another. Nothing of the music itself is said.
+    playing: () => sounds?.jukebox.playing ?? false,
     // A world's headset report: taken as the visitor's own in this page, and kept.
     onReported: (settings) => {
       changeSettings(settings);
@@ -103,7 +118,8 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
 
   // Travel: the way home is the visitor's own, in every world, and a guarantee: the world is asked to go, carrying
   // what they carry, and if it hasn't in a moment this page takes them home itself.
-  controls.add({ id: "home", section: "travel", icon: "home", label: "Home", hotbar: true, act: () => below.leave() });
+  // Not shown in the room, which is home.
+  controls.add({ id: "home", section: "travel", icon: "home", label: "Home", hotbar: true, hidden: () => o.atRoom(), act: () => below.leave() });
 
   // You: signing in to the world in the frame, and out of it, in the menu's own words from the facts the world says.
   // Signing in is the sign-in address's own panel, shown by this page for that world and nobody else.
@@ -113,11 +129,14 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     menu.setOpen(false);
     o.openPanel(below.origin, mode);
   };
+  // A page of this site's own that fills You itself (the room: signing in to BitPortal, their account, how they
+  // look) has those rows of its own there, and this page adds none beside them.
+  const filledBelow = (tab: string): boolean => below.origin === location.origin && worldFills(tab);
   controls.add(...signInRows(below, { ask: () => ask("ask") }));
   controls.add(
-    { id: "account", section: "you", icon: "key", label: `Your account, at ${o.signInHost}`, short: "Account", act: () => ask("account") },
-    { id: "files", section: "you", icon: "list", label: `Your files, at ${o.signInHost}`, short: "Files", act: () => ask("files") },
-    { id: "library", section: "you", icon: "save", label: `Your purchases, at ${o.signInHost}`, short: "Purchases", act: () => ask("library") },
+    { id: "account", section: "you", icon: "key", label: `Your account, at ${o.signInHost}`, short: "Account", hidden: () => filledBelow("you"), act: () => ask("account") },
+    { id: "files", section: "you", icon: "list", label: `Your files, at ${o.signInHost}`, short: "Files", hidden: () => filledBelow("you"), act: () => ask("files") },
+    { id: "library", section: "you", icon: "save", label: `Your purchases, at ${o.signInHost}`, short: "Purchases", hidden: () => filledBelow("you"), act: () => ask("library") },
   );
 
   // The rows that change a setting the visitor carries from world to world are this page's, wherever they stand:
@@ -130,7 +149,7 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   // Sound: the volumes, the switch for a place's hum where the world says it has one, and the visitor's own music,
   // chosen and played by this page, so it doesn't stop at a door. Kept under the names the room keeps them by: one
   // set of volumes and one list of songs, in the room and in every world. This page has no music or hum of its own.
-  const sounds = createSounds({ kit: "/sounds/kit/", theme: { music: null, hum: null }, keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" } });
+  sounds = createSounds({ kit: "/sounds/kit/", theme: { music: null, hum: null }, keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" } });
   addSoundControls(controls, sounds, { hasHum: () => below.world?.state.hum === true });
 
   // Help: how to move and how to bring these controls up. What a world says of itself comes after, under its name.
@@ -142,10 +161,6 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   o.view.after(place);
   const menu = mountMenu(below.port, { parent: place });
   below.attach(menu);
-
-  // A new place has come into the frame: the sheet is put away, so nothing of the menu is over what the place shows
-  // first (the Airlock's question least of all), and the place has the keys as it arrives.
-  o.view.addEventListener("load", () => menu.setOpen(false));
 
   // No menu over a page that doesn't speak the words: such a page draws its own.
   let asked = false;
@@ -196,6 +211,7 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     get shown() {
       return below.speaks;
     },
+    arrived: () => menu.setOpen(false),
     below,
   };
 }

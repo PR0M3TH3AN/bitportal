@@ -19,16 +19,40 @@ const SHOTS = process.env.SHOTS ?? ".shots";
 mkdirSync(SHOTS, { recursive: true });
 const checks = [];
 const notes = [];
-const check = (name, ok, more) => { checks.push({ name, ok: !!ok, ...(more === undefined ? {} : { more }) }); console.log(`${ok ? "ok  " : "FAIL"} ${name}${more === undefined ? "" : ` ${JSON.stringify(more)}`}`); };
+const check = (name, ok, more) => { now(`after the check: ${name}`); checks.push({ name, ok: !!ok, ...(more === undefined ? {} : { more }) }); console.log(`${ok ? "ok  " : "FAIL"} ${name}${more === undefined ? "" : ` ${JSON.stringify(more)}`}`); };
 
 const browser = await pw.chromium.launch({ channel: "chrome", headless: true, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--autoplay-policy=no-user-gesture-required"] });
-const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+// Motion is reduced, as a visitor's own device can ask: the menu's sheet then comes up in place and doesn't slide.
+// A press is aimed at where a thing is, and on a busy machine a sliding sheet is somewhere else by the time the
+// mouse arrives: the press then lands outside the sheet, which closes it (a press outside does, from kit 0.85.0).
+const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 }, acceptDownloads: true, reducedMotion: "reduce" });
 await ctx.addInitScript(() => {
   // What each page counted, to be read: refusals by its policy, and the keys it heard.
   window.__refused = [];
   addEventListener("securitypolicyviolation", (e) => window.__refused.push(`${e.violatedDirective} ${e.blockedURI}`.slice(0, 140)));
   window.__keys = 0;
   addEventListener("keydown", (e) => e.isTrusted && window.__keys++, true);
+  // In the page that keeps the screen: the words a place says up to it, by name and when (not a description's or a
+  // picture's contents), and each time the keys change hands. Read only if the trial stops early.
+  window.__up = [];
+  addEventListener("message", (e) => {
+    const d = e.data;
+    if (!d || typeof d !== "object" || !d.nswp) return;
+    const names = Object.keys(d).filter((k) => k !== "nswp");
+    if (d.nswp === "menu" && (names.includes("world") || names.includes("picture"))) return;
+    window.__up.push(`${Math.round(performance.now())} ${d.nswp} ${names.map((k) => (typeof d[k] === "string" || typeof d[k] === "boolean" ? `${k}=${d[k]}` : k)).join(",")}`.slice(0, 90));
+  }, true);
+  addEventListener("focus", () => window.__up.push(`${Math.round(performance.now())} (window focus)`), true);
+  addEventListener("blur", () => window.__up.push(`${Math.round(performance.now())} (window blur: the keys went into a frame, or away)`), true);
+  // In the page that keeps the screen: whether the visitor's music, once playing, was ever found stopped. Looked at
+  // five times a second from when the page loads, so nothing has to be asked of the page while a door is crossed.
+  window.__music = { looks: 0, stopped: 0 };
+  setInterval(() => {
+    const juke = window.__bitportalShell?.sounds?.jukebox;
+    if (!juke || !window.__music.watching) return;
+    window.__music.looks++;
+    if (!juke.playing) window.__music.stopped++;
+  }, 200);
   // And what a page was told by the page above it, in the menu's words: by name only.
   window.__told = [];
   addEventListener("message", (e) => e.source === parent && e.data && e.data.nswp === "menu" && window.__told.push(e.data));
@@ -41,6 +65,33 @@ const downloads = [];
 page.on("download", (d) => downloads.push(d.suggestedFilename()));
 
 const wait = (ms) => page.waitForTimeout(ms);
+// If the trial stops early (a thing it waited for never came, or it ran far too long), what was on screen and what
+// the page held are kept, so a failure can be read and not guessed at.
+let stopping = false;
+const stopEarly = async (why) => {
+  if (stopping) return;
+  stopping = true;
+  console.log(`\nSTOPPED EARLY: ${String(why?.message ?? why).split("\n").slice(0, 3).join(" | ")}`);
+  try {
+    await page.screenshot({ path: join(SHOTS, "shell-menu-stopped.png") });
+    console.log("at stop:", JSON.stringify(await page.evaluate(() => { const b = window.__bitportalShell?.below; const host = document.querySelector(".shell-menu")?.firstElementChild; return { frames: [...document.querySelectorAll("iframe")].map((f) => f.className), origin: b?.origin, speaks: b?.speaks, title: b?.world?.title, tabs: b?.world?.sections.map((x) => x.id), menuHidden: host?.hidden, active: document.activeElement?.id || document.activeElement?.tagName, panel: [...document.querySelectorAll(".shell-panel")].map((p) => Object.keys(p.dataset)), scrims: document.querySelectorAll(".shell-scrim").length }; })));
+    console.log("frames:", page.frames().map((f) => f.url().slice(0, 70)));
+    console.log("now:", await page.evaluate(() => Math.round(performance.now())), "the last words said up, and where the keys went:\n  " + (await page.evaluate(() => window.__up.slice(-24))).join("\n  "));
+    console.log("visible buttons of the shell's:", JSON.stringify((await page.locator(".shell-menu button:visible").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim().slice(0, 30)).slice(0, 40)));
+  } catch (e) {
+    console.log("could not read the page:", String(e).slice(0, 200));
+  }
+  console.log(`${checks.filter((c) => c.ok).length} checks had passed`);
+  process.exit(1);
+};
+process.on("uncaughtException", stopEarly);
+process.on("unhandledRejection", stopEarly);
+// What the trial is doing now, and since when: so a stop says where it was, and a wait that never ends is stopped
+// after two and a half minutes and not after twenty.
+let doing = { what: "starting", since: Date.now() };
+const now = (what) => { doing = { what, since: Date.now() }; };
+setInterval(() => { if (Date.now() - doing.since > 150_000) void stopEarly(new Error(`nothing moved for 150 s while: ${doing.what}`)); }, 5000).unref();
+setTimeout(() => void stopEarly(new Error(`ran for twenty minutes; it was: ${doing.what}`)), 20 * 60_000).unref();
 const world = () => page.frames().find((f) => f.url().startsWith(WORLD));
 const frameNamed = (part) => page.frames().find((f) => f !== page.mainFrame() && f.url().includes(part));
 /** The shell's own menu: everything in it is under this. */
@@ -50,7 +101,7 @@ const hud = page.locator(".shell-menu");
  * while it slides is a place the thing has left by the time the mouse gets there (the press then lands on the view).
  */
 const middle = async (locator) => {
-  await locator.first().waitFor({ state: "visible", timeout: 10000 });
+  await locator.first().waitFor({ state: "visible", timeout: 40000 });
   let b = await locator.first().boundingBox();
   for (let i = 0; i < 20; i++) {
     await wait(120);
@@ -61,22 +112,33 @@ const middle = async (locator) => {
   if (!b) throw new Error(`not on screen: ${locator}`);
   return [b.x + b.width / 2, b.y + b.height / 2];
 };
+/** Press something until what should follow is on screen: a press can land while a busy page is still drawing. */
+const pressUntil = async (locator, follows, tries = 4) => {
+  for (let n = 0; n < tries; n++) {
+    if (await follows.first().isVisible().catch(() => false)) return true;
+    // Once, and then a long wait: on a busy machine a world can take many seconds to say what a press did, and a
+    // second press meanwhile would be a second answer.
+    await press(locator).catch(() => {});
+    if (await until(() => follows.first().isVisible(), 30000)) return true;
+  }
+  return false;
+};
 /** Wait for something to be so, for as long as a busy machine may need. */
-const until = async (so, ms = 6000) => { for (const end = Date.now() + ms; Date.now() < end; ) { if (await so().catch(() => false)) return true; await wait(100); } return false; };
+const until = async (so, ms = 15000) => { for (const end = Date.now() + ms; Date.now() < end; ) { now(`waiting until ${String(so).replace(/\s+/g, " ").slice(0, 90)}`); if (await so().catch(() => false)) return true; await wait(100); } return false; };
 /**
  * Whether something comes to be so and stays so. Not the same as catching it once: the keys can be given to the
  * frame and taken back two thousandths of a second later, and a look at the right moment would call that a pass.
  */
 const holds = async (so) => (await until(so)) && (await wait(500), await so().catch(() => false));
 /** A real press, at the middle of something of the shell's. */
-const press = async (locator) => { const [x, y] = await middle(locator); await page.mouse.click(x, y); await wait(350); };
+const press = async (locator) => { now(`finding ${locator}`); const [x, y] = await middle(locator); now(`pressing ${locator} at ${Math.round(x)},${Math.round(y)}`); await page.mouse.click(x, y); now(`pressed ${locator}`); await wait(350); };
 const active = () => page.evaluate(() => (document.activeElement === document.getElementById("view") ? "frame" : document.activeElement?.tagName ?? "nothing"));
 const sheetOpen = () => hud.getByRole("button", { name: "Close", exact: true }).isVisible().catch(() => false);
 const worldKeys = () => world().evaluate(() => window.__keys);
 const tab = (name) => hud.getByRole("tab", { name });
 /** Choose a tab of the open sheet with the keyboard's arrows, wherever the tab bar has scrolled to. */
 const goTab = async (name) => {
-  const chosen = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText().then((t) => t.trim()).catch(() => "");
+  const chosen = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 1500 }).then((t) => t.trim()).catch(() => "");
   for (let attempt = 0; attempt < 3; attempt++) {
     if (!(await sheetOpen())) { await press(hud.locator("button:visible").filter({ hasText: /^Menu/ }).first()).catch(() => {}); await wait(500); }
     if ((await chosen()) === name) return true;
@@ -86,14 +148,24 @@ const goTab = async (name) => {
     for (let n = 0; n < 24 && (await chosen()) !== name; n++) {
       const was = await chosen();
       await page.keyboard.press("ArrowRight");
-      for (let i = 0; i < 25 && (await chosen()) === was; i++) await wait(100);
+      for (let i = 0; i < 60 && (await chosen()) === was; i++) await wait(100);
     }
     await wait(300);
     if ((await chosen()) === name) return true;
   }
   return false;
 };
-const openSheet = async () => { if (!(await sheetOpen())) await press(hud.getByRole("button", { name: /^Menu/ })); await until(sheetOpen); await wait(300); };
+/** The panel and the scrim behind it are away: until then a press meant for the menu lands on the scrim. */
+const panelGone = () => until(async () => (await page.locator(".shell-scrim").count()) === 0 && (await page.locator(".shell-panel:not([data-kept])").count()) === 0, 10000);
+const openSheet = async () => {
+  for (let attempt = 0; attempt < 3 && !(await sheetOpen()); attempt++) {
+    await panelGone();
+    await press(hud.getByRole("button", { name: /^Menu/ }));
+    await until(sheetOpen, 12000);
+  }
+  if (!(await sheetOpen())) throw new Error("the menu's sheet didn't open");
+  await wait(300);
+};
 
 await page.goto(`${BASE}/shell/#to=${encodeURIComponent(`${WORLD}/`)}`);
 for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
@@ -139,13 +211,14 @@ const tabs = [];
 // Round the tabs with the keyboard's own arrow, from the one that has the keys, reading which is chosen each time.
 await press(tab("Travel"));
 for (let n = 0; n < 24; n++) {
-  const name = (await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText()).trim();
+  const name = await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 15000 }).then((t) => t.trim()).catch(() => "");
+  if (!name) { await wait(500); continue; }
   if (tabs.includes(name)) break;
   tabs.push(name);
   await wait(350);
   await page.keyboard.press("ArrowRight");
   // Until the chosen tab has changed: a busy machine is slow to draw it. At the last tab it doesn't change.
-  await until(async () => (await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText()).trim() !== name, 3000);
+  await until(async () => (await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 5000 }).catch(() => name)).trim() !== name, 3000);
 }
 check("every tab opened, by the arrow key", tabs.length >= 10 && ["You", "Moving", "Sound", "Display", "Help"].every((t) => tabs.includes(t)), tabs);
 await page.screenshot({ path: join(SHOTS, "shell-menu-sheet.png") });
@@ -161,7 +234,7 @@ check("17.1 (3): the thing at the middle of the panel's box is the panel", top.t
 check("the sheet is down while the panel is up", !(await sheetOpen()));
 await page.screenshot({ path: join(SHOTS, "shell-menu-panel.png") });
 await page.mouse.click(60, 300);
-await wait(600);
+await panelGone();
 check("the panel closed: the frame has the keys", await holds(async () => (await active()) === "frame"), await active());
 
 // ---- 17.2 (3): the shell given the keys by hand
@@ -218,7 +291,7 @@ if (await goTab("Display")) {
 }
 const told = await world().evaluate(() => window.__told);
 const names = [...new Set(told.flatMap((w) => Object.keys(w)))].sort();
-check("the world was told only the menu's words down", names.every((n) => ["nswp", "has", "v", "settings", "open", "press", "field", "file", "go", "sign", "kind", "name"].includes(n)), names);
+check("the world was told only the menu's words down", names.every((n) => ["nswp", "has", "v", "settings", "open", "press", "field", "file", "go", "sign", "kind", "name", "playing"].includes(n)), names);
 check("it was never told `filesAnywhere`", !JSON.stringify(told.map((w) => w.settings ?? {})).includes("filesAnywhere"));
 check("it was answered `has: true` with the visitor's settings", told.some((w) => w.has === true && w.settings && typeof w.settings === "object"));
 
@@ -229,7 +302,7 @@ if (await goTab("You")) {
   await wait(500);
   check("You: \"Sign in to <the world>\" opens the panel, with the sheet down", (await page.locator(".shell-panel:not([data-kept])").count()) === 1 && !(await sheetOpen()));
   await page.mouse.click(60, 300);
-  await wait(700);
+  await panelGone();
 } else check("You: its tab", false);
 
 // ---- the visitor's own music: chosen and played in this page, and still playing after a door
@@ -280,7 +353,7 @@ if (await field.isVisible().catch(() => false)) {
   await page.keyboard.type("npub1notakey", { delay: 20 });
   await wait(200);
   check("typed into a field of the menu's: the world heard none of it", (await worldKeys()) === k0 && (await field.inputValue()) === "npub1notakey", { heard: (await worldKeys()) - k0, value: await field.inputValue() });
-} else check("a field of the menu's to type into", false, await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText().catch(() => "?"));
+} else check("a field of the menu's to type into", false, await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 5000 }).catch(() => "?"));
 // The made-up description stands until the world's own changes: this is the last thing looked at in this world.
 
 if (await sheetOpen()) await page.keyboard.press("Escape");
@@ -289,10 +362,10 @@ await wait(900);
 // ---- a door crossed, by Home: the world is asked, and the visitor is home either way
 await press(hud.getByRole("button", { name: /^Home/ }).last());
 for (let i = 0; i < 60 && !frameNamed("/walk/"); i++) await wait(250);
-check("Home: the frame is at the room", !!frameNamed("/walk/"), page.frames().map((f) => new URL(f.url()).pathname));
+check("Home: the frame is at the room", !!frameNamed("/walk/"), page.frames().map((f) => f.url().replace(/^https?:\/\/[^/]+/, "") || "(empty)"));
 await wait(5000);
 check("the visitor's music is still playing after the door", (await page.evaluate(() => window.__bitportalShell.sounds.jukebox.playing)) === music && music);
-check("over the room, which doesn't speak the words yet, the shell draws no menu", !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)));
+check("over the room the shell draws the menu too", await until(() => hud.getByRole("button", { name: /^Menu/ }).isVisible()));
 check("a door crossed: the frame has the keys", (await active()) === "frame", await active());
 await page.screenshot({ path: join(SHOTS, "shell-menu-room.png") });
 
@@ -331,11 +404,13 @@ const toTheAirlock = async () => {
   await openSheet();
   await goTab("Travel");
   const door = hud.locator("button:visible").filter({ hasText: /^The (Gallery|Observatory|Grove|Workshop)$/ }).first();
-  const name = (await door.innerText()).trim();
-  await press(door);
+  // A world lists its doors a moment after it comes up, and the sheet may have opened on another tab meanwhile.
+  for (let n = 0; n < 6 && !(await until(() => door.isVisible(), 8000)); n++) await goTab("Travel");
+  const name = (await door.innerText({ timeout: 8000 })).trim();
+  await pressUntil(door, hud.getByRole("button", { name: "Travel here" }));
   await press(hud.getByRole("button", { name: "Travel here" }));
-  for (let i = 0; i < 60 && !airlock(); i++) await wait(250);
-  if (airlock()) for (let i = 0; i < 60 && !(await continueOn().isVisible().catch(() => false)); i++) await wait(250);
+  await until(async () => !!airlock(), 45000);
+  if (airlock()) await until(() => continueOn().isVisible(), 45000);
   await wait(800);
   return name;
 };
@@ -367,7 +442,7 @@ if (airlock()) {
   await goTab("Travel");
   await press(hud.getByRole("button", { name: /^Home/ }).last());
   for (let i = 0; i < 40 && !frameNamed("/walk/"); i++) await wait(250);
-  check("Home, pressed over the Airlock, is the room at once", !!frameNamed("/walk/"), page.frames().map((f) => new URL(f.url()).pathname));
+  check("Home, pressed over the Airlock, is the room at once", !!frameNamed("/walk/"), page.frames().map((f) => f.url().replace(/^https?:\/\/[^/]+/, "") || "(empty)"));
 
   // Again, and on through the door this time, by a real press on the Airlock's own button.
   doorName = await toTheAirlock();
@@ -383,6 +458,83 @@ if (airlock()) {
     await page.screenshot({ path: join(SHOTS, "shell-menu-next-world.png") });
   } else check("the Airlock asks a second time", false);
 }
+
+// ---- the room: a page of this site's own, under the same menu, filling its own tabs through the words
+const room = () => frameNamed("/walk/");
+const rowsNow = async () => (await hud.locator("button:visible").allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
+await page.goto("about:blank");
+await page.goto(`${BASE}/shell/#to=${encodeURIComponent("/walk/")}`);
+await until(async () => !!room(), 30000);
+await until(() => hud.getByRole("button", { name: /^Menu/ }).isVisible(), 40000);
+// The room's doors come in a moment after the room does: until its tabs have them.
+await until(() => page.evaluate(() => ["you", "figure", "travel", "doors"].every((t) => window.__bitportalShell.below.world?.sections.some((x) => x.id === t))), 60000);
+await wait(1500);
+const overRoom = await page.evaluate(() => { const b = window.__bitportalShell.below; return { speaks: b.speaks, own: b.origin === location.origin, title: b.world?.title, tabs: b.world?.sections.map((s) => s.id) }; });
+check("the room speaks the words, as a page of this site's own", overRoom.speaks && overRoom.own && overRoom.title === "Your room", overRoom);
+check("and says the visitor's own tabs up: who they are, how they look, and its doors", ["you", "figure", "travel", "doors"].every((t) => overRoom.tabs?.includes(t)), overRoom.tabs);
+check("the room draws no menu of its own, and knows the page above has it", (await room().locator("nswp-hud").count()) === 0 && (await room().evaluate(() => window.__bitportalTest?.menuAbove?.())) === true);
+check("the room has the keys as it arrives", (await active()) === "frame", await active());
+await page.screenshot({ path: join(SHOTS, "shell-menu-over-room.png") });
+await openSheet();
+await goTab("Travel");
+const travelRows = await rowsNow();
+check("in the room there is no Home in the menu: it is home", !travelRows.some((r) => /^Home\b/.test(r)) && travelRows.includes("Every door, as a list"), travelRows.filter((r) => /door|Home/i.test(r)));
+await goTab("You");
+const youRows = await rowsNow();
+check("You is the room's own there: its rows once, and none of this page's beside them", youRows.filter((r) => r.startsWith("Your account")).length === 1 && youRows.some((r) => r.startsWith("Sign in")) && youRows.includes("Change how you look"), youRows.filter((r) => /account|Sign in|look/i.test(r)));
+// A press on a row of the room's, in this page's menu, is done by the room: how they look changes.
+await goTab("Your look");
+const lookBefore = (await rowsNow()).filter((r) => /^(Build|Head|Face|On top|Body|Shoulders|Pattern|Finish): /.test(r)).join("|");
+await press(hud.getByRole("button", { name: /^Surprise me/ }));
+check("a row of the room's pressed in the menu is done by the room: the look changes", await until(async () => (await rowsNow()).filter((r) => /^(Build|Head|Face|On top|Body|Shoulders|Pattern|Finish): /.test(r)).join("|") !== lookBefore), lookBefore.slice(0, 80));
+await page.screenshot({ path: join(SHOTS, "shell-menu-room-look.png") });
+// The visitor's music, started in the room.
+let playing = "";
+if (await goTab("Sound")) {
+  const chooser = page.waitForEvent("filechooser", { timeout: 8000 }).catch(() => null);
+  await press(hud.getByRole("button", { name: /Add music from this device/ }));
+  const asked = await chooser;
+  if (asked) {
+    const n = 16000 * 30;
+    const wav = Buffer.alloc(44 + n);
+    wav.write("RIFF", 0); wav.writeUInt32LE(36 + n, 4); wav.write("WAVEfmt ", 8); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22); wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(8000, 28); wav.writeUInt16LE(1, 32); wav.writeUInt16LE(8, 34); wav.write("data", 36); wav.writeUInt32LE(n, 40);
+    for (let i = 0; i < n; i++) wav[44 + i] = 128 + Math.round(12 * Math.sin(i / 6));
+    await asked.setFiles({ name: "a long tone.wav", mimeType: "audio/wav", buffer: wav });
+    await wait(1500);
+    const play = hud.getByRole("button", { name: /Play your music/ });
+    if (await play.isVisible().catch(() => false)) await press(play);
+    await until(() => page.evaluate(() => window.__bitportalShell.sounds.jukebox.playing));
+    playing = await page.evaluate(() => (window.__bitportalShell.sounds.jukebox.playing ? window.__bitportalShell.sounds.jukebox.current?.id ?? "" : ""));
+  }
+}
+check("the visitor's own music, started in the room, plays in this page", !!playing);
+check("and the room's own music steps back for it", await until(() => room().evaluate(() => window.__bitportalTest?.sounds?.steppedBack === true)));
+// From here to the end of the walk the music is watched, five times a second, and may never be found stopped.
+await page.evaluate(() => (window.__music = { looks: 0, stopped: 0, watching: true }));
+const stillPlaying = () => page.evaluate(() => window.__bitportalShell.sounds.jukebox.playing);
+// Out through a door of the room's, pressed in this page's menu.
+for (let n = 0; n < 6 && !(await until(() => hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first().isVisible(), 8000)); n++) await goTab("Doors · Your room");
+await pressUntil(hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first(), hud.getByRole("button", { name: "Travel here" }));
+await press(hud.getByRole("button", { name: "Travel here" }));
+await until(async () => !!airlock(), 20000);
+if (airlock()) {
+  await until(() => continueOn().isVisible(), 20000);
+  await wait(800);
+  check("from the room, the Airlock is under the same menu, with the music still playing", (await page.evaluate(() => window.__bitportalShell.below.world?.title)) === "The Airlock" && (await stillPlaying()));
+  await page.mouse.click(...(await (async () => { const b = await continueOn().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; })()));
+  await until(async () => !!world(), 30000);
+  await until(async () => (await page.evaluate(() => window.__bitportalShell.below.world?.title)) === "The Grove", 40000);
+  await wait(2000);
+  check("and the world's own music steps back for it, told only that music is playing", await until(() => world().evaluate(() => window.__nswpTest?.sounds?.steppedBack === true)), await world().evaluate(() => window.__told.filter((w) => "playing" in w).map((w) => Object.keys(w))));
+  check("in the world, the same menu, and the music still playing", (await hud.getByRole("button", { name: /^Menu/ }).isVisible()) && (await stillPlaying()), await page.evaluate(() => ({ title: window.__bitportalShell.below.world?.title, playing: window.__bitportalShell.sounds.jukebox.playing })));
+  // And home again, by the visitor's own Home.
+  await press(hud.getByRole("button", { name: /^Home/ }).last());
+  await until(async () => !!room() && (await page.evaluate(() => window.__bitportalShell.below.world?.title)) === "Your room", 40000);
+  check("home again by the menu's Home: the room, the same menu, and the music still playing", !!room() && (await stillPlaying()), await page.evaluate(() => ({ title: window.__bitportalShell.below.world?.title, playing: window.__bitportalShell.sounds.jukebox.playing })));
+  check("and the room has the keys", await holds(async () => (await active()) === "frame"), await active());
+  const watched = await page.evaluate(() => window.__music);
+  check("through the room, the Airlock, the world and home, the music was never found stopped", watched.looks >= 20 && watched.stopped === 0, watched);
+} else check("a door of the room's, pressed in the menu, leads to the Airlock", false);
 
 const refused = await page.evaluate(() => window.__refused);
 check("17.1 (2): nothing was refused by the shell's policy", refused.length === 0, refused);
