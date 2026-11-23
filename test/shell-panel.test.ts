@@ -230,4 +230,45 @@ describe("the sign-in panel is kept between openings", () => {
     expect(panel.kept).toBe(false);
     expect(frames()).toEqual([]);
   });
+
+  it("is removed at once when it says it signed out or locked while hidden", () => {
+    for (const why of ["signed-out", "locked"]) {
+      const frame = openCold(ROOM);
+      says(frame, { t: "close" });
+      expect(panel.kept).toBe(true);
+      says(frame, { t: "gone", why });
+      expect(panel.kept, why).toBe(false);
+      expect(frames()).toEqual([]);
+    }
+  });
+
+  it("takes `gone` only from its own frame at the sign-in address, and only with those two words", () => {
+    const frame = openCold(ROOM);
+    says(frame, { t: "close" });
+    says(frame, { t: "gone", why: "signed-out" }, "https://elsewhere.example");
+    fire("message", { source: {}, origin: AT, data: { bitlogin: "bitlogin-panel", v: 1, t: "gone", why: "locked" } });
+    for (const why of ["", "Locked", "other", 1, null, undefined, { why: "locked" }]) says(frame, { t: "gone", why });
+    says(frame, { t: "gone", why: "locked", v: 2 });
+    fire("message", { source: frame.contentWindow, origin: AT, data: { t: "gone", why: "locked" } });
+    fire("message", { source: frame.contentWindow, origin: AT, data: null });
+    expect(panel.kept).toBe(true);
+    expect(frames()).toEqual([frame]);
+  });
+
+  it("stays up when it says so while shown, and is removed, not kept, when it closes", () => {
+    const frame = openCold(ROOM);
+    const before = told.length;
+    says(frame, { t: "gone", why: "signed-out" });
+    expect(panel.open).toBe(true);
+    expect(frames()).toEqual([frame]);
+    expect(told.length).toBe(before);
+    says(frame, { t: "close" });
+    expect(panel.kept).toBe(false);
+    expect(frames()).toEqual([]);
+    expect(frame.heard.map((h) => h.said.t)).toEqual(["hello"]);
+    // The next opening is a new frame, kept again as any other.
+    const next = openCold(ROOM);
+    says(next, { t: "close" });
+    expect(panel.kept).toBe(true);
+  });
 });
