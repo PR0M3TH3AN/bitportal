@@ -250,8 +250,13 @@ const begin = async (): Promise<string> => {
   }
   return "/walk/";
 };
-/** The menu's code: built as a file of its own (scripts/build.mjs says why), and so named here by its address. */
-const MENU_FILE = "/shell/menu.js";
+/**
+ * Whether this page draws the visitor's menu at all. Set when the site is built, and off unless a trial's build
+ * turned it on (scripts/build.mjs): nothing a visitor does, and nothing a page or a link says, can change it. Off,
+ * this page says nothing of a menu to any place, so every place draws its own as it always has, and the menu's
+ * file isn't in the site.
+ */
+declare const SHELL_MENU: boolean;
 /** Show the panel for the place in the frame, at the visitor's press on this page's own menu. */
 const openPanel = (origin: string, mode: PanelMode): void => {
   if (!panel || panel.open || !pressed()) return;
@@ -263,29 +268,32 @@ const openPanel = (origin: string, mode: PanelMode): void => {
 void begin().then((first) => {
   await_(first.startsWith("/") ? ROOM_PLAIN : first);
   view.src = first;
-  // The frame is on its way first. Then the menu: this site's own copy of the kit's, as a file of its own.
-  void (import(MENU_FILE) as Promise<typeof import("./menu.js")>)
-    .then(({ startMenu }) => {
-      let host = SIGN_IN;
-      try {
-        host = new URL(SIGN_IN).host;
-      } catch {
-        /* said as it is */
-      }
-      shellMenu = startMenu({
-        view,
-        hear: heardByMenu,
-        loaded: viewLoaded,
-        signInHost: host,
-        openPanel,
-        panelOpen: () => !!panel?.open,
-        goHome: () => {
-          await_(ROOM_PLAIN);
-          view.src = "/walk/";
-        },
+  // Only in a build that has the menu: with it off, none of this is in the page at all.
+  if (SHELL_MENU) {
+    // The frame is on its way first. Then the menu: this site's own copy of the kit's, as a file of its own.
+    void (import("/shell/menu.js" as string) as Promise<typeof import("./menu.js")>)
+      .then(({ startMenu }) => {
+        let host = SIGN_IN;
+        try {
+          host = new URL(SIGN_IN).host;
+        } catch {
+          /* said as it is */
+        }
+        shellMenu = startMenu({
+          view,
+          hear: heardByMenu,
+          loaded: viewLoaded,
+          signInHost: host,
+          openPanel,
+          panelOpen: () => !!panel?.open,
+          goHome: () => {
+            await_(ROOM_PLAIN);
+            view.src = "/walk/";
+          },
+        });
+      })
+      .catch(() => {
+        /* without it every place draws its own menu, as before */
       });
-    })
-    .catch(() => {
-      /* without it every place draws its own menu, as before */
-    });
+  }
 });

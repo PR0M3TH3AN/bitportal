@@ -43,10 +43,9 @@ describe("the frame is on its way before the menu is loaded", () => {
     const start = shell.indexOf("void begin().then((first) => {");
     expect(start).toBeGreaterThan(0);
     const sent = shell.indexOf("view.src = first;", start);
-    const asked = shell.indexOf("import(MENU_FILE)", start);
+    const asked = shell.indexOf('import("/shell/menu.js" as string)', start);
     expect(sent).toBeGreaterThan(start);
     expect(asked).toBeGreaterThan(sent);
-    expect(shell).toContain('const MENU_FILE = "/shell/menu.js";');
     // Nothing of the menu is in the page's first file.
     expect(shell).not.toMatch(/from "nswp-sdk\/menu"/);
     expect(shell).toContain('import type { ShellMenu } from "./menu.js";');
@@ -84,5 +83,54 @@ describe("the panel is always above the menu", () => {
     // The panel is shown for the place in the frame, at a press, and only where that place may be shown here.
     expect(shell).toContain("if (!panel || panel.open || !pressed()) return;\n  void (origin === location.origin ? Promise.resolve(true) : mayShow(origin)).then((may) => {");
     expect(shell).toContain("if (may && shellMenu?.below.origin === origin) panel?.show(origin, mode, null);");
+  });
+});
+
+describe("the menu is behind one switch, and the switch is off", () => {
+  it("is set when the site is built, off unless the build is told otherwise, and by nothing a page can read", async () => {
+    const build = await read("scripts/build.mjs");
+    expect(build).toContain('const shellMenu = process.env.BITPORTAL_SHELL_MENU === "1";');
+    expect(build).toContain("define: { SHELL_MENU: JSON.stringify(shellMenu) },");
+    // The menu's own file is built only for a build that has it on.
+    expect(build).toContain('if (shellMenu) await build({\n  entryPoints: { "shell/menu": join(root, "src/shell/menu.ts") },');
+    const shell = await read("src/shell/main.ts");
+    expect(shell).toContain("declare const SHELL_MENU: boolean;");
+    // Read nowhere but where the menu is loaded, and never from the address, storage or a message.
+    expect(shell.split("SHELL_MENU").length - 1).toBe(2);
+    const guarded = shell.slice(shell.indexOf("if (SHELL_MENU) {"));
+    expect(guarded.indexOf('import("/shell/menu.js" as string)')).toBeGreaterThan(0);
+    expect(shell.slice(0, shell.indexOf("if (SHELL_MENU) {"))).not.toContain("/shell/menu.js");
+    for (const page of ["src/shell/menu.ts", "src/shell/panel.ts", "src/shared/shell.ts"]) expect(await read(page), page).not.toContain("SHELL_MENU");
+  });
+
+  it("is checked in the built site by the gate, after the build, and by the deploy before anything is sent", async () => {
+    const gate = await read("scripts/gate.mjs");
+    expect(gate.indexOf('["shell-menu:off", "the built site has the client\'s menu off"],')).toBeGreaterThan(gate.indexOf('["build", "every page"],'));
+    expect(JSON.parse(await read("package.json")).scripts["shell-menu:off"]).toBe("node scripts/check-shell-menu.mjs");
+    const deploy = await read("scripts/deploy.mjs");
+    expect(deploy.indexOf("const menuOn = shellMenuFaults(dist);")).toBeGreaterThan(0);
+    expect(deploy.indexOf("if (menuOn.length) throw new Error(")).toBeLessThan(deploy.indexOf('execFileSync("vercel"'));
+  });
+
+  it("finds a build that has the menu on, by its file and by the shell naming it", async () => {
+    const fs = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { mkdtempSync(prefix: string): string; mkdirSync(path: string): void; writeFileSync(path: string, text: string): void; rmSync(path: string, how: { recursive: boolean; force: boolean }): void };
+    const os = (await import(/* @vite-ignore */ ["node", "os"].join(":"))) as { tmpdir(): string };
+    const path = (await import(/* @vite-ignore */ ["node", "path"].join(":"))) as { join(...parts: string[]): string };
+    const { shellMenuFaults } = (await import(/* @vite-ignore */ ["..", "scripts", "check-shell-menu.mjs"].join("/"))) as { shellMenuFaults(dir: string): string[] };
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shell-menu-"));
+    try {
+      expect(shellMenuFaults(dir)).toEqual(["dist/shell/main.js is missing: run npm run build"]);
+      fs.mkdirSync(path.join(dir, "shell"));
+      fs.writeFileSync(path.join(dir, "shell", "main.js"), "frame.src=first;");
+      expect(shellMenuFaults(dir)).toEqual([]);
+      fs.writeFileSync(path.join(dir, "shell", "main.js"), 'frame.src=first;import("/shell/menu.js")');
+      expect(shellMenuFaults(dir).length).toBe(1);
+      fs.writeFileSync(path.join(dir, "shell", "menu.js"), "export{}");
+      expect(shellMenuFaults(dir).length).toBe(2);
+      fs.writeFileSync(path.join(dir, "shell", "main.js"), "frame.src=first;");
+      expect(shellMenuFaults(dir).length).toBe(1);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
