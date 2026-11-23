@@ -165,3 +165,48 @@ describe("the Airlock is under the visitor's menu too", () => {
     expect(menu).toContain("if (left && below.origin !== location.origin) controls.say(");
   });
 });
+
+describe("what a world reports from its headset session is kept", () => {
+  it("is taken as the visitor's own and kept, through the kit's own way in, and begun from when this page starts", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain("arriveWith(keptReport(storage()));");
+    expect(menu.indexOf("arriveWith(keptReport(storage()));")).toBeLessThan(menu.indexOf("const controls = createControls("));
+    const taken = menu.slice(menu.indexOf("onReported: (settings) => {"));
+    expect(taken.indexOf("changeSettings(settings);")).toBeLessThan(taken.indexOf("keepReport(settings, storage());"));
+    // The kit's fix for the keys at the sheet's closing is in the vendored kit: this page works round nothing.
+    expect(menu).not.toContain("menuClose");
+    expect(menu).toContain("watchEscape();");
+  });
+
+  it("merges a later report over an earlier one, and reads nothing that isn't a kept report", () => {
+    // The two functions, as they are written, over a store made here: the page's own code needs a browser.
+    const kept = new Map<string, string>();
+    const store = { getItem: (k: string) => kept.get(k) ?? null, setItem: (k: string, v: string) => void kept.set(k, v) };
+    const KEY = "bitportal:reported";
+    const keptReport = (): Record<string, unknown> => {
+      try {
+        const v = JSON.parse(store.getItem(KEY) ?? "null") as unknown;
+        return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+      } catch {
+        return {};
+      }
+    };
+    const keepReport = (report: Record<string, unknown>): void => store.setItem(KEY, JSON.stringify({ ...keptReport(), ...report }));
+    expect(keptReport()).toEqual({});
+    keepReport({ turn: "snap", fade: true });
+    keepReport({ turn: "smooth" });
+    expect(keptReport()).toEqual({ turn: "smooth", fade: true });
+    for (const junk of ["not json", "[1]", '"words"', "null", "7"]) {
+      kept.set(KEY, junk);
+      expect(keptReport(), junk).toEqual({});
+    }
+  });
+
+  it("keeps them as those two functions are written in the page", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain('export const REPORTED_KEY = "bitportal:reported";');
+    expect(menu).toContain('const kept = JSON.parse(store?.getItem(REPORTED_KEY) ?? "null") as unknown;');
+    expect(menu).toContain('return kept && typeof kept === "object" && !Array.isArray(kept) ? (kept as TravelSettings) : {};');
+    expect(menu).toContain("store?.setItem(REPORTED_KEY, JSON.stringify({ ...keptReport(store), ...report }));");
+  });
+});

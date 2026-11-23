@@ -36,11 +36,12 @@ describe("the kit's menu, as a client carries it", () => {
     const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
     const recorded = JSON.parse(readFileSync(new URL("../vendor/integrity.json", import.meta.url), "utf8")) as { packages: Record<string, { files: Record<string, string> }> };
     const files = Object.keys(recorded.packages["@nswp/core"]!.files);
-    for (const name of ["sdk/menu.js", "sdk/menu-above.js", "sdk-types/menu.d.ts", "sdk-types/menu-above.d.ts"]) expect(files, name).toContain(name);
-    for (const name of ["menu.js", "menu-above.js"]) expect(readFileSync(new URL(`../vendor/nswp/sdk/${name}`, import.meta.url), "utf8"), name).not.toMatch(/from\s*"three"/);
+    for (const name of ["sdk/menu.js", "sdk/menu-above.js", "sdk/bag-entry.js", "sdk-types/menu.d.ts", "sdk-types/menu-above.d.ts", "sdk-types/bag-entry.d.ts"]) expect(files, name).toContain(name);
+    for (const name of ["menu.js", "menu-above.js", "bag-entry.js"]) expect(readFileSync(new URL(`../vendor/nswp/sdk/${name}`, import.meta.url), "utf8"), name).not.toMatch(/from\s*"three"/);
     const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
     expect(build).toContain('"nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),');
     expect(build).toContain('"nswp-sdk/menu-above": join(root, "vendor/nswp/sdk/menu-above.js"),');
+    expect(build).toContain('"nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),');
   });
 
   it("is built from the kit's own folder, so the same commit gives the same bytes wherever its checkout is", async () => {

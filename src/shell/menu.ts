@@ -15,7 +15,7 @@
  *
  * It is loaded after the frame has been sent on its way, so a place is never slower to come up for it.
  */
-import { addDeskControls, addSoundControls, askDeskMoving, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, type MenuBelow } from "nswp-sdk/menu";
+import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSettings, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, watchEscape, type MenuBelow, type TravelSettings } from "nswp-sdk/menu";
 import { createControls } from "nswp-sdk/ui";
 import type { PanelMode } from "./panel.js";
 
@@ -44,7 +44,41 @@ export interface ShellMenu {
   readonly below: MenuBelow;
 }
 
+/**
+ * What a world reported the visitor changed in its headset session, kept for this site. Inside a headset only the
+ * world can draw the console, so it is there that they change how they turn and move, and the world says so
+ * upward (comfort and layout only, by the kit's own list, already cleaned). Most of it is held by no part of the
+ * kit in this page, which moves nobody: so it is kept here, and said to every world from then on, across a reload
+ * of this page too.
+ */
+export const REPORTED_KEY = "bitportal:reported";
+export function keptReport(store: Pick<Storage, "getItem"> | null): TravelSettings {
+  try {
+    const kept = JSON.parse(store?.getItem(REPORTED_KEY) ?? "null") as unknown;
+    return kept && typeof kept === "object" && !Array.isArray(kept) ? (kept as TravelSettings) : {};
+  } catch {
+    return {};
+  }
+}
+export function keepReport(report: TravelSettings, store: Pick<Storage, "getItem" | "setItem"> | null): void {
+  try {
+    store?.setItem(REPORTED_KEY, JSON.stringify({ ...keptReport(store), ...report }));
+  } catch {
+    /* kept for as long as this page lives, then */
+  }
+}
+const storage = (): Storage | null => {
+  try {
+    return localStorage;
+  } catch {
+    return null;
+  }
+};
+
 export function startMenu(o: ShellMenuOptions): ShellMenu {
+  // Before any part of the kit starts here: what a world last reported is what each begins from. The kit cleans
+  // it as it cleans a link's settings, so nothing kept here can turn on what a link couldn't.
+  arriveWith(keptReport(storage()));
   // The visitor's own tabs. Display comes with the controls.
   const controls = createControls({ title: "BitPortal" });
   const below = portBelow(o.view, {
@@ -53,6 +87,11 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     loaded: o.loaded,
     // Following and Messages are still a world's to fill, until this page runs them itself (the plan's step 3).
     also: ["following", "messages"],
+    // A world's headset report: taken as the visitor's own in this page, and kept.
+    onReported: (settings) => {
+      changeSettings(settings);
+      keepReport(settings, storage());
+    },
     home: (left) => {
       // A page of this site's own (the Airlock) holds nothing of theirs to leave behind.
       if (left && below.origin !== location.origin) controls.say("You are home. What was in your hand was left behind: the place you were in didn't answer.");
@@ -121,6 +160,10 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   below.onChange(show);
   show();
 
+  // Escape, while this page fills the screen, is held where the browser lets it: Escape then brings the menu, and
+  // Escape again leaves fullscreen (the kit's rule, in the kit's menu). Elsewhere it is the browser's, as before.
+  watchEscape();
+
   // Who has the keys (the plan, 17.2). While the sheet and the panel are down, the frame has them. The kit hands
   // them back after a press on the bar and as the sheet closes; these are the ways left for this page to come to
   // have them when it shouldn't.
@@ -128,12 +171,6 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   const giveBack = (): void => {
     if (frameShouldHaveKeys() && document.activeElement !== o.view) o.view.focus();
   };
-  // The sheet has just closed. The kit gives the frame the keys as it does, and its menu then takes them back for
-  // the key the sheet was opened from, which is right for a world's own page and strands a framed world's keys
-  // (found by this page's trial, 2026-11-23; reported for the kit). So they are given again, after it.
-  controls.onSignal((name) => {
-    if (name === "menuClose") setTimeout(giveBack, 0);
-  });
   // The window comes back from another window or tab.
   addEventListener("focus", giveBack);
   // A press on a bare part of this page.
