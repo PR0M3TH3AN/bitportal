@@ -192,7 +192,8 @@ var saver = null;
 function setSaver(next) {
   saver = next;
 }
-var making = () => saver?.making?.();
+var making = () => saver?.making?.() ?? false;
+var sent = () => new Promise((resolve) => setTimeout(resolve, 0));
 var handUp = (file) => saver?.handUp(file) ?? false;
 var savesWait = () => saver?.waits() ?? false;
 
@@ -271,6 +272,7 @@ export {
   meetClient,
   setSaver,
   making,
+  sent,
   handUp,
   savesWait,
   deviceForms,

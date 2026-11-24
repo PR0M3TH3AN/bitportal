@@ -1,7 +1,7 @@
 import {
   arrivedSettings,
   reportSettings
-} from "./shared-YK562XB3.js";
+} from "./shared-3QMBUCPV.js";
 
 // packages/sdk/src/picture.ts
 import { cleanPicture } from "@nswp/core";
