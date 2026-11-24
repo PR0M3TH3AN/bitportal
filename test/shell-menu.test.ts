@@ -17,7 +17,7 @@ describe("the shell's menu is the kit's, from this site's own copy, and nothing 
   it("takes its code from the kit's menu and controls, and from no other place", async () => {
     const menu = await read("src/shell/menu.ts");
     const from = [...menu.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-    expect(from.sort()).toEqual(["../shared/look.js", "../shared/session.js", "../shared/settings.js", "./bag.js", "./own-labels.js", "./panel.js", "./settings.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
+    expect(from.sort()).toEqual(["../shared/look.js", "../shared/session.js", "../shared/settings.js", "./bag-pictures.js", "./bag.js", "./own-labels.js", "./panel.js", "./settings.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
     // The panel's code stays apart: the menu knows its modes by name, as a type, and asks this page to show it.
     expect(menu).toContain('import type { PanelMode } from "./panel.js";');
   });
@@ -433,7 +433,9 @@ describe("the Bag in the shell's menu, over a world", () => {
     expect([...bag.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]).sort()).toEqual(["nswp-sdk/bag", "nswp-sdk/menu", "nswp-sdk/ui"]);
     expect(bag).toContain("const bag = createBag({ me, relays: o.relays, hand: null });");
     expect(bag).toContain("const items = createItemStore({ relays: o.relays, viewer: me });");
-    expect(bag).toContain("previews: null,");
+    // Each thing's picture is handed in by the menu (bag-pictures.ts: drawn by a page framed unseen); with none
+    // handed in, the kit shows first letters. Either way this page loads no renderer.
+    expect(bag).toContain("previews: o.previews ?? null,");
     // No lookup, signature check or query of this site's own: those are the kit's.
     expect(bag).not.toMatch(/verifyEvent|queryRelays|parseItem|new WebSocket|fetch\(/);
   });
@@ -453,7 +455,7 @@ describe("the Bag in the shell's menu, over a world", () => {
 
   it("reads who is signed in from this browser's own note, in the menu's own file and not the shell's first one", async () => {
     const menu = await read("src/shell/menu.ts");
-    expect(menu).toContain("addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays });");
+    expect(menu).toContain("addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays, previews: pictures });");
     // The page's first file gains nothing for it: with the menu off, nothing of who is signed in is loaded there.
     const shell = await read("src/shell/main.ts");
     expect(shell).not.toMatch(/shared\/session|shared\/look|knownSignedIn/);

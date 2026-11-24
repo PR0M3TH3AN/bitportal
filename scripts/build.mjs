@@ -41,6 +41,9 @@ const built = await build({
     // The visitor's menu, for the page that keeps the screen (src/shell/menu.ts): a file of its own, which that page
     // loads by its address after the frame is on its way. Only where the switch is on.
     ...(shellMenu ? { "shell/menu": join(root, "src/shell/menu.ts") } : {}),
+    // The page that draws the things in the visitor's Bag for that menu (src/shell/pictures/main.ts): it has the
+    // renderer, which the menu's own page never loads, and is framed by it unseen. Only where the switch is on.
+    ...(shellMenu ? { "shell/pictures/main": join(root, "src/shell/pictures/main.ts") } : {}),
   },
   bundle: true,
   splitting: true, // keeps the headset emulator out of the page until asked for
@@ -120,6 +123,11 @@ for (const page of ["account", "publish", "look", "shell"]) {
   cpSync(join(root, `src/${page}/index.html`), join(out, page, "index.html"));
 }
 
+if (shellMenu) {
+  mkdirSync(join(out, "shell/pictures"), { recursive: true });
+  cpSync(join(root, "src/shell/pictures/index.html"), join(out, "shell/pictures/index.html"));
+}
+
 // Everything is same-origin except what the visitor asks for: relays (wss)
 // and, on opening a door or at the Airlock, a world's manifest (https).
 // The one other site a page of BitPortal may embed: the sign-in address, whose signer runs unseen in a frame and
@@ -168,6 +176,21 @@ const cspShell = rulesFor({ frames: ["'self'", ...shellWorlds] });
 // site, the worlds named in shell-worlds.json, and the sign-in address.
 const cspShellWritten = `default-src 'self'; script-src 'self'; worker-src 'self'; frame-src 'self' ${[...shellWorlds, signInOrigin].join(" ")}; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https: wss:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
 if (cspShell !== cspShellWritten) throw new Error(`The rules for /shell/ differ from the ones written out for it in scripts/build.mjs.\n  made:    ${cspShell}\n  written: ${cspShellWritten}\nIf the change is meant, it needs the owner's word: that page frames the sign-in address's panel.`);
+/**
+ * The page that draws the Bag's things for `/shell/` (src/shell/pictures/main.ts), under rules of its own and no
+ * others, written out whole. It is framed by this site and nobody else. Its scripts are this site's, and none
+ * inline. It frames nothing and starts no worker. It reaches out only for a thing's model, over https (and reads
+ * the pictures inside a model it has already been given, which is what `blob:` and `data:` are for): no relay, and
+ * nothing of this site's but its own scripts. It may use nothing of the device.
+ */
+const cspPictures = "default-src 'none'; script-src 'self'; connect-src https: blob: data:; img-src blob: data:; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
+const picturesGuards = [
+  { key: "Content-Security-Policy", value: cspPictures },
+  // A maker's host is told nothing of where the visitor is.
+  { key: "Referrer-Policy", value: "no-referrer" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Permissions-Policy", value: "xr-spatial-tracking=(), microphone=(), camera=(), geolocation=()" },
+];
 /** What a page may use, and hand on to what it frames: `/shell/` hands a headset and a microphone to the worlds it may frame, by name. */
 const handsOn = (to = []) => `xr-spatial-tracking=(self${to.map((o) => ` "${o}"`).join("")}), microphone=(self${to.map((o) => ` "${o}"`).join("")}), camera=(), geolocation=()`;
 /**
@@ -199,7 +222,11 @@ writeFileSync(
         // The kit's locked box for what an item does of its own, under the kit's own rules and no others: it reaches
         // nothing, and only this site may be above it (the room, and the page that keeps the screen above that).
         { source: "/item-box(/.*)?", headers: [{ key: "Content-Security-Policy", value: ITEM_BOX_CSP }, { key: "Referrer-Policy", value: "no-referrer" }, { key: "X-Content-Type-Options", value: "nosniff" }] },
-        { source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },
+        // With the menu on, the page that draws the Bag's things is under `/shell/` and has rules of its own: the
+        // rule for `/shell/` then leaves that one path out, so that no path is under two. With the menu off there is
+        // no such page, and the rule is as it always was.
+        { source: shellMenu ? "/shell(/(?!pictures(?:/|$)).*)?" : "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },
+        ...(shellMenu ? [{ source: "/shell/pictures(/.*)?", headers: picturesGuards }] : []),
         // Always the latest (NSWP-09): a browser asks before it uses a copy of a page or a script it kept. Said
         // outright, and not left to the host's habit. Not for the fonts and previews, which have rules of their own.
         { source: "/((?!fonts/|previews/).*)", headers: [{ key: "Cache-Control", value: "no-cache" }] },

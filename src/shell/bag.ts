@@ -15,10 +15,13 @@
  * - **A thing that does things of its own** is asked about here, before it is first held, by the kit's own rule
  *   (the second press on Hold is the visitor's yes). The world is then told which script they let run, and runs
  *   that one and no other unasked. Without this a thing with logic is taken up and held by nothing.
+ * - **Each thing is shown as itself**, drawn from its own checked model: by a small page this one frames unseen
+ *   while the Bag is open (bag-pictures.ts), since this page loads no renderer. By its first letters until its
+ *   picture comes, and where it can't be drawn.
  * - **It can't be changed here, for now.** Putting things in and taking them out stays at home, in the room. The
  *   bag is made with no hand to sign a change, and that is the one thing to give it when that is built.
  */
-import { addBagControls, createBag, createItemStore, mayHold, scriptAllowed, type Bagging } from "nswp-sdk/bag";
+import { addBagControls, createBag, createItemStore, mayHold, scriptAllowed, type Bagging, type ItemPreviews } from "nswp-sdk/bag";
 import type { MenuBelow } from "nswp-sdk/menu";
 import type { Controls } from "nswp-sdk/ui";
 
@@ -29,6 +32,11 @@ export interface ShellBagOptions {
   signedIn(): string | null;
   /** The usual relays, beside the visitor's own. */
   relays: string[];
+  /**
+   * Each thing's picture, drawn from its own model by a page this one frames unseen (bag-pictures.ts): this page
+   * loads no renderer. Left out or null, things are shown by their first letters.
+   */
+  previews?: ItemPreviews | null;
 }
 
 /** Whose bag is shown over the place in the frame, or null for none: see the top of this file. */
@@ -48,8 +56,8 @@ export function addShellBag(o: ShellBagOptions): Bagging {
   const bagging = addBagControls(o.controls, {
     bag,
     items,
-    // Things are shown by their first letters: drawing each as itself needs the renderer, which this page doesn't load.
-    previews: null,
+    // Each thing drawn as itself where its picture has come; by its first letters where it hasn't, or can't.
+    previews: o.previews ?? null,
     me,
     rule,
     place: () => o.below.world?.title || "this place",

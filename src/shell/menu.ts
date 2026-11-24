@@ -21,6 +21,7 @@ import { goesAsGuest } from "../shared/look.js";
 import { knownSignedIn } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { addShellBag } from "./bag.js";
+import { framedPictures, type FramedPictures } from "./bag-pictures.js";
 import { keepReport, keptReport, shellSettings, storage } from "./settings.js";
 import { asOurOwn } from "./own-labels.js";
 import type { PanelMode } from "./panel.js";
@@ -126,7 +127,11 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   // Bag: theirs, over a world where they are named (bag.ts).
   // Who they are is this browser's own note of who is signed in to BitPortal, kept by this site: read, with
   // nothing loaded and nothing asked. Someone going about as a guest is nobody here either.
-  addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays });
+  // Each thing is drawn as itself by a page this one frames unseen, only while the sheet is open and never in a
+  // headset (bag-pictures.ts). `sheetOpen` is filled in below, once the menu is mounted.
+  let sheetOpen = (): boolean => false;
+  const pictures: FramedPictures = framedPictures({ open: () => sheetOpen(), presenting });
+  addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays, previews: pictures });
 
   // Sound: the volumes, the switch for a place's hum where the world says it has one, and the visitor's own music,
   // chosen and played by this page, so it doesn't stop at a door. Kept under the names the room keeps them by: one
@@ -147,6 +152,7 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     view: { value: () => (below.origin === location.origin && below.world ? asOurOwn(below.port.view(), below.world.title || location.host) : below.port.view()) },
   }) as typeof below.port;
   const menu = mountMenu(port, { parent: place });
+  sheetOpen = () => menu.open;
   below.attach(menu);
 
   // No menu over a page that doesn't speak the words: such a page draws its own.
@@ -189,7 +195,7 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   });
 
   // For trials, as the room has (`__bitportalTest`): what this page holds, to be read and never pressed through.
-  (window as unknown as { __bitportalShell?: unknown }).__bitportalShell = { below, sounds, controls };
+  (window as unknown as { __bitportalShell?: unknown }).__bitportalShell = { below, sounds, controls, pictures };
 
   return {
     get open() {
