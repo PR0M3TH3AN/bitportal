@@ -53,7 +53,7 @@ describe("the frame is on its way before the menu is loaded", () => {
 
   it("says a place's last `here` again to a menu that started after it, and only if it is still that place", async () => {
     const shell = await read("src/shell/main.ts");
-    expect(shell).toContain('if (said.nswp === "here") lastHere = e;');
+    expect(shell).toContain('if (said.nswp === "here") {\n    lastHere = e;');
     expect(shell).toContain("queueMicrotask(() => said === lastHere && said.source === view.contentWindow && menuHears.has(fn) && fn(said));");
     // Only words from the frame are ever handed on.
     const handler = shell.slice(shell.indexOf('addEventListener("message", (e: MessageEvent) => {'));
@@ -160,7 +160,16 @@ describe("the Airlock is under the visitor's menu too", () => {
 
   it("has the sheet put away as each place arrives, so nothing of the menu is over what the place asks first", async () => {
     const menu = await read("src/shell/menu.ts");
-    expect(menu).toContain('o.view.addEventListener("load", () => menu.setOpen(false));');
+    // When the place says `here`, not when its page has finished loading: that can be seconds later, with the
+    // sheet open in the new place by then.
+    expect(menu).toContain("arrived: () => menu.setOpen(false),");
+    expect(menu).not.toMatch(/addEventListener\("load"/);
+    const shell = await read("src/shell/main.ts");
+    const heard = shell.slice(shell.indexOf('if (said.nswp === "here") {\n    lastHere = e;'));
+    expect(heard.indexOf("shellMenu?.arrived();")).toBeGreaterThan(0);
+    expect(heard.indexOf("shellMenu?.arrived();")).toBeLessThan(heard.indexOf("for (const fn of [...menuHears]) fn(e);"));
+    // And a page that finishes loading late doesn't take the keys from under an open sheet.
+    expect(shell.split("if (!shellMenu?.open) view.focus();").length - 1).toBe(2);
     // And a page of this site's own holds nothing of the visitor's to be left behind.
     expect(menu).toContain("if (left && below.origin !== location.origin) controls.say(");
   });
@@ -208,5 +217,50 @@ describe("what a world reports from its headset session is kept", () => {
     expect(menu).toContain('const kept = JSON.parse(store?.getItem(REPORTED_KEY) ?? "null") as unknown;');
     expect(menu).toContain('return kept && typeof kept === "object" && !Array.isArray(kept) ? (kept as TravelSettings) : {};');
     expect(menu).toContain("store?.setItem(REPORTED_KEY, JSON.stringify({ ...keptReport(store), ...report }));");
+  });
+});
+
+describe("the room is under the visitor's menu too, and fills its own tabs through the words", () => {
+  it("asks the page above for the menu through the kit's own world's end, as a page of its client's own origin", async () => {
+    const room = await read("src/walk/main.ts");
+    // Plain imports, with the page's first files: loading the file is what puts `menu` in the room's `here`.
+    expect(room).toContain('import { keepMenu, portAbove } from "nswp-sdk/menu-above";');
+    expect(room).not.toMatch(/import\(["']nswp-sdk\/menu-above["']\)/);
+    const asked = room.slice(room.indexOf("const above = portAbove(controls, {"), room.indexOf("const hud = keepMenu("));
+    expect(asked).toContain("own: true,");
+    // Signing in here is the room's own rows, said with its other tabs: no fact of it for the menu's own rows.
+    expect(asked).toContain('signIn: "none",');
+    // The room has no way home to be sent on: it is home, and the page above offers none there.
+    expect(asked).not.toMatch(/\bhome:/);
+  });
+
+  it("keeps one menu, never two: its own only where nobody above has it, asked again each time its own is mounted", async () => {
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("const hud = keepMenu(controls, above, (only) => mountMenu(portHere(controls), only ? { only } : {}));");
+    // And the room doesn't wait for the answer before it starts: with nobody above having the menu, it is no slower.
+    expect(room).not.toContain("await hud.ready");
+    // Nothing else in the room mounts a menu.
+    expect(room).not.toContain("mountHud(");
+    expect(room.split("mountMenu(").length - 1).toBe(1);
+    // What the room's own menu covers is asked only of the room's own menu.
+    expect(room.split("hud.own?.cover() ?? { top: 0, bottom: 0 }").length - 1).toBe(2);
+    expect(room).not.toMatch(/hud\.cover\(\)/);
+  });
+
+  it("leaves to the page above what is the page above's: the one-time question on moving, and the menu's own sounds", async () => {
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("mayAsk: () => !above.has,");
+    expect(room).toContain("addSoundControls(controls, sounds, { quiet: (cue) => above.has && MENU_CUES.includes(cue) });");
+    expect(room).toContain("if (showing && above.has && above.menu.open) above.menu.setOpen(false);");
+  });
+
+  it("has none of the shell's own Home or You rows beside the room's", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain('controls.add({ id: "home", section: "travel", icon: "home", label: "Home", hotbar: true, hidden: () => o.atRoom(), act: () => below.leave() });');
+    expect(menu).toContain('const filledBelow = (tab: string): boolean => below.origin === location.origin && worldFills(tab);');
+    expect(menu.split('hidden: () => filledBelow("you")').length - 1).toBe(3);
+    // Where the place in the frame is, is what the browser reported of its own page, and only this site's own counts.
+    const shell = await read("src/shell/main.ts");
+    expect(shell).toContain('atRoom: () => !!lastHere && lastHere.origin === location.origin && typeof (lastHere.data as { at?: unknown }).at === "string" && (lastHere.data as { at: string }).at.startsWith("/walk/"),');
   });
 });

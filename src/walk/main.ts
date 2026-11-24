@@ -30,7 +30,11 @@ import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, ad
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
-import { addDoorControls, createControls, mountHud, type Controls } from "nswp-sdk/ui";
+import { addDoorControls, createControls, type Controls } from "nswp-sdk/ui";
+// The room's end of the visitor's menu, where the page that keeps the screen draws it (NSWP "The client has the
+// menu"). A plain import, with the page's first files: loading it is what puts `menu` in this page's `here`.
+import { keepMenu, portAbove } from "nswp-sdk/menu-above";
+import { mountMenu, portHere } from "nswp-sdk/menu";
 import bundleJson from "../starter/starter-set.json";
 import { buildCatalog, type Catalog, type Entry, type StarterBundle } from "../shared/catalog.js";
 import { createDoorList, type DoorList, type DoorRow } from "./door-list.js";
@@ -114,6 +118,8 @@ interface TestHooks {
   fps?: Fps;
   /** The menu on a flat screen. */
   hud?: { readonly open: boolean; setOpen(open: boolean): void };
+  /** Whether the page above has the menu, so the room draws none. */
+  menuAbove?: () => boolean;
   /** What the room sounds like: cues, its music, and the visitor's own. */
   sounds?: unknown;
   state: Record<string, unknown>;
@@ -406,9 +412,43 @@ async function start(): Promise<void> {
     /* the room keeps what it had */
   }
   const controls = createControls({ title: "Your room", address: location.host, theme: { accent: room.layout.room.accent } });
-  const hud = mountHud(controls);
+  // The visitor's menu. In the page that keeps the screen, that page draws it, over the room as over every world:
+  // the room asks whether it does (`portAbove`), and if so draws none, says upward what it fills, and takes presses
+  // back. It is a page of that page's own origin, so it says the visitor's own tabs too (who they are, how they
+  // look, their bag at home, their doors): the page above takes those from its own origin and from nowhere else.
+  // Opened as a page of its own, or where the page above has no menu, the room draws its own as it always has.
+  // What the room says of the things every place has and only it can run. Filled in further down, as each starts.
+  const facts: { named?: () => boolean; presenting?: () => boolean; room?: () => { joined: boolean; mic: boolean }; hum?: () => boolean } = {};
+  // The visitor's own music, playing in the page above: the room's own steps back while it does. It may be said
+  // before the room's sounds are made, so it is kept until they are.
+  let ownMusicAbove = false;
+  let stepBack: (on: boolean) => void = () => {};
+  const above = portAbove(controls, {
+    own: true,
+    playing: (on) => {
+      ownMusicAbove = on;
+      stepBack(on);
+    },
+    state: () => ({
+      headset: { supported: vr, presenting: facts.presenting?.() ?? false },
+      ...(facts.room ? { room: { has: true, joined: facts.room().joined, mic: facts.room().joined ? facts.room().mic : null, count: 0 } } : {}),
+      named: facts.named?.() ?? false,
+      // Signing in here is the room's own rows under You, which it says with its other tabs.
+      signIn: "none",
+      holding: "",
+      hum: facts.hum?.() ?? false,
+    }),
+  });
+  // One menu, never two (the kit's menu-keeper): the room's own where nobody above has it; none where the page
+  // above has; and asked again each time the room's own is mounted, so one that arrives late is put away unseen.
+  const hud = keepMenu(controls, above, (only) => mountMenu(portHere(controls), only ? { only } : {}));
+  // Not waited for. Where nobody above answers (opened as a page of its own, it is known at once; in the page that
+  // keeps the screen while that page has no menu, after the kit's short wait), the room's own menu comes up beside
+  // everything else that is starting, and the room is no slower to come up for having asked.
+  void hud.ready;
   hooks.controls = controls;
   hooks.hud = hud;
+  hooks.menuAbove = () => above.has;
   // Which of the two ways the visitor is moving, on the device they are using. Worked out further down.
   let movingNow = (): "intense" | "casual" => "casual";
   const movingFlag = (): { moving?: "intense" } => (movingNow() === "intense" ? { moving: "intense" } : {});
@@ -427,7 +467,12 @@ async function start(): Promise<void> {
     theme: { music: ["b", "e", "a", "f", "c", "g", "d", "h"].map((n) => `/sounds/room-${n}.ogg`) },
     keep: { levels: "bitportal:sound", songs: "bitportal:jukebox" },
   });
-  addSoundControls(controls, sounds);
+  // Where the page above has the menu it makes the menu's own sounds, so they aren't made twice.
+  const MENU_CUES: readonly string[] = ["press", "menuOpen", "menuClose", "notice"];
+  addSoundControls(controls, sounds, { quiet: (cue) => above.has && MENU_CUES.includes(cue) });
+  facts.hum = () => sounds.hasHum;
+  stepBack = (on) => sounds.stepBack(on);
+  stepBack(ownMusicAbove);
   hooks.sounds = sounds;
   const jumpList = createJumpList({ relays: () => settings.relays, from: "walk" });
   // Who they are and how they look are reached from here (you.ts, added further down, once there is a room to
@@ -435,6 +480,7 @@ async function start(): Promise<void> {
   let signedInAs = "";
   /** Whose key that is, once known. */
   let signedInKey: string | null = null;
+  facts.named = () => !!signedInKey && !goesAsGuest();
   // Who they are in their own room: signed in is signed in here too (NSWP-10). A pass for this site is signed the
   // way the Airlock signs one for a world, with the name and picture from their own profile, so the people they
   // share the room with see who they are. Not for someone who has said to go about as a guest.
@@ -1003,6 +1049,7 @@ async function start(): Promise<void> {
   // In a headset the page can't be seen, so the room's controls go on a console
   // in the scene. Turn around matters most there: the other wall is behind the
   // visitor, and someone seated can't turn to face it.
+  facts.presenting = () => renderer.xr.isPresenting;
   const xrConsole = createConsole(controls, { renderer, rig });
   keptInSight.push(xrConsole.group);
   scene.add(xrConsole.group);
@@ -1209,6 +1256,8 @@ async function start(): Promise<void> {
   /** Which of the two ways the visitor is moving now, on the device they are using: it goes with them through a door. */
   movingNow = () => ((renderer.xr.isPresenting ? xrInput.intense : fps?.enabled) ? "intense" : "casual");
   fps = createFps({
+    // "How you move at a desk" is asked by whoever draws the menu: not here, where the page above does.
+    mayAsk: () => !above.has,
     dom: renderer.domElement,
     camera,
     rig,
@@ -1352,6 +1401,7 @@ async function start(): Promise<void> {
   let refreshRoom = () => {};
   // Whether the visitor is in the room here, and heard: it goes with them through a door.
   let travelling = (): { joined: boolean; mic: boolean } => ({ joined: false, mic: false });
+  facts.room = () => travelling();
   // In their own room a visitor is seen as they made themselves, if they have (spec §4.2).
   let myLook = loadLook();
   // What visitors carry is drawn here, as in any world that hasn't turned items off (the owner, 2026-11-20: "Yes
@@ -1681,7 +1731,12 @@ async function start(): Promise<void> {
     hud,
     onState: (s) => (state.xr = s),
     ...(backToHeadset ? { arrived: { title: "BitPortal" } } : {}),
-    onOffer: (showing) => (offered = showing),
+    onOffer: (showing) => {
+      offered = showing;
+      // "Launch" is across this view, and the menu of the page above is over it: the menu is asked to go, which
+      // also gives this frame the keys, so that any key is the press.
+      if (showing && above.has && above.menu.open) above.menu.setOpen(false);
+    },
     // The room fits its own view to the window, and gives way to the visitor's own width itself (fit, below).
     fov: false,
   }).then((supported) => {
@@ -1701,7 +1756,7 @@ async function start(): Promise<void> {
     const across = THREE.MathUtils.degToRad(52);
     // At a desk, a visitor who has asked for a width has it, here as in every world.
     camera.fov = visitorFov() ?? Math.min(90, Math.max(62, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(across / 2) / camera.aspect))));
-    const cover = hud.cover();
+    const cover = hud.own?.cover() ?? { top: 0, bottom: 0 };
     covered = `${cover.top}|${cover.bottom}`;
     const shift = Math.min(Math.round((cover.bottom - cover.top) / 2), Math.round(innerHeight * 0.3));
     if (shift > 0) camera.setViewOffset(innerWidth, innerHeight, 0, shift, innerWidth, innerHeight);
@@ -1714,7 +1769,7 @@ async function start(): Promise<void> {
   window.addEventListener("resize", fit);
   // The controls change height as keys come and go on the hotbar.
   setInterval(() => {
-    const cover = hud.cover();
+    const cover = hud.own?.cover() ?? { top: 0, bottom: 0 };
     if (`${cover.top}|${cover.bottom}` !== covered) fit();
   }, 500);
   renderer.xr.addEventListener("sessionend", fit);
