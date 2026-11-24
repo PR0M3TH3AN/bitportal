@@ -103,6 +103,15 @@ const visit = async ({ signedIn, named, has = true }) => {
     let b = null;
     for (let n = 0; n < 30 && !b; n++) { b = await locator.first().boundingBox().catch(() => null); if (!b) await wait(200); }
     if (!b) throw new Error(`no place on screen for ${locator}`);
+    // Only where the middle of its box is on the thing itself: a tab scrolled half out of sight has a box whose
+    // middle is on the page outside the sheet, and a press there closes the sheet (BitPortal PR 213 has the account).
+    const [x, y] = [b.x + b.width / 2, b.y + b.height / 2];
+    const on = await locator.first().evaluate((el, [x, y]) => {
+      let at = document.elementFromPoint(x, y);
+      while (at?.shadowRoot) { const inner = at.shadowRoot.elementFromPoint(x, y); if (!inner || inner === at) break; at = inner; }
+      return !!at && (at === el || el.contains(at) || at.contains(el) || el.getRootNode().host === at) ? "" : at ? `${at.tagName.toLowerCase()} "${(at.textContent ?? "").trim().slice(0, 30)}"` : "nothing";
+    }, [x, y]);
+    if (on) throw new Error(`the middle of ${locator}, at ${Math.round(x)},${Math.round(y)}, is not on it: what is there is ${on}. Nothing was pressed.`);
     await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
     await wait(400);
   };
