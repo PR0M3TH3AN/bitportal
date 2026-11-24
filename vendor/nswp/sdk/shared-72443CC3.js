@@ -8,7 +8,7 @@ import {
   meetClient,
   onClientScreen,
   reportSettings
-} from "./shared-YBP57Z2Q.js";
+} from "./shared-YK562XB3.js";
 
 // packages/sdk/src/ui/fullscreen.ts
 var resumed = false;

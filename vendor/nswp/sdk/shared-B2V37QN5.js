@@ -2,23 +2,23 @@ import {
   ICONS,
   ago,
   rgb
-} from "./shared-OHLBJ3AU.js";
+} from "./shared-OZCDUDVE.js";
 import {
   SUMMON_KEY,
   createHoldWatch,
   loadPicture
-} from "./shared-GK2URPYT.js";
+} from "./shared-JOCMTIKO.js";
 import {
   escapeDoes,
   escapeHeld,
   fullscreenButton,
   leaveFullscreen,
   onBrowserLeftFullscreen
-} from "./shared-5DKD634P.js";
+} from "./shared-72443CC3.js";
 import {
   onClientSignIn,
   setMenuPlace
-} from "./shared-YBP57Z2Q.js";
+} from "./shared-YK562XB3.js";
 
 // packages/sdk/src/ui/port.ts
 function portHere(controls) {

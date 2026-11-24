@@ -2,7 +2,7 @@ import {
   arrivedSettings,
   handUp,
   reportSettings
-} from "./shared-YBP57Z2Q.js";
+} from "./shared-YK562XB3.js";
 
 // packages/sdk/src/sound-store.ts
 var CUES = [
@@ -425,12 +425,13 @@ function createSounds(o = {}) {
       }
     }
   };
+  let elsewhere = false;
   const juke = { audio: null, url: "", current: null, playing: false, tap: null };
   const apply = () => {
     const t = ctx.currentTime;
     master.gain.setTargetAtTime(levels.off ? 0 : 1, t, 0.05);
     effects.gain.setTargetAtTime(levels.effects, t, 0.05);
-    placeMusic.gain.setTargetAtTime(levels.music * (juke.playing ? 0.1 : 1), t, 0.4);
+    placeMusic.gain.setTargetAtTime(levels.music * (juke.playing || elsewhere ? 0.1 : 1), t, 0.4);
     ownMusic.gain.setTargetAtTime(levels.music, t, 0.05);
     humGain.gain.setTargetAtTime(levels.hum ? 1 : 0, t, 0.3);
   };
@@ -962,6 +963,14 @@ function createSounds(o = {}) {
     },
     nextPiece() {
       return pieces?.next() ?? false;
+    },
+    stepBack(on) {
+      if (on === elsewhere) return;
+      elsewhere = on;
+      apply();
+    },
+    get steppedBack() {
+      return elsewhere;
     },
     get hasHum() {
       return !!humAddress;

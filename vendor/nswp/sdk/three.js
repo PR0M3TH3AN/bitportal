@@ -91,7 +91,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-D4MBFQ6S.js";
+} from "./shared-M6M53CAI.js";
 import {
   addDoorControls,
   vouchedWords
@@ -110,10 +110,10 @@ import {
   addSoundControls,
   createSounds,
   saveFile
-} from "./shared-3VK5CLME.js";
+} from "./shared-WBNPSWCU.js";
 import {
   createControls
-} from "./shared-OHLBJ3AU.js";
+} from "./shared-OZCDUDVE.js";
 import {
   DOUBLE_TAP,
   DRAG_LOOK,
@@ -149,14 +149,14 @@ import {
   strideOf,
   visitorFov,
   watchFov
-} from "./shared-L6FYXGUA.js";
+} from "./shared-6KFLNMW7.js";
 import {
   PICTURE_LIMITS,
   loadPicture,
   onPicturesChange,
   setShowsPictures,
   showsPictures
-} from "./shared-GK2URPYT.js";
+} from "./shared-JOCMTIKO.js";
 import {
   ITEM_BUDGET,
   allowScript,
@@ -167,7 +167,7 @@ import {
   scriptAllowed,
   setShowsItems,
   showsItems
-} from "./shared-D2ALGKZL.js";
+} from "./shared-EPH6MW7M.js";
 import {
   askWell,
   foundRelays,
@@ -182,7 +182,7 @@ import {
   fullscreenWaiting,
   prefersFullscreen,
   resumeFullscreen
-} from "./shared-5DKD634P.js";
+} from "./shared-72443CC3.js";
 import {
   arriveWith,
   arrivedSettings,
@@ -197,7 +197,7 @@ import {
   reportSettings,
   startingForm,
   usedForm
-} from "./shared-YBP57Z2Q.js";
+} from "./shared-YK562XB3.js";
 import "./shared-QLSLERQ3.js";
 export {
   CASUAL_COMFORT,

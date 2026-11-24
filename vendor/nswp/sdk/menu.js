@@ -2,16 +2,16 @@ import {
   addSoundControls,
   createSounds,
   download
-} from "./shared-3VK5CLME.js";
+} from "./shared-WBNPSWCU.js";
 import {
   mountMenu,
   portHere
-} from "./shared-F5L2PUBB.js";
+} from "./shared-B2V37QN5.js";
 import {
   ICONS,
   STANDARD_TABS,
   standardTab
-} from "./shared-OHLBJ3AU.js";
+} from "./shared-OZCDUDVE.js";
 import {
   helpWords
 } from "./shared-EGXGKKYY.js";
@@ -23,21 +23,21 @@ import {
   deskMovingSwitch,
   modelsSwitch,
   picturesSwitch
-} from "./shared-L6FYXGUA.js";
-import "./shared-GK2URPYT.js";
+} from "./shared-6KFLNMW7.js";
+import "./shared-JOCMTIKO.js";
 import {
   fullscreenAction,
   watchEscape
-} from "./shared-5DKD634P.js";
+} from "./shared-72443CC3.js";
 import {
   arriveWith,
   changeSettings,
   currentSettings
-} from "./shared-YBP57Z2Q.js";
+} from "./shared-YK562XB3.js";
 import "./shared-QLSLERQ3.js";
 
 // packages/sdk/src/ui/port-below.ts
-import { cleanMenuSettings, LEAVE_MS, MENU_CARD_PICTURE, menuFileKind, menuFileName, MENU_LIMITS, MENU_SAVE_MS, menuVersionOf, readMenuWordUp } from "@nswp/core";
+import { cleanMenuSettings, LEAVE_MS, MENU_CARD_PICTURE, menuFileKind, menuFileName, MENU_LIMITS, MENU_MAKING_MS, MENU_SAVE_MS, menuVersionOf, readMenuWordUp } from "@nswp/core";
 var WORLDS = "world:";
 var HOLD_MS = 4e3;
 var BAR_MOST = 6;
@@ -137,6 +137,7 @@ function mergeView(base, world, from) {
 }
 var ENDING = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "video/webm": "webm", "video/mp4": "mp4" };
 var savedName = (world, kind, type, at) => `${world.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "world"}-${kind === "clip" ? "clip-" : ""}${at.toISOString().slice(0, 19).replace(/[T:]/g, "-")}.${ENDING[type]}`;
+var MAKING_SAID_MS = 1500;
 var isBitmap = (value) => typeof ImageBitmap !== "undefined" && value instanceof ImageBitmap && value.width <= MENU_LIMITS.picture && value.height <= MENU_LIMITS.picture;
 function portBelow(frame, opts) {
   const { controls } = opts;
@@ -157,6 +158,21 @@ function portBelow(frame, opts) {
   let world = null;
   let saving = null;
   const now = opts.now ?? (() => performance.now());
+  let slow = null;
+  let overdue = null;
+  const forget = () => {
+    saving = null;
+    if (slow) clearTimeout(slow);
+    if (overdue) clearTimeout(overdue);
+    slow = overdue = null;
+  };
+  let saidPlaying = false;
+  const sayPlaying = () => {
+    const on = speaks && opts.playing?.() === true;
+    if (on === saidPlaying) return;
+    saidPlaying = on;
+    if (speaks) say({ playing: on });
+  };
   const pictures = /* @__PURE__ */ new Map();
   let menu = null;
   let open = false;
@@ -178,7 +194,8 @@ function portBelow(frame, opts) {
     origin = "";
     speaks = false;
     world = null;
-    saving = null;
+    forget();
+    saidPlaying = false;
     pictures.clear();
     saidSettings = "";
     if (had) changed();
@@ -204,7 +221,8 @@ function portBelow(frame, opts) {
       if (awaiting) awaiting = false;
       else early = true;
       world = null;
-      saving = null;
+      forget();
+      saidPlaying = false;
       pictures.clear();
       origin = typeof e.origin === "string" ? e.origin : "";
       speaks = menuVersionOf(data) > 0 && !!origin && origin !== "null";
@@ -213,6 +231,7 @@ function portBelow(frame, opts) {
         saidSettings = JSON.stringify(settings);
         say({ has: true, v: menuVersionOf(data), settings });
         if (open) say({ open: true });
+        sayPlaying();
       }
       return changed();
     }
@@ -232,6 +251,25 @@ function portBelow(frame, opts) {
       return;
     }
     if (word.what === "settings") return void (world?.state.headset.presenting && (opts.onReported ?? changeSettings)(word.settings));
+    if (word.what === "making") {
+      if (!saving || saving.id !== word.id || saving.making || saving.left < MENU_LIMITS.saves || now() > saving.until) return;
+      const held = saving;
+      held.making = true;
+      held.until = held.at + MENU_MAKING_MS;
+      const from = world?.title || host();
+      const waiting = () => saving === held && held.left === MENU_LIMITS.saves;
+      slow = setTimeout(() => {
+        slow = null;
+        if (waiting()) controls.say(`${from} is making it. It will be saved when it is ready.`);
+      }, MAKING_SAID_MS);
+      overdue = setTimeout(() => {
+        overdue = null;
+        if (!waiting()) return;
+        saving = null;
+        controls.say(`Nothing came from ${from} to save. Press again to try once more.`);
+      }, Math.max(0, held.until - now()));
+      return;
+    }
     if (word.what === "save") {
       if (!saving || saving.id !== word.id || now() > saving.until || saving.left < 1) return;
       saving.left--;
@@ -251,6 +289,7 @@ function portBelow(frame, opts) {
   };
   hear.addEventListener("message", onMessage);
   const stopControls = controls.subscribe(() => {
+    sayPlaying();
     if (speaks) {
       const settings = settingsNow();
       const text = JSON.stringify(settings);
@@ -293,7 +332,11 @@ function portBelow(frame, opts) {
         say({ press: row.id, file: name === void 0 || menuFileName(name) ? file : file.slice(0, file.size, file.type) });
         return true;
       }
-      if (row.kind === "save") saving = { id: row.id, until: now() + MENU_SAVE_MS, left: MENU_LIMITS.saves };
+      if (row.kind === "save") {
+        forget();
+        const at = now();
+        saving = { id: row.id, at, until: at + MENU_SAVE_MS, left: MENU_LIMITS.saves, making: false };
+      }
       controls.signal("press");
       say({ press: row.id, ...row.kind === "field" && typed !== void 0 ? { field: typed.slice(0, MENU_LIMITS.field) } : {} });
       return true;
@@ -381,6 +424,7 @@ function portBelow(frame, opts) {
     },
     dispose() {
       if (leaving) clearTimeout(leaving);
+      forget();
       frame.removeEventListener("load", onLoad);
       hear.removeEventListener("message", onMessage);
       stopControls();
