@@ -54,7 +54,7 @@ describe("the frame is on its way before the menu is loaded", () => {
 
   it("says a place's last `here` again to a menu that started after it, and only if it is still that place", async () => {
     const shell = await read("src/shell/main.ts");
-    expect(shell).toContain('if (said.nswp === "here") {\n    lastHere = e;');
+    expect(shell).toContain("    lastHere = e;\n    // A new place has arrived");
     expect(shell).toContain("queueMicrotask(() => said === lastHere && said.source === view.contentWindow && menuHears.has(fn) && fn(said));");
     // Only words from the frame are ever handed on.
     const handler = shell.slice(shell.indexOf('addEventListener("message", (e: MessageEvent) => {'));
@@ -97,7 +97,9 @@ describe("the menu is behind one switch, and the switch is off", () => {
     const shell = await read("src/shell/main.ts");
     expect(shell).toContain("declare const SHELL_MENU: boolean;");
     // Read nowhere but where the menu is loaded, and never from the address, storage or a message.
-    expect(shell.split("SHELL_MENU").length - 1).toBe(2);
+    // Read where the menu is loaded, where a place is told this page has none, and where it is declared. Never from
+    // the address, storage or a message.
+    expect(shell.split("SHELL_MENU").length - 1).toBe(3);
     const guarded = shell.slice(shell.indexOf("if (SHELL_MENU) {"));
     expect(guarded.indexOf('import("/shell/menu.js" as string)')).toBeGreaterThan(0);
     expect(shell.slice(0, shell.indexOf("if (SHELL_MENU) {"))).not.toContain("/shell/menu.js");
@@ -166,7 +168,7 @@ describe("the Airlock is under the visitor's menu too", () => {
     expect(menu).toContain("arrived: () => menu.setOpen(false),");
     expect(menu).not.toMatch(/addEventListener\("load"/);
     const shell = await read("src/shell/main.ts");
-    const heard = shell.slice(shell.indexOf('if (said.nswp === "here") {\n    lastHere = e;'));
+    const heard = shell.slice(shell.indexOf("    lastHere = e;\n    // A new place has arrived"));
     expect(heard.indexOf("shellMenu?.arrived();")).toBeGreaterThan(0);
     expect(heard.indexOf("shellMenu?.arrived();")).toBeLessThan(heard.indexOf("for (const fn of [...menuHears]) fn(e);"));
     // And a page that finishes loading late doesn't take the keys from under an open sheet.
@@ -304,5 +306,17 @@ describe("over a page of this site's own, what the page fills is labelled as thi
     const menu = await read("src/shell/menu.ts");
     expect(menu).toContain("view: { value: () => (below.origin === location.origin && below.world ? asOurOwn(below.port.view(), below.world.title || location.host) : below.port.view()) },");
     expect(menu.split("asOurOwn(").length - 1).toBe(1);
+  });
+});
+
+describe("with the menu off, a place is told at once that this page has none", () => {
+  it("says so in the menu's own words, to the origin that spoke and to no other, and only where the place speaks them", async () => {
+    const shell = await read("src/shell/main.ts");
+    expect(shell).toContain('if (!SHELL_MENU && menuVersionOf(said) > 0 && e.origin && e.origin !== "null") view.contentWindow?.postMessage({ nswp: "menu", has: false }, e.origin);');
+    // Only ever "hasn't": this file never says it has the menu. That is the kit's to say, from the menu's own file.
+    expect(shell).not.toMatch(/has:\s*true/);
+    // And inside the one place words from the frame are taken, after the check that they are from the frame.
+    const handler = shell.slice(shell.indexOf('addEventListener("message", (e: MessageEvent) => {\n  if (e.source !== view.contentWindow) return;'));
+    expect(handler.indexOf("has: false")).toBeGreaterThan(0);
   });
 });
