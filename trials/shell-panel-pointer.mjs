@@ -16,6 +16,12 @@
 // or earlier, and should pass, unchanged, against a world on the kit that mends it. BitPortal's own pages are not
 // what is wrong and nothing here tries them.
 //
+// FIRST, A CONTRAST THAT PASSES TODAY: the same row with looking by the mouse left off. Nobody holds the pointer
+// then, the press lands in the panel, nobody moves, and a press beside the panel puts it away. It shows the checks
+// below can pass, so that when they fail it is the fault and not the trial. Its checks are marked "(contrast)".
+// Until the worlds this is run against are on the mended kit, a run ends with the contrast passed and the rest
+// failed, exit 1. Nothing gates on this trial.
+//
 // Everything is on this machine. Every press is the mouse at a place on the screen and every key the keyboard's
 // own; pages are only read. Nobody signs in: the panel is only brought up, and a press lands in it or doesn't.
 //
@@ -99,6 +105,37 @@ const visit = async () => {
   return { ctx, page, faults, wait, until, world, panel, press, sheetOpen, goTab, worldHoldsPointer, panelIs, stands, heard };
 };
 
+// ---- the contrast: looking by the mouse left off (the casual way). Passes today.
+{
+  const name = "contrast: looking by the mouse off";
+  const v = await visit();
+  const w = v.world();
+  await v.press(w.getByRole("button", { name: /^Menu/ }));
+  check(`(${name}) the world's switch says casual, and nobody holds the pointer`, (await v.goTab("Moving")) && (await w.getByRole("button", { name: /^Desk controls: casual/ }).isVisible()) && !(await v.worldHoldsPointer()));
+  await v.goTab("You");
+  await v.press(w.getByRole("button", { name: ROWS[0][1] }));
+  check(`(${name}) the row brings the sign-in address's panel up over the world`, await v.until(async () => (await v.panelIs()) === "up", 15000), await v.panelIs());
+  await v.wait(1500);
+  check(`(${name}) with the panel up, the world does not hold the pointer`, !(await v.worldHoldsPointer()));
+  const middle = await v.page.evaluate(() => { const r = document.querySelector(".shell-panel")?.getBoundingClientRect(); return r ? { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), left: Math.round(r.x) } : null; });
+  const stood = await v.stands();
+  const h0 = await v.heard();
+  if (middle) await v.page.mouse.click(middle.x, middle.y);
+  await v.wait(500);
+  const h1 = await v.heard();
+  check(`(${name}) a press at the panel's middle lands in the panel, and not in the world`, !!middle && h1.panel - h0.panel === 1 && h1.world - h0.world === 0, { heardByThePanel: h1.panel - h0.panel, heardByTheWorld: h1.world - h0.world });
+  await v.page.keyboard.down("w");
+  await v.wait(1200);
+  await v.page.keyboard.up("w");
+  if (middle) await v.page.mouse.move(middle.x + 180, middle.y, { steps: 12 });
+  await v.wait(400);
+  const now = await v.stands();
+  check(`(${name}) W held and the mouse moved, the visitor is where they were and faces as they did`, JSON.stringify(now) === JSON.stringify(stood), { before: stood, after: now });
+  if (middle) await v.page.mouse.click(Math.max(20, middle.left - 60), middle.y);
+  check(`(${name}) a press beside the panel puts it away`, await v.until(async () => ["none", "kept"].includes(await v.panelIs()), 6000), await v.panelIs());
+  await v.ctx.close();
+}
+
 for (const [name, row] of ROWS) {
   const v = await visit();
   const w = v.world();
@@ -151,6 +188,8 @@ for (const [name, row] of ROWS) {
 const failed = checks.filter((c) => !c.ok);
 writeFileSync(join(SHOTS, "shell-panel-pointer.json"), JSON.stringify({ checks }, null, 1));
 console.log("\nnot tried: full screen (the scripted browser does not go full screen); a panel asked for with the menu closed; a world made with another engine");
+const contrast = checks.filter((c) => c.name.startsWith("(contrast"));
+console.log(`the contrast (passes today): ${contrast.filter((c) => c.ok).length} of ${contrast.length}`);
 console.log(`${checks.length - failed.length} of ${checks.length} checks passed`);
 await browser.close();
 process.exit(failed.length ? 1 : 0);
