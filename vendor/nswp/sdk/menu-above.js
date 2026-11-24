@@ -3,11 +3,11 @@ import {
 } from "./shared-EGXGKKYY.js";
 import {
   visitorsOwnRow
-} from "./shared-6KFLNMW7.js";
+} from "./shared-O6464UDG.js";
 import {
   SUMMON_KEY,
   loadPicture
-} from "./shared-JOCMTIKO.js";
+} from "./shared-RS6AKN35.js";
 import {
   changeSettings,
   currentSettings,
@@ -17,7 +17,7 @@ import {
   setSaver,
   sinceHere,
   speakMenu
-} from "./shared-YK562XB3.js";
+} from "./shared-3QMBUCPV.js";
 import "./shared-QLSLERQ3.js";
 
 // packages/sdk/src/menu-above.ts
@@ -326,10 +326,11 @@ function portAbove(controls, opts = {}) {
     // What the press asked for is being made, and may take a while: said once for a press, at once, and the press
     // is then held open for longer, counted from the press itself. Nothing is said for a press that isn't waiting.
     making() {
-      if (!has || !awaited() || saving.told || saving.left < MENU_LIMITS.saves) return;
+      if (!has || !awaited() || saving.told || saving.left < MENU_LIMITS.saves) return false;
       saving.told = true;
       saving.until = saving.at + MENU_MAKING_MS;
       above.say({ making: saving.id });
+      return true;
     }
   });
   let leaving = null;

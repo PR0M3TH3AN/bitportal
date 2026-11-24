@@ -2,16 +2,16 @@ import {
   addSoundControls,
   createSounds,
   download
-} from "./shared-WBNPSWCU.js";
+} from "./shared-LW5OWPBZ.js";
 import {
   mountMenu,
   portHere
-} from "./shared-B2V37QN5.js";
+} from "./shared-UHOEHL4V.js";
 import {
   ICONS,
   STANDARD_TABS,
   standardTab
-} from "./shared-OZCDUDVE.js";
+} from "./shared-EUKRSY5E.js";
 import {
   helpWords
 } from "./shared-EGXGKKYY.js";
@@ -23,17 +23,17 @@ import {
   deskMovingSwitch,
   modelsSwitch,
   picturesSwitch
-} from "./shared-6KFLNMW7.js";
-import "./shared-JOCMTIKO.js";
+} from "./shared-O6464UDG.js";
+import "./shared-RS6AKN35.js";
 import {
   fullscreenAction,
   watchEscape
-} from "./shared-72443CC3.js";
+} from "./shared-4HKQFA2T.js";
 import {
   arriveWith,
   changeSettings,
   currentSettings
-} from "./shared-YK562XB3.js";
+} from "./shared-3QMBUCPV.js";
 import "./shared-QLSLERQ3.js";
 
 // packages/sdk/src/ui/port-below.ts

@@ -1,10 +1,10 @@
 import {
   createUiChat
-} from "./shared-JOCMTIKO.js";
+} from "./shared-RS6AKN35.js";
 import {
   arrivedSettings,
   reportSettings
-} from "./shared-YK562XB3.js";
+} from "./shared-3QMBUCPV.js";
 
 // packages/sdk/src/ui/icons.ts
 var ICONS = {
@@ -361,6 +361,8 @@ function savePins(pins) {
   }
 }
 var LOADING_WORDS = 80;
+var SAY_STAYS = { least: 4200, most: 1e4, easy: 60, each: 70 };
+var sayStays = (text) => Math.min(SAY_STAYS.most, SAY_STAYS.least + Math.max(0, [...text].length - SAY_STAYS.easy) * SAY_STAYS.each);
 function cleanLoading(state) {
   if (!state || typeof state !== "object") return null;
   const raw = typeof state.words === "string" ? state.words : "";
@@ -612,5 +614,6 @@ export {
   ago,
   STANDARD_TABS,
   standardTab,
+  sayStays,
   createControls
 };
