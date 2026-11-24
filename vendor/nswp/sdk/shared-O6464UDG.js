@@ -3,13 +3,13 @@ import {
   setShowsPictures,
   showsChat,
   showsPictures
-} from "./shared-JOCMTIKO.js";
+} from "./shared-RS6AKN35.js";
 import {
   arrivedSettings,
   currentForm,
   reportSettings,
   startingForm
-} from "./shared-YK562XB3.js";
+} from "./shared-3QMBUCPV.js";
 
 // packages/sdk/src/desk.ts
 import { FOV_RANGE, LOOK_RANGE } from "@nswp/core";
