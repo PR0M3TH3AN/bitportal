@@ -1,7 +1,7 @@
 {
   "name": "@bitlogin/widget",
   "version": "0.1.0",
-  "commit": "414c887a71985c19cbe3bff8e08ed37ed335fb54",
+  "commit": "6258a73e93a7e3193511d56f11ef50d364722bd3",
   "files": {
     "bitlogin-client.js": {
       "bytes": 8150,
@@ -104,9 +104,9 @@
       "sri": "sha384-I02zQLdBz3xQPRnZgZIh3xyCNWmDI11yXs4kJ+MD1DMsUV8APo82gn6Xza/IqY7F"
     },
     "cryptoWorker.js": {
-      "bytes": 221170,
-      "sha256": "8500792ef627112950a1d6909fdc2944ec5ac7d23b44d59c23916d37173c5bb8",
-      "sri": "sha384-M7UOy162emy4t+brEfFaiIR/S2Qi7AgCiCPlOv2aGiCe/2+UEbCNcYIfyhouPiMn"
+      "bytes": 221490,
+      "sha256": "74a92f500cfea3dfe4e061ed6523e0d5e967194b8fa9bc00ae7f6272080081f4",
+      "sri": "sha384-OcV7cpFoGuDoojpkDvYqoHZcvI9vV+yApkewXaDjUGEuShL4Indb2gti/yG4gty4"
     }
   }
 }
