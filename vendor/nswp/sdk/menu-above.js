@@ -3,7 +3,7 @@ import {
 } from "./shared-EGXGKKYY.js";
 import {
   visitorsOwnRow
-} from "./shared-O6464UDG.js";
+} from "./shared-6G6TXXH2.js";
 import {
   SUMMON_KEY,
   loadPicture
@@ -83,12 +83,20 @@ function keepMenu(controls, above, mount) {
     },
     setOpen(open, at) {
       if (own) own.setOpen(open, at);
-      else above.menu.setOpen(open);
+      else above.menu.setOpen(open, at);
     },
     setHidden(next) {
       hidden = next;
       own?.setHidden(next);
       chatPane?.setHidden(next);
+    },
+    cover() {
+      if (hidden) return { top: 0, bottom: 0, left: 0, right: 0 };
+      return own ? own.cover() : above.menu.cover();
+    },
+    bounds() {
+      if (hidden) return [];
+      return own ? own.bounds() : [...above.menu.bounds(), ...chatPane ? chatPane.bounds() : []];
     },
     get own() {
       return own;
@@ -209,8 +217,8 @@ function portAbove(controls, opts = {}) {
   if (!above.framed()) {
     know();
     return { ready, has: false, onChange: () => () => {
-    }, menu: { open: false, setOpen: () => {
-    } }, dispose: () => {
+    }, menu: { open: false, setOpen: (_open, _at) => {
+    }, cover: () => ({ top: 0, bottom: 0, left: 0, right: 0 }), bounds: () => [] }, dispose: () => {
     } };
   }
   let named = /* @__PURE__ */ new Map();
@@ -287,6 +295,9 @@ function portAbove(controls, opts = {}) {
     reported = comfortNow();
   };
   const stopView = controls.subscribe(changed);
+  const stopAsking = controls.onSignal((name) => {
+    if (has && name.startsWith("show:")) above.say({ show: name.slice(5) });
+  });
   const tick = setInterval(changed, 400);
   const stopSay = controls.onSay((text) => {
     if (has && text) above.say({ say: text.slice(0, MENU_LIMITS.say) });
@@ -296,6 +307,7 @@ function portAbove(controls, opts = {}) {
     has = next;
     last = "";
     open = false;
+    covers = null;
     if (has) describe();
     else {
       if (waiting) clearTimeout(waiting);
@@ -335,6 +347,8 @@ function portAbove(controls, opts = {}) {
   });
   let leaving = null;
   let open = false;
+  let covers = null;
+  const viewSize = () => opts.view?.() ?? { w: typeof innerWidth === "number" ? innerWidth : 0, h: typeof innerHeight === "number" ? innerHeight : 0 };
   above.hear((data) => {
     const word = readMenuWordDown(data);
     if (!word) return;
@@ -345,6 +359,7 @@ function portAbove(controls, opts = {}) {
     if (!has) return;
     if (word.what === "settings") return void takeSettings(word.settings);
     if (word.what === "playing") return void hearPlaying(word.playing);
+    if (word.what === "covers") return void (covers = word.covers);
     if (word.what === "press") {
       const row = named.get(word.press);
       if (!row) return;
@@ -410,8 +425,32 @@ function portAbove(controls, opts = {}) {
       get open() {
         return has && open;
       },
-      setOpen(next) {
-        if (has && next !== open) tell("summon");
+      setOpen(next, at) {
+        if (!has) return;
+        if (next && at) return void above.say({ show: at });
+        if (next !== open) tell("summon");
+      },
+      cover() {
+        const { w, h } = viewSize();
+        if (!has || !covers) return { top: 0, bottom: 0, left: 0, right: 0 };
+        return { top: Math.min(covers.top, h), bottom: Math.min(covers.bottom, h), left: Math.min(covers.left, w), right: Math.min(covers.right, w) };
+      },
+      bounds() {
+        if (!has || !covers) return [];
+        const { w, h } = viewSize();
+        const c = this.cover();
+        const boxes = [
+          { x: 0, y: 0, width: w, height: c.top },
+          { x: 0, y: h - c.bottom, width: w, height: c.bottom },
+          { x: 0, y: 0, width: c.left, height: h },
+          { x: w - c.right, y: 0, width: c.right, height: h }
+        ];
+        if (covers.sheet) {
+          const x = Math.min(covers.sheet.x, w);
+          const y = Math.min(covers.sheet.y, h);
+          boxes.push({ x, y, width: Math.min(covers.sheet.width, w - x), height: Math.min(covers.sheet.height, h - y) });
+        }
+        return boxes.filter((b) => b.width > 0 && b.height > 0);
       }
     },
     dispose() {
@@ -420,6 +459,7 @@ function portAbove(controls, opts = {}) {
       clearInterval(tick);
       if (leaving) clearTimeout(leaving);
       stopView();
+      stopAsking();
       stopSay();
       above.hear(null);
       setSaver(null);

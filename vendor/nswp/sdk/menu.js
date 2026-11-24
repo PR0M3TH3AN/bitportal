@@ -5,8 +5,9 @@ import {
 } from "./shared-LW5OWPBZ.js";
 import {
   mountMenu,
-  portHere
-} from "./shared-UHOEHL4V.js";
+  portHere,
+  sheetOf
+} from "./shared-63ZLMVD7.js";
 import {
   ICONS,
   STANDARD_TABS,
@@ -23,7 +24,7 @@ import {
   deskMovingSwitch,
   modelsSwitch,
   picturesSwitch
-} from "./shared-O6464UDG.js";
+} from "./shared-6G6TXXH2.js";
 import "./shared-RS6AKN35.js";
 import {
   fullscreenAction,
@@ -181,6 +182,90 @@ function portBelow(frame, opts) {
   const changed = () => {
     for (const fn of [...viewers]) fn();
     for (const fn of [...watchers]) fn();
+    coversMayHaveChanged();
+  };
+  const COVERS_MS = 125;
+  const clock = opts.now ?? (() => performance.now());
+  let saidCovers = "";
+  let coversAt = -Infinity;
+  let coversTimer = null;
+  const coversNow = () => {
+    if (!menu?.cover || typeof frame.getBoundingClientRect !== "function") return null;
+    const f = frame.getBoundingClientRect();
+    if (!(f.width > 0 && f.height > 0)) return null;
+    const win = opts.view?.() ?? { w: innerWidth, h: innerHeight };
+    const scale = frame.offsetWidth > 0 ? f.width / frame.offsetWidth : 1;
+    const px = (n, most) => Math.min(MENU_LIMITS.covers, Math.round(Math.max(0, Math.min(n, most)) / scale));
+    const c = menu.cover();
+    const covers = {
+      top: px(c.top - f.top, f.height),
+      bottom: px(f.bottom - (win.h - c.bottom), f.height),
+      left: px((c.left ?? 0) - f.left, f.width),
+      right: px(f.right - (win.w - (c.right ?? 0)), f.width)
+    };
+    const sheet = sheetOf(menu);
+    if (sheet.moving) return "moving";
+    if (sheet.box) {
+      const x0 = Math.max(sheet.box.x, f.left);
+      const y0 = Math.max(sheet.box.y, f.top);
+      const x1 = Math.min(sheet.box.x + sheet.box.width, f.right);
+      const y1 = Math.min(sheet.box.y + sheet.box.height, f.bottom);
+      if (x1 > x0 && y1 > y0) covers.sheet = { x: px(x0 - f.left, f.width), y: px(y0 - f.top, f.height), width: px(x1 - x0, f.width), height: px(y1 - y0, f.height) };
+    }
+    return covers;
+  };
+  const sayCovers = () => {
+    coversTimer = null;
+    if (!speaks) return;
+    const covers = coversNow();
+    if (covers === "moving") return void (coversTimer = setTimeout(sayCovers, COVERS_MS));
+    if (!covers) return;
+    const text = JSON.stringify(covers);
+    if (text === saidCovers) return;
+    saidCovers = text;
+    coversAt = clock();
+    say({ covers });
+  };
+  const coversMayHaveChanged = () => {
+    if (coversTimer || !speaks) return;
+    coversTimer = setTimeout(sayCovers, Math.max(50, coversAt + COVERS_MS - clock()));
+  };
+  const onResize = () => coversMayHaveChanged();
+  if (typeof addEventListener === "function") addEventListener("resize", onResize);
+  const watchFrame = typeof ResizeObserver === "function" && typeof frame.getBoundingClientRect === "function" ? new ResizeObserver(onResize) : null;
+  watchFrame?.observe(frame);
+  const SHOW_AFTER_PRESS_MS = 1e3;
+  const SHOW_REST_MS = 2e3;
+  const SHOW_REST_MOST_MS = 6e4;
+  let pressedAt = -Infinity;
+  let showRestUntil = -Infinity;
+  let showStrikes = 0;
+  let broughtByShow = false;
+  let usedSinceShow = false;
+  const shown = (tab) => {
+    if (!menu?.setOpen) return;
+    const at = tab && port.view().sections.some((s) => s.id === tab) ? tab : void 0;
+    if (open) {
+      if (clock() - pressedAt > SHOW_AFTER_PRESS_MS) return;
+      pressedAt = -Infinity;
+      if (at) menu.setOpen(true, at);
+      return;
+    }
+    if (clock() < showRestUntil) return;
+    broughtByShow = true;
+    usedSinceShow = false;
+    menu.setOpen(true, at);
+  };
+  const pressed = () => {
+    pressedAt = clock();
+    usedSinceShow = true;
+    showStrikes = 0;
+  };
+  const showKnows = (up) => {
+    if (up) return;
+    showStrikes = broughtByShow && !usedSinceShow ? Math.min(showStrikes + 1, 8) : 0;
+    showRestUntil = clock() + Math.min(SHOW_REST_MOST_MS, SHOW_REST_MS * 2 ** showStrikes);
+    broughtByShow = false;
   };
   const say = (word) => {
     if (!speaks || !origin) return;
@@ -198,6 +283,7 @@ function portBelow(frame, opts) {
     saidPlaying = false;
     pictures.clear();
     saidSettings = "";
+    saidCovers = "";
     if (had) changed();
   };
   let awaiting = opts.loaded === true;
@@ -230,6 +316,9 @@ function portBelow(frame, opts) {
         const settings = settingsNow();
         saidSettings = JSON.stringify(settings);
         say({ has: true, v: menuVersionOf(data), settings });
+        saidCovers = "";
+        if (coversTimer) clearTimeout(coversTimer);
+        sayCovers();
         if (open) say({ open: true });
         sayPlaying();
       }
@@ -245,6 +334,7 @@ function portBelow(frame, opts) {
       return changed();
     }
     if (word.what === "key") return void menu?.pressKey(word.key);
+    if (word.what === "show") return void shown(word.show);
     if (word.what === "say") {
       const text = `${world?.title || new URL(origin).host}: ${word.say}`;
       for (const fn of [...sayers]) fn(text);
@@ -299,6 +389,7 @@ function portBelow(frame, opts) {
       }
     }
     for (const fn of [...viewers]) fn();
+    coversMayHaveChanged();
   });
   const rowOf = (id) => {
     if (!world || !id.startsWith(WORLDS)) return null;
@@ -329,6 +420,7 @@ function portBelow(frame, opts) {
         if (!file || !kind || !row.accept?.includes(kind) || file.size < 1 || file.size > MENU_LIMITS.file) return false;
         controls.signal("press");
         const name = file.name;
+        pressed();
         say({ press: row.id, file: name === void 0 || menuFileName(name) ? file : file.slice(0, file.size, file.type) });
         return true;
       }
@@ -338,6 +430,7 @@ function portBelow(frame, opts) {
         saving = { id: row.id, at, until: at + MENU_SAVE_MS, left: MENU_LIMITS.saves, making: false };
       }
       controls.signal("press");
+      pressed();
       say({ press: row.id, ...row.kind === "field" && typed !== void 0 ? { field: typed.slice(0, MENU_LIMITS.field) } : {} });
       return true;
     },
@@ -354,7 +447,9 @@ function portBelow(frame, opts) {
       controls.signal(name);
       if (name !== "menuOpen" && name !== "menuClose") return;
       open = name === "menuOpen";
+      showKnows(open);
       say({ open });
+      coversMayHaveChanged();
       if (!open) frame.focus();
     },
     onSignal: (fn) => controls.onSignal(fn),
@@ -392,6 +487,7 @@ function portBelow(frame, opts) {
     },
     attach(next) {
       menu = next;
+      coversMayHaveChanged();
     },
     leave() {
       if (leaving) return;
@@ -428,6 +524,9 @@ function portBelow(frame, opts) {
       frame.removeEventListener("load", onLoad);
       hear.removeEventListener("message", onMessage);
       stopControls();
+      if (coversTimer) clearTimeout(coversTimer);
+      if (typeof removeEventListener === "function") removeEventListener("resize", onResize);
+      watchFrame?.disconnect();
       watchers.clear();
       viewers.clear();
       sayers.clear();

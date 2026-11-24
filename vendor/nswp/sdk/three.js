@@ -35,6 +35,7 @@ import {
   createDoorRatings,
   createFigure,
   createFloorMarks,
+  createItemPreviews,
   createItems,
   createJump,
   createKeyboard,
@@ -91,7 +92,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-Z7MJ5SGY.js";
+} from "./shared-24BIGNE7.js";
 import {
   addDoorControls,
   vouchedWords
@@ -149,7 +150,7 @@ import {
   strideOf,
   visitorFov,
   watchFov
-} from "./shared-O6464UDG.js";
+} from "./shared-6G6TXXH2.js";
 import {
   PICTURE_LIMITS,
   loadPicture,
@@ -271,6 +272,7 @@ export {
   createFigure,
   createFloorMarks,
   createFps,
+  createItemPreviews,
   createItems,
   createJump,
   createKeyboard,
