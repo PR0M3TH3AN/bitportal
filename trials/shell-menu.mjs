@@ -32,6 +32,9 @@ await ctx.addInitScript(() => {
   addEventListener("securitypolicyviolation", (e) => window.__refused.push(`${e.violatedDirective} ${e.blockedURI}`.slice(0, 140)));
   window.__keys = 0;
   addEventListener("keydown", (e) => e.isTrusted && window.__keys++, true);
+  // In a framed page: what the page above last said its menu covers of this view.
+  window.__covers = null;
+  if (parent !== window) addEventListener("message", (e) => { if (e.source === parent && e.data?.nswp === "menu" && e.data.covers) window.__covers = e.data.covers; }, true);
   // In the page that keeps the screen: the words a place says up to it, by name and when (not a description's or a
   // picture's contents), and each time the keys change hands. Read only if the trial stops early.
   window.__up = [];
@@ -349,8 +352,9 @@ if (await goTab("Display")) {
   await press(hud.getByRole("button", { name: /^Text: / }));
 }
 const told = await world().evaluate(() => window.__told);
+// `covers` is the kit's from 0.88.0: what of the world's view the menu covers, said by the kit's own end.
 const names = [...new Set(told.flatMap((w) => Object.keys(w)))].sort();
-check("the world was told only the menu's words down", names.every((n) => ["nswp", "has", "v", "settings", "open", "press", "field", "file", "go", "sign", "kind", "name", "playing"].includes(n)), names);
+check("the world was told only the menu's words down", names.every((n) => ["nswp", "has", "v", "settings", "open", "press", "field", "file", "go", "sign", "kind", "name", "playing", "covers"].includes(n)), names);
 check("it was never told `filesAnywhere`", !JSON.stringify(told.map((w) => w.settings ?? {})).includes("filesAnywhere"));
 check("it was answered `has: true` with the visitor's settings", told.some((w) => w.has === true && w.settings && typeof w.settings === "object"));
 
@@ -535,6 +539,12 @@ check("the room speaks the words, as a page of this site's own", overRoom.speaks
 check("and says the visitor's own tabs up: who they are, how they look, and its doors", ["you", "figure", "travel", "doors"].every((t) => overRoom.tabs?.includes(t)), overRoom.tabs);
 check("the room draws no menu of its own, and knows the page above has it", (await room().locator("nswp-hud").count()) === 0 && (await room().evaluate(() => window.__bitportalTest?.menuAbove?.())) === true);
 check("the room has the keys as it arrives", (await active()) === "frame", await active());
+// The room's view is kept clear of the menu, whoever draws it: here the shell says what its bar and marks cover of
+// the room's view, and the room shifts its picture up by half of what the bottom is covered more than the top.
+const clear = async () => room().evaluate(() => ({ told: window.__covers, shift: window.__bitportalTest.state.shift }));
+await until(async () => { const c = await clear(); return !!c.told && c.shift > 0; }, 8000);
+const cleared = await clear();
+check("the shell says what its menu covers of the room's view, and the room shifts its picture clear of it", !!cleared.told && cleared.told.bottom > cleared.told.top && cleared.shift === Math.min(Math.round((cleared.told.bottom - cleared.told.top) / 2), Math.round(900 * 0.3)), cleared);
 // The room's rows are this site's own, and are labelled so: its tabs by their own names, and no "Your room" over them.
 await openSheet();
 await goTab("Travel");
