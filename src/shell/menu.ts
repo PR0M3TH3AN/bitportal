@@ -21,6 +21,7 @@ import { goesAsGuest } from "../shared/look.js";
 import { knownSignedIn } from "../shared/session.js";
 import { loadSettings } from "../shared/settings.js";
 import { addShellBag } from "./bag.js";
+import { keepReport, keptReport, shellSettings, storage } from "./settings.js";
 import { asOurOwn } from "./own-labels.js";
 import type { PanelMode } from "./panel.js";
 
@@ -59,37 +60,6 @@ export interface ShellMenu {
   readonly below: MenuBelow;
 }
 
-/**
- * What a world reported the visitor changed in its headset session, kept for this site. Inside a headset only the
- * world can draw the console, so it is there that they change how they turn and move, and the world says so
- * upward (comfort and layout only, by the kit's own list, already cleaned). Most of it is held by no part of the
- * kit in this page, which moves nobody: so it is kept here, and said to every world from then on, across a reload
- * of this page too.
- */
-export const REPORTED_KEY = "bitportal:reported";
-export function keptReport(store: Pick<Storage, "getItem"> | null): TravelSettings {
-  try {
-    const kept = JSON.parse(store?.getItem(REPORTED_KEY) ?? "null") as unknown;
-    return kept && typeof kept === "object" && !Array.isArray(kept) ? (kept as TravelSettings) : {};
-  } catch {
-    return {};
-  }
-}
-export function keepReport(report: TravelSettings, store: Pick<Storage, "getItem" | "setItem"> | null): void {
-  try {
-    store?.setItem(REPORTED_KEY, JSON.stringify({ ...keptReport(store), ...report }));
-  } catch {
-    /* kept for as long as this page lives, then */
-  }
-}
-const storage = (): Storage | null => {
-  try {
-    return localStorage;
-  } catch {
-    return null;
-  }
-};
-
 export function startMenu(o: ShellMenuOptions): ShellMenu {
   // Before any part of the kit starts here: what a world last reported is what each begins from. The kit cleans
   // it as it cleans a link's settings, so nothing kept here can turn on what a link couldn't.
@@ -107,6 +77,8 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     // Whether the visitor's own music is playing here: a world is told, and steps its own music back so the two
     // aren't heard on top of one another. Nothing of the music itself is said.
     playing: () => sounds?.jukebox.playing ?? false,
+    // The same reader the page's first file answered a place with (settings.ts): the two can't differ.
+    settings: () => shellSettings(),
     // A world's headset report: taken as the visitor's own in this page, and kept.
     onReported: (settings) => {
       changeSettings(settings);

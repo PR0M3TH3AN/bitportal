@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { asOurOwn } from "../src/shell/own-labels.js";
 import { bagOwner } from "../src/shell/bag.js";
+import { shellSettings } from "../src/shell/settings.js";
 
 /**
  * The visitor's menu in the page that keeps the screen (src/shell/menu.ts; NSWP docs/plans/the-clients-menu.md,
@@ -16,7 +17,7 @@ describe("the shell's menu is the kit's, from this site's own copy, and nothing 
   it("takes its code from the kit's menu and controls, and from no other place", async () => {
     const menu = await read("src/shell/menu.ts");
     const from = [...menu.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-    expect(from.sort()).toEqual(["../shared/look.js", "../shared/session.js", "../shared/settings.js", "./bag.js", "./own-labels.js", "./panel.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
+    expect(from.sort()).toEqual(["../shared/look.js", "../shared/session.js", "../shared/settings.js", "./bag.js", "./own-labels.js", "./panel.js", "./settings.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
     // The panel's code stays apart: the menu knows its modes by name, as a type, and asks this page to show it.
     expect(menu).toContain('import type { PanelMode } from "./panel.js";');
   });
@@ -55,8 +56,8 @@ describe("the frame is on its way before the menu is loaded", () => {
 
   it("says a place's last `here` again to a menu that started after it, and only if it is still that place", async () => {
     const shell = await read("src/shell/main.ts");
-    expect(shell).toContain("    lastHere = e;\n    // A new place has arrived");
-    expect(shell).toContain("queueMicrotask(() => said === lastHere && said.source === view.contentWindow && menuHears.has(fn) && fn(said));");
+    expect(shell).toContain("    lastHere = e;\n    unheardWords = [];\n    // Answered from here, always");
+    expect(shell).toContain("if (said !== lastHere || said.source !== view.contentWindow || !menuHears.has(fn)) return;\n        fn(said);\n        for (const word of after) fn(word);");
     // Only words from the frame are ever handed on.
     const handler = shell.slice(shell.indexOf('addEventListener("message", (e: MessageEvent) => {'));
     expect(handler.indexOf("if (e.source !== view.contentWindow) return;")).toBeLessThan(handler.indexOf("for (const fn of [...menuHears]) fn(e);"));
@@ -101,6 +102,7 @@ describe("the menu is behind one switch, and the switch is off", () => {
     // Read where the menu is loaded, where a place is told this page has none, and where it is declared. Never from
     // the address, storage or a message.
     expect(shell.split("SHELL_MENU").length - 1).toBe(3);
+    expect(shell.split("if (SHELL_MENU").length - 1).toBe(2);
     const guarded = shell.slice(shell.indexOf("if (SHELL_MENU) {"));
     expect(guarded.indexOf('import("/shell/menu.js" as string)')).toBeGreaterThan(0);
     expect(shell.slice(0, shell.indexOf("if (SHELL_MENU) {"))).not.toContain("/shell/menu.js");
@@ -169,7 +171,7 @@ describe("the Airlock is under the visitor's menu too", () => {
     expect(menu).toContain("arrived: () => menu.setOpen(false),");
     expect(menu).not.toMatch(/addEventListener\("load"/);
     const shell = await read("src/shell/main.ts");
-    const heard = shell.slice(shell.indexOf("    lastHere = e;\n    // A new place has arrived"));
+    const heard = shell.slice(shell.indexOf("    lastHere = e;\n    unheardWords = [];\n    // Answered from here, always"));
     expect(heard.indexOf("shellMenu?.arrived();")).toBeGreaterThan(0);
     expect(heard.indexOf("shellMenu?.arrived();")).toBeLessThan(heard.indexOf("for (const fn of [...menuHears]) fn(e);"));
     // And a page that finishes loading late doesn't take the keys from under an open sheet.
@@ -216,7 +218,7 @@ describe("what a world reports from its headset session is kept", () => {
   });
 
   it("keeps them as those two functions are written in the page", async () => {
-    const menu = await read("src/shell/menu.ts");
+    const menu = await read("src/shell/settings.ts");
     expect(menu).toContain('export const REPORTED_KEY = "bitportal:reported";');
     expect(menu).toContain('const kept = JSON.parse(store?.getItem(REPORTED_KEY) ?? "null") as unknown;');
     expect(menu).toContain('return kept && typeof kept === "object" && !Array.isArray(kept) ? (kept as TravelSettings) : {};');
@@ -310,15 +312,86 @@ describe("over a page of this site's own, what the page fills is labelled as thi
   });
 });
 
-describe("with the menu off, a place is told at once that this page has none", () => {
-  it("says so in the menu's own words, to the origin that spoke and to no other, and only where the place speaks them", async () => {
+describe("a place is answered from the shell's first file, at once", () => {
+  it("is told \"hasn't\" with the menu off or its file not come, and \"has\" with the visitor's settings otherwise", async () => {
     const shell = await read("src/shell/main.ts");
-    expect(shell).toContain('if (!SHELL_MENU && menuVersionOf(said) > 0 && e.origin && e.origin !== "null") view.contentWindow?.postMessage({ nswp: "menu", has: false }, e.origin);');
-    // Only ever "hasn't": this file never says it has the menu. That is the kit's to say, from the menu's own file.
-    expect(shell).not.toMatch(/has:\s*true/);
-    // And inside the one place words from the frame are taken, after the check that they are from the frame.
-    const handler = shell.slice(shell.indexOf('addEventListener("message", (e: MessageEvent) => {\n  if (e.source !== view.contentWindow) return;'));
-    expect(handler.indexOf("has: false")).toBeGreaterThan(0);
+    const answer = shell.slice(shell.indexOf("const answerPlace = (): void => {"), shell.indexOf("/** Whether the frame's page has finished loading"));
+    // Only to the origin that said `here`, only from the frame, and only where the place speaks the menu's words.
+    expect(answer).toContain('if (!said || said.source !== view.contentWindow || !said.origin || said.origin === "null") return;');
+    expect(answer).toContain("const v = menuVersionOf(said.data);\n  if (!v) return;");
+    expect(answer).toContain("if (SHELL_MENU && !menuFailed) {");
+    expect(answer).toContain('view.contentWindow?.postMessage({ nswp: "menu", has: true, v, settings: shellSettings() }, said.origin);');
+    expect(answer).toContain('view.contentWindow?.postMessage({ nswp: "menu", has: false }, said.origin);');
+    expect(shell).not.toMatch(/postMessage\(\{ nswp: "menu"[^)]*\}, "\*"\)/);
+    // Always, and before anything else is done about the new place: before the sheet is put away, and before the
+    // menu's own end is handed the word.
+    const heard = shell.slice(shell.indexOf("    lastHere = e;\n    unheardWords = [];"));
+    expect(heard.indexOf("answerPlace();")).toBeGreaterThan(0);
+    expect(heard.indexOf("answerPlace();")).toBeLessThan(heard.indexOf("shellMenu?.arrived();"));
+    expect(heard.indexOf("answerPlace();")).toBeLessThan(heard.indexOf("for (const fn of [...menuHears]) fn(e);"));
+  });
+
+  it("says the same settings as the menu's own file will: one reader, used by both", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain("settings: () => shellSettings(),");
+    const shell = await read("src/shell/main.ts");
+    expect(shell.split("shellSettings()").length - 1).toBe(1);
+    expect(menu).toContain('from "./settings.js";');
+    // The first file takes the same reader by a name the build fills in: the reader where the menu is on, and a
+    // stand-in that reads nothing where it is off, so an ordinary build loads nothing for a menu it hasn't got.
+    expect(shell).toContain('import { shellSettings } from "shell-first-settings";');
+    const build = await read("scripts/build.mjs");
+    expect(build).toContain('"shell-first-settings": join(root, shellMenu ? "src/shell/settings.ts" : "src/shell/settings-off.ts"),');
+    const off = await read("src/shell/settings-off.ts");
+    expect(off).toContain("export const shellSettings = (): MenuSettings => ({});");
+    expect([...off.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1])).toEqual(["@nswp/core"]);
+    expect(off).toContain('import type { MenuSettings } from "@nswp/core";');
+  });
+
+  it("keeps what a place says before the menu's file has come, the newest of it, and says it to the menu in order", async () => {
+    const shell = await read("src/shell/main.ts");
+    expect(shell).toContain("const KEPT_WORDS = 48;");
+    expect(shell).toContain('} else if (said.nswp === "menu" && menuHears.size === 0 && lastHere && e.origin === lastHere.origin) {');
+    expect(shell).toContain("unheardWords.push(e);\n    if (unheardWords.length > KEPT_WORDS) unheardWords.shift();");
+    // A new place's `here` forgets what the last place said.
+    expect(shell).toContain("lastHere = e;\n    unheardWords = [];");
+  });
+
+  it("tells the place to draw its own if the menu's file fails or takes too long, and lets the menu take over if it comes after all", async () => {
+    const shell = await read("src/shell/main.ts");
+    expect(shell).toContain("const MENU_FILE_MS = 8000;");
+    const late = shell.slice(shell.indexOf("const tooLong = setTimeout(() => {"));
+    expect(late.indexOf("if (menuHears.size > 0) return;")).toBeLessThan(late.indexOf("menuFailed = true;"));
+    const failed = shell.slice(shell.indexOf(".catch(() => {\n        // Without it every place draws its own menu"));
+    expect(failed.indexOf("menuFailed = true;")).toBeLessThan(failed.indexOf("answerPlace();"));
+    expect(shell).toContain("clearTimeout(tooLong);\n        menuFailed = false;");
+  });
+});
+
+describe("the visitor's settings, as the shell says them", () => {
+  const store = (kept: Record<string, string>) => ({ getItem: (k: string) => kept[k] ?? null });
+
+  it("reads what the kit's parts keep for this site, and what a world reported, with the kept over the reported", () => {
+    const said = shellSettings(store({ "bitportal:reported": JSON.stringify({ turn: 90, hand: "left", look: 2 }), "nswp:desk": JSON.stringify({ look: 0.75 }), "nswp:full": "1" }));
+    expect(said.turn).toBe(90);
+    expect(said.hand).toBe("left");
+    expect(said.full).toBe(true);
+    // How fast the view turns is kept by a part of the kit in this page: that, not an older report of it.
+    expect(said.look).toBe(0.75);
+  });
+
+  it("never says files from anywhere, or what is in hand, whatever is kept", () => {
+    const said = shellSettings(store({ "bitportal:reported": JSON.stringify({ filesAnywhere: true, holding: { item: "x" }, turn: 45 }), "nswp:holding": JSON.stringify({ item: `37303:${"a".repeat(64)}:thing` }) }));
+    expect("filesAnywhere" in said).toBe(false);
+    expect("holding" in said).toBe(false);
+    expect(said.turn).toBe(45);
+  });
+
+  it("says something sensible with nothing kept, and with what is kept unreadable", () => {
+    expect(() => shellSettings(store({}))).not.toThrow();
+    expect(() => shellSettings(store({ "bitportal:reported": "not json", "nswp:desk": "{", "bitportal:sound": "7" }))).not.toThrow();
+    expect(() => shellSettings(null)).not.toThrow();
+    expect(typeof shellSettings(store({})).pictures).toBe("boolean");
   });
 });
 

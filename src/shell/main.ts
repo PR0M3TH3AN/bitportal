@@ -23,6 +23,9 @@ import { fromLocal, menuVersionOf, toLocal } from "@nswp/core";
 import { INSTANCE } from "../shared/instance.js";
 import { PLAIN_KEY, showsInShell } from "../shared/shell.js";
 import type { ShellMenu } from "./menu.js";
+// The settings reader, in a build with the menu on; a stand-in that reads nothing, in a build with it off
+// (scripts/build.mjs chooses): so an ordinary build's first file loads nothing for a menu it hasn't got.
+import { shellSettings } from "shell-first-settings";
 import { createPanel, isPanelMode, readMenuPlace, type Panel, type PanelMode } from "./panel.js";
 
 const view = document.getElementById("view") as HTMLIFrameElement;
@@ -107,16 +110,57 @@ const cameUp = (): void => {
  */
 const menuHears = new Set<(e: MessageEvent) => void>();
 let lastHere: MessageEvent | null = null;
+/**
+ * What the place in the frame has said in the menu's words since its `here`, while no menu was listening: its
+ * description, a key of the visitor's it forwarded, a line it said. This page tells a place that it has the menu
+ * from its first file, before the menu's own file has come, so a place may speak into that gap. Nothing is lost:
+ * it is all said again to the menu, in order, as the menu starts. Only so much is kept, the newest; a place can't
+ * fill this page by talking.
+ */
+const KEPT_WORDS = 48;
+let unheardWords: MessageEvent[] = [];
 const heardByMenu = {
   addEventListener(_type: "message", fn: (e: MessageEvent) => void): void {
     menuHears.add(fn);
-    // Once whoever is listening has finished being made.
+    // Once whoever is listening has finished being made: the place's `here`, and then what it said after it.
     const said = lastHere;
-    if (said) queueMicrotask(() => said === lastHere && said.source === view.contentWindow && menuHears.has(fn) && fn(said));
+    const after = unheardWords;
+    unheardWords = [];
+    if (said)
+      queueMicrotask(() => {
+        if (said !== lastHere || said.source !== view.contentWindow || !menuHears.has(fn)) return;
+        fn(said);
+        for (const word of after) fn(word);
+      });
   },
   removeEventListener(_type: "message", fn: (e: MessageEvent) => void): void {
     menuHears.delete(fn);
   },
+};
+/**
+ * Whether the menu's own file didn't come (it failed, or took too long): then a place is told this page hasn't the
+ * menu, and draws its own. If the file comes after all, the menu says it has it, and the place puts its own away:
+ * the kit's rule for an answer that changes.
+ */
+let menuFailed = false;
+/** How long the menu's file is given before the place is told to draw its own. */
+const MENU_FILE_MS = 8000;
+/** Say to the place that last said `here` whether this page has the menu. Only before the menu's own file listens. */
+const answerPlace = (): void => {
+  const said = lastHere;
+  if (!said || said.source !== view.contentWindow || !said.origin || said.origin === "null") return;
+  const v = menuVersionOf(said.data);
+  if (!v) return;
+  if (SHELL_MENU && !menuFailed) {
+    // With the switch on: "this page has the menu", from this first file and before anything else is loaded, with
+    // the visitor's settings as the menu's own file will say them (the same reader: settings.ts). A place that
+    // starts fast can speak before the menu's file has come, and must not be kept waiting on it.
+    view.contentWindow?.postMessage({ nswp: "menu", has: true, v, settings: shellSettings() }, said.origin);
+  } else {
+    // With the menu's switch off, or its file not come: "this page hasn't the menu", and the place draws its own at
+    // once. Otherwise the place waits for an answer that never comes, and its menu is late for every visitor.
+    view.contentWindow?.postMessage({ nswp: "menu", has: false }, said.origin);
+  }
 };
 /** Whether the frame's page has finished loading since it was last sent somewhere. */
 let viewLoaded = false;
@@ -127,15 +171,18 @@ addEventListener("message", (e: MessageEvent) => {
   const said = e.data as { nswp?: unknown; fill?: unknown; at?: unknown; to?: unknown } | null;
   if (!said || typeof said !== "object") return;
   if (said.nswp === "here") {
-    // Where this page has no menu (the switch off) and the place speaks the menu's words, it is told so at once, in
-    // those words: "this page hasn't the menu". Otherwise the place waits for an answer that never comes before it
-    // draws its own, and its menu is late for every visitor: the kit's wait is a third of a second, and measured on
-    // a busy machine the room's menu came up half a second late, and up to a second and a half. Said only to the
-    // origin that spoke, and it says nothing of the visitor.
-    if (!SHELL_MENU && menuVersionOf(said) > 0 && e.origin && e.origin !== "null") view.contentWindow?.postMessage({ nswp: "menu", has: false }, e.origin);
     lastHere = e;
+    unheardWords = [];
+    // Answered from here, always, and before anything else is done about the new place: this is a few lines,
+    // where the kit's own end has the whole menu's work to do before it answers. Once the menu's file is listening
+    // the kit's end answers too, after this, with the same settings from the same reader.
+    answerPlace();
     // A new place has arrived: the menu's sheet, if it was left up in the last one, is put away.
     shellMenu?.arrived();
+  } else if (said.nswp === "menu" && menuHears.size === 0 && lastHere && e.origin === lastHere.origin) {
+    // Spoken into the gap before the menu's file has come: kept, the newest of it, and said to the menu as it starts.
+    unheardWords.push(e);
+    if (unheardWords.length > KEPT_WORDS) unheardWords.shift();
   }
   for (const fn of [...menuHears]) fn(e);
   if (said.nswp === "here") {
@@ -282,6 +329,12 @@ void begin().then((first) => {
   view.src = first;
   // Only in a build that has the menu: with it off, none of this is in the page at all.
   if (SHELL_MENU) {
+    // If the menu's file hasn't come in good time, the place is told to draw its own meanwhile.
+    const tooLong = setTimeout(() => {
+      if (menuHears.size > 0) return;
+      menuFailed = true;
+      answerPlace();
+    }, MENU_FILE_MS);
     // The frame is on its way first. Then the menu: this site's own copy of the kit's, as a file of its own.
     void (import("/shell/menu.js" as string) as Promise<typeof import("./menu.js")>)
       .then(({ startMenu }) => {
@@ -305,8 +358,15 @@ void begin().then((first) => {
           atRoom: () => !!lastHere && lastHere.origin === location.origin && typeof (lastHere.data as { at?: unknown }).at === "string" && (lastHere.data as { at: string }).at.startsWith("/walk/"),
         });
       })
+      .then(() => {
+        clearTimeout(tooLong);
+        menuFailed = false;
+      })
       .catch(() => {
-        /* without it every place draws its own menu, as before */
+        // Without it every place draws its own menu: the place in the frame is told so now, and each one after.
+        clearTimeout(tooLong);
+        menuFailed = true;
+        answerPlace();
       });
   }
 });
