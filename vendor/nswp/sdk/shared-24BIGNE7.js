@@ -38,7 +38,7 @@ import {
   setAimScale,
   showsModels,
   watchFov
-} from "./shared-O6464UDG.js";
+} from "./shared-6G6TXXH2.js";
 import {
   createHeldButton,
   loadPicture,
@@ -515,6 +515,7 @@ function createConsoleDrawing(controls, opts) {
 // packages/sdk/src/console.ts
 var W2 = CONSOLE_W;
 var H2 = CONSOLE_H;
+var MENU_ORDER = 30;
 var FLOAT_W = 0.84;
 var WRIST_W = 0.36;
 var ASPECT = H2 / W2;
@@ -548,7 +549,7 @@ function createConsole(controls, opts) {
   texture.anisotropy = 4;
   const material = holoMaterial(texture);
   const panel = new THREE2.Mesh(new THREE2.PlaneGeometry(1, ASPECT), material);
-  panel.renderOrder = 30;
+  panel.renderOrder = MENU_ORDER;
   panel.visible = false;
   group.add(panel);
   const openerCanvas = document.createElement("canvas");
@@ -557,7 +558,7 @@ function createConsole(controls, opts) {
   const openerTexture = new THREE2.CanvasTexture(openerCanvas);
   openerTexture.colorSpace = THREE2.SRGBColorSpace;
   const opener = new THREE2.Mesh(new THREE2.PlaneGeometry(0.15, 0.15 * 300 / 256), new THREE2.MeshBasicMaterial({ map: openerTexture, transparent: true, depthTest: false }));
-  opener.renderOrder = 30;
+  opener.renderOrder = MENU_ORDER;
   group.add(opener);
   const d = createConsoleDrawing(controls, {
     canvas,
@@ -7844,6 +7845,15 @@ function keepComfort(o) {
 // packages/sdk/src/input.ts
 var unpointable = (root) => root.traverse((o) => void (o.raycast = () => {
 }));
+var HANDS_ORDER = 40;
+function drawnLast(root) {
+  root.traverse((o) => {
+    const mesh = o;
+    if (!mesh.isMesh) return;
+    mesh.renderOrder = HANDS_ORDER;
+    for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) if (m) m.transparent = true;
+  });
+}
 function controllerModel(accent) {
   const b = new MeshBuilder().at();
   b.tone = new THREE13.Color(1712684);
@@ -7867,6 +7877,7 @@ function controllerModel(accent) {
   squeeze.rotation.x = THREE13.MathUtils.degToRad(-52);
   group.add(trigger, squeeze);
   unpointable(group);
+  drawnLast(group);
   return { group, metal, trigger, squeeze };
 }
 var VIGNETTE_VERT = `varying float vFar; void main(){ vFar = length(position.xy); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
@@ -7927,6 +7938,7 @@ function createXrInput(opts) {
       const radius = joint.jointRadius;
       mesh.scale.setScalar(Math.min(0.02, Math.max(5e-3, (radius ?? 8e-3) * (tip ? 0.9 : 0.75))));
       unpointable(mesh);
+      drawnLast(mesh);
       joint.add(mesh);
     }
   };
@@ -11391,6 +11403,7 @@ export {
   viewScale,
   createScores,
   addScoreControls,
+  createItemPreviews,
   addBagControls2 as addBagControls,
   TAP_MS,
   addItemControls,

@@ -6,7 +6,9 @@ import {
 } from "./shared-RS6AKN35.js";
 import {
   arrivedSettings,
+  clientPanelOpen,
   currentForm,
+  onClientSignIn,
   reportSettings,
   startingForm
 } from "./shared-3QMBUCPV.js";
@@ -422,8 +424,9 @@ function createFps(o) {
   dot.setAttribute("aria-hidden", "true");
   dot.style.cssText = "position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;opacity:.75;box-shadow:0 0 0 1px rgba(0,0,0,.55);pointer-events:none;z-index:5;display:none";
   document.body.append(dot);
+  const panelUp = () => clientPanelOpen();
   const look = () => {
-    if (!active() || o.hud?.open || looking()) return;
+    if (!active() || o.hud?.open || looking() || panelUp()) return;
     try {
       const asked = o.dom.requestPointerLock();
       asked?.catch?.(() => {
@@ -436,7 +439,7 @@ function createFps(o) {
     weLetGo = true;
     document.exitPointerLock();
   };
-  const free = (e) => !looking() && !o.hud?.open && e.target === o.dom && e.buttons === 0;
+  const free = (e) => !looking() && !o.hud?.open && !panelUp() && e.target === o.dom && e.buttons === 0;
   const onMove = (e) => {
     if (!active() || !(looking() || free(e))) return;
     const next = lookAfter(o.rig.rotation.y, pitch, e.movementX, e.movementY, LOOK_SPEED * lookScale() * aimScale());
@@ -445,7 +448,7 @@ function createFps(o) {
     o.camera.rotation.x = pitch;
   };
   const onDown = (e) => {
-    if (!active() || e.button !== 0) return;
+    if (!active() || e.button !== 0 || panelUp()) return;
     if (looking()) o.onUse();
     else look();
   };
@@ -472,7 +475,7 @@ function createFps(o) {
       } else if (o.hud && !o.hud.open && performance.now() - closedAt > 80) o.hud.setOpen(true);
       return;
     }
-    if (o.hud?.open) return;
+    if (o.hud?.open || panelUp()) return;
     if (!looking() && !e.repeat) look();
     const which = heldKey(e.code);
     if (which) {
@@ -495,6 +498,11 @@ function createFps(o) {
   addEventListener("keydown", onKey);
   addEventListener("keyup", onKeyUp);
   addEventListener("blur", onBlur);
+  const stopPanel = onClientSignIn((up) => {
+    if (!up) return;
+    for (const k of Object.keys(held)) held[k] = false;
+    letGo();
+  });
   const stopSignals = o.controls.onSignal((name) => {
     if (name === "menuOpen") letGo();
     if (name === "menuClose") {
@@ -597,6 +605,7 @@ function createFps(o) {
       letGo();
       dot.remove();
       stopSignals();
+      stopPanel();
       o.controls.remove("fps");
       o.dom.removeEventListener("mousedown", onDown);
       document.removeEventListener("mousemove", onMove);
