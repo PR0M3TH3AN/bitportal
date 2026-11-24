@@ -192,6 +192,7 @@ var saver = null;
 function setSaver(next) {
   saver = next;
 }
+var making = () => saver?.making?.();
 var handUp = (file) => saver?.handUp(file) ?? false;
 var savesWait = () => saver?.waits() ?? false;
 
@@ -269,6 +270,7 @@ export {
   askClientForSignIn,
   meetClient,
   setSaver,
+  making,
   handUp,
   savesWait,
   deviceForms,

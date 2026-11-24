@@ -3,11 +3,11 @@ import {
 } from "./shared-EGXGKKYY.js";
 import {
   visitorsOwnRow
-} from "./shared-L6FYXGUA.js";
+} from "./shared-6KFLNMW7.js";
 import {
   SUMMON_KEY,
   loadPicture
-} from "./shared-GK2URPYT.js";
+} from "./shared-JOCMTIKO.js";
 import {
   changeSettings,
   currentSettings,
@@ -17,11 +17,11 @@ import {
   setSaver,
   sinceHere,
   speakMenu
-} from "./shared-YBP57Z2Q.js";
+} from "./shared-YK562XB3.js";
 import "./shared-QLSLERQ3.js";
 
 // packages/sdk/src/menu-above.ts
-import { LEAVE_MS, MENU_CARD_PICTURE, MENU_KEYS, reportedSettings, MENU_LIMITS, MENU_SAVE_MS, menuSaveType, MENU_VERSION, MENU_VISITOR_TABS, MENU_WAIT_MS, readMenuWordDown } from "@nswp/core";
+import { LEAVE_MS, MENU_CARD_PICTURE, MENU_KEYS, reportedSettings, MENU_LIMITS, MENU_MAKING_MS, MENU_SAVE_MS, menuSaveType, MENU_VERSION, MENU_VISITOR_TABS, MENU_WAIT_MS, readMenuWordDown } from "@nswp/core";
 
 // packages/sdk/src/menu-keeper.ts
 function keepMenu(controls, above, mount) {
@@ -302,12 +302,19 @@ function portAbove(controls, opts = {}) {
       waiting = null;
       named = /* @__PURE__ */ new Map();
       saving = null;
+      hearPlaying(false);
     }
     know();
     for (const fn of [...watchers]) fn(has);
   };
   let saving = null;
   const awaited = () => !!saving && saving.left > 0 && performance.now() < saving.until;
+  let playing = false;
+  const hearPlaying = (on) => {
+    if (on === playing) return;
+    playing = on;
+    opts.playing?.(on);
+  };
   setSaver({
     handUp(file) {
       if (!has || !awaited() || !menuSaveType(file.type) || file.size < 1 || file.size > MENU_LIMITS.save) return false;
@@ -315,7 +322,15 @@ function portAbove(controls, opts = {}) {
       above.say({ save: file, id: saving.id });
       return true;
     },
-    waits: () => has && !awaited()
+    waits: () => has && !awaited(),
+    // What the press asked for is being made, and may take a while: said once for a press, at once, and the press
+    // is then held open for longer, counted from the press itself. Nothing is said for a press that isn't waiting.
+    making() {
+      if (!has || !awaited() || saving.told || saving.left < MENU_LIMITS.saves) return;
+      saving.told = true;
+      saving.until = saving.at + MENU_MAKING_MS;
+      above.say({ making: saving.id });
+    }
   });
   let leaving = null;
   let open = false;
@@ -328,11 +343,15 @@ function portAbove(controls, opts = {}) {
     }
     if (!has) return;
     if (word.what === "settings") return void takeSettings(word.settings);
+    if (word.what === "playing") return void hearPlaying(word.playing);
     if (word.what === "press") {
       const row = named.get(word.press);
       if (!row) return;
       if (word.file) return void (row.kind === "file" && row.accept.includes(word.kind) && controls.run(word.press, void 0, word.name ? word.file : nameless(word.file)));
-      if (row.kind === "save") saving = { id: word.press, until: performance.now() + MENU_SAVE_MS, left: MENU_LIMITS.saves };
+      if (row.kind === "save") {
+        const at = performance.now();
+        saving = { id: word.press, at, until: at + MENU_SAVE_MS, left: MENU_LIMITS.saves, told: false };
+      }
       return void controls.run(word.press, word.field);
     }
     if (word.what === "open") {
@@ -403,6 +422,7 @@ function portAbove(controls, opts = {}) {
       stopSay();
       above.hear(null);
       setSaver(null);
+      hearPlaying(false);
       keys?.removeEventListener("keydown", onKey, listening);
       keys?.removeEventListener("keyup", swallow, listening);
       watchers.clear();
