@@ -92,7 +92,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-24BIGNE7.js";
+} from "./shared-ZFQ5QCP5.js";
 import {
   addDoorControls,
   vouchedWords
@@ -150,7 +150,7 @@ import {
   strideOf,
   visitorFov,
   watchFov
-} from "./shared-6G6TXXH2.js";
+} from "./shared-B4ZPPIXA.js";
 import {
   PICTURE_LIMITS,
   loadPicture,

@@ -7,7 +7,7 @@ import {
   mountMenu,
   portHere,
   sheetOf
-} from "./shared-63ZLMVD7.js";
+} from "./shared-6HLBQOSL.js";
 import {
   ICONS,
   STANDARD_TABS,
@@ -24,7 +24,7 @@ import {
   deskMovingSwitch,
   modelsSwitch,
   picturesSwitch
-} from "./shared-6G6TXXH2.js";
+} from "./shared-B4ZPPIXA.js";
 import "./shared-RS6AKN35.js";
 import {
   fullscreenAction,
