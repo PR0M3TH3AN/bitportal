@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asOurOwn } from "../src/shell/own-labels.js";
+import { bagOwner } from "../src/shell/bag.js";
 
 /**
  * The visitor's menu in the page that keeps the screen (src/shell/menu.ts; NSWP docs/plans/the-clients-menu.md,
@@ -15,7 +16,7 @@ describe("the shell's menu is the kit's, from this site's own copy, and nothing 
   it("takes its code from the kit's menu and controls, and from no other place", async () => {
     const menu = await read("src/shell/menu.ts");
     const from = [...menu.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-    expect(from.sort()).toEqual(["./own-labels.js", "./panel.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
+    expect(from.sort()).toEqual(["../shared/look.js", "../shared/session.js", "../shared/settings.js", "./bag.js", "./own-labels.js", "./panel.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
     // The panel's code stays apart: the menu knows its modes by name, as a type, and asks this page to show it.
     expect(menu).toContain('import type { PanelMode } from "./panel.js";');
   });
@@ -318,5 +319,63 @@ describe("with the menu off, a place is told at once that this page has none", (
     // And inside the one place words from the frame are taken, after the check that they are from the frame.
     const handler = shell.slice(shell.indexOf('addEventListener("message", (e: MessageEvent) => {\n  if (e.source !== view.contentWindow) return;'));
     expect(handler.indexOf("has: false")).toBeGreaterThan(0);
+  });
+});
+
+describe("the Bag in the shell's menu, over a world", () => {
+  const ME = "a".repeat(64);
+  const OURS = "https://portal.bitblocks.network";
+  const WORLD = "https://grove.bitblocks.network";
+
+  it("is the bag of whoever is signed in to BitPortal, and only where the world says they are named there", () => {
+    expect(bagOwner({ signedIn: () => ME, origin: WORLD, ours: OURS, named: true })).toBe(ME);
+    // A guest in that world carries nothing there, whoever they are to BitPortal.
+    expect(bagOwner({ signedIn: () => ME, origin: WORLD, ours: OURS, named: false })).toBeNull();
+    // Nobody signed in to BitPortal: nobody's bag, whatever the world says.
+    expect(bagOwner({ signedIn: () => null, origin: WORLD, ours: OURS, named: true })).toBeNull();
+    // Over this site's own pages the room fills the Bag itself, and before any place has spoken there is none.
+    expect(bagOwner({ signedIn: () => ME, origin: OURS, ours: OURS, named: true })).toBeNull();
+    expect(bagOwner({ signedIn: () => ME, origin: "", ours: OURS, named: true })).toBeNull();
+  });
+
+  it("asks who is signed in only once the world has said they are named: a guest's visit asks nothing of who they are", () => {
+    let asked = 0;
+    const signedIn = (): string => (asked++, ME);
+    bagOwner({ signedIn, origin: WORLD, ours: OURS, named: false });
+    bagOwner({ signedIn, origin: OURS, ours: OURS, named: true });
+    expect(asked).toBe(0);
+  });
+
+  it("is the kit's own Bag and item store, with no hand to change it, and its things shown without the renderer", async () => {
+    const bag = await read("src/shell/bag.ts");
+    expect([...bag.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]).sort()).toEqual(["nswp-sdk/bag", "nswp-sdk/menu", "nswp-sdk/ui"]);
+    expect(bag).toContain("const bag = createBag({ me, relays: o.relays, hand: null });");
+    expect(bag).toContain("const items = createItemStore({ relays: o.relays, viewer: me });");
+    expect(bag).toContain("previews: null,");
+    // No lookup, signature check or query of this site's own: those are the kit's.
+    expect(bag).not.toMatch(/verifyEvent|queryRelays|parseItem|new WebSocket|fetch\(/);
+  });
+
+  it("asks before a thing's own logic first runs, by the kit's rule, and tells the world only the script they let run", async () => {
+    const bag = await read("src/shell/bag.ts");
+    const hold = bag.slice(bag.indexOf("hold: async (item, tints) => {"));
+    const may = hold.indexOf("const may = mayHold(described, { rule: rule(), scripts: true, asked });");
+    const told = hold.indexOf("await o.below.hold(item, {");
+    expect(may).toBeGreaterThan(0);
+    expect(hold.indexOf("if (!may.ok) return may;")).toBeGreaterThan(may);
+    expect(told).toBeGreaterThan(hold.indexOf("if (!may.ok) return may;"));
+    expect(hold).toContain("...(script && scriptAllowed(script) ? { script } : {})");
+    // One memory of what was asked, kept for the page's life: a second press on the same item is their yes.
+    expect(bag.split('const asked = { sha: "" };').length - 1).toBe(1);
+  });
+
+  it("reads who is signed in from this browser's own note, in the menu's own file and not the shell's first one", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain("addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays });");
+    // The page's first file gains nothing for it: with the menu off, nothing of who is signed in is loaded there.
+    const shell = await read("src/shell/main.ts");
+    expect(shell).not.toMatch(/shared\/session|shared\/look|knownSignedIn/);
+    const build = await read("scripts/build.mjs");
+    expect(build).toContain('"nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),\n  },\n}).then(');
   });
 });

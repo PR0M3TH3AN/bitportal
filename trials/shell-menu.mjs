@@ -39,7 +39,8 @@ await ctx.addInitScript(() => {
     const d = e.data;
     if (!d || typeof d !== "object" || !d.nswp) return;
     const names = Object.keys(d).filter((k) => k !== "nswp");
-    if (d.nswp === "menu" && (names.includes("world") || names.includes("picture"))) return;
+    if (d.nswp === "menu" && names.includes("picture")) return;
+    if (d.nswp === "menu" && names.includes("world")) return void window.__up.push(`${Math.round(performance.now())} menu world "${String(d.world?.title).slice(0, 24)}" with ${d.world?.sections?.length ?? 0} tabs`);
     window.__up.push(`${Math.round(performance.now())} ${d.nswp} ${names.map((k) => (typeof d[k] === "string" || typeof d[k] === "boolean" ? `${k}=${d[k]}` : k)).join(",")}`.slice(0, 90));
   }, true);
   addEventListener("focus", () => window.__up.push(`${Math.round(performance.now())} (window focus)`), true);
@@ -334,14 +335,18 @@ await openSheet();
 const marked = "<img src=x onerror=window.__owned=1><b>bold</b>";
 // Whether the markup became elements: the picture it names, or the bold word.
 const made = () => page.evaluate(() => { const root = document.querySelector(".shell-menu").firstElementChild.shadowRoot; return root.querySelectorAll('img[src="x"], [onerror]').length + [...root.querySelectorAll("b")].filter((b) => b.textContent === "bold").length; });
-const say = () => world().evaluate((label) => parent.postMessage({ nswp: "menu", world: { title: label, level: "full", corner: "top-left", keys: false, state: {}, target: [], loading: null, sections: [{ id: "travel", label: "Travel", rows: [{ id: "marked", label, kind: "button" }] }, { id: "following", label: "Following", rows: [{ id: "typed", label: "Follow someone by key", kind: "field" }] }] } }, "*"), marked);
-await say();
+// The world's own description takes the made-up one's place whenever the world next has something new to say, and
+// it did, in the middle of this part (which of its words changed was not found). So while the made-up one is
+// being looked at, the world's page says it again five times a second, and stops when this part is done.
+const say = (on) => world().evaluate(([label, on]) => { clearInterval(window.__saying); if (!on) return; const post = () => parent.postMessage({ nswp: "menu", world: { title: label, level: "full", corner: "top-left", keys: false, state: {}, target: [], loading: null, sections: [{ id: "travel", label: "Travel", rows: [{ id: "marked", label, kind: "button" }] }, { id: "following", label: "Following", rows: [{ id: "typed", label: "Follow someone by key", kind: "field" }] }] } }, "*"); post(); window.__saying = setInterval(post, 200); }, [marked, on]);
+await say(true);
+await openSheet();
 await press(tab("Travel"));
 await wait(300);
 const shown = await page.evaluate((label) => ({ letters: document.querySelector(".shell-menu").firstElementChild.shadowRoot.textContent.includes(label), owned: window.__owned === 1 }), marked);
 check("markup in a world's label is shown as letters, and makes no element", shown.letters && (await made()) === 0 && !shown.owned, { ...shown, elements: await made() });
 await page.screenshot({ path: join(SHOTS, "shell-menu-markup.png") });
-await say();
+await openSheet();
 await press(tab("Following"));
 // A row typed into shows its field when it is pressed.
 const typedRow = hud.getByRole("button", { name: /Follow someone by key/ });
@@ -354,7 +359,7 @@ if (await field.isVisible().catch(() => false)) {
   await wait(200);
   check("typed into a field of the menu's: the world heard none of it", (await worldKeys()) === k0 && (await field.inputValue()) === "npub1notakey", { heard: (await worldKeys()) - k0, value: await field.inputValue() });
 } else check("a field of the menu's to type into", false, await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 5000 }).catch(() => "?"));
-// The made-up description stands until the world's own changes: this is the last thing looked at in this world.
+await say(false);
 
 if (await sheetOpen()) await page.keyboard.press("Escape");
 await wait(900);
