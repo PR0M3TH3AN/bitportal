@@ -194,8 +194,18 @@ export function createPanel(o: { at: string; told(open: boolean, more?: { failed
     // One that is up is what the visitor is looking at: it stays until it closes, and is not kept then.
     else if (up && e.source === up.frame.contentWindow) up.gone = true;
   });
+  // A kept panel may load its page afresh while hidden (BitLogin, a new build served: it reloads itself in the same
+  // frame and says `ready` again). A `hide` said while it was loading was heard by nobody, so a page that comes up
+  // hidden would think itself shown. Its `ready`, from that frame's own window at BitLogin's own address, is
+  // answered with `hide` again: the one thing a hidden panel is heard saying, and nothing else is read from it.
   addEventListener("message", (e: MessageEvent) => {
-    // Only BitLogin's own page, in the frame this page made for it, at BitLogin's own address. A hidden one is not heard.
+    if (!kept || e.source !== kept.frame.contentWindow || e.origin !== o.at) return;
+    const said = e.data as { bitlogin?: unknown; v?: unknown; t?: unknown } | null;
+    if (said && typeof said === "object" && said.bitlogin === PROTOCOL && said.v === VERSION && said.t === "ready") say(kept.frame, { t: "hide" });
+  });
+  addEventListener("message", (e: MessageEvent) => {
+    // Only BitLogin's own page, in the frame this page made for it, at BitLogin's own address. A hidden one is not
+    // heard here (its one word, `ready`, is answered above).
     if (!up || e.source !== up.frame.contentWindow || e.origin !== o.at) return;
     const said = e.data as { bitlogin?: unknown; v?: unknown; t?: unknown; size?: unknown; height?: unknown; allowed?: unknown } | null;
     if (!said || typeof said !== "object" || said.bitlogin !== PROTOCOL || said.v !== VERSION) return;

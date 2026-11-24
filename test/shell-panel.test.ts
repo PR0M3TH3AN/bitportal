@@ -203,6 +203,33 @@ describe("the sign-in panel is kept between openings", () => {
     expect(panel.open).toBe(true);
   });
 
+  it("answers a hidden panel that came up afresh with `hide` again, and hears nothing else from it", () => {
+    const frame = openCold(ROOM, "wallet");
+    says(frame, { t: "close" });
+    expect(frame.heard.map((h) => h.said.t)).toEqual(["hello", "hide"]);
+    const before = told.length;
+    // BitLogin's page loads itself afresh in the kept frame (a newer build) and says it is ready: it is told to hide.
+    says(frame, { t: "ready" });
+    expect(frame.heard.map((h) => h.said.t)).toEqual(["hello", "hide", "hide"]);
+    expect(last(frame).to).toBe(AT);
+    // Still kept and hidden; the world is told nothing; nothing else it says is read.
+    expect(panel.open).toBe(false);
+    expect(panel.kept).toBe(true);
+    expect(boxes()[0]!.dataset.kept).toBe("");
+    says(frame, { t: "size", size: "tall", height: 400 });
+    says(frame, { t: "close", allowed: true });
+    expect(told.length).toBe(before);
+    expect(frame.heard.map((h) => h.said.t)).toEqual(["hello", "hide", "hide"]);
+    // Not from another address, and not from another frame.
+    says(frame, { t: "ready" }, "https://elsewhere.example");
+    says(el("iframe"), { t: "ready" });
+    expect(frame.heard.length).toBe(3);
+    // And its five minutes run as before.
+    vi.advanceTimersByTime(5 * 60_000);
+    expect(panel.kept).toBe(false);
+    expect(frames()).toEqual([]);
+  });
+
   it("is loaded anew where a panel shown again never draws: an older panel knows no `show`", () => {
     const old = openCold(ROOM, "wallet");
     says(old, { t: "close" });
