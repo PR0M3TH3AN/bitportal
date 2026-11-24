@@ -60,6 +60,9 @@ await build({
     "nswp-sdk/terminal": join(root, "vendor/nswp/sdk/terminal.js"),
     "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
     "nswp-sdk/menu-above": join(root, "vendor/nswp/sdk/menu-above.js"),
+    // What the shell's first file says of the visitor's settings: the reader where the menu is on, nothing where
+    // it is off (src/shell/settings-off.ts says why).
+    "shell-first-settings": join(root, shellMenu ? "src/shell/settings.ts" : "src/shell/settings-off.ts"),
     "nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),
   },
 });
