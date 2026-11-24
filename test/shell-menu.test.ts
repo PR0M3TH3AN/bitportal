@@ -30,13 +30,18 @@ describe("the shell's menu is the kit's, from this site's own copy, and nothing 
     expect(menu).not.toMatch(/filesAnywhere/);
   });
 
-  it("is built by itself, with no part of the renderer, and the build stops if it ever carries one", async () => {
+  it("is built with the rest, so the kit's core is loaded once, and the build stops if it would ever load the renderer", async () => {
     const build = await read("scripts/build.mjs");
-    expect(build).toContain('entryPoints: { "shell/menu": join(root, "src/shell/menu.ts") },');
-    expect(build).toContain("The shell's menu must not carry the renderer, and now does:");
-    // Not one of the entries that are split with the room's.
-    const first = build.slice(build.indexOf("entryPoints: {"), build.indexOf("splitting: true"));
-    expect(first).not.toContain("shell/menu");
+    // One build, the menu's file an entry of it only where the switch is on: what it shares with the shell's first
+    // file is then one file, loaded once.
+    expect(build.split("await build({").length - 1).toBe(1);
+    const entries = build.slice(build.indexOf("entryPoints: {"), build.indexOf("splitting: true"));
+    expect(entries).toContain('...(shellMenu ? { "shell/menu": join(root, "src/shell/menu.ts") } : {}),');
+    // Everything the menu's file loads as it starts is followed, and no part of the renderer may be in any of it.
+    expect(build).toContain('for (const i of outputs[f].imports) if (i.kind === "import-statement" && !i.external) follow(i.path);');
+    expect(build).toContain('src.includes("node_modules/three/") && part.bytesInOutput > 0');
+    expect(build).toContain("The shell's menu must not load the renderer, and now does:");
+    expect(build.indexOf("must not load the renderer")).toBeGreaterThan(build.indexOf("if (shellMenu) {"));
   });
 });
 
@@ -95,14 +100,15 @@ describe("the menu is behind one switch, and the switch is off", () => {
     expect(build).toContain('const shellMenu = process.env.BITPORTAL_SHELL_MENU === "1";');
     expect(build).toContain("define: { SHELL_MENU: JSON.stringify(shellMenu) },");
     // The menu's own file is built only for a build that has it on.
-    expect(build).toContain('if (shellMenu) await build({\n  entryPoints: { "shell/menu": join(root, "src/shell/menu.ts") },');
+    expect(build).toContain('...(shellMenu ? { "shell/menu": join(root, "src/shell/menu.ts") } : {}),');
+    expect(build.split('join(root, "src/shell/menu.ts")').length - 1).toBe(1);
     const shell = await read("src/shell/main.ts");
     expect(shell).toContain("declare const SHELL_MENU: boolean;");
     // Read nowhere but where the menu is loaded, and never from the address, storage or a message.
-    // Read where the menu is loaded, where a place is told this page has none, and where it is declared. Never from
-    // the address, storage or a message.
-    expect(shell.split("SHELL_MENU").length - 1).toBe(3);
-    expect(shell.split("if (SHELL_MENU").length - 1).toBe(2);
+    // Read where the menu is loaded, where a place is told this page has none, where a place's words are kept for a
+    // menu still to come, and where it is declared. Never from the address, storage or a message.
+    expect(shell.split("SHELL_MENU").length - 1).toBe(4);
+    expect(shell.split("if (SHELL_MENU").length - 1).toBe(3);
     const guarded = shell.slice(shell.indexOf("if (SHELL_MENU) {"));
     expect(guarded.indexOf('import("/shell/menu.js" as string)')).toBeGreaterThan(0);
     expect(shell.slice(0, shell.indexOf("if (SHELL_MENU) {"))).not.toContain("/shell/menu.js");
@@ -351,7 +357,9 @@ describe("a place is answered from the shell's first file, at once", () => {
   it("keeps what a place says before the menu's file has come, the newest of it, and says it to the menu in order", async () => {
     const shell = await read("src/shell/main.ts");
     expect(shell).toContain("const KEPT_WORDS = 48;");
-    expect(shell).toContain('} else if (said.nswp === "menu" && menuHears.size === 0 && lastHere && e.origin === lastHere.origin) {');
+    // Only where a menu can come: an ordinary build keeps nothing for a menu it hasn't got.
+    expect(shell).toContain('} else if (SHELL_MENU && said.nswp === "menu" && menuHears.size === 0 && lastHere && e.origin === lastHere.origin) {');
+    expect(shell.split("unheardWords.push(").length - 1).toBe(1);
     expect(shell).toContain("unheardWords.push(e);\n    if (unheardWords.length > KEPT_WORDS) unheardWords.shift();");
     // A new place's `here` forgets what the last place said.
     expect(shell).toContain("lastHere = e;\n    unheardWords = [];");
@@ -449,6 +457,7 @@ describe("the Bag in the shell's menu, over a world", () => {
     const shell = await read("src/shell/main.ts");
     expect(shell).not.toMatch(/shared\/session|shared\/look|knownSignedIn/);
     const build = await read("scripts/build.mjs");
-    expect(build).toContain('"nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),\n  },\n}).then(');
+    // The kit's Bag is named to the one build, which the menu's file is an entry of.
+    expect(build.split('"nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),').length - 1).toBe(1);
   });
 });

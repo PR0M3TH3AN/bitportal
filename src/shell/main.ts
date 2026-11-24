@@ -179,8 +179,9 @@ addEventListener("message", (e: MessageEvent) => {
     answerPlace();
     // A new place has arrived: the menu's sheet, if it was left up in the last one, is put away.
     shellMenu?.arrived();
-  } else if (said.nswp === "menu" && menuHears.size === 0 && lastHere && e.origin === lastHere.origin) {
+  } else if (SHELL_MENU && said.nswp === "menu" && menuHears.size === 0 && lastHere && e.origin === lastHere.origin) {
     // Spoken into the gap before the menu's file has come: kept, the newest of it, and said to the menu as it starts.
+    // Only where a menu can come: with the switch off nothing ever listens, and nothing is kept for it.
     unheardWords.push(e);
     if (unheardWords.length > KEPT_WORDS) unheardWords.shift();
   }
