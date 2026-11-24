@@ -14,6 +14,9 @@ export function shellMenuFaults(dir = dist) {
   if (!existsSync(main)) return ["dist/shell/main.js is missing: run npm run build"];
   const faults = [];
   if (existsSync(join(dir, "shell", "menu.js"))) faults.push("dist/shell/menu.js was built: the menu's code is in this build");
+  if (existsSync(join(dir, "shell", "pictures"))) faults.push("dist/shell/pictures was built: the page that draws the Bag's things for the menu is in this build");
+  const served = join(dir, "vercel.json");
+  if (existsSync(served) && readFileSync(served, "utf8").includes("/shell/pictures")) faults.push("dist/vercel.json has rules for /shell/pictures: the headers are a build's with the menu on");
   if (readFileSync(main, "utf8").includes("/shell/menu.js")) faults.push("dist/shell/main.js names the menu's file: the shell would load it");
   return faults;
 }

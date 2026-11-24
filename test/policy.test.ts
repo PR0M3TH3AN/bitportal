@@ -164,8 +164,11 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     expect(build).toContain('`frame-src ${[...frames, signInOrigin].join(" ")}`');
     // Written there, and once more where the rules of the page that keeps the screen are written out whole to be
     // checked against what that one place made (below): a check, which can stop a build and can't change a header.
-    expect(build.split("frame-src").length - 1).toBe(2);
-    expect(build.split("frame-src").slice(1).map((after) => after.startsWith(" 'self' ${[...shellWorlds, signInOrigin]") || after.startsWith(' ${[...frames, signInOrigin].join(" ")}`'))).toEqual([true, true]);
+    // And a third time, to say "nothing": the page that draws the Bag's things for that page frames nobody at all
+    // (src/shell/pictures/main.ts; its rules are written out whole, and are its own).
+    expect(build.split("frame-src").length - 1).toBe(3);
+    expect(build.split("frame-src").slice(1).map((after) => after.startsWith(" 'self' ${[...shellWorlds, signInOrigin]") || after.startsWith(' ${[...frames, signInOrigin].join(" ")}`') || after.startsWith(" 'none';"))).toEqual([true, true, true]);
+    expect(build.split("frame-src 'none'").length - 1).toBe(1);
     expect(build).toContain(`const rulesFor = ({ frames = [], framedBy = "'none'" } = {}) =>`);
     expect(build).toContain("const csp = rulesFor();");
     expect(build).toContain(`"script-src 'self'"`);
@@ -189,10 +192,13 @@ describe("where a visitor signs in to BitPortal itself (owner's decision, 2026-1
     // change by a change made somewhere else (NSWP docs/plans/the-clients-menu.md, 17.1).
     expect(build).toContain("const cspShellWritten = `default-src 'self'; script-src 'self'; worker-src 'self'; frame-src 'self' ${[...shellWorlds, signInOrigin].join(\" \")}; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https: wss:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;");
     expect(build).toContain("if (cspShell !== cspShellWritten) throw new Error(");
-    expect(build.indexOf("if (cspShell !== cspShellWritten)")).toBeLessThan(build.indexOf('{ source: "/shell(/.*)?"'));
+    expect(build.indexOf("if (cspShell !== cspShellWritten)")).toBeLessThan(build.indexOf('"/shell(/.*)?"'));
     expect(build).toContain('{ source: "/walk(/.*)?", headers: guards(cspRoom) },');
     expect(build).toContain('{ source: "/go(/.*)?", headers: guards(cspFramed) },');
-    expect(build).toContain('{ source: "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },');
+    // Every path under /shell/ is under those rules. Where a build has the visitor's menu on, one path under it is
+    // a page with narrower rules of its own (the Bag's pictures), and is left out of this rule so no path is under two.
+    expect(build).toContain('{ source: shellMenu ? "/shell(/(?!pictures(?:/|$)).*)?" : "/shell(/.*)?", headers: guards(cspShell, shellWorlds, signInOrigin) },');
+    expect(build).toContain('...(shellMenu ? [{ source: "/shell/pictures(/.*)?", headers: picturesGuards }] : []),');
     // The worlds it names are sites, each by its own address and nothing wider: never a whole scheme, never a star.
     const named = JSON.parse(readFileSync(new URL("../src/shared/shell-worlds.json", import.meta.url), "utf8")) as string[];
     expect(named.length).toBeGreaterThan(0);
