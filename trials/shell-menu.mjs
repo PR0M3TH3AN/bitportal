@@ -559,9 +559,17 @@ await openSheet();
 await goTab("Travel");
 const travelRows = await rowsNow();
 check("in the room there is no Home in the menu: it is home", !travelRows.some((r) => /^Home\b/.test(r)) && travelRows.includes("Every door, as a list"), travelRows.filter((r) => /door|Home/i.test(r)));
+// A row of the room's that asks for the menu on one of its tabs: the room says which tab (the kit's `show`, from
+// 0.88.0), and this page's menu goes to it, and is never put away by it.
+const tabNow = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 1500 }).then((t) => t.trim()).catch(() => "");
+await press(hud.getByRole("button", { name: /^Every door, as a list/ }));
+check("'Every door, as a list', pressed in the menu, takes the menu to the room's Doors tab, and leaves it up", (await until(async () => (await tabNow()) === "Doors", 6000)) && (await sheetOpen()), { tab: await tabNow(), sheetOpen: await sheetOpen() });
 await goTab("You");
 const youRows = await rowsNow();
 check("You is the room's own there: its rows once, and none of this page's beside them", youRows.filter((r) => r.startsWith("Your account")).length === 1 && youRows.some((r) => r.startsWith("Sign in")) && youRows.includes("Change how you look"), youRows.filter((r) => /account|Sign in|look/i.test(r)));
+// "Change how you look" brings the menu up on Your look (the owner's second mend: it used only to bring the menu up).
+await press(hud.getByRole("button", { name: /^Change how you look/ }));
+check("'Change how you look', pressed in the menu, takes the menu to Your look, and leaves it up", (await until(async () => (await tabNow()) === "Your look", 6000)) && (await sheetOpen()), { tab: await tabNow(), sheetOpen: await sheetOpen() });
 // A press on a row of the room's, in this page's menu, is done by the room: how they look changes.
 await goTab("Your look");
 const lookBefore = (await rowsNow()).filter((r) => /^(Build|Head|Face|On top|Body|Shoulders|Pattern|Finish): /.test(r)).join("|");
