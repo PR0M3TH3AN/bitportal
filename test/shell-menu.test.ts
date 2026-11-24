@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { asOurOwn } from "../src/shell/own-labels.js";
 
 /**
  * The visitor's menu in the page that keeps the screen (src/shell/menu.ts; NSWP docs/plans/the-clients-menu.md,
@@ -14,7 +15,7 @@ describe("the shell's menu is the kit's, from this site's own copy, and nothing 
   it("takes its code from the kit's menu and controls, and from no other place", async () => {
     const menu = await read("src/shell/menu.ts");
     const from = [...menu.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-    expect(from.sort()).toEqual(["./panel.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
+    expect(from.sort()).toEqual(["./own-labels.js", "./panel.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
     // The panel's code stays apart: the menu knows its modes by name, as a type, and asks this page to show it.
     expect(menu).toContain('import type { PanelMode } from "./panel.js";');
   });
@@ -70,7 +71,7 @@ describe("the panel is always above the menu", () => {
     expect(z(".shell-panel")).toBe(3);
     expect(css).toMatch(/\.shell-menu \{ position: relative; z-index: 1; \}/);
     const menu = await read("src/shell/menu.ts");
-    expect(menu).toContain("mountMenu(below.port, { parent: place })");
+    expect(menu).toContain("mountMenu(port, { parent: place })");
   });
 
   it("puts the sheet away before the panel comes up, from the menu's own row and from a world's ask", async () => {
@@ -262,5 +263,46 @@ describe("the room is under the visitor's menu too, and fills its own tabs throu
     // Where the place in the frame is, is what the browser reported of its own page, and only this site's own counts.
     const shell = await read("src/shell/main.ts");
     expect(shell).toContain('atRoom: () => !!lastHere && lastHere.origin === location.origin && typeof (lastHere.data as { at?: unknown }).at === "string" && (lastHere.data as { at: string }).at.startsWith("/walk/"),');
+  });
+});
+
+describe("over a page of this site's own, what the page fills is labelled as this site's own", () => {
+  const item = (id: string, from?: string) => ({ id, label: id, ...(from ? { from } : {}) }) as never;
+  const view = {
+    title: "Your room",
+    sections: [
+      { id: "travel", label: "Travel", icon: null, note: "", card: null, pinned: false, items: [item("home"), item("world:list", "Your room")] },
+      { id: "help", label: "Help", icon: null, note: "How to move.", card: null, pinned: false, items: [], said: { from: "Your room", note: "Your doors are here." } },
+      { id: "doors", label: "Doors · Your room", icon: null, note: "", card: null, pinned: true, items: [item("world:grove", "Your room")] },
+    ],
+    hotbar: [item("home"), item("world:join", "Your room")],
+    pins: [{ id: "doors", label: "Doors · Your room", icon: null, key: "3" }],
+  } as never;
+
+  it("takes the room's name off its rows, its tabs and what it says, and changes nothing else", () => {
+    const ours = asOurOwn(view, "Your room") as unknown as { title: string; sections: { id: string; label: string; note: string; said?: unknown; pinned: boolean; items: { id: string; from?: string }[] }[]; hotbar: { id: string; from?: string }[]; pins: { label: string; key: string }[] };
+    expect(ours.sections.map((s) => s.label)).toEqual(["Travel", "Help", "Doors"]);
+    expect(ours.sections.flatMap((s) => s.items).every((i) => !("from" in i))).toBe(true);
+    expect(ours.sections.flatMap((s) => s.items.map((i) => i.id))).toEqual(["home", "world:list", "world:grove"]);
+    expect(ours.sections[1]!.note).toBe("How to move.\n\nYour doors are here.");
+    expect(ours.sections[1]!.said).toBeUndefined();
+    expect(ours.sections[2]!.pinned).toBe(true);
+    expect(ours.hotbar.every((i) => !("from" in i))).toBe(true);
+    expect(ours.pins).toEqual([{ id: "doors", label: "Doors", icon: null, key: "3" }]);
+    expect(ours.title).toBe("Your room");
+  });
+
+  it("leaves alone anything said under another name, and everything where there is no name", () => {
+    const other = asOurOwn(view, "The Grove") as unknown as { sections: { label: string; said?: unknown; items: { from?: string }[] }[] };
+    expect(other.sections.map((s) => s.label)).toEqual(["Travel", "Help", "Doors · Your room"]);
+    expect(other.sections[0]!.items[1]!.from).toBe("Your room");
+    expect(other.sections[1]!.said).toEqual({ from: "Your room", note: "Your doors are here." });
+    expect(asOurOwn(view, "")).toBe(view);
+  });
+
+  it("is used only where the browser says the page is of this site's own origin, exactly", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain("view: { value: () => (below.origin === location.origin && below.world ? asOurOwn(below.port.view(), below.world.title || location.host) : below.port.view()) },");
+    expect(menu.split("asOurOwn(").length - 1).toBe(1);
   });
 });
