@@ -19,7 +19,7 @@
  *
  * It can't see into a world it frames, or into the panel, and doesn't try to.
  */
-import { fromLocal, toLocal } from "@nswp/core";
+import { fromLocal, menuVersionOf, toLocal } from "@nswp/core";
 import { INSTANCE } from "../shared/instance.js";
 import { PLAIN_KEY, showsInShell } from "../shared/shell.js";
 import type { ShellMenu } from "./menu.js";
@@ -127,6 +127,12 @@ addEventListener("message", (e: MessageEvent) => {
   const said = e.data as { nswp?: unknown; fill?: unknown; at?: unknown; to?: unknown } | null;
   if (!said || typeof said !== "object") return;
   if (said.nswp === "here") {
+    // Where this page has no menu (the switch off) and the place speaks the menu's words, it is told so at once, in
+    // those words: "this page hasn't the menu". Otherwise the place waits for an answer that never comes before it
+    // draws its own, and its menu is late for every visitor: the kit's wait is a third of a second, and measured on
+    // a busy machine the room's menu came up half a second late, and up to a second and a half. Said only to the
+    // origin that spoke, and it says nothing of the visitor.
+    if (!SHELL_MENU && menuVersionOf(said) > 0 && e.origin && e.origin !== "null") view.contentWindow?.postMessage({ nswp: "menu", has: false }, e.origin);
     lastHere = e;
     // A new place has arrived: the menu's sheet, if it was left up in the last one, is put away.
     shellMenu?.arrived();
