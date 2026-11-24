@@ -17,6 +17,7 @@
  */
 import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSettings, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, watchEscape, type MenuBelow, type Sounds, type TravelSettings } from "nswp-sdk/menu";
 import { createControls } from "nswp-sdk/ui";
+import { asOurOwn } from "./own-labels.js";
 import type { PanelMode } from "./panel.js";
 
 export interface ShellMenuOptions {
@@ -159,7 +160,12 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   const place = document.createElement("div");
   place.className = "shell-menu";
   o.view.after(place);
-  const menu = mountMenu(below.port, { parent: place });
+  // Over a page of this site's own, what the page fills is labelled as this site's own (own-labels.ts). Whether it
+  // is, is the origin the browser reported for the page, compared exactly.
+  const port = Object.create(below.port, {
+    view: { value: () => (below.origin === location.origin && below.world ? asOurOwn(below.port.view(), below.world.title || location.host) : below.port.view()) },
+  }) as typeof below.port;
+  const menu = mountMenu(port, { parent: place });
   below.attach(menu);
 
   // No menu over a page that doesn't speak the words: such a page draws its own.

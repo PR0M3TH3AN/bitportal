@@ -474,6 +474,15 @@ check("the room speaks the words, as a page of this site's own", overRoom.speaks
 check("and says the visitor's own tabs up: who they are, how they look, and its doors", ["you", "figure", "travel", "doors"].every((t) => overRoom.tabs?.includes(t)), overRoom.tabs);
 check("the room draws no menu of its own, and knows the page above has it", (await room().locator("nswp-hud").count()) === 0 && (await room().evaluate(() => window.__bitportalTest?.menuAbove?.())) === true);
 check("the room has the keys as it arrives", (await active()) === "frame", await active());
+// The room's rows are this site's own, and are labelled so: its tabs by their own names, and no "Your room" over them.
+await openSheet();
+await goTab("Travel");
+const roomTabs = (await hud.locator('[role="tab"]:visible').allInnerTexts()).map((t) => t.trim());
+check("the room's own tabs are called what it calls them, with no name of a world's on them", roomTabs.includes("Doors") && roomTabs.includes("Your computers") && !roomTabs.some((t) => t.includes("·")), roomTabs.filter((t) => /Doors|computers/.test(t)));
+const sheetWords = await page.evaluate(() => { const root = document.querySelector(".shell-menu").firstElementChild.shadowRoot; return [...root.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.textContent.trim() === "Your room" && e.getClientRects().length > 0).length; });
+check("and its rows stand under no heading of \"Your room\": the name is on the mark and nowhere in the sheet", sheetWords === 1, { shown: sheetWords });
+await page.keyboard.press("Escape");
+await until(async () => !(await sheetOpen()));
 await page.screenshot({ path: join(SHOTS, "shell-menu-over-room.png") });
 await openSheet();
 await goTab("Travel");
@@ -513,7 +522,7 @@ check("and the room's own music steps back for it", await until(() => room().eva
 await page.evaluate(() => (window.__music = { looks: 0, stopped: 0, watching: true }));
 const stillPlaying = () => page.evaluate(() => window.__bitportalShell.sounds.jukebox.playing);
 // Out through a door of the room's, pressed in this page's menu.
-for (let n = 0; n < 6 && !(await until(() => hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first().isVisible(), 8000)); n++) await goTab("Doors · Your room");
+for (let n = 0; n < 6 && !(await until(() => hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first().isVisible(), 8000)); n++) await goTab("Doors");
 await pressUntil(hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first(), hud.getByRole("button", { name: "Travel here" }));
 await press(hud.getByRole("button", { name: "Travel here" }));
 await until(async () => !!airlock(), 20000);
