@@ -1,6 +1,6 @@
 import { K as ui, b as di, c as U, D as go, d as Tt, w as P, f as Ut, g as dt, h as Hn, S as en, j as tn, k as Je, l as mt, B as yi, m as fi, n as nn, o as yt, q as zn, r as Qn, a as rt, s as mo, t as pi, u as hi } from "./bitlogin-shared-CDSZpiZ4.js";
 import { g as _, s as V, v as A, b as qe, a as q, f as Ge, i as vi, j as wi, k as gi, l as mi, m as bi, n as ln, o as Or, p as bo, q as ki, t as Ei, w as _i, x as Pt, y as ko, u as W, z as Pi, A as qt, B as Yn, C as Xn, D as Eo, E as Si, d as I, e as D, F as Zn, G as Ki, H as _o, h as er, I as Po, J as Ai, c as bt, K as Kn, L as ze } from "./bitlogin-shared-Cj9s0_W_.js";
-import { b as kt, r as ee, c as te, k as Ri, i as De, w as Ne, R as Te, T as un, d as dn, n as Dr, t as Ci, m as Ni, N as An, e as xr, g as Ur, h as So, j as Ti, l as Mi } from "./bitlogin-shared-ocmFRDk5.js";
+import { b as kt, r as ee, c as te, k as Ri, i as De, R as Ne, w as Te, T as un, d as dn, n as Dr, t as Ci, m as Ni, N as An, e as xr, g as Ur, h as So, j as Ti, l as Mi } from "./bitlogin-shared-ocmFRDk5.js";
 import { ab as Se, ac as tr, ad as Rn, ae as Ii, af as ot, ag as st, ah as it, ai as ae, aj as oe, ak as Ko, al as Ao, am as ft, an as nr, a2 as pt, y as Ft, z as rr, O as or, J as $t, ao as he, $ as Li, a as ht, k as sr, P as Ro, b as Co, ap as Cn, aq as Ee, ar as at, as as No, at as Oi, au as Di, av as To, aw as Mo, ax as qr, ay as xi, az as Ui, aA as Qe, aB as qi, aC as Fr, aD as $r, a9 as Fi, U as $i, A as St, u as Vr, aE as Vi, aF as Wi, aG as Bi, aH as ji, aI as Ji, aJ as Gi, aK as Hi, aL as zi, aM as Qi, aN as Yi, aO as Wr, aP as Xi, aQ as Zi, aR as ea, aS as ta, aT as na, aU as ra, aV as Io, H as oa, R as sa, aW as ia, aX as aa, aY as ca, aZ as la, a_ as ua, a$ as da, b0 as ya, b1 as Br } from "./bitlogin-shared-BosVxhRE.js";
 import { e as ir, a as ar, b as cr } from "./bitlogin-shared-PwbHDYud.js";
 function Lo(e) {
@@ -5776,7 +5776,7 @@ let $n = !1, Vn = !1;
 function uo(e) {
   $n || (K = e.vaultRelays), Vn || (L = e.discoveryRelays);
 }
-const yu = new lu(), fu = {
+const yu = 1500, fu = new lu(), pu = {
   ecashLoad: "ecash",
   ecashSetMints: "ecash",
   ecashRoll: "ecash",
@@ -5796,8 +5796,8 @@ const yu = new lu(), fu = {
   profileContent: "profile"
 };
 let N = null, mn = Date.now();
-const pu = /* @__PURE__ */ new Set(["configure", "lockStatus", "lockOpen", "restoreSession", "getSessionStatus", "logout"]), ii = "bitlogin:taken-back:v1:";
-async function hu(e) {
+const hu = /* @__PURE__ */ new Set(["configure", "lockStatus", "lockOpen", "restoreSession", "getSessionStatus", "logout"]), ii = "bitlogin:taken-back:v1:";
+async function vu(e) {
   try {
     const t = await v.get(ii + e);
     return (t ? So(JSON.parse(t)) : null) ?? An;
@@ -5836,7 +5836,7 @@ function Y() {
   if (!u.signerOnly || u.app || !u.site) throw new Error("refused");
   return { ...e, site: u.site };
 }
-const Wn = "bitlogin:world-counts:v1:", vu = "bitlogin:follows-seen:v1:", Bn = /* @__PURE__ */ new Map();
+const Wn = "bitlogin:world-counts:v1:", wu = "bitlogin:follows-seen:v1:", Bn = /* @__PURE__ */ new Map();
 async function me(e, t, o, n = !0) {
   const r = `${Wn}${e}:${t}`;
   let s = Bn.get(r);
@@ -5938,9 +5938,9 @@ const En = "bitlogin:held:v1:", ci = 3e3, ho = 2500, Dt = new du(ci), B = (e) =>
     heard: Dt.heard
   }), o = t.queryQuorum.bind(t);
   return t.queryQuorum = (n, r = ho) => o(n, Math.min(r, ho)), t;
-}, wu = 1500, _n = (e) => {
+}, gu = 1500, _n = (e) => {
   const t = B(e);
-  return t.publishAll = (o, n) => t.publishEnough(o, n, 2, wu), t;
+  return t.publishAll = (o, n) => t.publishEnough(o, n, 2, gu), t;
 }, Le = (e) => Ql(e, (t) => B([t]));
 function ke() {
   if (!Io(ie())) throw new Error("That is done at BitLogin's own address.");
@@ -6009,10 +6009,10 @@ function li(e) {
 function wo(e, t) {
   Ke && li(Ke.client), Ke = { client: e, userPubkey: t };
 }
-async function gu(e, t, o = "") {
+async function mu(e, t, o = "") {
   if (u.signerOnly && !Dl.has(e))
     throw new Error("This session can only sign. Sign in at your own BitLogin page for anything else.");
-  switch (N && e !== "configure" && Date.now() - mn > Q.idleSec * 1e3 && Xe(), pu.has(e) || (mn = Date.now()), e) {
+  switch (N && e !== "configure" && Date.now() - mn > Q.idleSec * 1e3 && Xe(), hu.has(e) || (mn = Date.now()), e) {
     // ---- The optional lock (lock.ts) ----
     case "lockStatus":
       return Ie();
@@ -6225,10 +6225,10 @@ async function gu(e, t, o = "") {
       try {
         const [c, l] = await Promise.all([
           s ? a.queryQuorum({ kinds: [0], authors: [r], limit: 2 }, 4e3) : Promise.resolve(null),
-          a.queryQuorum({ kinds: [Te], authors: [r], limit: 2 }, 4e3)
+          a.queryQuorum({ kinds: [Ne], authors: [r], limit: 2 }, 4e3)
         ]);
         if (u.signer !== n) return {};
-        u.profile = c ? oo(c.outcomes.flatMap((d) => d.events), r) : null, u.profile && !u.signerOnly && await Pe(v, Kl(await H(v), r, u.profile)), u.relays = Ne(l.outcomes.flatMap((d) => d.events), r);
+        u.profile = c ? oo(c.outcomes.flatMap((d) => d.events), r) : null, u.profile && !u.signerOnly && await Pe(v, Kl(await H(v), r, u.profile)), u.relays = Te(l.outcomes.flatMap((d) => d.events), r);
       } finally {
         a.closeAll();
       }
@@ -6242,7 +6242,7 @@ async function gu(e, t, o = "") {
       const { signer: n } = S(), r = t, s = n.getPublicKey(), i = Date.now() / 1e3, a = r.all === !0 ? { all: !0 } : { site: String(r.site ?? "") }, c = B([.../* @__PURE__ */ new Set([...L, ...K])].slice(0, 8));
       let l;
       try {
-        l = Ne((await c.queryQuorum({ kinds: [Te], authors: [s], limit: 2 }, 4e3)).outcomes.flatMap((f) => f.events), s);
+        l = Te((await c.queryQuorum({ kinds: [Ne], authors: [s], limit: 2 }, 4e3)).outcomes.flatMap((f) => f.events), s);
       } finally {
         c.closeAll();
       }
@@ -6250,7 +6250,7 @@ async function gu(e, t, o = "") {
       try {
         const f = await y.queryQuorum({ kinds: [dn], authors: [s], "#d": [un], limit: 2 }, 5e3);
         if (f.respondedCount === 0) return { ok: !1, accepted: 0, of: d.length };
-        const p = Dr(f.outcomes.flatMap((R) => R.events), s, i), g = p ? yo(n, p.content) : null, w = await hu(s), b = Ci(Ni(g ?? An, w, i), a, i), h = n.signEvent({
+        const p = Dr(f.outcomes.flatMap((R) => R.events), s, i), g = p ? yo(n, p.content) : null, w = await vu(s), b = Ci(Ni(g ?? An, w, i), a, i), h = n.signEvent({
           kind: dn,
           // Later than the one it replaces, whatever the two clocks say.
           created_at: Math.max(Math.floor(i), (p?.created_at ?? 0) + 1),
@@ -6277,7 +6277,7 @@ async function gu(e, t, o = "") {
       try {
         [f, p] = await Promise.all([
           y.queryQuorum({ kinds: [dn], authors: [a], "#d": [un], limit: 2 }, 5e3),
-          y.queryQuorum({ kinds: [Te], authors: [a], limit: 2 }, 5e3)
+          y.queryQuorum({ kinds: [Ne], authors: [a], limit: 2 }, 5e3)
         ]);
       } finally {
         y.closeAll();
@@ -6293,7 +6293,7 @@ async function gu(e, t, o = "") {
         newestAt: g ? g.created_at : null,
         readable: w !== null
       })) return { state: l === "overdue" ? "stale" : "ok" };
-      const h = Ne(p.outcomes.flatMap((k) => k.events), a);
+      const h = Te(p.outcomes.flatMap((k) => k.events), a);
       return await vn(
         v,
         {
@@ -6365,7 +6365,7 @@ async function gu(e, t, o = "") {
       if (!u.more.includes("follows")) throw new Error("refused");
       const s = t, i = n.getPublicKey(), a = s.list === null ? null : Wr(s.list, i);
       if (s.list !== null && !a) throw new Error("refused");
-      const c = vu + i;
+      const c = wu + i;
       let l = 0;
       try {
         const w = Number(await v.get(c));
@@ -6772,7 +6772,7 @@ async function gu(e, t, o = "") {
       if (i.length === 0 && s.length) {
         const c = B(s);
         try {
-          i = Ne((await c.queryQuorum({ kinds: [Te], authors: [r], limit: 2 }, 4e3)).outcomes.flatMap((l) => l.events), r), i.length && (u.relays = i);
+          i = Te((await c.queryQuorum({ kinds: [Ne], authors: [r], limit: 2 }, 4e3)).outcomes.flatMap((l) => l.events), r), i.length && (u.relays = i);
         } catch {
           i = [];
         } finally {
@@ -6900,7 +6900,7 @@ async function gu(e, t, o = "") {
       if (i.length === 0 && s.length) {
         const l = Le(s);
         try {
-          i = Ne((await l.queryQuorum({ kinds: [Te], authors: [r], limit: 2 }, 4e3)).outcomes.flatMap((d) => d.events), r), i.length && (u.relays = i);
+          i = Te((await l.queryQuorum({ kinds: [Ne], authors: [r], limit: 2 }, 4e3)).outcomes.flatMap((d) => d.events), r), i.length && (u.relays = i);
         } catch {
           i = [];
         } finally {
@@ -6956,23 +6956,19 @@ async function gu(e, t, o = "") {
     case "ecashLoad":
     case "ecashSetMints":
     case "ecashRoll": {
-      const { signer: n } = S(), r = n.getPublicKey(), s = B([.../* @__PURE__ */ new Set([...L, ...K])].slice(0, 8));
-      let i = u.relays;
-      if (i.length === 0)
-        try {
-          i = Ne((await s.queryQuorum({ kinds: [Te], authors: [r], limit: 2 }, 4e3)).outcomes.flatMap((l) => l.events), r), i.length && (u.relays = i);
-        } catch {
-          i = [];
-        } finally {
-          s.closeAll();
-        }
-      else s.closeAll();
-      const a = [.../* @__PURE__ */ new Set([...i, ...K])].slice(0, 16), c = _n(a);
+      const { signer: n } = S(), r = n.getPublicKey(), s = B([.../* @__PURE__ */ new Set([...L, ...K])].slice(0, 8)), i = s.queryQuorum({ kinds: [Ne], authors: [r], limit: 2 }, 4e3).then((d) => Te(d.outcomes.flatMap((y) => y.events), r)).catch(() => []).then((d) => (d.length && u.signer === n && (u.relays = d), d)).finally(() => s.closeAll());
+      let a = u.relays;
+      if (a.length === 0) a = await i;
+      else {
+        const d = await Promise.race([i, new Promise((y) => setTimeout(() => y([]), yu))]);
+        d.length && (a = d);
+      }
+      const c = [.../* @__PURE__ */ new Set([...a, ...K])].slice(0, 16), l = _n(c);
       try {
-        const l = { signer: n, store: v, relays: c };
-        return e === "ecashLoad" ? await su(l) : e === "ecashSetMints" ? await iu({ ...l, newKey: () => qe(ze()) }, t.mints) : await au(l, t, () => self.postMessage({ notify: "ecash-sealed", id: o }));
+        const d = { signer: n, store: v, relays: l };
+        return e === "ecashLoad" ? await su(d) : e === "ecashSetMints" ? await iu({ ...d, newKey: () => qe(ze()) }, t.mints) : await au(d, t, () => self.postMessage({ notify: "ecash-sealed", id: o }));
       } finally {
-        c.closeAll();
+        l.closeAll();
       }
     }
     case "vaultStatus":
@@ -7053,7 +7049,7 @@ async function gu(e, t, o = "") {
       throw new Error(`Unknown worker action: ${e}`);
   }
 }
-const mu = /* @__PURE__ */ new Set([
+const bu = /* @__PURE__ */ new Set([
   "configure",
   "register",
   "previewImportKey",
@@ -7156,7 +7152,7 @@ const mu = /* @__PURE__ */ new Set([
 self.addEventListener("message", (e) => {
   const t = e.data;
   if (!t || typeof t != "object" || typeof t.id != "string") return;
-  if (typeof t.action != "string" || !mu.has(t.action)) {
+  if (typeof t.action != "string" || !bu.has(t.action)) {
     const i = {
       id: t.id,
       ok: !1,
@@ -7169,7 +7165,7 @@ self.addEventListener("message", (e) => {
   const { id: o, action: n, payload: r } = e.data;
   // The peeks too: they read the browser's own sealed copy and change nothing, and they are what is on screen while
   // the queue is busy asking relays (docs/panel-speed-2026-11-23.md).
-  (n.startsWith("nip46") || n === "ecashPeek" || n === "drivePeek" || n === "receiptsPeek" ? (i) => i() : (i) => yu.run(fu[n] ?? null, i))(() => gu(n, r, o)).then(
+  (n.startsWith("nip46") || n === "ecashPeek" || n === "drivePeek" || n === "receiptsPeek" ? (i) => i() : (i) => fu.run(pu[n] ?? null, i))(() => mu(n, r, o)).then(
     (i) => {
       const a = { id: o, ok: !0, result: i };
       self.postMessage(a);

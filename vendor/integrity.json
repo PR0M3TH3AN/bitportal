@@ -262,7 +262,7 @@
       "version": "0.1.0",
       "license": "MIT",
       "source": {
-        "commit": "6258a73e93a7e3193511d56f11ef50d364722bd3",
+        "commit": "f818c5bcbf9fb1f05f7ced94fb773b7b09c2fd4a",
         "remote": "https://github.com/PR0M3TH3AN/bitlogin.git"
       },
       "files": {
@@ -287,8 +287,8 @@
         "bitlogin-signer.js": "ac90184eca91fd951b5f75513ea6c07906600dd812bbe02d289f3a7a6528d5c1",
         "bitlogin-window.js": "2e9f2c0ad4dd86c21026fa06d546c5c876f45b1ce0689600d846c62a2a5d2041",
         "bitlogin.js": "646b2af7aeae37d72464af7a5095654e97b18a0a1157e036eae48115d8847ae3",
-        "cryptoWorker.js": "74a92f500cfea3dfe4e061ed6523e0d5e967194b8fa9bc00ae7f6272080081f4",
-        "integrity.json": "616e6c9006af7a4a5cb20106b9a6e9ee3ef07f46bfb40657766fbf60c9b97986"
+        "cryptoWorker.js": "5130da12ad8f37d66e92da1f402553afed5d89e4a23f243d70ea8d9fb13ec9b9",
+        "integrity.json": "751518c804d982d07c44ea8b08f8de532e713de304df51fa5380874888fb9776"
       }
     },
     "bitblocks-fonts": {
