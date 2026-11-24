@@ -1743,10 +1743,11 @@ async function start(): Promise<void> {
     if (!supported) offered = false;
   });
 
-  // On a flat screen the page's own controls cover the bottom of the picture,
-  // and on a phone that is where the doors are. So the picture is shifted up
-  // until eye level sits in the middle of the space the controls leave free.
-  // Pointing still lines up: rays are made from the same shifted camera.
+  // On a flat screen the menu covers the bottom of the picture, and on a phone that is where the doors are. So the
+  // picture is shifted up until eye level sits in the middle of the space the menu leaves free. Whoever draws the
+  // menu: this page's own, or the page above's, which says how much of this view it covers (the kit's `covers`,
+  // read here through the one `cover()` of the kept menu). Pointing still lines up: rays are made from the same
+  // shifted camera.
   let covered = "";
   const fit = () => {
     if (renderer.xr.isPresenting) return; // the headset sets its own view
@@ -1756,7 +1757,7 @@ async function start(): Promise<void> {
     const across = THREE.MathUtils.degToRad(52);
     // At a desk, a visitor who has asked for a width has it, here as in every world.
     camera.fov = visitorFov() ?? Math.min(90, Math.max(62, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(across / 2) / camera.aspect))));
-    const cover = hud.own?.cover() ?? { top: 0, bottom: 0 };
+    const cover = hud.cover();
     covered = `${cover.top}|${cover.bottom}`;
     const shift = Math.min(Math.round((cover.bottom - cover.top) / 2), Math.round(innerHeight * 0.3));
     if (shift > 0) camera.setViewOffset(innerWidth, innerHeight, 0, shift, innerWidth, innerHeight);
@@ -1769,7 +1770,7 @@ async function start(): Promise<void> {
   window.addEventListener("resize", fit);
   // The controls change height as keys come and go on the hotbar.
   setInterval(() => {
-    const cover = hud.own?.cover() ?? { top: 0, bottom: 0 };
+    const cover = hud.cover();
     if (`${cover.top}|${cover.bottom}` !== covered) fit();
   }, 500);
   renderer.xr.addEventListener("sessionend", fit);
