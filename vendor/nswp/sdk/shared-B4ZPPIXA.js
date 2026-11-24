@@ -441,7 +441,7 @@ function createFps(o) {
   };
   const free = (e) => !looking() && !o.hud?.open && !panelUp() && e.target === o.dom && e.buttons === 0;
   const onMove = (e) => {
-    if (!active() || !(looking() || free(e))) return;
+    if (!active() || panelUp() || !(looking() || free(e))) return;
     const next = lookAfter(o.rig.rotation.y, pitch, e.movementX, e.movementY, LOOK_SPEED * lookScale() * aimScale());
     o.rig.rotation.y = next.yaw;
     pitch = next.pitch;
@@ -453,7 +453,10 @@ function createFps(o) {
     else look();
   };
   const onLock = () => {
-    if (looking()) return;
+    if (looking()) {
+      if (panelUp() || o.hud?.open) letGo();
+      return;
+    }
     for (const k of Object.keys(held)) held[k] = false;
     if (active() && !weLetGo && o.hud && !o.hud.open) o.hud.setOpen(true);
     weLetGo = false;
