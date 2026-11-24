@@ -71,6 +71,8 @@ await build({
 if (shellMenu) await build({
   entryPoints: { "shell/menu": join(root, "src/shell/menu.ts") },
   bundle: true,
+  // BitLogin's own files are served beside this site's and loaded by address, here as everywhere.
+  external: ["/vendor/bitlogin/*"],
   format: "esm",
   target: "es2022",
   minify: true,
@@ -82,6 +84,7 @@ if (shellMenu) await build({
     "@nswp/core": join(root, "vendor/nswp/nswp-core.js"),
     "nswp-sdk/menu": join(root, "vendor/nswp/sdk/menu.js"),
     "nswp-sdk/ui": join(root, "vendor/nswp/sdk/ui.js"),
+    "nswp-sdk/bag": join(root, "vendor/nswp/sdk/bag-entry.js"),
   },
 }).then((built) => {
   const three = Object.keys(built.metafile.inputs).filter((f) => f.includes("node_modules/three/") && Object.values(built.metafile.outputs).some((o) => (o.inputs[f]?.bytesInOutput ?? 0) > 0));

@@ -11,6 +11,9 @@ export default defineConfig({
       "nswp-sdk/home": at("./vendor/nswp/sdk/home.js"),
       "nswp-sdk/ui": at("./vendor/nswp/sdk/ui.js"),
       "nswp-sdk/terminal": at("./vendor/nswp/sdk/terminal.js"),
+      "nswp-sdk/menu": at("./vendor/nswp/sdk/menu.js"),
+      "nswp-sdk/menu-above": at("./vendor/nswp/sdk/menu-above.js"),
+      "nswp-sdk/bag": at("./vendor/nswp/sdk/bag-entry.js"),
       // BitGate's readers, vendored for the operator's shadow comparison (scripts/shadow/); nothing BitPortal ships uses them.
       "@bitgate/core": at("./vendor/bitgate/core.js"),
       "@bitgate/nostr": at("./vendor/bitgate/nostr.js"),

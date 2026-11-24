@@ -17,6 +17,10 @@
  */
 import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSettings, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, watchEscape, type MenuBelow, type Sounds, type TravelSettings } from "nswp-sdk/menu";
 import { createControls } from "nswp-sdk/ui";
+import { goesAsGuest } from "../shared/look.js";
+import { knownSignedIn } from "../shared/session.js";
+import { loadSettings } from "../shared/settings.js";
+import { addShellBag } from "./bag.js";
 import { asOurOwn } from "./own-labels.js";
 import type { PanelMode } from "./panel.js";
 
@@ -146,6 +150,11 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   addDeskControls(controls, { presenting });
   controls.add(deskMovingSwitch(controls, { presenting }));
   controls.add({ ...picturesSwitch(controls), hidden: () => !worldFills("people") }, { ...modelsSwitch(controls), hidden: () => !worldFills("people") }, { ...chatSwitch((text) => controls.say(text)), hidden: () => !worldFills("room") });
+
+  // Bag: theirs, over a world where they are named (bag.ts).
+  // Who they are is this browser's own note of who is signed in to BitPortal, kept by this site: read, with
+  // nothing loaded and nothing asked. Someone going about as a guest is nobody here either.
+  addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays });
 
   // Sound: the volumes, the switch for a place's hum where the world says it has one, and the visitor's own music,
   // chosen and played by this page, so it doesn't stop at a door. Kept under the names the room keeps them by: one

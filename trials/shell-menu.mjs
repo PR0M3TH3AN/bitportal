@@ -39,7 +39,8 @@ await ctx.addInitScript(() => {
     const d = e.data;
     if (!d || typeof d !== "object" || !d.nswp) return;
     const names = Object.keys(d).filter((k) => k !== "nswp");
-    if (d.nswp === "menu" && (names.includes("world") || names.includes("picture"))) return;
+    if (d.nswp === "menu" && names.includes("picture")) return;
+    if (d.nswp === "menu" && names.includes("world")) return void window.__up.push(`${Math.round(performance.now())} menu world "${String(d.world?.title).slice(0, 24)}" with ${d.world?.sections?.length ?? 0} tabs`);
     window.__up.push(`${Math.round(performance.now())} ${d.nswp} ${names.map((k) => (typeof d[k] === "string" || typeof d[k] === "boolean" ? `${k}=${d[k]}` : k)).join(",")}`.slice(0, 90));
   }, true);
   addEventListener("focus", () => window.__up.push(`${Math.round(performance.now())} (window focus)`), true);
@@ -131,7 +132,64 @@ const until = async (so, ms = 15000) => { for (const end = Date.now() + ms; Date
  */
 const holds = async (so) => (await until(so)) && (await wait(500), await so().catch(() => false));
 /** A real press, at the middle of something of the shell's. */
-const press = async (locator) => { now(`finding ${locator}`); const [x, y] = await middle(locator); now(`pressing ${locator} at ${Math.round(x)},${Math.round(y)}`); await page.mouse.click(x, y); now(`pressed ${locator}`); await wait(350); };
+/**
+ * What is at a place on the screen, looked for through the menu's own roots, against the thing meant to be pressed
+ * there. A thing's box can lie partly out of sight (a tab scrolled half out of the tab bar), and the middle of the
+ * box is then not on the thing: a press there lands on whatever is, which for the menu's sheet is the page outside
+ * it, and that closes the sheet. A trial once passed that way by luck (BitPortal PR 213 has the account).
+ */
+const lands = (locator, x, y) =>
+  locator.first().evaluate((el, [x, y]) => {
+    let at = document.elementFromPoint(x, y);
+    while (at?.shadowRoot) {
+      const inner = at.shadowRoot.elementFromPoint(x, y);
+      if (!inner || inner === at) break;
+      at = inner;
+    }
+    const ok = !!at && (at === el || el.contains(at) || at.contains(el) || el.getRootNode().host === at);
+    return { ok, on: at ? `${at.tagName.toLowerCase()}${at.className ? `.${String(at.className).split(" ")[0]}` : ""} "${(at.textContent ?? "").trim().slice(0, 30)}"` : "nothing" };
+  }, [x, y]);
+/**
+ * A real press on something in the place in the frame (the Airlock's own button): only where what is on top there,
+ * in this page, is the frame itself, and in the frame's page is the thing. The frame fills this page from its
+ * corner, so a place in one is the same place in the other.
+ */
+const pressInView = async (locator) => {
+  now(`finding ${locator} in the frame`);
+  await locator.first().waitFor({ state: "visible", timeout: 40000 });
+  const b = await locator.first().boundingBox();
+  if (!b) throw new Error(`no place on screen for ${locator}`);
+  const [x, y] = [b.x + b.width / 2, b.y + b.height / 2];
+  const top = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id ?? "", [x, y]);
+  const landed = await lands(locator, x, y).catch((e) => ({ ok: false, on: String(e).slice(0, 80) }));
+  if (top !== "view" || !landed.ok) throw new Error(`the middle of ${locator}, at ${Math.round(x)},${Math.round(y)}, is not on it: on top in this page is "${top || "something of the shell's"}", and in the frame ${landed.on}. Nothing was pressed.`);
+  await page.mouse.click(x, y);
+  await wait(350);
+};
+/**
+ * A real press on the view, away from everything of the shell's but what is meant to take it: the scrim behind the
+ * panel, or the page outside the sheet. Stops if something else of the shell's is on top there.
+ */
+const pressBeside = async (x, y, meant) => {
+  const on = await page.evaluate(([x, y]) => { const at = document.elementFromPoint(x, y); return at ? (at.id === "view" ? "view" : at.className || at.tagName) : "nothing"; }, [x, y]);
+  if (!meant.some((m) => String(on).includes(m))) throw new Error(`a press at ${x},${y} was meant for ${meant.join(" or ")}, and what is on top there is ${on}. Nothing was pressed.`);
+  await page.mouse.click(x, y);
+};
+/** A real press, at the middle of something of the shell's: only once that middle is on the thing itself. */
+const press = async (locator) => {
+  now(`finding ${locator}`);
+  let x = 0, y = 0, landed = { ok: false, on: "not looked at" };
+  for (let n = 0; n < 12 && !landed.ok; n++) {
+    [x, y] = await middle(locator);
+    landed = await lands(locator, x, y).catch((e) => ({ ok: false, on: String(e).slice(0, 80) }));
+    if (!landed.ok) await wait(250);
+  }
+  if (!landed.ok) throw new Error(`the middle of ${locator}, at ${Math.round(x)},${Math.round(y)}, is not on it: what is there is ${landed.on}. Nothing was pressed.`);
+  now(`pressing ${locator} at ${Math.round(x)},${Math.round(y)}`);
+  await page.mouse.click(x, y);
+  now(`pressed ${locator}`);
+  await wait(350);
+};
 const active = () => page.evaluate(() => (document.activeElement === document.getElementById("view") ? "frame" : document.activeElement?.tagName ?? "nothing"));
 const sheetOpen = () => hud.getByRole("button", { name: "Close", exact: true }).isVisible().catch(() => false);
 const worldKeys = () => world().evaluate(() => window.__keys);
@@ -197,7 +255,8 @@ const kEsc = await worldKeys();
 await page.keyboard.press("w");
 check("and the very next key is the world's", (await worldKeys()) === kEsc + 1);
 await openSheet();
-await page.mouse.click(60, 300);
+// Outside the sheet: on the menu's own ground beside it, or the view.
+await pressBeside(60, 300, ["NSWP-HUD", "view"]);
 await wait(900);
 // A press outside the sheet closes it (the kit's menu, from 0.85.0), and only closes it.
 check("closed by a press outside it: the frame has the keys", await holds(async () => !(await sheetOpen()) && (await active()) === "frame"), await active());
@@ -233,7 +292,7 @@ const top = await page.evaluate(([x, y]) => { const el = document.elementFromPoi
 check("17.1 (3): the thing at the middle of the panel's box is the panel", top.tag === "IFRAME" && top.inPanel, top);
 check("the sheet is down while the panel is up", !(await sheetOpen()));
 await page.screenshot({ path: join(SHOTS, "shell-menu-panel.png") });
-await page.mouse.click(60, 300);
+await pressBeside(60, 300, ["shell-scrim"]);
 await panelGone();
 check("the panel closed: the frame has the keys", await holds(async () => (await active()) === "frame"), await active());
 
@@ -301,7 +360,7 @@ if (await goTab("You")) {
   for (let i = 0; i < 40 && !(await page.locator(".shell-panel:not([data-waiting]):not([data-kept])").count()); i++) await wait(150);
   await wait(500);
   check("You: \"Sign in to <the world>\" opens the panel, with the sheet down", (await page.locator(".shell-panel:not([data-kept])").count()) === 1 && !(await sheetOpen()));
-  await page.mouse.click(60, 300);
+  await pressBeside(60, 300, ["shell-scrim"]);
   await panelGone();
 } else check("You: its tab", false);
 
@@ -334,15 +393,18 @@ await openSheet();
 const marked = "<img src=x onerror=window.__owned=1><b>bold</b>";
 // Whether the markup became elements: the picture it names, or the bold word.
 const made = () => page.evaluate(() => { const root = document.querySelector(".shell-menu").firstElementChild.shadowRoot; return root.querySelectorAll('img[src="x"], [onerror]').length + [...root.querySelectorAll("b")].filter((b) => b.textContent === "bold").length; });
+// Said once. The world says nothing of its own meanwhile (recorded: no word comes up from it in this part), so
+// the made-up description stands while it is looked at.
 const say = () => world().evaluate((label) => parent.postMessage({ nswp: "menu", world: { title: label, level: "full", corner: "top-left", keys: false, state: {}, target: [], loading: null, sections: [{ id: "travel", label: "Travel", rows: [{ id: "marked", label, kind: "button" }] }, { id: "following", label: "Following", rows: [{ id: "typed", label: "Follow someone by key", kind: "field" }] }] } }, "*"), marked);
 await say();
-await press(tab("Travel"));
+// The tabs change under the tab bar, which keeps where it was scrolled to: Travel can be left half out of sight.
+// So the tab is chosen with the arrow keys, as everywhere else here, and not by a press at its box.
+await goTab("Travel");
 await wait(300);
 const shown = await page.evaluate((label) => ({ letters: document.querySelector(".shell-menu").firstElementChild.shadowRoot.textContent.includes(label), owned: window.__owned === 1 }), marked);
 check("markup in a world's label is shown as letters, and makes no element", shown.letters && (await made()) === 0 && !shown.owned, { ...shown, elements: await made() });
 await page.screenshot({ path: join(SHOTS, "shell-menu-markup.png") });
-await say();
-await press(tab("Following"));
+await goTab("Following");
 // A row typed into shows its field when it is pressed.
 const typedRow = hud.getByRole("button", { name: /Follow someone by key/ });
 if (await typedRow.isVisible().catch(() => false)) await press(typedRow);
@@ -354,7 +416,6 @@ if (await field.isVisible().catch(() => false)) {
   await wait(200);
   check("typed into a field of the menu's: the world heard none of it", (await worldKeys()) === k0 && (await field.inputValue()) === "npub1notakey", { heard: (await worldKeys()) - k0, value: await field.inputValue() });
 } else check("a field of the menu's to type into", false, await hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 5000 }).catch(() => "?"));
-// The made-up description stands until the world's own changes: this is the last thing looked at in this world.
 
 if (await sheetOpen()) await page.keyboard.press("Escape");
 await wait(900);
@@ -447,7 +508,7 @@ if (airlock()) {
   // Again, and on through the door this time, by a real press on the Airlock's own button.
   doorName = await toTheAirlock();
   if (airlock()) {
-    await page.mouse.click(...(await (async () => { const b = await continueOn().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; })()));
+    await pressInView(continueOn());
     const next = () => page.frames().find((f) => f.url().startsWith(OTHER));
     for (let i = 0; i < 80 && !next(); i++) await wait(250);
     for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
@@ -530,7 +591,7 @@ if (airlock()) {
   await until(() => continueOn().isVisible(), 20000);
   await wait(800);
   check("from the room, the Airlock is under the same menu, with the music still playing", (await page.evaluate(() => window.__bitportalShell.below.world?.title)) === "The Airlock" && (await stillPlaying()));
-  await page.mouse.click(...(await (async () => { const b = await continueOn().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; })()));
+  await pressInView(continueOn());
   await until(async () => !!world(), 30000);
   await until(async () => (await page.evaluate(() => window.__bitportalShell.below.world?.title)) === "The Grove", 40000);
   await wait(2000);

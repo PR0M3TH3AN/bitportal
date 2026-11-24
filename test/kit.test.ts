@@ -79,7 +79,9 @@ describe("no entry of the kit's is left out without a word", () => {
     expect(vendor).not.toMatch(/packages\/sdk\/src\/[a-z-]+\.ts"\)/);
     const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
     const types = readFileSync(new URL("../tsconfig.json", import.meta.url), "utf8");
+    const tests = readFileSync(new URL("../vitest.config.ts", import.meta.url), "utf8");
     for (const name of SDK_TAKEN) {
+      expect(tests, name).toContain(`"nswp-sdk/${name.slice(2)}": at("./vendor/nswp/sdk/`);
       expect(build, name).toContain(`"nswp-sdk/${name.slice(2)}": join(root, "vendor/nswp/sdk/`);
       expect(types, name).toContain(`"nswp-sdk/${name.slice(2)}": ["./vendor/nswp/sdk-types/`);
     }
