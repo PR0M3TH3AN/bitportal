@@ -180,11 +180,17 @@ const pressBeside = async (x, y, meant) => {
 /** A real press, at the middle of something of the shell's: only once that middle is on the thing itself. */
 const press = async (locator) => {
   now(`finding ${locator}`);
+  // Looked at until it stands still (the same place twice, a moment apart) with its middle on it: a tab bar still
+  // scrolling to the chosen tab puts its middle outside the sheet for a moment on a loaded machine (BitPortal PR 242).
   let x = 0, y = 0, landed = { ok: false, on: "not looked at" };
-  for (let n = 0; n < 12 && !landed.ok; n++) {
+  let was = "";
+  for (let n = 0; n < 24; n++) {
     [x, y] = await middle(locator);
     landed = await lands(locator, x, y).catch((e) => ({ ok: false, on: String(e).slice(0, 80) }));
-    if (!landed.ok) await wait(250);
+    const at = `${Math.round(x)},${Math.round(y)}`;
+    if (landed.ok && at === was) break;
+    was = at;
+    await wait(landed.ok ? 150 : 250);
   }
   if (!landed.ok) throw new Error(`the middle of ${locator}, at ${Math.round(x)},${Math.round(y)}, is not on it: what is there is ${landed.on}. Nothing was pressed.`);
   now(`pressing ${locator} at ${Math.round(x)},${Math.round(y)}`);
@@ -308,7 +314,12 @@ check("the sheet is down while the panel is up", !(await sheetOpen()));
 await page.screenshot({ path: join(SHOTS, "shell-menu-panel.png") });
 await pressBeside(60, 300, ["shell-scrim"]);
 await panelGone();
-check("the panel closed: the frame has the keys", await holds(async () => (await active()) === "frame"), await active());
+// The panel was asked for from the open sheet: the sheet comes back up on You, as a world's own menu does, and has
+// the keys (BitPortal PR 240; the owner, 2026-11-25). Closed, the frame has them.
+const chosenNow = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 1500 }).then((t) => t.trim()).catch(() => "");
+check("the panel closed: the sheet comes back up on You, and has the keys", (await until(sheetOpen, 4000)) && (await chosenNow()) === "You" && (await active()) !== "frame", { sheetOpen: await sheetOpen(), tab: await chosenNow(), keys: await active() });
+await press(hud.getByRole("button", { name: "Close", exact: true }));
+check("the sheet closed: the frame has the keys", await holds(async () => (await active()) === "frame"), await active());
 
 // ---- 17.2 (3): the shell given the keys by hand
 // Set up by a call, since nothing a visitor does here is known to move them: the keys then pressed are real.
