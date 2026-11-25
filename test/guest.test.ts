@@ -1,7 +1,6 @@
 // A guest (BitLogin docs/guest-accounts.md): the account BitLogin makes for a visitor who arrived signed out, the same
 // in every bitblocks.network site. The owner, 2026-11-25: the bag "should be available with our starter items to any
 // guest". A guest is nobody here for everything but its bag, which BitLogin signs for it with no press (G4).
-import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { getPublicKey } from "@nswp/core";
 import { guestOf, knownGuest } from "../src/shared/session.js";
@@ -10,7 +9,10 @@ import { homeBag } from "../src/shared/bag.js";
 const key = (n: number) => getPublicKey(new Uint8Array(32).fill(n));
 const guest = key(7);
 const someone = key(9);
-const read = (p: string) => readFile(new URL(`../${p}`, import.meta.url), "utf8");
+const read = async (path: string): Promise<string> => {
+  const { readFileSync } = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { readFileSync(path: URL, encoding: string): string };
+  return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+};
 
 describe("which guest this browser is", () => {
   it("is the guest BitLogin says, only where nobody is signed in, and only a public key", () => {
