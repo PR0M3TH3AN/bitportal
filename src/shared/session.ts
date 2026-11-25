@@ -10,7 +10,7 @@
  * `window.nostr`. The signer is NIP-07 shaped. Its results are checked here
  * before use.
  */
-import { BAG_KIND, cleanName, cleanTip, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
+import { BAG_KIND, checkDestination, cleanName, cleanTip, FOLLOWS_KIND, isHex64, MESSAGE_RELAYS_KIND, RATING_KIND, SEAL_KIND, toLocal, verifyEvent, WRAP_KIND, type EventTemplate, type NostrEvent } from "@nswp/core";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { INSTANCE } from "./instance.js";
@@ -313,8 +313,41 @@ const attach = (c: SignInClient): void => {
 };
 
 /**
+ * The family of sites this page belongs to, as BitLogin writes it (its docs/site-family.md): `https://*.<domain>`,
+ * from this page's own address as the browser reports it, never from anything a page says. The domain is the
+ * registrable one, by the kit's own reading of the Public Suffix List (`checkDestination`): `example.co.uk` under
+ * `co.uk`, never `co.uk` itself. BitLogin checks it again and takes only a family it knows. None for an address
+ * that isn't https, has a port of its own, is a number (a local copy), or has no registrable domain.
+ */
+export function familyOf(origin: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || url.port !== "" || url.origin !== origin) return null;
+  const read = checkDestination(origin);
+  const domain = read.ok ? read.value.registrableDomain : null;
+  // A name with no dot in it (`localhost`, a machine's own name) is no family of anyone's.
+  return domain && domain.includes(".") ? `https://*.${domain}` : null;
+}
+
+/** What BitLogin's client library is asked to make, by this page: the options are all here, so they can be tested. */
+export interface BitLoginModule {
+  createBitLoginClient(o: { at: string; permissions: unknown; family?: string }): SignInClient;
+}
+/** How this page makes a client of BitLogin's: what it asks for, and its family where it has one (`familyOf`). */
+export function clientMaker(mod: BitLoginModule, at: string, origin: string): (reserved: boolean, more: readonly Ask[]) => SignInClient {
+  const family = familyOf(origin);
+  return (reserved, more) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved, more), ...(family ? { family } : {}) });
+}
+
+/**
  * BitLogin's client for this page: one unseen frame of the sign-in address's signer, told what BitPortal asks
- * for. Made once a page, the first time anything asks who is signed in. Null where it can't be made.
+ * for, and that it asks for its whole family at the first sign-in (BitLogin's `family`: "stay signed in at every
+ * bitblocks.network site", the owner, 2026-11-25: "These logins should carry. especialy when on the same domain").
+ * An older sign-in address doesn't know the option and says nothing of it: then it is as before, one site at a time. Made once a page, the first time anything asks who is signed in. Null where it can't be made.
  *
  * BitPortal holds no key and no password, and none is typed on any page of it: the frame signs what the visitor
  * allowed, in BitLogin's own window, and refuses everything else.
@@ -324,8 +357,9 @@ function signInClient(): Promise<SignInClient | null> {
     try {
       const at = new URL(await toLocal(signInAddress())).origin;
       const url = "/vendor/bitlogin/bitlogin-client.js";
-      const mod = (await import(/* @vite-ignore */ url)) as { createBitLoginClient(o: { at: string; permissions: unknown }): SignInClient };
-      const asking = (reserved: boolean, more: readonly Ask[] = asks()) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved, more) });
+      const mod = (await import(/* @vite-ignore */ url)) as BitLoginModule;
+      const make = clientMaker(mod, at, location.origin);
+      const asking = (reserved: boolean, more: readonly Ask[] = asks()) => make(reserved, more);
       // Everything is asked for, and the sign-in address says whether it will show a visitor that. Where it won't
       // (an address it signs no pass or grant for), the same is asked again without those, so signing in still
       // works there and only what needs them is missing. One too old to say, or silent, is asked as before: for
