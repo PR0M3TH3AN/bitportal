@@ -92,11 +92,11 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-DHNFO7M3.js";
+} from "./shared-4VN2TYQR.js";
 import {
   addDoorControls,
   vouchedWords
-} from "./shared-I2ZTJEU4.js";
+} from "./shared-QXYHZ3NI.js";
 import {
   browserVoice,
   computerVoice,
@@ -167,7 +167,7 @@ import {
   scriptAllowed,
   setShowsItems,
   showsItems
-} from "./shared-ZD7NLAAS.js";
+} from "./shared-VSLEYJOB.js";
 import {
   askOwn,
   askWell,

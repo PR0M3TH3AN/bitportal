@@ -1,12 +1,13 @@
 import {
   addDoorControls,
+  signInHere,
   vouchedWords
-} from "./shared-I2ZTJEU4.js";
+} from "./shared-QXYHZ3NI.js";
 import {
   mountHud,
   mountMenu,
   portHere
-} from "./shared-H6Z5D4EI.js";
+} from "./shared-QBL2TXRS.js";
 import {
   ICONS,
   markSvg
@@ -85,5 +86,6 @@ export {
   setShowsPictures,
   showsChat,
   showsPictures,
+  signInHere,
   vouchedWords
 };
