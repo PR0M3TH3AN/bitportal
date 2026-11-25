@@ -482,12 +482,13 @@ function drawShelves(): void {
 
 function draw(): void {
   const source = $("source");
-  const lead = signedIn ? "You're signed in, but your follows don't shape this lobby yet. " : "You're browsing signed out. ";
+  // Signed out, a way to sign in is right where it is said (the owner, 2026-11-25): the profile page, and back here.
+  const lead: (string | Node)[] = signedIn ? ["You're signed in, but your follows don't shape this lobby yet. "] : ["You're browsing signed out. ", el("a", { href: "/account/?back=history" }, "Sign in"), ". "];
   const only = catalog.lists.length === 1 ? catalog.lists[0]! : null;
-  if (only) source.replaceChildren(lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: encodeNpub(only.pubkey) }, label(only.pubkey, { key: true })), ". ");
-  else if (catalog.lists.length === 0) source.replaceChildren(lead, "You aren't showing any list. ");
-  else if (catalog.policy.allowListOnly && !showingUnlisted()) source.replaceChildren(lead, "These doors are the ones this copy's operator has listed. ");
-  else source.replaceChildren(lead, `These doors come from the ${catalog.lists.length} lists you've chosen. `);
+  if (only) source.replaceChildren(...lead, "These doors come from ", el("strong", {}, only.title), ", a list signed by ", el("span", { class: "key", title: encodeNpub(only.pubkey) }, label(only.pubkey, { key: true })), ". ");
+  else if (catalog.lists.length === 0) source.replaceChildren(...lead, "You aren't showing any list. ");
+  else if (catalog.policy.allowListOnly && !showingUnlisted()) source.replaceChildren(...lead, "These doors are the ones this copy's operator has listed. ");
+  else source.replaceChildren(...lead, `These doors come from the ${catalog.lists.length} lists you've chosen. `);
   const about = el("button", { class: "link", type: "button", id: "open-lists" }, catalog.policy.allowListOnly ? "The lists here" : "Your lists");
   about.addEventListener("click", () => openLists());
   source.append(about);
