@@ -123,6 +123,8 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   const filledBelow = (tab: string): boolean => below.origin === location.origin && worldFills(tab);
   controls.add(...signInRows(below, { ask: () => ask("ask") }));
   controls.add(
+    // A guest's own press, over any world (BitLogin docs/guest-accounts.md G6): the guest's account made to last.
+    { id: "secure", section: "you", icon: "key", tone: "primary", label: "Secure this account", short: "Secure", hidden: () => filledBelow("you") || !!knownSignedIn() || !knownGuest(), act: () => ask("secure") },
     { id: "account", section: "you", icon: "key", label: `Your account, at ${o.signInHost}`, short: "Account", hidden: () => filledBelow("you"), act: () => ask("account") },
     { id: "files", section: "you", icon: "list", label: `Your files, at ${o.signInHost}`, short: "Files", hidden: () => filledBelow("you"), act: () => ask("files") },
     { id: "library", section: "you", icon: "save", label: `Your purchases, at ${o.signInHost}`, short: "Purchases", hidden: () => filledBelow("you"), act: () => ask("library") },

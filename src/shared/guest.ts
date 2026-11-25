@@ -16,11 +16,14 @@ export { guestName };
 /** Said where a guest can't yet: BitLogin's words for it (G5). */
 export const SECURE_FIRST = "Secure this account first";
 
+/** The press beside it: BitLogin's panel, opened straight on "Secure this account" (its mode "secure", G6). */
+export const SECURE = "Secure this account";
+
 /**
- * Where that is done, for a line with no press beside it: BitLogin's own page of their account, under You, shows a
- * guest "Secure this account" (G3).
+ * Said where no panel can be drawn (a page something else frames, or not at BitPortal's own address): BitLogin lets
+ * only BitPortal's own address draw its panel, and a window of its own can't see the guest.
  */
-export const SECURE_WHERE = "under You, then Your account";
+export const SECURE_ELSEWHERE = "This account can be secured from BitPortal's menu, at BitPortal's own address.";
 
 /** Whether this is Brave, which by default forgets a framed site's storage when it closes (G2, G8). */
 export function isBrave(nav: unknown = typeof navigator === "undefined" ? undefined : navigator): boolean {

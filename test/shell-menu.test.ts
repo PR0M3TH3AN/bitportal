@@ -325,7 +325,8 @@ describe("the room is under the visitor's menu too, and fills its own tabs throu
     const menu = await read("src/shell/menu.ts");
     expect(menu).toContain('controls.add({ id: "home", section: "travel", icon: "home", label: "Home", hotbar: true, hidden: () => o.atRoom(), act: () => below.leave() });');
     expect(menu).toContain('const filledBelow = (tab: string): boolean => below.origin === location.origin && worldFills(tab);');
-    expect(menu.split('hidden: () => filledBelow("you")').length - 1).toBe(3);
+    // Account, files, purchases, and a guest's Secure this account.
+    expect(menu.split('hidden: () => filledBelow("you")').length - 1).toBe(4);
     // Where the place in the frame is, is what the browser reported of its own page, and only this site's own counts.
     const shell = await read("src/shell/main.ts");
     expect(shell).toContain('atRoom: () => !!lastHere && lastHere.origin === location.origin && typeof (lastHere.data as { at?: unknown }).at === "string" && (lastHere.data as { at: string }).at.startsWith("/walk/"),');
