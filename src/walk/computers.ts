@@ -136,7 +136,7 @@ export function addComputers(o: ComputersOptions): Computers {
       el("p", { className: "why", textContent: "A terminal can do anything you can do on that computer. The Bridge asks there, on its own screen, before each one opens." }),
       el("p", { className: "why", textContent: "Add --tmux for terminals that carry on when this page is closed or refreshed, and --voice to speak instead of typing: your computer turns what you say into text itself, and your voice goes nowhere else." }),
       ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: `You aren't signed in on this browser. ${SIGN_IN} first: the computer needs to know whose it is.` })]),
-      el("div", { className: "actions" }, el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
+      el("div", { className: "actions" }, ...(who ? [] : [signInButton("Sign in", true)]), el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
     );
   };
 

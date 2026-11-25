@@ -101,13 +101,25 @@ function fillForm(f: WorldForm): void {
   idTouched = true;
 }
 
+/** Sign in, from a press: set once this page can (not in a test run). */
+let signInNow: (() => Promise<void>) | null = null;
+
 /** Redraw everything that depends on the form, the session or the last check. */
 function refresh(): void {
   const f = readForm();
   who.replaceChildren();
   if (session) {
     who.append("Announcing as ", el("span", { class: "key", title: session.pubkey }, label(session.pubkey, { key: true })), dryRun ? " (a test key: nothing will be published)." : ".");
-  } else who.textContent = "You're signed out. You can check a site and fill this in first, then sign in to publish.";
+  } else {
+    // A way to sign in, right where it is said (the owner, 2026-11-25): the same as the button in "Sign in, or use a
+    // different identity".
+    who.append("You're signed out. You can check a site and fill this in first, then sign in to publish. ");
+    if (signInNow) {
+      const now = el("button", { class: "button", type: "button" }, `Sign in at ${signInHost()}`);
+      now.addEventListener("click", () => void signInNow?.());
+      who.append(now);
+    }
+  }
 
   // The manifest the creator needs to host, once we know who they are and where.
   const sameSite = !!checkedOrigin && f.url.startsWith(checkedOrigin);
@@ -164,12 +176,14 @@ if (dryRun) {
       refresh();
     }
   });
-  button.addEventListener("click", async () => {
+  signInNow = async () => {
     button.disabled = true;
     const done = await signIn();
     button.disabled = false;
     if (!done) who.textContent = `You weren't signed in: the window at ${host} was closed before you allowed BitPortal, or your browser didn't let it open.`;
-  });
+  };
+  button.addEventListener("click", () => void signInNow?.());
+  refresh();
 }
 
 // ---------------------------------------------------------- check a site
