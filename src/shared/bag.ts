@@ -85,3 +85,43 @@ export function homeBag(o: HomeBagOptions): HomeBag {
     },
   };
 }
+
+/** Where this device notes that a guest's first bag was seen to: once a guest, so it isn't looked for again each visit. */
+const STARTED = "bitportal:guest-bag-started";
+
+/**
+ * A guest's first bag, with the starter items in it (BitLogin docs/guest-accounts.md G4; the owner, 2026-11-25: the
+ * bag "should be available with our starter items to any guest"). The kit's `bag.start` writes it in one note, and
+ * only where there is surely none yet; this calls it once a guest on this device, when the guest is first known here.
+ *
+ * What it says is the kit's own words, for the visitor: said for a bag started, and for one that couldn't be
+ * ("unreachable", "refused", "not-sent"), so it is tried again on the next visit. A bag already found is said nothing
+ * of, and not looked for again.
+ */
+export async function startGuestBag(
+  o: { bag: Pick<Bag, "start">; guest: string; items: readonly string[]; say(text: string): void },
+  storage: Pick<Storage, "getItem" | "setItem"> | null = (() => {
+    try {
+      return localStorage;
+    } catch {
+      return null;
+    }
+  })(),
+): Promise<void> {
+  const mark = `${STARTED}:${o.guest}`;
+  try {
+    if (storage?.getItem(mark)) return;
+  } catch {
+    /* not kept: asked again, and the kit writes nothing over a bag found */
+  }
+  if (!o.items.length) return;
+  const result = await o.bag.start([...o.items]);
+  if (result.ok || result.why === "already") {
+    try {
+      storage?.setItem(mark, "1");
+    } catch {
+      /* not kept */
+    }
+  }
+  if (result.why !== "already" && result.said) o.say(result.said);
+}

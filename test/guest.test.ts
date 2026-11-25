@@ -189,3 +189,47 @@ describe("\"Secure this account\" in the menu over a world", () => {
     expect(menu).toContain('{ id: "secure", section: "you", icon: "key", tone: "primary", label: "Secure this account", short: "Secure", hidden: () => filledBelow("you") || !!knownSignedIn() || !knownGuest(), act: () => ask("secure") },');
   });
 });
+
+describe("a guest's first bag, with the starter items in it (the kit's bag.start)", () => {
+  const run = async (results: { ok: boolean; why?: string; said: string }[]) => {
+    const kept = new Map<string, string>();
+    const store = { getItem: (k: string) => kept.get(k) ?? null, setItem: (k: string, v: string) => void kept.set(k, v) };
+    const asked: string[][] = [];
+    const said: string[] = [];
+    const { startGuestBag } = await import("../src/shared/bag.js");
+    const bag = { start: async (items: string[]) => (asked.push(items), results.shift() as never) };
+    const go = () => startGuestBag({ bag, guest, items: ["37303:a:x", "37303:a:y"], say: (t) => said.push(t) }, store);
+    return { go, asked, said, kept };
+  };
+  it("is written once, with every starter item in one call, and says the kit's words", async () => {
+    const r = await run([{ ok: true, said: "Your bag has 2 things in it." }]);
+    await r.go();
+    await r.go();
+    expect(r.asked).toEqual([["37303:a:x", "37303:a:y"]]);
+    expect(r.said).toEqual(["Your bag has 2 things in it."]);
+  });
+  it("says nothing of a bag already found, and isn't looked for again", async () => {
+    const r = await run([{ ok: false, why: "already", said: "You have a bag already." }]);
+    await r.go();
+    await r.go();
+    expect(r.asked.length).toBe(1);
+    expect(r.said).toEqual([]);
+  });
+  it("is tried again next time where it couldn't be, and says why each time", async () => {
+    for (const why of ["unreachable", "refused", "not-sent"]) {
+      const r = await run([
+        { ok: false, why, said: `Not now: ${why}.` },
+        { ok: true, said: "Started." },
+      ]);
+      await r.go();
+      await r.go();
+      expect(r.asked.length).toBe(2);
+      expect(r.said).toEqual([`Not now: ${why}.`, "Started."]);
+    }
+  });
+  it("is started in the room when a guest is first known there, with the starter set", async () => {
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("startBag = (guest) => void startGuestBag({ bag: carried.bag, guest, items: STARTER_ITEMS, say: (text) => controls.say(text) }).then(() => baggingTab.refresh());");
+    expect(room).toContain("      startBag(guest);");
+  });
+});

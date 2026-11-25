@@ -45,7 +45,7 @@ import { archMaskTexture, canvasTexture, DOOR_H, DOOR_W, doorFrame, flatViewText
 import { homeOf, loadHome } from "../shared/home.js";
 import { INSTANCE } from "../shared/instance.js";
 import { loadOperatorLists, storeOperatorLists } from "../shared/operator.js";
-import { homeBag, STARTER_ITEMS } from "../shared/bag.js";
+import { homeBag, STARTER_ITEMS, startGuestBag } from "../shared/bag.js";
 import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
@@ -546,6 +546,8 @@ async function start(): Promise<void> {
       refreshFollowing();
       controls.setTarget("");
       const guest = guestKey;
+      // Their first bag, with the starter things in it, written by the kit in one note where there is surely none.
+      startBag(guest);
       await nameGuest(guest);
       setInterval(() => void nameGuest(guest), 3 * 3600 * 1000);
       return;
@@ -577,6 +579,8 @@ async function start(): Promise<void> {
   /** Show a world's maker in Following, and draw Following again: set once the room's controls are there. */
   let showMaker = (_pubkey: string) => {};
   let refreshFollowing = () => {};
+  /** A guest's first bag, once the Bag is made (further down). */
+  let startBag = (_guest: string): void => {};
   // What the visitor thought of the place whose door they stand at. A rating is theirs, signed at their sign-in
   // address from here and never from inside the world it is of (NSWP-13).
   const STARS = ["", "Not for me", "It was all right", "Good", "Very good", "One of the best"];
@@ -1704,6 +1708,7 @@ async function start(): Promise<void> {
   let followingTab: ReturnType<typeof addRoomControls>["following"];
   let messagingTab: ReturnType<typeof addRoomControls>["messaging"];
   ({ refresh: refreshRoom, travelling, following: followingTab, messaging: messagingTab } = addRoomControls(controls, presence, { onState: (s) => (state.room = s), arrived, panels, sounds, sharedMusic: INSTANCE.sharedMusic !== false, notes: homeNotes, tip: tipPerson, tipsWorld: false, noteRelays: settings.relays, follows, messages, about, presenting: () => renderer.xr.isPresenting }));
+  startBag = (guest) => void startGuestBag({ bag: carried.bag, guest, items: STARTER_ITEMS, say: (text) => controls.say(text) }).then(() => baggingTab.refresh());
   refreshFollowing = () => {
     followingTab.refresh();
     messagingTab.refresh();
