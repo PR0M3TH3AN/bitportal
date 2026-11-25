@@ -92,7 +92,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-4VN2TYQR.js";
+} from "./shared-JFFGIOPR.js";
 import {
   addDoorControls,
   vouchedWords
@@ -167,7 +167,7 @@ import {
   scriptAllowed,
   setShowsItems,
   showsItems
-} from "./shared-VSLEYJOB.js";
+} from "./shared-TJ6RX5NH.js";
 import {
   askOwn,
   askWell,
