@@ -509,7 +509,9 @@ describe("the Bag in the shell's menu, over a world", () => {
 
   it("reads who is signed in from this browser's own note, in the menu's own file and not the shell's first one", async () => {
     const menu = await read("src/shell/menu.ts");
-    expect(menu).toContain("addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays, previews: pictures });");
+    expect(menu).toContain("addShellBag({ controls, below, signedIn: bagKey, relays: loadSettings().relays, previews: pictures });");
+    // Who is signed in, or, where nobody is, this browser's guest account: both read from this browser's own notes.
+    expect(menu).toContain("return known ? (goesAsGuest() ? null : known) : knownGuest();");
     // The page's first file gains nothing for it: with the menu off, nothing of who is signed in is loaded there.
     const shell = await read("src/shell/main.ts");
     expect(shell).not.toMatch(/shared\/session|shared\/look|knownSignedIn/);

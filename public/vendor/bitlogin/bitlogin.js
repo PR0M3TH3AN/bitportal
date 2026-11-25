@@ -1,9 +1,9 @@
 import { e as M, E as U, p as B, R as K, a as c, i as S } from "./bitlogin-shared-CDSZpiZ4.js";
 import { r as I, v as O } from "./bitlogin-shared-Cj9s0_W_.js";
-import { W as D } from "./bitlogin-shared-DFaGPwU-.js";
-import { c as Ne } from "./bitlogin-shared-DFaGPwU-.js";
-import { r as q } from "./bitlogin-shared-CjWz8W3w.js";
-import { b as $, c as F, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-D6Hzbnis.js";
+import { W as F } from "./bitlogin-shared-CYbPHXTd.js";
+import { c as Ne } from "./bitlogin-shared-CYbPHXTd.js";
+import { r as D } from "./bitlogin-shared-CjWz8W3w.js";
+import { b as $, c as q, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-D6Hzbnis.js";
 import { readCachedSession as z } from "./bitlogin-session.js";
 const j = 6, R = 64;
 function v(n = j) {
@@ -807,6 +807,8 @@ class x extends HTMLElement {
   confirmSlots = [];
   // Import flow (§SF10). importKey holds the pasted nsec/hex only until registration completes.
   importKey = "";
+  /** The family whose guest account this sign-up secures (docs/guest-accounts.md G6), or "". */
+  guestFamily = "";
   importPreviewNpub = "";
   /** The user ticked that they read how an imported key is kept (on relays, encrypted) before going on. */
   importAck = !1;
@@ -922,7 +924,7 @@ class x extends HTMLElement {
   constructor() {
     super(), this.root = this.attachShadow({ mode: "open" });
     const e = new CSSStyleSheet();
-    e.replaceSync(J), this.root.adoptedStyleSheets = [e], this.worker = new D(), this.worker.onNotification = (t) => {
+    e.replaceSync(J), this.root.adoptedStyleSheets = [e], this.worker = new F(), this.worker.onNotification = (t) => {
       t.notify === "nip46-auth-url" && (this.bunkerAuthUrl = t.url, this.render());
     };
   }
@@ -977,6 +979,14 @@ class x extends HTMLElement {
   }
   async nip04Decrypt(e, t) {
     return this.altSigner ? this.altSigner.nip04Decrypt(e, t) : (await this.worker.nip04Decrypt({ peerPublicKey: e, payload: t })).plaintext;
+  }
+  /**
+   * Secure this browser's guest account for a family (docs/guest-accounts.md G6): the ordinary sign-up, a login
+   * name, a generated password and the recovery phrase, made from the guest's own phrase, so the account keeps the
+   * key every world already knows. For BitLogin's own panel only: the worker refuses where no guest is kept.
+   */
+  secureGuest(e) {
+    this.guestFamily = e, this.importKey = "", this.errorMessage = "", this.goto("create-name");
   }
   async logout() {
     if (this.altSigner) {
@@ -1687,7 +1697,7 @@ class x extends HTMLElement {
    *  after rendering the appropriate message (cancelled / PRF-unsupported). */
   async runPasskeyCeremony(e) {
     try {
-      const t = e === "get" ? await navigator.credentials.get($()) : await navigator.credentials.create(F("BitLogin"));
+      const t = e === "get" ? await navigator.credentials.get($()) : await navigator.credentials.create(q("BitLogin"));
       if (!t) throw new Error("The passkey ceremony returned nothing.");
       let s = Q(t);
       if (!s && e === "create") {
@@ -1791,9 +1801,10 @@ class x extends HTMLElement {
     const t = await this.worker.register({
       loginName: this.loginName,
       password: e,
-      importKey: this.importKey || void 0
+      importKey: this.importKey || void 0,
+      ...this.guestFamily && !this.importKey ? { fromGuest: this.guestFamily } : {}
     });
-    this.importKey = "", this.importPreviewNpub = "", this.importAck = !1, this.registeredByImport = t.imported, this.phraseRebuildsIdentity = t.everydayKeyDerived, this.recoveryPhrase = t.recoveryPhrase;
+    this.guestFamily = "", this.importKey = "", this.importPreviewNpub = "", this.importAck = !1, this.registeredByImport = t.imported, this.phraseRebuildsIdentity = t.everydayKeyDerived, this.recoveryPhrase = t.recoveryPhrase;
     const s = this.recoveryPhrase.split(" "), i = E(s.length, 3);
     this.confirmSlots = i.map((o) => ({ index: o, value: "" })), this.session = { publicKey: t.everydayPublicKey, npub: c(t.everydayPublicKey), accountId: t.accountId, method: "bitlogin" }, this.busy = !1, this.goto("confirm-phrase"), this.worker.publishProfileAndRelayLists({
       name: this.loginName,
@@ -2422,7 +2433,7 @@ class x extends HTMLElement {
           } catch {
             e = "";
           }
-        const t = this.bunkerConnectUri ? `<div class="qr-wrap" aria-live="polite">${q(this.bunkerConnectUri, "Nostr Connect QR code")}</div>
+        const t = this.bunkerConnectUri ? `<div class="qr-wrap" aria-live="polite">${D(this.bunkerConnectUri, "Nostr Connect QR code")}</div>
              <button class="secondary" type="button" data-action="copy-bunker-uri">Copy connection code</button>
              <p class="small">Waiting for your signer to connect…</p>` : this.errorMessage ? '<button class="secondary" type="button" data-action="goto-bunker">Generate a new code</button>' : '<p class="sub"><span class="spinner"></span>Preparing connection code…</p>';
         return `
@@ -2505,7 +2516,7 @@ class x extends HTMLElement {
       }
       case "create-name":
         return `
-          ${this.renderScreenHead(this.importKey ? "Set up your login" : "Create your BitLogin")}
+          ${this.renderScreenHead(this.guestFamily ? "Secure this account" : this.importKey ? "Set up your login" : "Create your BitLogin")}
           <p class="sub">${this.importKey ? "Choose a login name for your imported identity. It's a convenience, not a secret." : "Choose a login name. It's a convenience, not a secret (it contributes no security)."}</p>
           ${this.renderError()}
           <form data-form="create-name">
@@ -2895,7 +2906,7 @@ window.bitlogin = {
 };
 export {
   x as BitLoginAuthElement,
-  D as WorkerClient,
+  F as WorkerClient,
   Ne as createHeadlessSigner,
   $e as createNip07Provider,
   z as readCachedSession

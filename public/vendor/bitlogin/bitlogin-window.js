@@ -1,6 +1,6 @@
-import { y as M, A as H, a3 as b, a4 as ne, O as N, a0 as K, a5 as P, z as se, Q as U, a6 as _, Y as re, a2 as v, a7 as oe, a8 as ie } from "./bitlogin-shared-DVgIEj88.js";
-import { I as je, a9 as Me, aa as _e, ab as Ce, ac as Fe, ad as Re, ae as Te } from "./bitlogin-shared-DVgIEj88.js";
-import { f as le } from "./bitlogin-shared-B4ZbP95F.js";
+import { y as M, A as H, a4 as b, a5 as ne, O as N, a1 as Y, a6 as P, z as se, Q as U, a7 as _, Z as re, a3 as v, a8 as oe, a9 as ie } from "./bitlogin-shared-CEB3PAlL.js";
+import { I as je, aa as Me, ab as _e, ac as Ce, ad as Fe, ae as Re, af as Te } from "./bitlogin-shared-CEB3PAlL.js";
+import { f as le } from "./bitlogin-shared-DEzSTm3o.js";
 import { a as Je } from "./bitlogin-shared-D6Hzbnis.js";
 const C = "bitlogin-panel", F = 1, ae = ["https://portal.bitblocks.network"];
 function be(t, e) {
@@ -89,7 +89,7 @@ function Oe(t, e, n) {
 function Ee(t, e) {
   const n = t.refused === !0 || t.until <= e, s = ne(t.site) || null;
   return {
-    known: s ? N(t.site) ? `every site at ${s}` : null : K(t.site),
+    known: s ? N(t.site) ? `every site at ${s}` : null : Y(t.site),
     family: s,
     ended: n,
     lasts: t.refused ? "Ended by BitLogin: it had been allowed to write or read data under names no site may now have, such as BitLogin's own records or every application's. If you use it, it will ask you again." : n ? "Ended." : t.remembered ? "Remembered on this device until then, unless you sign out there sooner." : "For one visit: it ended when that site's page was closed or loaded again, and by then at the latest."
@@ -162,12 +162,12 @@ const u = (t, e = 200) => {
   } catch {
   }
   return {};
-}, V = new Map(I), Y = (t, e) => t === "name" || t === "display_name" ? _(e) || u(e, 48) : typeof e == "string" ? u(e) : e == null ? "" : u(JSON.stringify(e), 120);
+}, V = new Map(I), K = (t, e) => t === "name" || t === "display_name" ? _(e) || u(e, 48) : typeof e == "string" ? u(e) : e == null ? "" : u(JSON.stringify(e), 120);
 function we(t, e) {
   const n = (i) => V.get(i) ?? `"${u(i, 40)}"`, s = [...I.map(([i]) => i), ...[.../* @__PURE__ */ new Set([...Object.keys(e), ...Object.keys(t)])].filter((i) => !V.has(i)).sort()], r = [];
   let o = 0;
   for (const i of s) {
-    const l = Y(i, e[i]), c = Y(i, t[i]);
+    const l = K(i, e[i]), c = K(i, t[i]);
     !l && !c || (l === c && JSON.stringify(e[i]) === JSON.stringify(t[i]) ? o += 1 : l ? c ? r.push(`${n(i)}: ${c}. It was: ${l}`) : r.push(`${n(i)}, removed. It was: ${l}`) : r.push(`${n(i)}, added: ${c}`));
   }
   return r.length === 0 && r.push("Nothing would change: it says what your profile says now."), o > 0 && r.push(`${o} other ${o === 1 ? "field stays" : "fields stay"} as ${o === 1 ? "it is" : "they are"}.`), {
@@ -230,7 +230,7 @@ function Ie(t = {}) {
       i({
         site: d,
         wants: f,
-        known: K(d) !== null,
+        known: Y(d) !== null,
         family: w,
         knownFamily: w ? N(w) : !1,
         // Worked out again on this page: its own family, by the browser's address for it, and one BitLogin knows.
@@ -252,11 +252,11 @@ function Ie(t = {}) {
         hold(m) {
           l.postMessage(v({ t: "held", nonce: o, world: d, receipts: m }), s);
         },
-        async grant(m, E, S, $, q) {
-          const B = $ === !0 && S === !0 && !!w, Z = await m.exportHandoff(Q, f ? { site: d, permissions: f } : void 0, d, S === !0, B ? w : void 0, B ? void 0 : q === !0 && L.length ? [...p, ...L] : p.length ? p : void 0), ee = new Promise((J) => {
+        async grant(m, E, S, $, Z) {
+          const B = $ === !0 && S === !0 && !!w, q = await m.exportHandoff(Q, f ? { site: d, permissions: f } : void 0, d, S === !0, B ? w : void 0, B ? void 0 : Z === !0 && L.length ? [...p, ...L] : p.length ? p : void 0), ee = new Promise((J) => {
             h = J, setTimeout(() => J(!1), 8e3);
           });
-          l.postMessage(v({ t: "grant", nonce: o, world: d, sealed: Z, ...E ? { name: E } : {} }), s);
+          l.postMessage(v({ t: "grant", nonce: o, world: d, sealed: q, ...E ? { name: E } : {} }), s);
           const te = await ee;
           return window.removeEventListener("message", A), te;
         }
@@ -281,7 +281,7 @@ export {
   Ie as findEmbeddedSigner,
   P as inFamily,
   Ce as keepersOf,
-  K as knownAppName,
+  Y as knownAppName,
   N as knownFamily,
   me as loadAllowed,
   be as panelClientAllowed,

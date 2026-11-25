@@ -48,7 +48,7 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, proposeToPerson, quietSigner, quietVault, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
+import { holdsReserved, proposeToPerson, quietGuestSigner, quietSigner, quietVault, readGuest, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -480,6 +480,8 @@ async function start(): Promise<void> {
   let signedInAs = "";
   /** Whose key that is, once known. */
   let signedInKey: string | null = null;
+  /** This browser's guest account (BitLogin's), where nobody is signed in: its bag is its own. Nothing else is the guest's. */
+  let guestKey: string | null = null;
   facts.named = () => !!signedInKey && !goesAsGuest();
   // Who they are in their own room: signed in is signed in here too (NSWP-10). A pass for this site is signed the
   // way the Airlock signs one for a world, with the name and picture from their own profile, so the people they
@@ -512,7 +514,12 @@ async function start(): Promise<void> {
     sayWho();
     // Settings kept with their profile: fetched behind the room, which has already started from this browser's own.
     startSync();
-    if (!who) return;
+    if (!who) {
+      // Nobody signed in: this browser's guest account, where BitLogin made one, has its bag here.
+      guestKey = await readGuest();
+      if (guestKey) refreshFollowing();
+      return;
+    }
     await fetchProfiles([who.pubkey], settings.relays);
     sayWho();
     controls.setTarget("");
@@ -1614,14 +1621,16 @@ async function start(): Promise<void> {
     presenting: () => renderer.xr.isPresenting,
   });
   // Their bag (NSWP-17): looked through and changed here, at home, and the one thing they hold is taken from it.
-  const carried = homeBag({ me: () => (goesAsGuest() ? null : signedInKey), relays: settings.relays, signerFor: quietSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });
+  // Whose bag: who is signed in, or, where nobody is, this browser's guest account (BitLogin's), whose bag is its own.
+  const bagKey = (): string | null => (signedInKey ? (goesAsGuest() ? null : signedInKey) : guestKey);
+  const carried = homeBag({ me: bagKey, guest: () => !signedInKey && !!guestKey, relays: settings.relays, signerFor: quietSigner, guestSignerFor: quietGuestSigner, say: (text) => controls.say(text), presenting: () => renderer.xr.isPresenting });
   const baggingTab = addBagControls(controls, {
     bag: carried.bag,
     // A bag shows the things in it, each drawn from its own model (NSWP-17), and what is held is drawn from the
     // same one: fetched from wherever its maker keeps it, and checked against the hash its description gives.
     items: carriedItems,
     place: () => "your home",
-    me: () => (goesAsGuest() ? null : signedInKey),
+    me: bagKey,
     rule: () => "allowed",
     holding: () => presence.holding,
     hold: async (item, tints) => {

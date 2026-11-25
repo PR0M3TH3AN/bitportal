@@ -9,6 +9,9 @@
  * first time they put something in or take something out, in BitLogin's own window (`askFor`). Until then
  * nothing here can sign a bag.
  *
+ * A guest (BitLogin's guest account for a visitor who arrived signed out, docs/guest-accounts.md) has its bag
+ * too, and is asked nothing: BitLogin signs a guest's bag with no press (G4, the owner's word of 2026-11-25).
+ *
  * Nothing carried is drawn in this room. That is a choice, not something the site's rules force: the room's
  * rule for items is "none", and the tab says so. Whether the home room should draw what people hold is the
  * owner's to decide.
@@ -16,7 +19,7 @@
 import { itemCoordinate } from "@nswp/core";
 import { createBag, type Bag } from "nswp-sdk/three";
 import starterJson from "../starter/items.json";
-import { askFor, asks, signInHost, type quietSigner } from "./session.js";
+import { askFor, asks, signInHost, type quietGuestSigner, type quietSigner } from "./session.js";
 
 /**
  * A few items offered here to begin with (`src/starter/items.json`): put in a bag with one press, like any other
@@ -25,8 +28,11 @@ import { askFor, asks, signInHost, type quietSigner } from "./session.js";
 export const STARTER_ITEMS: readonly string[] = (starterJson.items as unknown[]).map((i) => itemCoordinate(i)).filter(Boolean);
 
 export interface HomeBagOptions {
-  /** Who is signed in, or null: a guest, or someone going about as one. */
+  /** Whose bag: who is signed in, or this browser's guest account (`guest`); null for nobody, or someone going about unnamed. */
   me(): string | null;
+  /** Whether `me` is this browser's guest account, not someone signed in. */
+  guest(): boolean;
+  guestSignerFor: typeof quietGuestSigner;
   /** The usual relays, beside the visitor's own. */
   relays: string[];
   signerFor: typeof quietSigner;
@@ -44,7 +50,8 @@ export interface HomeBag {
 }
 
 export function homeBag(o: HomeBagOptions): HomeBag {
-  const allowed = () => asks().includes("bag");
+  // A guest is asked nothing: BitLogin signs its bag unasked. Anyone signed in is asked once, at first use.
+  const allowed = () => o.guest() || asks().includes("bag");
   const bag = createBag({
     me: o.me,
     relays: o.relays,
@@ -52,7 +59,7 @@ export function homeBag(o: HomeBagOptions): HomeBag {
       ready: allowed,
       async sign(made) {
         const me = o.me();
-        const quiet = me ? await o.signerFor(me) : null;
+        const quiet = me ? await (o.guest() ? o.guestSignerFor(me) : o.signerFor(me)) : null;
         if (!quiet) return null;
         try {
           return await quiet.signer.signEvent(made);

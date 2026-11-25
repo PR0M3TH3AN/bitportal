@@ -181,6 +181,12 @@ export interface SignInState {
   needsMore?: boolean;
   /** Whether the sign-in address will show a visitor what this site asked for. Left out by one too old to say. */
   canAsk?: boolean;
+  /**
+   * This browser is the family's guest account, with `pubkey` (BitLogin docs/guest-accounts.md): an account BitLogin
+   * made for a visitor who arrived signed out, not yet secured. `signedIn` stays false: a guest is nobody here for
+   * everything but its bag, which BitLogin signs for it with no press (G4).
+   */
+  guest?: boolean;
 }
 
 /** BitLogin's client for an application (`bitlogin-client.js`), as far as BitPortal uses it. */
@@ -214,14 +220,37 @@ interface SignInClient {
 }
 
 const RECORD = "bitportal:signed-in";
+const GUEST_RECORD = "bitportal:guest";
 
-/** Write down who the signer says is signed in: their public key and name, and nothing that could sign. */
+/** The guest account a signer's state says this browser is, or null: signed in to an account, or nobody at all. */
+export function guestOf(state: SignInState | null | undefined): string | null {
+  return state && !state.signedIn && state.guest === true && isHex64(state.pubkey) ? state.pubkey : null;
+}
+
+/** Write down who the signer says is signed in, or which guest this browser is: public keys and a name, nothing that could sign. */
 function keepRecord(state: SignInState): void {
   try {
     if (state.signedIn && isHex64(state.pubkey)) localStorage.setItem(RECORD, JSON.stringify({ pubkey: state.pubkey, ...(state.name ? { name: state.name } : {}), until: state.until ?? 0 }));
     else localStorage.removeItem(RECORD);
+    const guest = guestOf(state);
+    if (guest) localStorage.setItem(GUEST_RECORD, JSON.stringify({ pubkey: guest }));
+    else localStorage.removeItem(GUEST_RECORD);
   } catch {
     /* not kept: every page asks the signer anyway */
+  }
+}
+
+/**
+ * The guest account this browser last was, read from its own note of it, as `knownSignedIn` is: for the page that
+ * keeps the screen, which shows the guest's bag over a world and signs nothing. Null where someone is signed in.
+ */
+export function knownGuest(): string | null {
+  try {
+    if (knownSignedIn()) return null;
+    const kept = JSON.parse(localStorage.getItem(GUEST_RECORD) ?? "null") as { pubkey?: unknown } | null;
+    return kept && isHex64(kept.pubkey) ? kept.pubkey : null;
+  } catch {
+    return null;
   }
 }
 
@@ -335,12 +364,17 @@ export function familyOf(origin: string): string | null {
 
 /** What BitLogin's client library is asked to make, by this page: the options are all here, so they can be tested. */
 export interface BitLoginModule {
-  createBitLoginClient(o: { at: string; permissions: unknown; family?: string }): SignInClient;
+  createBitLoginClient(o: { at: string; permissions: unknown; family?: string; guest?: boolean }): SignInClient;
 }
-/** How this page makes a client of BitLogin's: what it asks for, and its family where it has one (`familyOf`). */
+/**
+ * How this page makes a client of BitLogin's: what it asks for, and its family where it has one (`familyOf`). With
+ * its family it asks to be the family's guest where nobody is signed in on this browser (BitLogin
+ * docs/guest-accounts.md G3; the owner, 2026-11-25: the bag "should be available with our starter items to any
+ * guest"). An account wins: BitLogin makes no guest where one is signed in here.
+ */
 export function clientMaker(mod: BitLoginModule, at: string, origin: string): (reserved: boolean, more: readonly Ask[]) => SignInClient {
   const family = familyOf(origin);
-  return (reserved, more) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved, more), ...(family ? { family } : {}) });
+  return (reserved, more) => mod.createBitLoginClient({ at, permissions: permissionsFor(reserved, more), ...(family ? { family, guest: true } : {}) });
 }
 
 /**
@@ -591,6 +625,18 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * What signs the guest's bag, where this browser is the family's guest `expected` (`guestOf`). BitLogin signs a
+ * guest's bag (kind 37308, d "bag") with no press, and nothing else of BitPortal's set: what else is asked of it is
+ * refused there. Null where this browser is no guest, or another one.
+ */
+export async function quietGuestSigner(expected: string): Promise<{ signer: Signer; close(): void } | null> {
+  const c = await signInClient();
+  const state = c ? await settled(c) : null;
+  if (!c || guestOf(state) !== expected) return null;
+  return { signer: appSigner(c, expected), close: () => {} };
+}
+
+/**
  * A signer for someone already signed in, with nothing shown. It can't sign anyone in, which is the point: a page
  * in the middle of a crossing must never ask for a sign-in (NSWP spec §6.3, §12.3), so when the signer doesn't
  * hold BitPortal's permission for `expected` this returns null and the caller carries on without a signature.
@@ -662,6 +708,12 @@ export function shortKey(pubkey: string): string {
  * Who is signed in, as BitLogin's signer says: whoever allowed BitPortal, in BitLogin's window, and hasn't signed
  * out of it since. Null for a guest, and where the sign-in address doesn't answer. It can't sign anything.
  */
+/** The family's guest account this browser is (`guestOf`), or null: someone is signed in, or nobody at all. */
+export async function readGuest(): Promise<string | null> {
+  const c = await signInClient();
+  return guestOf(c ? await settled(c) : null);
+}
+
 export async function readSignedIn(): Promise<{ pubkey: string; name?: string } | null> {
   const c = await signInClient();
   const state = c ? await settled(c) : null;

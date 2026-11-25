@@ -7,8 +7,9 @@
  * careful parts (an item's description really signed by its maker, its limits, the rule for a thing that does
  * things of its own) are the kit's. This file says only what is this page's to say:
  *
- * - **Whose bag.** The key signed in to BitPortal, read from this browser's own note of it. This page makes no
- *   signer and signs nothing. And only where the world in the frame says the visitor is named there: a guest in
+ * - **Whose bag.** The key signed in to BitPortal, read from this browser's own note of it, or, where nobody is,
+ *   the guest account BitLogin made for this browser (its docs/guest-accounts.md). This page makes no signer and
+ *   signs nothing. And only where the world in the frame says the visitor is named there: a guest in
  *   that world carries nothing, and has no tab. Over this site's own pages the room fills the Bag itself.
  * - **What is in hand** is the world's to say. Taking something up here tells the world, which takes it only if
  *   it is in their bag as they signed it, and this waits for the world to say so.
@@ -28,7 +29,7 @@ import type { Controls } from "nswp-sdk/ui";
 export interface ShellBagOptions {
   controls: Controls;
   below: MenuBelow;
-  /** Who is signed in to BitPortal, or null: a guest, or someone going about as one. */
+  /** Whose bag: who is signed in to BitPortal, or this browser's guest account; null for nobody, or someone going about unnamed. */
   signedIn(): string | null;
   /** The usual relays, beside the visitor's own. */
   relays: string[];
