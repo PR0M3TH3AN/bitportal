@@ -20,14 +20,15 @@ import { menuDoor } from "../shared/menu-door.js";
 import type { Offer } from "@nswp/core";
 import { prototypeNotice } from "../shared/notice.js";
 import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally, ENTRY_PLACES_ROOMS, entryPlaces } from "@nswp/core";
-import { guestName, SECURE_FIRST, SECURE_WHERE } from "../shared/guest.js";
+import { guestName, SECURE, SECURE_ELSEWHERE, SECURE_FIRST } from "../shared/guest.js";
+import { ownPanelOffered, showOwnPanel } from "../shared/own-panel.js";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
 import { enterShell, goFrom, linksLeaveWhole } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createDoorOffers, createHome, type Alloy, type DoorOffers } from "nswp-sdk/home";
-import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, createDragLook, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput } from "nswp-sdk/three";
+import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, createDragLook, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput, type ClientPanelMode } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -49,9 +50,9 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, proposeToPerson, quietGuestSigner, quietSigner, quietVault, readGuest, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
+import { holdsReserved, proposeToPerson, quietGuestPass, secureAccount, quietGuestSigner, quietSigner, quietVault, readGuest, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
-import { issuePass } from "../shared/pass.js";
+import { issueGuestPass, issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
 import { startSync } from "../shared/sync-run.js";
 import { createJumpList } from "../shared/jump.js";
@@ -515,6 +516,18 @@ async function start(): Promise<void> {
       quiet.close();
     }
   };
+  // A guest's pass, made and signed by BitLogin (its client's `roomPass`), saying it is a guest: they go by it in
+  // the room, under the same name in every world. Nothing on it is written here.
+  const nameGuest = async (pubkey: string): Promise<void> => {
+    if (goesAsGuest()) return void (roomIdentity = undefined);
+    const make = await quietGuestPass(pubkey);
+    if (!make) return;
+    try {
+      roomIdentity = await issueGuestPass(make, pubkey, location.origin);
+    } catch {
+      /* no pass yet: they are a guest with no name in the room, as before */
+    }
+  };
   void readSignedIn().then(async (who) => {
     // By the name they chose for themselves: never a string of hex.
     const sayWho = () => {
@@ -532,6 +545,9 @@ async function start(): Promise<void> {
       homeNotes.setWho(guestKey);
       refreshFollowing();
       controls.setTarget("");
+      const guest = guestKey;
+      await nameGuest(guest);
+      setInterval(() => void nameGuest(guest), 3 * 3600 * 1000);
       return;
     }
     await fetchProfiles([who.pubkey], settings.relays);
@@ -569,7 +585,7 @@ async function start(): Promise<void> {
     label: "Rate",
     icon: "check",
     note: () => {
-      if (!signedInKey && guestKey) return `${SECURE_FIRST} (${SECURE_WHERE}) to say what you thought of a place. A rating is yours, signed with your own key, and a guest's key lives in this browser only.`;
+      if (!signedInKey && guestKey) return `${SECURE_FIRST} to say what you thought of a place. A rating is yours, signed with your own key, and a guest's key lives in this browser only.`;
       if (!signedInKey) return "Sign in to say what you thought of a place. A rating is yours: it is signed with your own key.";
       if (!atDoor) return "Stand at a door to say what you thought of the place behind it.";
       const tally = tallies.get(atDoor.entry.id);
@@ -578,6 +594,8 @@ async function start(): Promise<void> {
       return `${yours}${theirs ? ` It is rated ${theirs}.` : ""} A rating is public: anyone can see that you rated this place, and how. Choosing another replaces it.`;
     },
   });
+  // A guest's press beside that line: BitLogin's panel, straight on "Secure this account".
+  controls.add({ id: "rate-secure", section: "rate", icon: "key", tone: "primary", label: SECURE, short: "Secure", hidden: () => !isGuest(), act: () => void secureHere() });
   for (let n = 5; n >= 1; n--) {
     controls.add({
       id: `rate-${n}`,
@@ -992,7 +1010,7 @@ async function start(): Promise<void> {
   };
   rateDoor = async (door, stars) => {
     const title = door.entry.world.title;
-    if (!signedInKey && guestKey) return say(`${SECURE_FIRST} to rate a place:\n${SECURE_WHERE}.`);
+    if (!signedInKey && guestKey) return say(`${SECURE_FIRST} to rate a place.`);
     if (!signedInKey) return say("Sign in to rate a place.");
     const quiet = await quietSigner(signedInKey);
     if (!quiet) return say("Your sign-in didn't answer.\nNothing was sent.");
@@ -1418,7 +1436,7 @@ async function start(): Promise<void> {
   hooks.panels = panels;
   // The visitor's own computers: a terminal on one, in a panel. Theirs alone, and never offered to a world.
   // Its Sign in does what the menu's own row does (`signInHere`, made further down; pressed only once the room is up).
-  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT, signIn: () => void signInHere(), guest: () => isGuest() });
+  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT, signIn: () => void signInHere(), guest: () => isGuest(), secure: () => void secureHere() });
   hooks.computers = computers;
 
   // ------------------------------------------------------- presence
@@ -1544,7 +1562,9 @@ async function start(): Promise<void> {
         });
         // A page above that says nothing at all (it took the press for no press): given up on, like a window that didn't open.
         const quiet = setTimeout(() => !up && finish({ up: false, allowed: false }), 8000);
-        if (!askClientForSignIn(mode)) finish({ up: false, allowed: false });
+        // "secure" is BitLogin's mode for "Secure this account"; the kit's `ClientPanelMode` doesn't name it yet,
+        // and its call passes the mode on as it is.
+        if (!askClientForSignIn(mode as ClientPanelMode)) finish({ up: false, allowed: false });
       }),
   });
   /** Neither a window nor a panel can be seen from inside a headset: said, in place of a press that does nothing. */
@@ -1560,6 +1580,15 @@ async function start(): Promise<void> {
     // A panel that never came up is said by the menu itself, with what to do next.
     if (here && !panelHere()) return;
     controls.say(here ? `You weren't signed in: ${signInHost()} was closed before you allowed BitPortal. Press Sign in to try again.` : `You weren't signed in: the window at ${signInHost()} was closed before you allowed BitPortal, or your browser didn't let it open. Press Sign in to try again.`);
+  };
+  // "Secure this account", for the guest: BitLogin's panel, over the room. Drawn by the page that keeps the screen
+  // where one does, else by the room itself at BitPortal's own address (own-panel.ts); never a window, which can't
+  // see the guest. Once secured, the room is read again: they are an account now, by the same key.
+  const secureHere = async (): Promise<void> => {
+    if (!windowed()) return;
+    const said = await secureAccount({ offered: ownPanelOffered, show: (mode) => showOwnPanel(mode) });
+    if (said === "secured") return readAgain();
+    if (said === "no-panel") controls.say(SECURE_ELSEWHERE);
   };
   const signOutHere = async (): Promise<void> => {
     await signOut();
@@ -1597,6 +1626,7 @@ async function start(): Promise<void> {
     },
     signedInAs: () => signedInAs,
     guest: () => (isGuest() && !goesAsGuest() ? guestKey : null),
+    secure: () => void secureHere(),
     // Their own profile, as this browser read it from their signed kind 0: the card a world shows them, here too.
     // A guest's is the kit's name for it, the same in every world.
     card: () => {

@@ -38,6 +38,30 @@ export async function issuePass(
   to: { origin: string; name?: string; picture?: string; about?: string },
   opts: { now?: number; random?: (bytes: Uint8Array<ArrayBuffer>) => void } = {},
 ): Promise<IssuedPass> {
+  const identity = await signer.getPublicKey();
+  return passFor(identity, to.origin, (session, now) => signer.signEvent(buildRoomPass({ session, origin: to.origin, ...(to.name ? { name: to.name } : {}), ...(to.picture ? { picture: to.picture } : {}), ...(to.about ? { about: to.about } : {}), createdAt: now })), opts);
+}
+
+/**
+ * The same for a guest (BitLogin docs/guest-accounts.md G7): BitLogin makes and signs the whole pass for the
+ * session key (its client's `roomPass`), saying on it that this is a guest. This page writes nothing on it, and it
+ * is checked the same way before it is used. `identity` is the guest's key, as BitLogin's state says it.
+ */
+export async function issueGuestPass(
+  roomPass: (session: string) => Promise<NostrEvent>,
+  identity: string,
+  origin: string,
+  opts: { now?: number; random?: (bytes: Uint8Array<ArrayBuffer>) => void } = {},
+): Promise<IssuedPass> {
+  return passFor(identity, origin, (session) => roomPass(session), opts);
+}
+
+async function passFor(
+  identity: string,
+  origin: string,
+  sign: (session: string, now: number) => Promise<NostrEvent>,
+  opts: { now?: number; random?: (bytes: Uint8Array<ArrayBuffer>) => void },
+): Promise<IssuedPass> {
   const now = opts.now ?? Math.floor(Date.now() / 1000);
   const secret = new Uint8Array(32);
   let session = "";
@@ -51,10 +75,9 @@ export async function issuePass(
     }
   }
   if (!session) throw new PassError("no_session_key", "Couldn't make a session key.");
-  const identity = await signer.getPublicKey();
   if (session === identity) throw new PassError("no_session_key", "Couldn't make a session key.");
-  const pass = await signer.signEvent(buildRoomPass({ session, origin: to.origin, ...(to.name ? { name: to.name } : {}), ...(to.picture ? { picture: to.picture } : {}), ...(to.about ? { about: to.about } : {}), createdAt: now }));
-  const checked = verifyRoomPass(pass, { origin: to.origin, session, now });
+  const pass = await sign(session, now);
+  const checked = verifyRoomPass(pass, { origin, session, now });
   if (!checked.ok || checked.value.pubkey !== identity) throw new PassError("pass_invalid", "The pass that was signed wouldn't be believed, so it wasn't used.");
   return { pass, sessionKey: hex(secret) };
 }

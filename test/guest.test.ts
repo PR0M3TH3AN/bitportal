@@ -102,15 +102,22 @@ describe("a guest is themselves in the room (the owner: \"the same guest in ever
     expect(room).toContain("propose: (note) => (isGuest() ? Promise.resolve(null) : proposeToPerson(note)),");
     expect(room).toContain("homeNotes.setWho(guestKey);");
   });
-  it("is told to secure the account first where a lasting account is needed, with where to do it", async () => {
-    const { SECURE_FIRST, SECURE_WHERE } = await import("../src/shared/guest.js");
+  it("is told to secure the account first where a lasting account is needed, with the press right there", async () => {
+    const { SECURE, SECURE_FIRST } = await import("../src/shared/guest.js");
     expect(SECURE_FIRST).toBe("Secure this account first");
-    expect(SECURE_WHERE).toBe("under You, then Your account");
+    expect(SECURE).toBe("Secure this account");
     const room = await read("src/walk/main.ts");
-    expect(room).toContain("if (!signedInKey && guestKey) return `${SECURE_FIRST} (${SECURE_WHERE}) to say what you thought of a place.");
-    expect(room).toContain("if (!signedInKey && guestKey) return say(`${SECURE_FIRST} to rate a place:");
+    expect(room).toContain("if (!signedInKey && guestKey) return `${SECURE_FIRST} to say what you thought of a place.");
+    expect(room).toContain("if (!signedInKey && guestKey) return say(`${SECURE_FIRST} to rate a place.`);");
+    // The press, under the line: in Rate, under You, and on the computers sheet. No directions in place of it.
+    expect(room).toContain('controls.add({ id: "rate-secure", section: "rate", icon: "key", tone: "primary", label: SECURE, short: "Secure", hidden: () => !isGuest(), act: () => void secureHere() });');
+    expect(room).not.toMatch(/under You, then Your account/);
+    const you = await read("src/walk/you.ts");
+    expect(you).toContain('{ id: "identity-secure", section: "you", icon: "key", tone: "primary", label: "Secure this account", short: "Secure", hidden: () => !(o.secure && o.guest?.()), act: () => o.secure?.() },');
     const computers = await read("src/walk/computers.ts");
-    expect(computers).toContain("o.guest?.() ? `You're a guest on this browser. ${SECURE_FIRST} (${SECURE_WHERE}), or sign in:");
+    expect(computers).toContain("o.guest?.() ? `You're a guest on this browser. ${SECURE_FIRST}, or sign in:");
+    expect(computers).toContain("o.guest?.() && o.secure ? [secureButton(), signInButton(\"Sign in\")]");
+    expect(computers).toContain("onclick: () => (dialog.close(), o.secure?.())");
   });
   it("is told who it is under You in BitLogin's words, and in Brave that the browser forgets guests", async () => {
     const { guestNote, isBrave } = await import("../src/shared/guest.js");
@@ -119,5 +126,66 @@ describe("a guest is themselves in the room (the owner: \"the same guest in ever
     expect(isBrave({ brave: {} })).toBe(true);
     expect(isBrave({})).toBe(false);
     expect(isBrave(undefined)).toBe(false);
+  });
+});
+
+describe("the guest's pass in the room, made by BitLogin", () => {
+  it("is BitLogin's own pass for the session key, checked as any pass is, and refused as anyone else's", async () => {
+    const { buildRoomPass, finalizeEvent } = await import("@nswp/core");
+    const { issueGuestPass } = await import("../src/shared/pass.js");
+    const secret = new Uint8Array(32).fill(7);
+    const origin = "https://portal.bitblocks.network";
+    // A stand-in for BitLogin's `roomPass`: the whole pass, made and signed there, saying it is a guest.
+    const roomPass = async (session: string) => {
+      const made = buildRoomPass({ session, origin, createdAt: Math.floor(Date.now() / 1000) });
+      return finalizeEvent({ ...made, tags: [...made.tags, ["nswp:guest", "1"]] }, secret);
+    };
+    const issued = await issueGuestPass(roomPass, guest, origin);
+    expect(issued.pass.pubkey).toBe(guest);
+    expect(issued.pass.tags).toContainEqual(["nswp:guest", "1"]);
+    expect(issued.sessionKey).toMatch(/^[0-9a-f]{64}$/);
+    // For another site, or as someone else: not used.
+    await expect(issueGuestPass(roomPass, guest, "https://elsewhere.example")).rejects.toThrow();
+    await expect(issueGuestPass(roomPass, someone, origin)).rejects.toThrow();
+  });
+  it("is asked of BitLogin's client only for this browser's guest, and is BitLogin's to write", async () => {
+    const session = await read("src/shared/session.ts");
+    expect(session).toContain("if (!c?.roomPass || guestOf(state) !== expected) return null;");
+    expect(session).toContain('if (pass.pubkey !== expected) throw new SessionError("wrong_identity"');
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("roomIdentity = await issueGuestPass(make, pubkey, location.origin);");
+    expect(room).not.toMatch(/nswp:guest/);
+  });
+});
+
+describe("\"Secure this account\", in BitLogin's panel and never a window", () => {
+  it("is the panel's own mode, for no world in particular", async () => {
+    const { isPanelMode } = await import("../src/shell/panel.js");
+    expect(isPanelMode("secure")).toBe(true);
+    const panel = await read("src/shell/panel.ts");
+    expect(panel).toContain('const ownPage = (mode: PanelMode): boolean => mode === "account" || mode === "files" || mode === "wallet" || mode === "library" || mode === "secure";');
+  });
+  it("is drawn by BitPortal's own page itself only at BitPortal's own address, with nothing framing it", async () => {
+    const { ownPanelOffered } = await import("../src/shared/own-panel.js");
+    expect(ownPanelOffered({ origin: "https://portal.bitblocks.network", framed: false })).toBe(true);
+    expect(ownPanelOffered({ origin: "https://portal.bitblocks.network", framed: true })).toBe(false);
+    expect(ownPanelOffered({ origin: "https://arcade.bitblocks.network", framed: false })).toBe(false);
+    expect(ownPanelOffered({ origin: "https://192.168.68.84:4800", framed: false })).toBe(false);
+  });
+  it("is the panel of the page that keeps the screen first, then the page's own, and says where else when neither can be", async () => {
+    const session = await read("src/shared/session.ts");
+    expect(session).toContain('const shown = panel?.offered() ? panel.ask("secure") : own?.offered() ? own.show("secure") : null;');
+    expect(session).toContain('if (!shown) return "no-panel";');
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("const said = await secureAccount({ offered: ownPanelOffered, show: (mode) => showOwnPanel(mode) });");
+    expect(room).toContain('if (said === "secured") return readAgain();');
+    expect(room).toContain('if (said === "no-panel") controls.say(SECURE_ELSEWHERE);');
+  });
+});
+
+describe("\"Secure this account\" in the menu over a world", () => {
+  it("is under You for a guest, where the world doesn't fill You itself, and opens the panel on it", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain('{ id: "secure", section: "you", icon: "key", tone: "primary", label: "Secure this account", short: "Secure", hidden: () => filledBelow("you") || !!knownSignedIn() || !knownGuest(), act: () => ask("secure") },');
   });
 });

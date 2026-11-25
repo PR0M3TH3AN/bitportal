@@ -63,6 +63,8 @@ export interface YouOptions {
    * are that guest here, and in every world. Null otherwise.
    */
   guest?(): string | null;
+  /** Open BitLogin's "Secure this account" for the guest, from a press. */
+  secure?(): void;
   /**
    * Who they are signed in as, as the card every world shows at the head of You: their picture, name and key
    * (the kit's `UiCard`). Null for a guest, or someone going about as one.
@@ -106,6 +108,8 @@ export function addYou(o: YouOptions): You {
       on: () => !!o.signedInAs(),
       act: () => (o.signedInAs() ? o.signOut() : o.signIn()),
     },
+    // The guest's own press (BitLogin docs/guest-accounts.md G6): the account kept, made to last, by the same key.
+    { id: "identity-secure", section: "you", icon: "key", tone: "primary", label: "Secure this account", short: "Secure", hidden: () => !(o.secure && o.guest?.()), act: () => o.secure?.() },
     { id: "identity-another", section: "you", icon: "you", label: "Be someone else", short: "Other", hidden: () => !o.signedInAs(), act: () => o.another() },
     // The same row every world has (the kit's `accountAction`): everything the sign-in address does, without leaving.
     { id: "account", section: "you", icon: "key", label: () => `Your account, at ${signInHost()}`, short: "Account", hidden: () => !(o.account && o.canAccount?.()), act: () => o.account?.() },

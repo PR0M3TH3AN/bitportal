@@ -215,6 +215,11 @@ interface SignInClient {
    * Left out by a client too old to have it.
    */
   tip?(tip: { to?: string; sats: number }, o?: { show?: () => boolean | Promise<boolean> }): Promise<{ preimage?: string } | null>;
+  /**
+   * A room pass for this site, made and signed by BitLogin for `session`, for an account or a guest: a guest's says
+   * so (`["nswp:guest", "1"]`). Throws where refused. Left out by a client too old to have it.
+   */
+  roomPass?(session: string): Promise<NostrEvent>;
   /** Remove its frame and stop listening. */
   destroy(): void;
 }
@@ -283,7 +288,7 @@ export interface SignInPanel {
    * Ask for it, from the visitor's press. Resolves once it has gone: `up` is whether it ever came up, and
    * `allowed` whether the sign-in address said the visitor said yes (a hint for not waiting on a no).
    */
-  ask(mode: "ask" | "switch"): Promise<{ up: boolean; allowed: boolean }>;
+  ask(mode: "ask" | "switch" | "secure"): Promise<{ up: boolean; allowed: boolean }>;
 }
 let panel: SignInPanel | null = null;
 /** For a page that can be shown a panel: say so. */
@@ -478,6 +483,39 @@ export async function signIn(): Promise<boolean> {
   }
 }
 
+/**
+ * Open BitLogin's "Secure this account" for this browser's guest (BitLogin docs/guest-accounts.md G6), from the
+ * visitor's press: in the panel of the page that keeps the screen, or else in a panel this page draws itself
+ * (`own`, own-panel.ts). Never in a window: a window of BitLogin's own can't see the guest.
+ *
+ * - "secured": they are no longer a guest here: an account of their own now, by the same key.
+ * - "not": the panel came and went, and they are still the guest.
+ * - "no-panel": no panel can be drawn here (a page framed by something else, or not at BitPortal's own address).
+ */
+export async function secureAccount(own?: { offered(): boolean; show(mode: "secure"): Promise<{ up: boolean; allowed: boolean }> }): Promise<"secured" | "not" | "no-panel"> {
+  const c = made ?? (await signInClient());
+  if (!c) return "not";
+  const shown = panel?.offered() ? panel.ask("secure") : own?.offered() ? own.show("secure") : null;
+  if (!shown) return "no-panel";
+  const { up } = await shown;
+  if (!up) return "no-panel";
+  const still = (): boolean => guestOf(c.state()) !== null;
+  if (!still()) return "secured";
+  // Secured, the signer says so a moment after the panel has gone.
+  return new Promise((done) => {
+    const stop = c.onChange(() => {
+      if (still()) return;
+      clearTimeout(timer);
+      stop();
+      done("secured");
+    });
+    const timer = setTimeout(() => {
+      stop();
+      done(still() ? "not" : "secured");
+    }, SAID_YES_MS);
+  });
+}
+
 /** A window that was asked for and couldn't be opened while the press lasted: the next press opens it at once. */
 let waitingFor: Ask | null = null;
 
@@ -634,6 +672,23 @@ export async function quietGuestSigner(expected: string): Promise<{ signer: Sign
   const state = c ? await settled(c) : null;
   if (!c || guestOf(state) !== expected) return null;
   return { signer: appSigner(c, expected), close: () => {} };
+}
+
+/**
+ * What makes the guest's room pass, where this browser is the family's guest `expected`: BitLogin's own
+ * `roomPass`, which writes and signs all of it (a guest never signs a pass through `sign`). Null where this browser
+ * is no guest, or another, or BitLogin's client is too old to make one.
+ */
+export async function quietGuestPass(expected: string): Promise<((session: string) => Promise<NostrEvent>) | null> {
+  const c = await signInClient();
+  const state = c ? await settled(c) : null;
+  if (!c?.roomPass || guestOf(state) !== expected) return null;
+  const make = c.roomPass.bind(c);
+  return async (session) => {
+    const pass = await make(session);
+    if (pass.pubkey !== expected) throw new SessionError("wrong_identity", "BitLogin made the pass as someone else.");
+    return pass;
+  };
 }
 
 /**

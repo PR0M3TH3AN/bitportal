@@ -25,7 +25,7 @@ import type { TerminalPanel } from "nswp-sdk/terminal";
 import { addComputer, computersOf, loadComputers, pairingRequest, removeComputer, storeComputers, type Computer, type PairingRequest } from "../shared/computers.js";
 import { addMyWorld, cleanWorldUrl, loadMyWorlds, myWorldsOf, removeMyWorld, storeMyWorlds, type MyWorld } from "../shared/my-worlds.js";
 import { checkedSigner, holdsReserved, quietSigner, readSignedIn, type Signer } from "../shared/session.js";
-import { SECURE_FIRST, SECURE_WHERE } from "../shared/guest.js";
+import { SECURE, SECURE_FIRST } from "../shared/guest.js";
 
 const GUIDE = "https://github.com/PR0M3TH3AN/Nostr-Spatial-Web-Protocol--NSWP-/blob/main/browser/bridge.md";
 
@@ -40,6 +40,8 @@ export interface ComputersOptions {
   signIn(): void;
   /** Whether this browser is a guest (BitLogin's guest account): a computer answers an account that lasts, so it is secured first. */
   guest?(): boolean;
+  /** Open BitLogin's "Secure this account" for the guest, from a press, as the menu's own row under You does. */
+  secure?(): void;
 }
 
 export interface Computers {
@@ -128,6 +130,8 @@ export function addComputers(o: ComputersOptions): Computers {
   // press, and the sign-in begins (the owner, 2026-11-25: "a "sign in" button anywhere ... that we say ... sign in").
   const signInButton = (label: string, primary = false) =>
     el("button", { className: primary ? "button primary" : "button", type: "button", textContent: label, onclick: () => (dialog.close(), o.signIn()) });
+  // A guest's press beside "Secure this account first": BitLogin's panel, straight on it.
+  const secureButton = () => el("button", { className: "button primary", type: "button", textContent: SECURE, onclick: () => (dialog.close(), o.secure?.()) });
   // Where it is said with no press beside it (a line said in the menu, at a press that couldn't be done), the way there.
   const SIGN_IN = "Sign in from this room's menu (You, then Sign in)";
 
@@ -141,8 +145,8 @@ export function addComputers(o: ComputersOptions): Computers {
       el("p", { textContent: "It prints a link. Open the link in this browser to add the computer here." }),
       el("p", { className: "why", textContent: "A terminal can do anything you can do on that computer. The Bridge asks there, on its own screen, before each one opens." }),
       el("p", { className: "why", textContent: "Add --tmux for terminals that carry on when this page is closed or refreshed, and --voice to speak instead of typing: your computer turns what you say into text itself, and your voice goes nowhere else." }),
-      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: o.guest?.() ? `You're a guest on this browser. ${SECURE_FIRST} (${SECURE_WHERE}), or sign in: the computer needs to know whose it is.` : "You aren't signed in on this browser. Sign in first: the computer needs to know whose it is." })]),
-      el("div", { className: "actions" }, ...(who ? [] : [signInButton("Sign in", true)]), el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
+      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: o.guest?.() ? `You're a guest on this browser. ${SECURE_FIRST}, or sign in: the computer needs to know whose it is.` : "You aren't signed in on this browser. Sign in first: the computer needs to know whose it is." })]),
+      el("div", { className: "actions" }, ...(who ? [] : o.guest?.() && o.secure ? [secureButton(), signInButton("Sign in")] : [signInButton("Sign in", true)]), el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
     );
   };
 
