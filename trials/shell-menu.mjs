@@ -540,7 +540,10 @@ if (airlock()) {
   doorName = await toTheAirlock();
   if (airlock()) {
     await pressInView(continueOn());
-    const next = () => page.frames().find((f) => f.url().startsWith(OTHER));
+    // The world the door leads to: OTHER where it was given, else whatever world comes into the frame that isn't
+    // this site, the world left, or the sign-in address (live, worlds have no port to count OTHER from).
+    const notIt = [new URL(BASE).origin, new URL(WORLD).origin];
+    const next = () => page.frames().find((f) => (process.env.OTHER ? f.url().startsWith(OTHER) : /^https:/.test(f.url()) && !notIt.some((o) => f.url().startsWith(o)) && !/bitlogin|\/signer\/|\/connect\//.test(f.url())));
     for (let i = 0; i < 80 && !next(); i++) await wait(250);
     for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
     await wait(2000);
@@ -559,12 +562,18 @@ await page.goto(`${BASE}/shell/#to=${encodeURIComponent("/walk/")}`);
 await until(async () => !!room(), 30000);
 await until(() => hud.getByRole("button", { name: /^Menu/ }).isVisible(), 40000);
 // The room's doors come in a moment after the room does: until its tabs have them.
-await until(() => page.evaluate(() => ["you", "figure", "travel", "doors"].every((t) => window.__bitportalShell.below.world?.sections.some((x) => x.id === t))), 60000);
+// Every door is under Travel (not a tab of its own: a place says at most twelve tabs to the menu above it).
+await until(() => page.evaluate(() => ["you", "figure", "travel"].every((t) => window.__bitportalShell.below.world?.sections.some((x) => x.id === t)) && (window.__bitportalShell.below.world?.sections.find((x) => x.id === "travel")?.items?.length ?? 0) > 6), 60000);
 await wait(1500);
 const overRoom = await page.evaluate(() => { const b = window.__bitportalShell.below; return { speaks: b.speaks, own: b.origin === location.origin, title: b.world?.title, tabs: b.world?.sections.map((s) => s.id) }; });
 check("the room speaks the words, as a page of this site's own", overRoom.speaks && overRoom.own && overRoom.title === "Your room", overRoom);
-check("and says the visitor's own tabs up: who they are, how they look, and its doors", ["you", "figure", "travel", "doors"].every((t) => overRoom.tabs?.includes(t)), overRoom.tabs);
-check("the room draws no menu of its own, and knows the page above has it", (await room().locator("nswp-hud").count()) === 0 && (await room().evaluate(() => window.__bitportalTest?.menuAbove?.())) === true);
+check("and says the visitor's own tabs up: who they are, how they look, and travel with its doors", ["you", "figure", "travel"].every((t) => overRoom.tabs?.includes(t)), overRoom.tabs);
+// The kit's menu takes at most twelve tabs from a place (MENU_LIMITS.sections) and drops the rest unsaid. A guest or
+// an account adds Bag and Rate to the room's: with them it must still be twelve or fewer (on 0.92.0 live it was 14,
+// and Doors and Your computers were dropped).
+const withBoth = (overRoom.tabs?.length ?? 99) + ["bag", "rate"].filter((t) => !overRoom.tabs?.includes(t)).length;
+check("the room's tabs, with a guest's or an account's Bag and Rate, are twelve or fewer: none is dropped", withBoth <= 12, { tabs: overRoom.tabs, withBagAndRate: withBoth });
+check("the room draws no menu of its own, and knows the page above has it", ((await room().locator("nswp-hud").count()) === 0 || !(await room().getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false))) && (await room().evaluate(() => window.__bitportalTest?.menuAbove?.())) === true);
 check("the room has the keys as it arrives", (await active()) === "frame", await active());
 // The room's view is kept clear of the menu, whoever draws it: here the shell says what its bar and marks cover of
 // the room's view, and the room shifts its picture up by half of what the bottom is covered more than the top.
@@ -576,7 +585,11 @@ check("the shell says what its menu covers of the room's view, and the room shif
 await openSheet();
 await goTab("Travel");
 const roomTabs = (await hud.locator('[role="tab"]:visible').allInnerTexts()).map((t) => t.trim());
-check("the room's own tabs are called what it calls them, with no name of a world's on them", roomTabs.includes("Doors") && roomTabs.includes("Your computers") && !roomTabs.some((t) => t.includes("·")), roomTabs.filter((t) => /Doors|computers/.test(t)));
+check("the room's own tabs are called what it calls them, with no name of a world's on them", roomTabs.includes("Travel") && roomTabs.includes("Panels") && !roomTabs.some((t) => t.includes("·")), roomTabs);
+check("its doors are listed under Travel", await until(() => hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first().isVisible(), 8000));
+await goTab("Panels");
+check("and a computer of the visitor's is added under Panels", await until(() => hud.getByRole("button", { name: /^Add a computer/ }).first().isVisible(), 5000));
+await goTab("Travel");
 const sheetWords = await page.evaluate(() => { const root = document.querySelector(".shell-menu").firstElementChild.shadowRoot; return [...root.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.textContent.trim() === "Your room" && e.getClientRects().length > 0).length; });
 check("and its rows stand under no heading of \"Your room\": the name is on the mark and nowhere in the sheet", sheetWords === 1, { shown: sheetWords });
 await page.keyboard.press("Escape");
@@ -590,7 +603,7 @@ check("in the room there is no Home in the menu: it is home", !travelRows.some((
 // 0.88.0), and this page's menu goes to it, and is never put away by it.
 const tabNow = () => hud.locator('[role="tab"][aria-selected="true"]:visible').first().innerText({ timeout: 1500 }).then((t) => t.trim()).catch(() => "");
 await press(hud.getByRole("button", { name: /^Every door, as a list/ }));
-check("'Every door, as a list', pressed in the menu, takes the menu to the room's Doors tab, and leaves it up", (await until(async () => (await tabNow()) === "Doors", 6000)) && (await sheetOpen()), { tab: await tabNow(), sheetOpen: await sheetOpen() });
+check("'Every door, as a list', pressed in the menu, takes the menu to Travel, where the doors are, and leaves it up", (await until(async () => (await tabNow()) === "Travel", 6000)) && (await sheetOpen()), { tab: await tabNow(), sheetOpen: await sheetOpen() });
 await goTab("You");
 const youRows = await rowsNow();
 check("You is the room's own there: its rows once, and none of this page's beside them", youRows.filter((r) => r.startsWith("Your account")).length === 1 && youRows.some((r) => r.startsWith("Sign in")) && youRows.includes("Change how you look"), youRows.filter((r) => /account|Sign in|look/i.test(r)));
@@ -628,7 +641,7 @@ check("and the room's own music steps back for it", await until(() => room().eva
 await page.evaluate(() => (window.__music = { looks: 0, stopped: 0, watching: true }));
 const stillPlaying = () => page.evaluate(() => window.__bitportalShell.sounds.jukebox.playing);
 // Out through a door of the room's, pressed in this page's menu.
-for (let n = 0; n < 6 && !(await until(() => hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first().isVisible(), 8000)); n++) await goTab("Doors");
+for (let n = 0; n < 6 && !(await until(() => hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first().isVisible(), 8000)); n++) await goTab("Travel");
 await pressUntil(hud.locator("button:visible").filter({ hasText: /^The Grove$/ }).first(), hud.getByRole("button", { name: "Travel here" }));
 await press(hud.getByRole("button", { name: "Travel here" }));
 await until(async () => !!airlock(), 20000);
