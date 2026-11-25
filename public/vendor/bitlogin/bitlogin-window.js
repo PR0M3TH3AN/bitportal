@@ -1,10 +1,10 @@
-import { y as M, A as H, a4 as b, a5 as ne, O as N, a1 as Y, a6 as P, z as se, Q as U, a7 as _, Z as re, a3 as v, a8 as oe, a9 as ie } from "./bitlogin-shared-CEB3PAlL.js";
-import { I as je, aa as Me, ab as _e, ac as Ce, ad as Fe, ae as Re, af as Te } from "./bitlogin-shared-CEB3PAlL.js";
-import { f as le } from "./bitlogin-shared-DEzSTm3o.js";
+import { y as j, A as H, a5 as b, a6 as ne, O as N, a2 as Y, a7 as P, z as se, Q as U, a8 as M, _ as re, a4 as v, a9 as oe, aa as ie } from "./bitlogin-shared-waDFdrWm.js";
+import { I as _e, ab as je, ac as Me, ad as Ce, ae as Fe, af as Re, ag as Te } from "./bitlogin-shared-waDFdrWm.js";
+import { f as le } from "./bitlogin-shared-BDiN4O4-.js";
 import { a as Je } from "./bitlogin-shared-D6Hzbnis.js";
 const C = "bitlogin-panel", F = 1, ae = ["https://portal.bitblocks.network"];
 function be(t, e) {
-  const n = M(t);
+  const n = j(t);
   return n ? H(e) ? H(n) : ae.includes(n) : !1;
 }
 function ke(t) {
@@ -26,9 +26,9 @@ function ue(t) {
   const e = t;
   if (e.bitlogin !== C || e.v !== F || e.t !== "hello") return null;
   const n = e.mode === void 0 ? e.world === void 0 ? "account" : "ask" : e.mode;
-  if (n !== "ask" && n !== "switch" && n !== "account" && n !== "files" && n !== "wallet" && n !== "library") return null;
+  if (n !== "ask" && n !== "switch" && n !== "account" && n !== "files" && n !== "wallet" && n !== "library" && n !== "secure") return null;
   let s;
-  return e.world !== void 0 && (s = M(e.world), !s) || (n === "ask" || n === "switch") && !s ? null : { t: "hello", mode: n, ...s ? { world: s } : {} };
+  return e.world !== void 0 && (s = j(e.world), !s) || (n === "ask" || n === "switch") && !s ? null : { t: "hello", mode: n, ...s ? { world: s } : {} };
 }
 function ce(t) {
   const e = [];
@@ -55,13 +55,13 @@ const W = "bitlogin:allowed-sites:v1", g = {
   /** No more sites than this are listed under a family. */
   members: 20
 }, de = /^[0-9a-f]{64}$/u;
-function j(t) {
+function _(t) {
   if (!t || typeof t != "object") return null;
-  const e = t, n = b(e.site), s = n || (typeof e.site == "string" && e.site.includes("*") ? "" : M(e.site));
+  const e = t, n = b(e.site), s = n || (typeof e.site == "string" && e.site.includes("*") ? "" : j(e.site));
   if (!s || s !== e.site || typeof e.pubkey != "string" || !de.test(e.pubkey) || typeof e.at != "number" || typeof e.until != "number" || !Number.isFinite(e.at) || !Number.isFinite(e.until) || e.until < e.at) return null;
   const r = e.wants === void 0 ? void 0 : se(e.wants);
   if (n && e.wants !== void 0) return null;
-  const o = r === null || r !== void 0 && !U(s, r), i = e.wants?.appData, l = o && Array.isArray(i) ? i.filter((h) => typeof h == "string").map((h) => _(h)).filter(Boolean).slice(0, 8) : [], c = n && Array.isArray(e.members) ? [...new Set(e.members.filter((h) => P(h, n)))].slice(0, g.members) : [];
+  const o = r === null || r !== void 0 && !U(s, r), i = e.wants?.appData, l = o && Array.isArray(i) ? i.filter((h) => typeof h == "string").map((h) => M(h)).filter(Boolean).slice(0, 8) : [], c = n && Array.isArray(e.members) ? [...new Set(e.members.filter((h) => P(h, n)))].slice(0, g.members) : [];
   return { site: s, ...c.length ? { members: c } : {}, pubkey: e.pubkey, at: Math.floor(e.at), until: Math.floor(e.until), remembered: e.remembered === !0, ...r && !o ? { wants: r } : {}, ...o ? { refused: !0, ...l.length ? { hadNames: l } : {} } : {} };
 }
 function fe(t, e) {
@@ -72,13 +72,13 @@ function fe(t, e) {
   } catch {
     return [];
   }
-  return Array.isArray(n) ? n.slice(0, g.entries * 2).map(j).filter((s) => s !== null && s.until + g.keepEndedSec > e).sort((s, r) => r.at - s.at).slice(0, g.entries) : [];
+  return Array.isArray(n) ? n.slice(0, g.entries * 2).map(_).filter((s) => s !== null && s.until + g.keepEndedSec > e).sort((s, r) => r.at - s.at).slice(0, g.entries) : [];
 }
 function he(t, e) {
-  const n = j(e);
+  const n = _(e);
   if (!n) return [...t];
   const s = t.find((o) => o.site === n.site && o.pubkey === n.pubkey);
-  return [b(n.site) && s?.members ? j({ ...n, members: [...n.members ?? [], ...s.members] }) ?? n : n, ...t.filter((o) => !(o.site === n.site && o.pubkey === n.pubkey))].slice(0, g.entries);
+  return [b(n.site) && s?.members ? _({ ...n, members: [...n.members ?? [], ...s.members] }) ?? n : n, ...t.filter((o) => !(o.site === n.site && o.pubkey === n.pubkey))].slice(0, g.entries);
 }
 function Le(t, e, n, s) {
   return !b(n) || !P(e, n) ? null : t.find((r) => r.pubkey === s && r.remembered && r.site !== e && P(r.site, n)) ?? null;
@@ -162,7 +162,7 @@ const u = (t, e = 200) => {
   } catch {
   }
   return {};
-}, V = new Map(I), K = (t, e) => t === "name" || t === "display_name" ? _(e) || u(e, 48) : typeof e == "string" ? u(e) : e == null ? "" : u(JSON.stringify(e), 120);
+}, V = new Map(I), K = (t, e) => t === "name" || t === "display_name" ? M(e) || u(e, 48) : typeof e == "string" ? u(e) : e == null ? "" : u(JSON.stringify(e), 120);
 function we(t, e) {
   const n = (i) => V.get(i) ?? `"${u(i, 40)}"`, s = [...I.map(([i]) => i), ...[.../* @__PURE__ */ new Set([...Object.keys(e), ...Object.keys(t)])].filter((i) => !V.has(i)).sort()], r = [];
   let o = 0;
@@ -179,7 +179,7 @@ function we(t, e) {
 function Ne(t, e) {
   if (t.kind === 0 && typeof e == "string") return we(D(t.content), D(e));
   if (t.kind === 0) {
-    const n = D(t.content), s = I.filter(([o]) => u(n[o])).map(([o, i]) => `${i}: ${o === "name" || o === "display_name" ? _(n[o]) || u(n[o], 48) : u(n[o])}`), r = Object.keys(n).filter((o) => !I.some(([i]) => i === o));
+    const n = D(t.content), s = I.filter(([o]) => u(n[o])).map(([o, i]) => `${i}: ${o === "name" || o === "display_name" ? M(n[o]) || u(n[o], 48) : u(n[o])}`), r = Object.keys(n).filter((o) => !I.some(([i]) => i === o));
     return r.length && s.push(`And ${r.length} other ${r.length === 1 ? "field" : "fields"}: ${u(r.join(", "), 120)}`), s.length === 0 && s.push("An empty profile: no name, no picture, nothing about you."), e === null && s.push("Your profile as it is now couldn't be read, so this is the whole new one, not only what changes."), {
       title: "Replace your Nostr profile?",
       warning: "This replaces your whole profile, everywhere you use this account. Anything not listed here is removed from it. A lightning address is where people send you money: check it.",
@@ -252,11 +252,11 @@ function Ie(t = {}) {
         hold(m) {
           l.postMessage(v({ t: "held", nonce: o, world: d, receipts: m }), s);
         },
-        async grant(m, E, S, $, Z) {
-          const B = $ === !0 && S === !0 && !!w, q = await m.exportHandoff(Q, f ? { site: d, permissions: f } : void 0, d, S === !0, B ? w : void 0, B ? void 0 : Z === !0 && L.length ? [...p, ...L] : p.length ? p : void 0), ee = new Promise((J) => {
+        async grant(m, E, S, $, q) {
+          const B = $ === !0 && S === !0 && !!w, Z = await m.exportHandoff(Q, f ? { site: d, permissions: f } : void 0, d, S === !0, B ? w : void 0, B ? void 0 : q === !0 && L.length ? [...p, ...L] : p.length ? p : void 0), ee = new Promise((J) => {
             h = J, setTimeout(() => J(!1), 8e3);
           });
-          l.postMessage(v({ t: "grant", nonce: o, world: d, sealed: q, ...E ? { name: E } : {} }), s);
+          l.postMessage(v({ t: "grant", nonce: o, world: d, sealed: Z, ...E ? { name: E } : {} }), s);
           const te = await ee;
           return window.removeEventListener("message", A), te;
         }
@@ -267,13 +267,13 @@ function Ie(t = {}) {
 }
 export {
   ae as PANEL_CLIENTS,
-  je as SIGN_LIMITS,
-  Me as applyChange,
+  _e as SIGN_LIMITS,
+  je as applyChange,
   Je as askLockDevice,
   $e as declineFamily,
   Ee as describeAllowed,
   Ne as describeAsked,
-  _e as describePermissions,
+  Me as describePermissions,
   ve as familyDeclined,
   ne as familyDomain,
   le as familyOf,

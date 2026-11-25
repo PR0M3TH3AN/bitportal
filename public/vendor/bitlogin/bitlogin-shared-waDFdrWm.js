@@ -1,6 +1,6 @@
 import { C as te, D as mn, E as An, h as vn, u as Lt, a as Sn, A as De, M as _n, B as kn, c as En, p as Nn, y as In, v as z, b as Ln, N as On, O as Pe } from "./bitlogin-shared-Cj9s0_W_.js";
 import { d as $t } from "./bitlogin-shared-PwbHDYud.js";
-const gs = 17375, ws = 7375, bs = 7376, ee = "sat", ne = {
+const ws = 17375, bs = 7375, ms = 7376, ee = "sat", ne = {
   mints: 5,
   proofsPerToken: 500,
   tokens: 500,
@@ -36,11 +36,11 @@ function xn(e, t = ne.proofsPerToken) {
   }
   return n;
 }
-const ms = (e) => e.reduce((t, n) => t + n.amount, 0);
-function As(e) {
+const As = (e) => e.reduce((t, n) => t + n.amount, 0);
+function vs(e) {
   return JSON.stringify([["privkey", e.privkey], ...e.mints.map((t) => ["mint", t])]);
 }
-function vs(e) {
+function Ss(e) {
   let t;
   try {
     t = JSON.parse(e);
@@ -54,10 +54,10 @@ function vs(e) {
     !Array.isArray(s) || typeof s[0] != "string" || (s[0] === "privkey" && typeof s[1] == "string" && Re.test(s[1]) && (n ||= s[1]), s[0] === "mint" && At(s[1]) && !r.includes(At(s[1])) && r.length < ne.mints && r.push(At(s[1])));
   return n ? { privkey: n, mints: r } : null;
 }
-function Ss(e) {
+function _s(e) {
   return JSON.stringify({ mint: e.mint, unit: ee, proofs: e.proofs.map(({ id: t, amount: n, secret: r, C: s }) => ({ id: t, amount: n, secret: r, C: s })), ...e.del?.length ? { del: [...e.del] } : {} });
 }
-function _s(e) {
+function ks(e) {
   let t;
   try {
     t = JSON.parse(e);
@@ -70,7 +70,7 @@ function _s(e) {
   const o = Array.isArray(n.del) ? n.del.filter((i) => typeof i == "string" && Re.test(i)).slice(0, 200) : [];
   return { mint: r, proofs: s, del: o };
 }
-function ks(e, t) {
+function Es(e, t) {
   const n = new Set(e.flatMap((o) => o.del)), r = /* @__PURE__ */ new Set(), s = [];
   for (const o of [...e].sort((i, c) => c.created_at - i.created_at || i.event.localeCompare(c.event))) {
     if (n.has(o.event) || t.has(o.event)) continue;
@@ -80,7 +80,7 @@ function ks(e, t) {
   }
   return s;
 }
-function Es(e) {
+function Ns(e) {
   return JSON.stringify([
     ["direction", e.direction],
     ["amount", String(e.amount)],
@@ -99,7 +99,7 @@ class tt extends Error {
     super(n), this.code = t, this.name = "TipError";
   }
 }
-const we = { min: 1, max: 1e6 }, V = (e) => typeof e == "number" && Number.isSafeInteger(e) && e >= we.min && e <= we.max ? e : 0, be = { default: 1e3, steps: [1e3, 1e4, 1e5, 0] }, Ns = (e) => be.steps.includes(e) ? e : be.default, Is = (e, t) => t !== 0 && e > t;
+const we = { min: 1, max: 1e6 }, V = (e) => typeof e == "number" && Number.isSafeInteger(e) && e >= we.min && e <= we.max ? e : 0, be = { default: 1e3, steps: [1e3, 1e4, 1e5, 0] }, Is = (e) => be.steps.includes(e) ? e : be.default, Ls = (e, t) => t !== 0 && e > t;
 function Mn(e) {
   if (typeof e != "string") return null;
   const t = e.trim().toLowerCase(), n = t.lastIndexOf("1");
@@ -119,7 +119,7 @@ function se(e, t = {}) {
   const s = n.slice(0, r), o = n.slice(r + 1);
   return /^[a-z0-9._+-]{1,64}$/u.test(s) && ($n.test(o) || t.local && re.test(o)) ? n : "";
 }
-function Ls(e, t = {}) {
+function Os(e, t = {}) {
   try {
     const n = typeof e == "string" ? JSON.parse(e) : null;
     return n && typeof n == "object" ? se(n.lud16, t) : "";
@@ -151,13 +151,13 @@ const Ce = (e, t) => {
     return null;
   }
 };
-async function Os(e, t = {}) {
+async function Ts(e, t = {}) {
   const n = Ce(e, t.local === !0);
   if (!n || n.origin !== e) return { tip: "", publishers: [], share: "" };
   const r = await Dt(t.fetch ?? ((o, i) => fetch(o, i)), `${n.origin}/.well-known/nswp.json`), s = r?.publishers && typeof r.publishers == "object" && !Array.isArray(r.publishers) ? Object.keys(r.publishers) : [];
   return { tip: se(r?.tip, t), publishers: s.filter((o) => /^[0-9a-f]{64}$/u.test(o)).slice(0, 16), share: typeof r?.share == "string" && /^[0-9a-f]{64}$/u.test(r.share) ? r.share : "" };
 }
-async function Ts(e, t, n = {}) {
+async function xs(e, t, n = {}) {
   const r = n.local === !0, s = se(e, { local: r }), o = V(t);
   if (!s || !o) throw new tt("no-address", "That is not a lightning address and an amount.");
   const i = n.fetch ?? ((q, U) => fetch(q, U)), [c, l] = [s.slice(0, s.lastIndexOf("@")), s.slice(s.lastIndexOf("@") + 1)], f = r && re.test(l) ? "http" : "https", a = await Dt(i, `${f}://${l}/.well-known/lnurlp/${encodeURIComponent(c)}`);
@@ -181,7 +181,7 @@ function Pt(e) {
     return n >= 32 && n !== 127 && !(n >= 8203 && n <= 8207) && !(n >= 8234 && n <= 8238) && !(n >= 8294 && n <= 8297);
   }).join("").trim().slice(0, 280) : "";
 }
-function xs(e, t) {
+function Ms(e, t) {
   let n = "";
   try {
     n = new URL(t).host;
@@ -246,7 +246,7 @@ function Bn(e, t) {
   e.byteOffset < t.byteOffset + t.byteLength && // a starts before b end
   t.byteOffset < e.byteOffset + e.byteLength;
 }
-function Ms(e, t) {
+function $s(e, t) {
   if (Bn(e, t) && e.byteOffset < t.byteOffset)
     throw new Error("complex overlap of input and output is not supported");
 }
@@ -255,7 +255,7 @@ function Un(e, t) {
     throw new Error("options must be defined");
   return Object.assign(e, t);
 }
-const $s = /* @__NO_SIDE_EFFECTS__ */ (e, t) => {
+const Ds = /* @__NO_SIDE_EFFECTS__ */ (e, t) => {
   function n(r, ...s) {
     if (K(r, void 0, "key"), e.nonceLength !== void 0) {
       const a = s[0];
@@ -395,7 +395,7 @@ const Ke = /* @__PURE__ */ Xn(Vn, {
   counterLength: 4,
   allowShortKeys: !1
 }), Be = 2, Ct = 1, Ue = 65536, Jn = 4294967295, Yn = 132, Zn = 99, jt = 1024 * 1024;
-function Ds(e, t) {
+function Ps(e, t) {
   const n = te(new Uint8Array([2]), mn(t)), s = An.getSharedSecret(e, n, !0).slice(1, 33);
   return vn(Lt("nip44-v2"), s);
 }
@@ -505,7 +505,7 @@ function ar(e, t) {
   }
   return s.some((o) => o.to === t) ? s.reduce((o, i) => o + i.parts, 0) !== X.whole ? n("not-whole") : { ok: !0, shares: s } : n("no-seller");
 }
-function Ps(e, t, n, r = {}) {
+function Rs(e, t, n, r = {}) {
   const s = (a) => ({ ok: !1, why: a }), o = r.charge ?? 0;
   if (typeof e != "number" || !Number.isSafeInteger(e) || e < 1 || !Number.isSafeInteger(e * X.whole) || !Number.isSafeInteger(o) || o < 0) return s("not-a-price");
   if (typeof n != "string" || !St.test(n) || t.length > 0 && !t.some((a) => a.to === n)) return s("no-seller");
@@ -521,7 +521,7 @@ function Ps(e, t, n, r = {}) {
   return f.sort((a, u) => a.sats - u.sats || (a.to < u.to ? -1 : 1)), f.push({ to: n, sats: e - l - o, label: t.find((a) => a.to === n)?.label ?? "seller", seller: !0 }), f.some((a) => a.sats < X.least) ? s("too-small") : { ok: !0, parts: f };
 }
 const Bt = /^[0-9a-f]{64}$/u, cr = 30078, lr = 30078, ur = "bitunlock:entitlement:v1:", He = "seller-unlock-service-v1", Ge = [{ endpoint: "https://api.bitunlock.network", pubkey: "66be61cf5b8d286391f7b1a72ffa7c799ec2dc49eff0830c40df1cc964e6787d" }], fr = /^(?:localhost|127(?:\.[0-9]{1,3}){3}|10(?:\.[0-9]{1,3}){3}|192\.168(?:\.[0-9]{1,3}){2}|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]{1,3}){2})$/u;
-function Rs(e) {
+function Cs(e) {
   if (typeof e != "string" || e.length > 300) return null;
   const [t, n] = e.split("|");
   try {
@@ -534,14 +534,14 @@ function Rs(e) {
 function it(e) {
   return typeof e == "string" && /^30078:[0-9a-f]{64}:[^:\r\n][^\r\n]{0,255}$/u.test(e) ? e : "";
 }
-const ie = (e) => e.slice(6, 70), dr = 500, Cs = (e) => e.nswp && e.priceSats < dr, B = (e, t) => {
+const ie = (e) => e.slice(6, 70), dr = 500, js = (e) => e.nswp && e.priceSats < dr, B = (e, t) => {
   const n = e.tags.find((r) => r[0] === t);
   return typeof n?.[1] == "string" ? n[1] : "";
 }, _e = (e, t) => typeof e == "string" ? Array.from(e.normalize("NFC")).filter((n) => {
   const r = n.codePointAt(0);
   return r >= 32 && r !== 127 && !(r >= 8203 && r <= 8207) && !(r >= 8234 && r <= 8238) && !(r >= 8294 && r <= 8297);
 }).join("").trim().slice(0, t) : "";
-function js(e, t, n = Ge) {
+function Ks(e, t, n = Ge) {
   const r = it(t), s = e;
   if (!r || !s || typeof s != "object" || !Array.isArray(s.tags) || !z(s) || s.kind !== cr || s.pubkey !== ie(r) || `30078:${s.pubkey}:${B(s, "d")}` !== r || B(s, "status") !== "active" || B(s, "br:delivery") !== He) return null;
   const o = s.tags.find((a) => a[0] === "price"), i = o && o[2] === "SAT" && /^[1-9][0-9]{0,11}$/u.test(o[1] ?? "") ? Number(o[1]) : 0, c = n.find((a) => a.endpoint === B(s, "br:unlock-service") && a.pubkey === B(s, "br:unlock-service-pubkey"));
@@ -590,11 +590,11 @@ function pr(e, t = Ge) {
 function hr(e, t) {
   return !!e && e.buyer === t.buyer && e.listing === t.listing && (e.expiresAt === 0 || t.now < e.expiresAt);
 }
-function Ks(e, t) {
+function Bs(e, t) {
   const n = e.filter((r) => hr(r, t));
   return n.sort((r, s) => r.expiresAt === 0 ? -1 : s.expiresAt === 0 ? 1 : s.expiresAt - r.expiresAt), n[0] ?? null;
 }
-function Bs(e, t, n) {
+function Us(e, t, n) {
   return t.publishers.includes(ie(e)) || !!n && n === t.site;
 }
 const Xe = 37304, Ut = {
@@ -619,7 +619,7 @@ function Ve(e, t, n) {
 ${r}
 ${s}`)));
 }
-function Us(e) {
+function Ws(e) {
   const t = m(e.world), n = G(e.slot), r = Ve(e.conversationKey, t, n);
   if (!r || !ae(e.data)) return null;
   const s = JSON.stringify({ v: 1, world: t, slot: n, data: e.data });
@@ -633,7 +633,7 @@ function Us(e) {
     content: nr(e.conversationKey, s)
   };
 }
-function Ws(e, t) {
+function Fs(e, t) {
   const n = m(t.world);
   if (!n || !e || typeof e != "object" || !gr.test(t.pubkey)) return null;
   const r = e;
@@ -705,7 +705,7 @@ function Wt(e, t = {}) {
     Y(p[1]) ? h.includes(p[1]) || h.push(p[1]) : g++;
   return h.sort(), { ok: !0, scope: c, subject: f, signer: s.pubkey, entries: h, skipped: g };
 }
-function Fs(e, t) {
+function zs(e, t) {
   const n = t.now ?? Math.floor(Date.now() / 1e3), r = `${t.namespace ?? Je}:governance:${t.scope}:v1:${t.subject}`, s = t.root === void 0 ? gt(t.subject) ? [t.subject.split(":")[1]] : null : Ze(t.root);
   if (!s) return { ok: !1, reason: "wrong_signer", futureDated: [] };
   const o = [], i = [], c = /* @__PURE__ */ new Set();
@@ -716,7 +716,7 @@ function Fs(e, t) {
   }
   return o.length ? (o.sort((l, f) => f.created_at - l.created_at || (l.id < f.id ? -1 : 1)), { ...Wt(o[0], { root: s, now: n }), futureDated: i }) : { ok: !1, reason: "not_found", futureDated: i };
 }
-function zs(e) {
+function Hs(e) {
   const t = [...new Set(e.people)].sort();
   if (!gt(e.subject) || t.length > J.write || !t.every(Y) || !Number.isSafeInteger(e.createdAt)) return null;
   const n = Number.isSafeInteger(e.notBefore) && e.notBefore + 1 > e.createdAt ? e.notBefore + 1 : e.createdAt;
@@ -727,7 +727,7 @@ function _r(e, t, n) {
   const r = e.includes(n);
   return t === "allow" || t === "block" ? r ? null : [...e, n].sort() : r ? e.filter((s) => s !== n) : null;
 }
-function Hs(e, t, n) {
+function Gs(e, t, n) {
   const r = /^37300:([0-9a-f]{64}):([\s\S]{1,128})$/u.exec(n), s = e;
   if (!r || !s || typeof s != "object" || !s.publishers || !s.worlds || typeof s.publishers != "object" || typeof s.worlds != "object") return null;
   const [, o, i] = r, c = (d) => {
@@ -746,7 +746,7 @@ function Hs(e, t, n) {
   const a = Array.isArray(l.keepers) ? [...new Set(l.keepers.filter(Y))] : [], u = a.length ? a.slice(0, J.root) : Object.keys(s.publishers).filter((d) => Y(d) && c(d)).slice(0, J.root);
   return u.length ? { coordinate: n, keepers: u, d: i } : null;
 }
-function Gs(e, t) {
+function Xs(e, t) {
   const n = Wt(e, { root: [t.pubkey], now: t.now });
   if (!n.ok || n.subject !== t.world || n.scope !== ke(t.change) || n.skipped !== 0) return !1;
   const r = t.list === null ? [] : ((o) => o.ok && o.subject === t.world && o.scope === ke(t.change) ? o.entries : null)(Wt(t.list, { root: [t.pubkey], now: t.now }));
@@ -754,7 +754,7 @@ function Gs(e, t) {
   const s = _r(r, t.change, t.key);
   return !!s && JSON.stringify(s) === JSON.stringify(n.entries) && Math.abs(e.created_at - t.now) < 600;
 }
-const Ft = 3, Xs = { burst: 6, perMs: 6e4, hourly: 60 }, bt = {
+const Ft = 3, Vs = { burst: 6, perMs: 6e4, hourly: 60 }, bt = {
   /** A list handed over to be changed is not read past this many tags, or this much content. */
   tags: 2e4,
   contentChars: 1e5,
@@ -784,13 +784,13 @@ function Ir(e, t) {
     if (!Array.isArray(r) || r.length > bt.tagItems || !r.every((s) => typeof s == "string" && s.length <= bt.tagChars)) return null;
   return z(e) ? e : null;
 }
-function Vs(e) {
+function Js(e) {
   const t = { add: e.add, remove: e.remove, nowSeconds: e.nowSeconds, pubkey: e.pubkey };
   if (e.list === null || e.list === void 0) return e.seen ? null : Ee(null, { ...t, fromNothing: !0 });
   const n = Ir(e.list, e.pubkey);
   return !n || e.seen && n.created_at < e.seen ? null : Ee(n, t);
 }
-function Js(e, t) {
+function Ys(e, t) {
   return e === null ? t.answered > 0 && t.newestAt === 0 : e.created_at >= t.newestAt;
 }
 const tn = (e) => typeof e == "string" && e.includes("*") ? pt(e) : m(e), Lr = 30078, Or = "bitlogin:taken-back:v1", Tr = 10002, F = {
@@ -806,8 +806,8 @@ const tn = (e) => typeof e == "string" && e.includes("*") ? pt(e) : m(e), Lr = 3
   relays: 4,
   /** How far ahead of this clock a record may be dated and still be believed. In seconds. */
   skewSec: 600
-}, Ys = { allBefore: 0, sites: [] }, Ne = (e) => typeof e == "number" && Number.isFinite(e) && e > 0 ? Math.floor(e) : 0;
-function Zs(e) {
+}, Zs = { allBefore: 0, sites: [] }, Ne = (e) => typeof e == "number" && Number.isFinite(e) && e > 0 ? Math.floor(e) : 0;
+function Qs(e) {
   if (!e || typeof e != "object" || Array.isArray(e)) return null;
   const t = e;
   if (t.v !== 1 || !Array.isArray(t.sites)) return null;
@@ -819,27 +819,27 @@ function Zs(e) {
   }
   return { allBefore: Ne(t.all_before), sites: [...n].map(([r, s]) => ({ site: r, before: s })) };
 }
-const Qs = (e) => JSON.stringify({ v: 1, all_before: e.allBefore, sites: e.sites });
+const qs = (e) => JSON.stringify({ v: 1, all_before: e.allBefore, sites: e.sites });
 function Ie(e, t, n) {
   const r = Math.max(e.allBefore, t.allBefore), s = /* @__PURE__ */ new Map();
   for (const { site: i, before: c } of [...e.sites, ...t.sites]) s.set(i, Math.max(s.get(i) ?? 0, c));
   const o = [...s].map(([i, c]) => ({ site: i, before: c })).filter((i) => i.before > r && i.before + F.entrySec > n).sort((i, c) => c.before - i.before).slice(0, F.sites);
   return { allBefore: r, sites: o };
 }
-function qs(e, t, n) {
+function to(e, t, n) {
   const r = Math.floor(n);
   if ("all" in t) return Ie(e, { allBefore: r, sites: [] }, r);
   const s = tn(t.site);
   return s ? Ie(e, { allBefore: 0, sites: [{ site: s, before: r }] }, r) : e;
 }
-function to(e, t, n) {
+function eo(e, t, n) {
   if (e.allBefore >= n) return !0;
   const r = pt(t);
   return e.sites.some(
     (s) => s.before >= n && (s.site === t || (r ? Le(s.site, r) : !!pt(s.site) && Le(t, s.site)))
   );
 }
-function eo(e, t, n) {
+function no(e, t, n) {
   let r = null;
   for (const s of e)
     !z(s) || s.kind !== Lr || s.pubkey !== t || s.tags.some((o) => o[0] === "d" && o[1] === Or) && (s.created_at > n + F.skewSec || (!r || s.created_at > r.created_at) && (r = s));
@@ -868,7 +868,7 @@ function xr(e, t = F.relays) {
   }
   return n;
 }
-function no(e, t, n = F.relays) {
+function ro(e, t, n = F.relays) {
   let r = null;
   for (const s of e)
     !z(s) || s.kind !== Tr || s.pubkey !== t || (!r || s.created_at > r.created_at) && (r = s);
@@ -877,10 +877,10 @@ function no(e, t, n = F.relays) {
     n
   ) : [];
 }
-function ro(e) {
+function so(e) {
   return e.answered < Math.min(2, e.asked) || e.answered === 0 ? !1 : e.newestAt === null ? e.seenAt === 0 : e.readable && e.newestAt >= e.seenAt;
 }
-function so(e, t, n) {
+function oo(e, t, n) {
   const r = Math.max(n, 0);
   return r && e - r < F.checkEverySec ? "fresh" : e - Math.max(r, t) >= F.staleSec ? "overdue" : "due";
 }
@@ -901,14 +901,14 @@ function Le(e, t) {
     return !1;
   }
 }
-const oo = (e) => Mr.includes(en(e)), Ht = 14, nn = 13, $r = 1059, Dr = 10050, _t = {
+const io = (e) => Mr.includes(en(e)), Ht = 14, nn = 13, $r = 1059, Dr = 10050, _t = {
   /** The most characters in one message. */
   chars: 2e3,
   /** No more than this many relays are put in a list of where messages reach someone. */
   relays: 4,
   /** A wrap handed over to be opened is not read past this many characters of content. */
   wrapChars: 6e4
-}, io = { burst: 10, perMs: 6e4, hourly: 200 }, ao = { burst: 600, perMs: 6e4, hourly: 12e3 }, co = { burst: 3, perMs: 6e4, hourly: 12 }, kt = /^[0-9a-f]{64}$/u, Pr = [
+}, ao = { burst: 10, perMs: 6e4, hourly: 200 }, co = { burst: 600, perMs: 6e4, hourly: 12e3 }, lo = { burst: 3, perMs: 6e4, hourly: 12 }, kt = /^[0-9a-f]{64}$/u, Pr = [
   [0, 9],
   [11, 31],
   [127, 159],
@@ -937,7 +937,7 @@ function Rr(e) {
   const n = { kind: Ht, pubkey: e.from, created_at: Math.floor(e.nowSeconds), tags: [["p", e.to]], content: t };
   return { ...n, id: Pe(n) };
 }
-function lo(e, t) {
+function uo(e, t) {
   const n = e.getPublicKey(), r = Rr({ from: n, to: t.to, text: t.text, nowSeconds: t.nowSeconds });
   if (!r) return null;
   const s = JSON.stringify(r), o = (i) => e.signEvent({ kind: nn, created_at: Math.floor(t.nowSeconds), tags: [], content: e.nip44Encrypt(i, s) });
@@ -963,7 +963,7 @@ function jr(e, t, n) {
   const s = [...new Set(r.tags.filter((c) => c[0] === "p" && typeof c[1] == "string" && kt.test(c[1])).map((c) => c[1]))], o = Et(r.content);
   return s.length === 0 || !o || r.pubkey !== n && !s.includes(n) ? null : { id: Pe({ kind: Ht, pubkey: r.pubkey, created_at: r.created_at, tags: r.tags, content: r.content }), from: r.pubkey, to: s, text: o, at: r.created_at };
 }
-function uo(e, t) {
+function fo(e, t) {
   const n = e.getPublicKey();
   if (!t || typeof t != "object") return null;
   const r = t;
@@ -984,7 +984,7 @@ function Kr(e) {
     return "";
   }
 }
-function fo(e, t) {
+function po(e, t) {
   if (!Array.isArray(e) || e.length > 8) return null;
   const n = [...new Set(e.map(Kr).filter(Boolean))].slice(0, _t.relays);
   return n.length === 0 ? null : { kind: Dr, created_at: Math.floor(t), tags: n.map((r) => ["relay", r]), content: "" };
@@ -1025,7 +1025,7 @@ function Fr(e, t) {
   const n = Math.round(t / 100), r = Math.floor(n / 600), s = n % 600 / 10;
   return r ? `${r} min ${s.toFixed(1)} s` : `${s.toFixed(1)} s`;
 }
-function po(e) {
+function ho(e) {
   const t = m(e.origin), n = rt(e.world), r = Xt(e.board), s = Vt(e.score);
   if (!t || !n || !r || s === null) return null;
   const o = Jt(e.title), i = e.format === "time" ? "time" : "number";
@@ -1063,7 +1063,7 @@ function Zt(e) {
   }
   return [...t.replace(/\s+/gu, " ").trim()].slice(0, Te.title).join("").trim();
 }
-function ho(e) {
+function yo(e) {
   const t = m(e.origin), n = rt(e.world), r = Yt(e.id), s = Zt(e.title);
   return !t || !n || !r || !s ? null : {
     kind: zr,
@@ -1100,7 +1100,7 @@ const rn = "nswp-signer", sn = "nswp-handoff", Ot = 1, dt = {
   passBurst: 2,
   /** And this many in an hour. */
   passHourly: 10
-}, Gr = [1, 7], Xr = [4, 13, 14, 15, 1059, 1060, 13194, 22242, 23194, 23195, 24133, 27235, 27300, 27301, 30078], Vr = [0, 5, 10002], yo = { burst: 2, perMs: 6e4, hourly: 10 }, go = 5 * 6e4;
+}, Gr = [1, 7], Xr = [4, 13, 14, 15, 1059, 1060, 13194, 22242, 23194, 23195, 24133, 27235, 27300, 27301, 30078], Vr = [0, 5, 10002], go = { burst: 2, perMs: 6e4, hourly: 10 }, wo = 5 * 6e4;
 function ue(e) {
   return typeof e != "number" || !Number.isInteger(e) || e < 0 || e > 65535 || Xr.includes(e) ? "never" : Gr.includes(e) ? "ordinary" : "careful";
 }
@@ -1123,15 +1123,19 @@ function Qt(e) {
   }
   return [...t.replace(/\s+/gu, " ").trim()].slice(0, 48).join("").trim();
 }
-function wo(e, t, n) {
+function bo(e, t, n) {
   return fe(e, t, n, (r) => ue(r) === "ordinary");
 }
+const Jr = 27300;
+function mo(e) {
+  return !e || e.sign.includes(Jr);
+}
 const xe = 37308;
-function bo(e, t, n) {
+function Ao(e, t, n) {
   const r = e, s = r?.kind === xe && Array.isArray(r.tags) && r.tags.some((o) => Array.isArray(o) && o[0] === "d") && r.tags.filter((o) => Array.isArray(o) && o[0] === "d").every((o) => o[1] === "bag" && o.length === 2);
   return fe(e, t, n, (o) => ue(o) === "ordinary" || o === xe && s);
 }
-function Jr(e, t, n) {
+function Yr(e, t, n) {
   return fe(e, t, n, (r) => ue(r) === "careful" && Vr.includes(r));
 }
 function fe(e, t, n, r) {
@@ -1146,7 +1150,7 @@ function fe(e, t, n, r) {
   }
   return i.push([Nt, s]), { kind: o.kind, created_at: Math.floor(n), tags: i, content: o.content };
 }
-function mo(e = dt, t = []) {
+function vo(e = dt, t = []) {
   let n = t.filter((r) => typeof r == "number" && Number.isFinite(r));
   return {
     times: () => [...n],
@@ -1155,8 +1159,8 @@ function mo(e = dt, t = []) {
     }
   };
 }
-const on = /^[0-9a-z-]{1,40}$/iu, j = /^[0-9a-f]{64}$/u, Ao = (e) => ({ nswp: rn, v: Ot, ...e });
-function vo(e) {
+const on = /^[0-9a-z-]{1,40}$/iu, j = /^[0-9a-f]{64}$/u, So = (e) => ({ nswp: rn, v: Ot, ...e });
+function _o(e) {
   if (!e || typeof e != "object") return null;
   const t = e;
   if (t.nswp !== rn || t.v !== Ot || typeof t.id != "string" || !on.test(t.id)) return null;
@@ -1197,11 +1201,11 @@ function vo(e) {
   }
   return (t.t === "encrypt" || t.t === "decrypt") && typeof t.peer == "string" && j.test(t.peer) && typeof t.text == "string" && t.text.length <= 2e5 ? { t: t.t, id: t.id, peer: t.peer, text: t.text, scheme: t.scheme === "nip04" ? "nip04" : "nip44" } : t.t === "read" && t.event && typeof t.event == "object" ? { t: "read", id: t.id, event: t.event } : null;
 }
-const Yr = 2e4, an = 60, Zr = 25 * 1024 * 1024;
+const Zr = 2e4, an = 60, Qr = 25 * 1024 * 1024;
 function de(e) {
   if (!e || typeof e != "object") return null;
   const t = e, n = $t(t.name), r = t.bytes instanceof Uint8Array ? t.bytes : t.bytes instanceof ArrayBuffer ? new Uint8Array(t.bytes) : null;
-  return !n || !r || r.length === 0 || r.length > Zr ? null : { name: n, type: typeof t.type == "string" && /^[\x21-\x7e]{3,120}$/u.test(t.type) && t.type.includes("/") ? t.type.toLowerCase() : "application/octet-stream", bytes: r };
+  return !n || !r || r.length === 0 || r.length > Qr ? null : { name: n, type: typeof t.type == "string" && /^[\x21-\x7e]{3,120}$/u.test(t.type) && t.type.includes("/") ? t.type.toLowerCase() : "application/octet-stream", bytes: r };
 }
 const mt = (e) => {
   try {
@@ -1210,7 +1214,7 @@ const mt = (e) => {
   } catch {
     return "";
   }
-}, Qr = (e) => typeof e == "string" && e.length <= 2e3 && /^nostr\+walletconnect:\/\/[0-9a-f]{64}\?[\x21-\x7e]+$/u.test(e) ? e : "";
+}, qr = (e) => typeof e == "string" && e.length <= 2e3 && /^nostr\+walletconnect:\/\/[0-9a-f]{64}\?[\x21-\x7e]+$/u.test(e) ? e : "";
 function Mt(e, t) {
   if (!e || typeof e != "object") return null;
   const n = e;
@@ -1231,11 +1235,11 @@ function Mt(e, t) {
   if (n.what === "buy") return it(n.listing) ? { what: "buy", listing: it(n.listing) } : null;
   if (n.what === "pay") return ot(n.invoice) ? { what: "pay", invoice: ot(n.invoice) } : null;
   if (n.what !== "sign") return null;
-  const r = Jr(n.event, t, n.event?.created_at ?? 0);
+  const r = Yr(n.event, t, n.event?.created_at ?? 0);
   return r && JSON.stringify(r.tags) === JSON.stringify(n.event.tags) ? { what: "sign", event: r } : null;
 }
-const So = (e) => ({ nswp: sn, v: Ot, ...e });
-function _o(e) {
+const ko = (e) => ({ nswp: sn, v: Ot, ...e });
+function Eo(e) {
   if (!e || typeof e != "object") return null;
   const t = e;
   if (t.nswp !== sn || t.v !== Ot || typeof t.nonce != "string" || !on.test(t.nonce)) return null;
@@ -1246,7 +1250,7 @@ function _o(e) {
     return r === null ? null : { t: "frame", nonce: t.nonce, world: m(t.world), recipient: t.recipient, ...r ? { wants: r } : {}, ...t.turnedDown === !0 ? { turnedDown: !0 } : {}, ...!r && ft(t.more).length ? { more: ft(t.more) } : {}, ...!r && ft(t.has).length ? { has: ft(t.has) } : {}, ...t.family === !0 ? { family: !0 } : {}, ...Mt(t.ask, m(t.world)) && n(t.pubkey) && !(r && Mt(t.ask, m(t.world)).what === "wallet") ? { ask: Mt(t.ask, m(t.world)), pubkey: t.pubkey } : {} };
   }
   if (t.t === "answer" && m(t.world)) {
-    const r = t.wallet === void 0 ? "" : Qr(t.wallet);
+    const r = t.wallet === void 0 ? "" : qr(t.wallet);
     if (t.wallet !== void 0 && !r) return null;
     const s = t.event && typeof t.event == "object" ? t.event : void 0, o = t.paid && typeof t.paid == "object" ? t.paid : null, i = o && ot(o.invoice) ? { invoice: ot(o.invoice), ...typeof o.preimage == "string" && j.test(o.preimage) ? { preimage: o.preimage } : {} } : null;
     if (t.paid !== void 0 && !i) return null;
@@ -1256,7 +1260,7 @@ function _o(e) {
     if (t.file !== void 0 && !f) return null;
     const a = f ? { ...f, ...mt(t.file.url) ? { url: mt(t.file.url) } : {} } : null, u = t.tipped && typeof t.tipped == "object" ? t.tipped : null, d = u && V(u.sats) ? { sats: V(u.sats), ...typeof u.preimage == "string" && j.test(u.preimage) ? { preimage: u.preimage } : {} } : null;
     if (t.tipped !== void 0 && !d) return null;
-    const h = t.bought && typeof t.bought == "object" ? t.bought : null, g = h && h.receipt && typeof h.receipt == "object" ? { receipt: h.receipt, ...typeof h.delivery == "string" && h.delivery.length > 0 && h.delivery.length <= Yr ? { delivery: h.delivery } : {} } : null;
+    const h = t.bought && typeof t.bought == "object" ? t.bought : null, g = h && h.receipt && typeof h.receipt == "object" ? { receipt: h.receipt, ...typeof h.delivery == "string" && h.delivery.length > 0 && h.delivery.length <= Zr ? { delivery: h.delivery } : {} } : null;
     if (t.bought !== void 0 && !g) return null;
     const p = t.listed && typeof t.listed == "object" ? t.listed : void 0;
     return t.listed !== void 0 && !p || [s, r, i, l, a, d, g, p].filter(Boolean).length > 1 ? null : { t: "answer", nonce: t.nonce, world: m(t.world), ...s ? { event: s } : {}, ...p ? { listed: p } : {}, ...r ? { wallet: r } : {}, ...i ? { paid: i } : {}, ...l ? { saved: l } : {}, ...a ? { file: a } : {}, ...d ? { tipped: d } : {}, ...g ? { bought: g } : {} };
@@ -1271,7 +1275,7 @@ function _o(e) {
   }
   return t.t === "done" && typeof t.ok == "boolean" ? { t: "done", nonce: t.nonce, ok: t.ok } : null;
 }
-function ko(e, t, n) {
+function No(e, t, n) {
   const r = [];
   for (const s of e.slice(0, an)) {
     const o = pr(s, n);
@@ -1279,17 +1283,17 @@ function ko(e, t, n) {
   }
   return r;
 }
-const et = { kinds: 64, prefixes: 8, origins: 8, peers: 8, prefixChars: 64 }, Z = 30078, ht = 27235, cn = 24242, pe = 22242, ln = 13, qr = 37304, un = ["bitlogin", "nswp:governance:"];
+const et = { kinds: 64, prefixes: 8, origins: 8, peers: 8, prefixChars: 64 }, Z = 30078, ht = 27235, cn = 24242, pe = 22242, ln = 13, ts = 37304, un = ["bitlogin", "nswp:governance:"];
 function fn(e) {
   return un.some((t) => e.startsWith(t));
 }
-const ts = { leastChars: 8 };
-function es(e) {
+const es = { leastChars: 8 };
+function ns(e) {
   const t = typeof e == "string" ? /^30078:[0-9a-f]{64}:(.*)$/su.exec(e) : null;
   return !!t && fn(t[1]);
 }
 function dn(e) {
-  return e.length < ts.leastChars || !(e.endsWith("/") || e.endsWith(":")) ? !1 : !un.some((t) => e.startsWith(t) || t.startsWith(e));
+  return e.length < es.leastChars || !(e.endsWith("/") || e.endsWith(":")) ? !1 : !un.some((t) => e.startsWith(t) || t.startsWith(e));
 }
 const pn = [13194, 23194, 23195, 24133, 27301, 37304], at = {
   "https://bitvid.network": { name: "Bitvid" },
@@ -1304,8 +1308,8 @@ const pn = [13194, 23194, 23195, 24133, 27301, 37304], at = {
   "https://tessera.bitblocks.network": { name: "Tessera" },
   "https://bitroad.network": { name: "BitRoad" },
   "https://www.bitroad.network": { name: "BitRoad" }
-}, wt = [27300, 27302, 27303], ns = 27303;
-function Eo(e) {
+}, wt = [27300, 27302, 27303], rs = 27303;
+function Io(e) {
   return Object.hasOwn(at, e) ? at[e].name : null;
 }
 function Q(e) {
@@ -1324,8 +1328,8 @@ function Q(e) {
   const [r, s] = n;
   return r === 127 || r === 10 || r === 192 && s === 168 || r === 172 && s >= 16 && s <= 31;
 }
-const rs = ["https://bitlogin.network", "https://bitlogin-beta.vercel.app"], No = (e) => typeof e == "string" && (rs.includes(e) || Q(e)), ss = ["https://bitlogin-beta.vercel.app"], Io = (e) => typeof e == "string" && (ss.includes(e) || Q(e)), os = [], Lo = (e) => typeof e == "string" && (os.includes(e) || Q(e));
-function is(e, t) {
+const ss = ["https://bitlogin.network", "https://bitlogin-beta.vercel.app"], Lo = (e) => typeof e == "string" && (ss.includes(e) || Q(e)), os = ["https://bitlogin-beta.vercel.app"], Oo = (e) => typeof e == "string" && (os.includes(e) || Q(e)), is = [], To = (e) => typeof e == "string" && (is.includes(e) || Q(e));
+function as(e, t) {
   return Object.hasOwn(at, e) ? at[e].reserved ?? [] : Q(t) && Q(e) ? wt : [];
 }
 const hn = () => {
@@ -1334,8 +1338,8 @@ const hn = () => {
   } catch {
     return "";
   }
-}, he = (e) => is(e, hn()), Oo = (e) => !Object.hasOwn(at, e) && he(e).length > 0;
-function To(e, t) {
+}, he = (e) => as(e, hn()), xo = (e) => !Object.hasOwn(at, e) && he(e).length > 0;
+function Mo(e, t) {
   const n = he(e);
   if (![...t.sign, ...t.read].every((s) => !wt.includes(s) || n.includes(s))) return !1;
   const r = yn(e);
@@ -1344,11 +1348,11 @@ function To(e, t) {
 function yn(e) {
   return Q(hn()) && Q(e) ? [] : Object.entries(at).filter(([t]) => t !== e).flatMap(([, t]) => t.names ?? []);
 }
-const gn = [0, 3, 5, 1e4, 10002, 10050, pe], as = [...gn, cn, ...wt], cs = [4, ln, 1059], ls = [ht, cn, pe], yt = /^[0-9a-f]{64}$/u, It = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 65535, ut = (e) => [...new Set(e)];
+const gn = [0, 3, 5, 1e4, 10002, 10050, pe], cs = [...gn, cn, ...wt], ls = [4, ln, 1059], us = [ht, cn, pe], yt = /^[0-9a-f]{64}$/u, It = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 65535, ut = (e) => [...new Set(e)];
 function wn(e) {
   if (!e || typeof e != "object" || Array.isArray(e)) return null;
   const t = e, n = (a) => a === void 0 ? [] : Array.isArray(a) ? a : null, r = n(t.sign), s = n(t.appData), o = n(t.proofs), i = n(t.read), c = n(t.peers);
-  if (!r || !s || !o || !i || !c || r.length > et.kinds || i.length > et.kinds || s.length > et.prefixes || o.length > et.origins || c.length > et.peers || !r.every(It) || !i.every(It) || r.some((a) => pn.includes(a)) || i.includes(qr) || r.length === 0 && i.length === 0 && c.length === 0) return null;
+  if (!r || !s || !o || !i || !c || r.length > et.kinds || i.length > et.kinds || s.length > et.prefixes || o.length > et.origins || c.length > et.peers || !r.every(It) || !i.every(It) || r.some((a) => pn.includes(a)) || i.includes(ts) || r.length === 0 && i.length === 0 && c.length === 0) return null;
   for (const a of s)
     if (typeof a != "string" || a.length === 0 || a.length > et.prefixChars || !dn(a) || Qt(a) !== a) return null;
   if ((r.includes(Z) || i.includes(Z)) !== s.length > 0) return null;
@@ -1369,7 +1373,7 @@ function wn(e) {
     peers: ut(c)
   };
 }
-const xo = {
+const $o = {
   /** Proofs, and the application's own data: what applications sign on timers. */
   quiet: { burst: 300, perMs: 6e4, hourly: 6e3 },
   public: { burst: 60, perMs: 6e4, hourly: 1200 },
@@ -1384,22 +1388,22 @@ const xo = {
   tagChars: 1e3,
   clockSlackSec: 600
 }, qt = (e) => e >= 3e4 && e < 4e4;
-function Mo(e) {
-  return gn.includes(e) && e !== pe || wt.includes(e) ? "sensitive" : ls.includes(e) || qt(e) ? "quiet" : "public";
+function Do(e) {
+  return gn.includes(e) && e !== pe || wt.includes(e) ? "sensitive" : us.includes(e) || qt(e) ? "quiet" : "public";
 }
 const Me = "bitlogin:site", Tt = (e, t) => e.filter((n) => n[0] === t && typeof n[1] == "string").map((n) => n[1]);
 function bn(e, t) {
   const n = Tt(t, "d");
   return n[0] === void 0 || n.some(fn) ? !1 : e.appData.some((s) => dn(s) && n.every((o) => o.startsWith(s)));
 }
-function us(e, t, n) {
+function fs(e, t, n) {
   const r = Tt(n, "u");
   return r.length === 0 ? !1 : r.every((s) => {
     const o = m(s);
     return o !== "" && (o === t || e.proofs.includes(o));
   });
 }
-function $o(e, t, n, r) {
+function Po(e, t, n, r) {
   const s = m(n);
   if (!s || !t || typeof t != "object") return null;
   const o = t;
@@ -1409,13 +1413,13 @@ function $o(e, t, n, r) {
     if (!Array.isArray(a) || a.length === 0 || a.length > nt.tagItems || !a.every((u) => typeof u == "string" && u.length <= nt.tagChars)) return null;
     if (a[0] !== Me) {
       if (a[0] === "nswp:world") {
-        if (o.kind !== ns) continue;
+        if (o.kind !== rs) continue;
         if (a.length !== 2 || m(a[1]) !== a[1] || i.some((u) => u[0] === "nswp:world")) return null;
       }
       i.push([...a]);
     }
   }
-  if (o.kind === Z && !bn(e, i) || o.kind === Z && Tt(i, "d").some((a) => yn(s).some((u) => a.startsWith(u))) || o.kind === 5 && i.some((a) => a[0] === "a" && es(a[1])) || o.kind === ht && !us(e, s, i)) return null;
+  if (o.kind === Z && !bn(e, i) || o.kind === Z && Tt(i, "d").some((a) => yn(s).some((u) => a.startsWith(u))) || o.kind === 5 && i.some((a) => a[0] === "a" && ns(a[1])) || o.kind === ht && !fs(e, s, i)) return null;
   if (o.kind === ln) {
     if (i.length > 0) return null;
   } else
@@ -1423,13 +1427,13 @@ function $o(e, t, n, r) {
   const c = Math.floor(r), l = typeof o.created_at == "number" && Number.isInteger(o.created_at) ? o.created_at : c, f = Math.abs(l - c) <= nt.clockSlackSec ? l : c;
   return { kind: o.kind, created_at: f, tags: i, content: o.content };
 }
-function Do(e, t, n) {
+function Ro(e, t, n) {
   return typeof n == "string" && yt.test(n) && (n === t || e.peers.includes(n));
 }
-function Po(e, t) {
+function Co(e, t) {
   return typeof t == "string" && yt.test(t) && e.peers.includes(t);
 }
-function fs(e, t, n) {
+function ds(e, t, n) {
   if (!It(n.kind) || !e.read.includes(n.kind) || typeof n.pubkey != "string" || !yt.test(n.pubkey) || !Array.isArray(n.tags)) return null;
   const r = n.tags.filter((o) => Array.isArray(o) && o.every((i) => typeof i == "string"));
   if (n.kind === Z && !bn(e, r)) return null;
@@ -1437,11 +1441,11 @@ function fs(e, t, n) {
   const s = Tt(r, "p")[0];
   return s !== void 0 && yt.test(s) ? s : t;
 }
-function Ro(e, t, n) {
-  const r = fs(e, t, n);
+function jo(e, t, n) {
+  const r = ds(e, t, n);
   return r ? n.pubkey === t && r !== t ? [r, t] : [r] : [];
 }
-const ds = {
+const ps = {
   0: "change your profile",
   1: "post notes",
   3: "change who you follow",
@@ -1480,7 +1484,7 @@ const ds = {
   37306: "post your scores on worlds' boards",
   37307: "show which achievements you hold in worlds",
   37308: "change what is in your bag: the items you carry between worlds"
-}, ps = {
+}, hs = {
   4: "read your private messages (older kind)",
   13: "read your private messages",
   1059: "read your private messages",
@@ -1496,7 +1500,7 @@ const ds = {
     return e;
   }
 };
-function Co(e, t) {
+function Ko(e, t) {
   const n = [], r = [], s = [], o = (i, c) => {
     i.includes(c) || i.push(c);
   };
@@ -1507,12 +1511,12 @@ function Co(e, t) {
       o(n, `save its own data (${e.appData.join(", ")})`);
       continue;
     }
-    const c = ds[i];
+    const c = ps[i];
     if (!c) {
       qt(i) ? o(n, `save its own kind of data (kind ${i})`) : s.push(i);
       continue;
     }
-    o(as.includes(i) ? r : n, c);
+    o(cs.includes(i) ? r : n, c);
   }
   s.length > 0 && o(n, `sign kinds BitLogin has no words for: ${s.join(", ")}`);
   for (const i of e.read) {
@@ -1520,152 +1524,153 @@ function Co(e, t) {
       o(n, `read its own saved data (${e.appData.join(", ")})`);
       continue;
     }
-    const c = ps[i];
-    c ? o(cs.includes(i) || i === 7375 ? r : n, c) : o(n, qt(i) ? `read its own kind of data (kind ${i})` : `read what is encrypted in kind ${i}`);
+    const c = hs[i];
+    c ? o(ls.includes(i) || i === 7375 ? r : n, c) : o(n, qt(i) ? `read its own kind of data (kind ${i})` : `read what is encrypted in kind ${i}`);
   }
   return e.peers.length > 0 && o(n, `exchange encrypted messages with ${e.peers.length === 1 ? "one service" : `${e.peers.length} services`} it names (${e.peers.map((i) => `${i.slice(0, 8)}…`).join(", ")})`), { ordinary: n, sensitive: r };
 }
 export {
-  ko as $,
+  qr as $,
   Q as A,
-  Io as B,
+  Oo as B,
   Vr as C,
   rn as D,
   Ot as E,
   Nt as F,
-  go as G,
-  mo as H,
+  wo as G,
+  vo as H,
   dt as I,
-  xo as J,
-  yo as K,
+  $o as J,
+  go as K,
   dr as L,
-  Ao as M,
-  vo as N,
-  oo as O,
+  So as M,
+  _o as N,
+  io as O,
   be as P,
-  To as Q,
-  Jr as R,
+  Mo as Q,
+  Yr as R,
   X as S,
   tt as T,
   Ge as U,
-  $o as V,
-  bo as W,
-  wo as X,
-  Mo as Y,
-  _o as Z,
-  Qr as _,
+  mo as V,
+  Po as W,
+  Ao as X,
+  bo as Y,
+  Do as Z,
+  Eo as _,
   At as a,
-  Vs as a$,
-  Gs as a0,
-  Eo as a1,
-  kr as a2,
-  So as a3,
-  pt as a4,
-  en as a5,
-  Le as a6,
-  Qt as a7,
-  Oo as a8,
-  wt as a9,
-  ws as aA,
-  vs as aB,
-  _s as aC,
+  Ys as a$,
+  No as a0,
+  Xs as a1,
+  Io as a2,
+  kr as a3,
+  ko as a4,
+  pt as a5,
+  en as a6,
+  Le as a7,
+  Qt as a8,
+  xo as a9,
+  ne as aA,
+  bs as aB,
+  Ss as aC,
   ks as aD,
-  As as aE,
-  xn as aF,
-  bs as aG,
-  Es as aH,
-  Ss as aI,
-  Tr as aJ,
-  no as aK,
-  Ft as aL,
-  zs as aM,
-  gt as aN,
-  Sr as aO,
-  Ls as aP,
-  Ro as aQ,
-  Po as aR,
-  cs as aS,
-  Do as aT,
-  fo as aU,
-  uo as aV,
-  lo as aW,
-  ho as aX,
-  po as aY,
-  Ir as aZ,
-  Js as a_,
-  _r as aa,
-  Co as ab,
-  Hs as ac,
-  Wt as ad,
-  Fs as ae,
-  ke as af,
-  le as ag,
-  zt as ah,
-  Rn as ai,
-  Ds as aj,
-  sr as ak,
-  nr as al,
-  $s as am,
-  st as an,
-  vt as ao,
-  ve as ap,
-  W as aq,
-  H as ar,
-  Wn as as,
-  Ms as at,
-  Ae as au,
-  K as av,
-  xr as aw,
-  ft as ax,
-  gs as ay,
-  ne as az,
+  Es as aE,
+  vs as aF,
+  xn as aG,
+  ms as aH,
+  Ns as aI,
+  _s as aJ,
+  Tr as aK,
+  ro as aL,
+  Ft as aM,
+  Hs as aN,
+  gt as aO,
+  Sr as aP,
+  Os as aQ,
+  jo as aR,
+  Co as aS,
+  ls as aT,
+  Ro as aU,
+  po as aV,
+  fo as aW,
+  uo as aX,
+  yo as aY,
+  ho as aZ,
+  Ir as a_,
+  wt as aa,
+  _r as ab,
+  Ko as ac,
+  Gs as ad,
+  Wt as ae,
+  zs as af,
+  ke as ag,
+  le as ah,
+  zt as ai,
+  Rn as aj,
+  Ps as ak,
+  sr as al,
+  nr as am,
+  Ds as an,
+  st as ao,
+  vt as ap,
+  ve as aq,
+  W as ar,
+  H as as,
+  Wn as at,
+  $s as au,
+  Ae as av,
+  K as aw,
+  xr as ax,
+  ft as ay,
+  ws as az,
   it as b,
-  Ws as b0,
-  Ve as b1,
-  Us as b2,
-  Ut as b3,
-  Or as b4,
-  Lr as b5,
-  eo as b6,
-  qs as b7,
-  Ie as b8,
-  Ys as b9,
-  Qs as ba,
-  so as bb,
-  No as bc,
-  Zs as bd,
-  ue as be,
-  co as bf,
-  ao as bg,
-  io as bh,
-  Te as bi,
-  Gt as bj,
-  Xs as bk,
-  to as bl,
-  ro as bm,
-  an as bn,
+  Js as b0,
+  Fs as b1,
+  Ve as b2,
+  Ws as b3,
+  Ut as b4,
+  Or as b5,
+  Lr as b6,
+  no as b7,
+  to as b8,
+  Ie as b9,
+  Zs as ba,
+  qs as bb,
+  oo as bc,
+  Lo as bd,
+  Qs as be,
+  ue as bf,
+  lo as bg,
+  co as bh,
+  ao as bi,
+  Te as bj,
+  Gt as bk,
+  Vs as bl,
+  eo as bm,
+  so as bn,
+  an as bo,
   ot as c,
-  Ps as d,
+  Rs as d,
   ir as e,
   pr as f,
-  Bs as g,
-  Ks as h,
+  Us as g,
+  Bs as h,
   Mn as i,
   se as j,
-  Ns as k,
+  Is as k,
   V as l,
-  Ts as m,
-  Rs as n,
-  Is as o,
-  js as p,
+  xs as m,
+  Cs as n,
+  Ls as o,
+  Ks as p,
   ar as q,
   hr as r,
-  ms as s,
-  Os as t,
+  As as s,
+  Ts as t,
   ie as u,
-  Lo as v,
-  xs as w,
-  Cs as x,
+  To as v,
+  Ms as w,
+  js as x,
   m as y,
   wn as z
 };
