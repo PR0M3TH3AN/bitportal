@@ -72,7 +72,12 @@ const visit = async () => {
   const press = async (locator) => {
     await locator.first().waitFor({ state: "visible", timeout: 30000 });
     await wait(300);
+    // Looked at twice, a moment apart, and pressed only once it stands still: the tab bar scrolls to the chosen tab,
+    // and on a loaded machine a tab measured mid-scroll has its middle outside the sheet (seen 2026-11-25: three runs
+    // in five at a load of 24 stopped on "div.outside", the press-outside layer, while the picture then showed the
+    // tab in place).
     let seen = null;
+    let was = "";
     for (let n = 0; n < 30; n++) {
       seen = await locator.first().evaluate((el) => {
         const r = el.getBoundingClientRect();
@@ -82,8 +87,10 @@ const visit = async () => {
         const say = (n) => `${n.tagName.toLowerCase()} "${(n.textContent ?? "").trim().slice(0, 30)}"`;
         return { x, y, placed: el.isConnected && r.width > 0 && r.height > 0, on: !!at && (at === el || el.contains(at) || at.contains(el) || el.getRootNode().host === at), what: at ? say(at) : "nothing" };
       }).catch(() => null);
-      if (seen?.placed) break;
-      await wait(200);
+      const now = seen ? `${Math.round(seen.x)},${Math.round(seen.y)}` : "";
+      if (seen?.placed && seen.on && now === was) break;
+      was = now;
+      await wait(150);
     }
     if (!seen?.placed) throw new Error(`no place on screen for ${locator}`);
     if (!seen.on) throw new Error(`the middle of ${locator} is not on it: what is there is ${seen.what}. Nothing was pressed.`);
