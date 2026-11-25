@@ -1394,7 +1394,8 @@ async function start(): Promise<void> {
   }
   // Sticks and buttons, for visitors who have them, from any make of controller (the NSWP kit's input
   // layer). They add to pointing and selecting and never replace it: a stick's step is the same step.
-  // Nothing in this room is picked up, and nothing about a controller is fetched from anywhere.
+  // Nothing in this room is picked up. A Quest's controllers are drawn as the kit's held hands, served by this site
+  // itself beside the room as the kit's sounds are (vendored from the kit, scripts/build.mjs): fetched from nowhere else.
   const xrInput: XrInput = createXrInput({
     renderer,
     scene,
@@ -1403,6 +1404,7 @@ async function start(): Promise<void> {
     camera,
     controls,
     accent: ACCENT,
+    handsAt: "/hands/kit/",
     pace,
     // Walking smoothly reaches as far as walking with the keys does: into a doorway, which is how one is chosen on foot.
     canStand: (x, z) => crossing.allows(x, z) && Math.hypot(x, z) <= RADIUS + 1.5,

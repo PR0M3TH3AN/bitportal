@@ -109,6 +109,9 @@ if (take("nswp", "@nswp/core")) {
   cpSync(join(repo, "docs", "start.md"), join(out, "docs", "start.md"));
   // The sounds every place starts with: recorded cues and a room's hum, with a note of where each came from.
   cpSync(join(repo, "packages", "sdk", "sounds"), join(out, "sounds"), { recursive: true });
+  // The kit's held hands for a headset's controllers (from kit 0.93.0), served beside the room as the sounds are, with
+  // their licence and a note of where each came from.
+  if (existsSync(join(repo, "packages", "sdk", "assets", "hands"))) cpSync(join(repo, "packages", "sdk", "assets", "hands"), join(out, "hands"), { recursive: true });
   const version = JSON.parse(readFileSync(join(repo, "packages/core/package.json"), "utf8")).version;
   packages["@nswp/core"] = { path: "vendor/nswp", version, license: "MIT", source: src, files: hashDir(out) };
 }

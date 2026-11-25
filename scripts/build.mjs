@@ -97,6 +97,9 @@ if (shellMenu) {
 cpSync(join(root, "public"), out, { recursive: true });
 // The kit's own sounds, served from this site like everything else: nothing is fetched from anywhere else.
 cpSync(join(root, "vendor/nswp/sounds"), join(out, "sounds/kit"), { recursive: true, filter: (f) => !/\.md$/.test(f) });
+// And its held hands, for a headset's controllers (`createXrInput({ handsAt: "/hands/kit/" })`), with their licence
+// and where they came from, as each reference world serves them.
+cpSync(join(root, "vendor/nswp/hands"), join(out, "hands/kit"), { recursive: true });
 // The front page is the way in, and only that (landing-01, the owner's "keeping users on the landing is not
 // necessary"). The lobby has a page of its own: every door as a list, search, lists, Settings, announcing a world.
 cpSync(join(root, "src/landing/index.html"), join(out, "index.html"));
