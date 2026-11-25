@@ -17,7 +17,7 @@ describe("the shell's menu is the kit's, from this site's own copy, and nothing 
   it("takes its code from the kit's menu and controls, and from no other place", async () => {
     const menu = await read("src/shell/menu.ts");
     const from = [...menu.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
-    expect(from.sort()).toEqual(["../shared/look.js", "../shared/session.js", "../shared/settings.js", "./bag-pictures.js", "./bag.js", "./own-labels.js", "./panel.js", "./settings.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
+    expect(from.sort()).toEqual(["../shared/look.js", "../shared/prefs.js", "../shared/session.js", "../shared/settings.js", "./bag-pictures.js", "./bag.js", "./own-labels.js", "./panel.js", "./settings.js", "nswp-sdk/menu", "nswp-sdk/ui"]);
     // The panel's code stays apart: the menu knows its modes by name, as a type, and asks this page to show it.
     expect(menu).toContain('import type { PanelMode } from "./panel.js";');
   });
@@ -91,6 +91,21 @@ describe("the panel is always above the menu", () => {
     // The panel is shown for the place in the frame, at a press, and only where that place may be shown here.
     expect(shell).toContain("if (!panel || panel.open || !pressed()) return;\n  void (origin === location.origin ? Promise.resolve(true) : mayShow(origin)).then((may) => {");
     expect(shell).toContain("if (may && shellMenu?.below.origin === origin) panel?.show(origin, mode, null);");
+  });
+});
+
+describe("how they move at a desk is one choice, in the room and over every world", () => {
+  it("is kept by the shell's menu under the name the room keeps it by, and read from there by the one settings reader", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain('import { INTENSE_KEY } from "../shared/prefs.js";');
+    expect(menu).toContain("controls.add(deskMovingSwitch(controls, { presenting, keep: INTENSE_KEY }));");
+    expect(menu).toContain("askDeskMoving(controls, { presenting, keep: INTENSE_KEY });");
+    expect(menu.split("deskMovingSwitch(").length - 1).toBe(1);
+    expect(menu.split("askDeskMoving(").length - 1).toBe(1);
+    const prefs = await read("src/shared/prefs.ts");
+    expect(prefs).toContain('export const INTENSE_KEY = "bitportal:fps";');
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain('keep: "bitportal:fps",');
   });
 });
 

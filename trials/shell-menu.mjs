@@ -285,8 +285,20 @@ for (let n = 0; n < 24; n++) {
 check("every tab opened, by the arrow key", tabs.length >= 10 && ["You", "Moving", "Sound", "Display", "Help"].every((t) => tabs.includes(t)), tabs);
 await page.screenshot({ path: join(SHOTS, "shell-menu-sheet.png") });
 
+// ---- how they move at a desk, chosen in this page's menu, reaches the world (kept under the room's own name)
+await goTab("Moving");
+const mouseLook = () => world().evaluate(() => { const f = window.__nswpTest?.fps; const v = typeof f === "function" ? f() : f; return v?.enabled === true; });
+const deskRow = () => hud.getByRole("button", { name: /^Desk controls: / }).first();
+const wasOn = await mouseLook();
+await press(deskRow());
+check("'Desk controls' pressed in this page's menu turns the world's own mouse-look on, and keeps it under the room's name", !wasOn && (await until(mouseLook, 6000)) && (await page.evaluate(() => localStorage.getItem("bitportal:fps"))) === "1", { before: wasOn, after: await mouseLook(), kept: await page.evaluate(() => localStorage.getItem("bitportal:fps")) });
+// And back, so the rest of the trial is at a desk the casual way.
+await press(deskRow());
+check("pressed again, the world's mouse-look is off", await until(async () => !(await mouseLook()), 6000), { after: await mouseLook(), kept: await page.evaluate(() => localStorage.getItem("bitportal:fps")) });
+
 // ---- the panel: topmost, and the keys
-await press(tab("You"));
+// By the arrow keys: the step before left the tab bar scrolled to Moving, and You may stand half out of sight.
+await goTab("You");
 await press(hud.getByRole("button", { name: /^Your account/ }));
 for (let i = 0; i < 40 && !(await page.locator(".shell-panel:not([data-waiting]):not([data-kept])").count()); i++) await wait(150);
 await wait(600);
