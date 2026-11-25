@@ -83,7 +83,7 @@ describe("the panel is always above the menu", () => {
 
   it("puts the sheet away before the panel comes up, from the menu's own row and from a world's ask", async () => {
     const menu = await read("src/shell/menu.ts");
-    const ask = menu.slice(menu.indexOf("const ask = (mode: PanelMode): void => {"));
+    const ask = menu.slice(menu.indexOf("const ask = (mode: PanelMode, tab = \"you\"): void => {"));
     expect(ask.indexOf("menu.setOpen(false);")).toBeGreaterThan(0);
     expect(ask.indexOf("menu.setOpen(false);")).toBeLessThan(ask.indexOf("o.openPanel(below.origin, mode);"));
     const shell = await read("src/shell/main.ts");
@@ -106,6 +106,18 @@ describe("how they move at a desk is one choice, in the room and over every worl
     expect(prefs).toContain('export const INTENSE_KEY = "bitportal:fps";');
     const room = await read("src/walk/main.ts");
     expect(room).toContain('keep: "bitportal:fps",');
+  });
+});
+
+describe("the sheet comes back up after the sign-in panel goes, on the tab it was on (the owner, 2026-11-25)", () => {
+  it("remembers the tab only where the panel was asked for from an open sheet, and the keys stay the menu's when it comes back", async () => {
+    const menu = await read("src/shell/menu.ts");
+    expect(menu).toContain("asideFor = menu.open ? tab : null;");
+    expect(menu).toContain("if (at === null || !below.speaks) return false;\n      menu.setOpen(true, at);\n      return true;");
+    // Every row that asks for the panel is on You.
+    for (const line of menu.split("\n").filter((l) => /act: \(\) => ask\(/.test(l))) expect(line, line.slice(0, 80)).toContain('section: "you"');
+    const shell = await read("src/shell/main.ts");
+    expect(shell).toContain("if (!open && !shellMenu?.panelClosed()) view.focus();");
   });
 });
 
@@ -216,7 +228,7 @@ describe("the Airlock is under the visitor's menu too", () => {
     const menu = await read("src/shell/menu.ts");
     // When the place says `here`, not when its page has finished loading: that can be seconds later, with the
     // sheet open in the new place by then.
-    expect(menu).toContain("arrived: () => menu.setOpen(false),");
+    expect(menu).toContain("    arrived: () => {\n      // A new place: nothing comes back up for the last one.\n      asideFor = null;\n      menu.setOpen(false);\n    },");
     expect(menu).not.toMatch(/addEventListener\("load"/);
     const shell = await read("src/shell/main.ts");
     const heard = shell.slice(shell.indexOf("    lastHere = e;\n    unheardWords = [];\n    // Answered from here, always"));

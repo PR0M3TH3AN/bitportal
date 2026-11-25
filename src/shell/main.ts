@@ -60,8 +60,9 @@ void toLocal(`${SIGN_IN}/`)
       at,
       told: (open, more) => {
         view.contentWindow?.postMessage({ nswp: "sign-in", open, ...(more?.failed ? { failed: true } : {}), ...(more?.allowed ? { allowed: true } : {}) }, "*");
-        // The keys go back to the world as the panel goes.
-        if (!open) view.focus();
+        // As the panel goes: the menu's sheet comes back up where the panel was asked for from it, and has the keys;
+        // otherwise the keys go back to the world.
+        if (!open && !shellMenu?.panelClosed()) view.focus();
       },
     });
   });
