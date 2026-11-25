@@ -108,12 +108,8 @@ export function addComputers(o: ComputersOptions): Computers {
   let who: string | null = null;
   let shown: string[] = [];
 
-  controls.addSection({
-    id: "computers",
-    label: "Your computers",
-    icon: "panel",
-    note: () => (o.presenting() ? "Open a terminal on a computer of yours. It asks at that computer before it opens." : "A terminal on your own computer, in a panel here. The computer answers your key and nobody else's, and asks there before it opens."),
-  });
+  // Under Panels, where a terminal opens, and not a tab of their own: a place says at most twelve tabs to the menu
+  // above it (the kit's MENU_LIMITS.sections), and the room has more with a guest or an account (main.ts, Travel).
 
   /** Who is signed in, from BitLogin's public record. Nothing is asked of them. */
   const identify = async (): Promise<string | null> => {
@@ -396,10 +392,10 @@ export function addComputers(o: ComputersOptions): Computers {
     shown = [...mine.flatMap((c) => [`terminal-${c.pubkey.slice(0, 12)}`, `forget-${c.pubkey.slice(0, 12)}`]), ...worlds.flatMap((w) => [`bring-${slug(w.origin)}`, `unname-${slug(w.origin)}`]), "world-name"];
     controls.add(
       ...worlds.flatMap((w) => [
-        { id: `bring-${slug(w.origin)}`, section: "computers", icon: "door" as const, label: `Go to ${w.name}, with your terminals`, short: "Build", act: () => void bringTo(w.origin) },
+        { id: `bring-${slug(w.origin)}`, section: "panels", icon: "door" as const, label: `Go to ${w.name}, with your terminals`, short: "Build", act: () => void bringTo(w.origin) },
         {
           id: `unname-${slug(w.origin)}`,
-          section: "computers",
+          section: "panels",
           icon: "exit" as const,
           label: `${w.name} is no longer one of yours`,
           short: "Forget",
@@ -412,15 +408,15 @@ export function addComputers(o: ComputersOptions): Computers {
         },
       ]),
       // Named where the whole warning can be read, and where its address can be typed.
-      ...(mine.length ? [{ id: "world-name", section: "computers", icon: "door" as const, label: "A world you are building", short: "World", hidden: o.presenting, act: () => void identify().then(nameWorld) }] : []),
+      ...(mine.length ? [{ id: "world-name", section: "panels", icon: "door" as const, label: "A world you are building", short: "World", hidden: o.presenting, act: () => void identify().then(nameWorld) }] : []),
     );
     controls.add(
       ...mine.flatMap((c) => [
-        { id: `terminal-${c.pubkey.slice(0, 12)}`, section: "computers", icon: "panel" as const, label: `A terminal on ${c.name}`, short: "Terminal", act: () => void openTerminal(c) }, // each press opens another, up to a few
+        { id: `terminal-${c.pubkey.slice(0, 12)}`, section: "panels", icon: "panel" as const, label: `A terminal on ${c.name}`, short: "Terminal", act: () => void openTerminal(c) }, // each press opens another, up to a few
         // Forgetting is done where the whole of what is forgotten can be read.
         {
           id: `forget-${c.pubkey.slice(0, 12)}`,
-          section: "computers",
+          section: "panels",
           icon: "exit" as const,
           label: `Forget ${c.name}`,
           short: "Forget",
@@ -435,7 +431,7 @@ export function addComputers(o: ComputersOptions): Computers {
       ]),
     );
   };
-  controls.add({ id: "computer-how", section: "computers", icon: "help", label: "Add a computer", short: "Add", hidden: o.presenting, act: () => void identify().then(explain) });
+  controls.add({ id: "computer-how", section: "panels", icon: "help", label: "Add a computer", short: "Add", hidden: o.presenting, act: () => void identify().then(explain) });
   void identify()
     .then(refresh)
     .then(() => (wasRefreshed() ? restore() : undefined));
