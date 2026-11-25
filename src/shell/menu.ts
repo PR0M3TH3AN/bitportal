@@ -65,6 +65,12 @@ export interface ShellMenu {
    * menu's, and not given to the frame.
    */
   panelClosed(): boolean;
+  /**
+   * The place's own row, pressed in the sheet, has asked for the panel (the room's "Sign in, at …", say): the sheet
+   * goes, as it does for the menu's own rows, and comes back up on You when the panel goes. Every row that asks for
+   * the panel is on You or beside a line that says so.
+   */
+  aside(): void;
   readonly below: MenuBelow;
 }
 
@@ -227,6 +233,10 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     arrived: () => {
       // A new place: nothing comes back up for the last one.
       asideFor = null;
+      menu.setOpen(false);
+    },
+    aside: () => {
+      asideFor = menu.open ? "you" : asideFor;
       menu.setOpen(false);
     },
     panelClosed: () => {

@@ -212,15 +212,17 @@ addEventListener("message", (e: MessageEvent) => {
   } else if (said.nswp === "sign-in" && isPanelMode((said as { mode?: unknown }).mode)) {
     // Only at the visitor's own press in the frame: a world doesn't get to put a sign-in in front of someone.
     if (!panel || panel.open || !pressed()) return;
-    // The sheet is never under the panel: a world's own ask puts it away, as the menu's own row does.
-    if (shellMenu?.open) return;
     const mode = (said as { mode: PanelMode }).mode;
     const menu = readMenuPlace((said as { menu?: unknown }).menu);
     const asker = e.origin;
     // And only for a place that may be shown here: this site's own pages, and the worlds named.
     void (asker === location.origin ? Promise.resolve(true) : mayShow(asker)).then((may) => {
       // Still the same place in the frame: the answer is for whoever asked.
-      if (may && e.source === view.contentWindow) panel?.show(asker, mode, menu);
+      if (!may || e.source !== view.contentWindow) return;
+      // The sheet is never under the panel: a place's own row, pressed in the sheet, puts it away first, as the menu's
+      // own rows do, and it comes back up when the panel goes.
+      shellMenu?.aside();
+      panel?.show(asker, mode, menu);
     });
   } else if (said.nswp === "going" && e.origin === location.origin && typeof said.to === "string") {
     // This site's own Airlock is sending the frame on: if the place doesn't come up here, it is gone to whole.

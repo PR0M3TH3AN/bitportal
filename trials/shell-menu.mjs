@@ -381,7 +381,12 @@ check("it was never told `filesAnywhere`", !JSON.stringify(told.map((w) => w.set
 check("it was answered `has: true` with the visitor's settings", told.some((w) => w.has === true && w.settings && typeof w.settings === "object"));
 
 // ---- signing in: the menu's own row opens the sign-in address's panel for this world
-if (await goTab("You")) {
+if (await goTab("You") && (await hud.getByRole("button", { name: /^Signed in to / }).isVisible().catch(() => false))) {
+  // A world on kit 0.92.0 at a site of BitLogin's family names a fresh browser as its guest at once (BitLogin
+  // docs/guest-accounts.md): there is no "Sign in to" row to press. Not this page's fault, and not judged here.
+  console.log("NOT JUDGED You: \"Sign in to <the world>\": the world named this browser already (BitLogin's guest)");
+  notes.push("You: the world named this browser already (a guest): its Sign in row was not judged");
+} else if (await goTab("You")) {
   await press(hud.getByRole("button", { name: /^Sign in to / }));
   for (let i = 0; i < 40 && !(await page.locator(".shell-panel:not([data-waiting]):not([data-kept])").count()); i++) await wait(150);
   await wait(500);
@@ -644,6 +649,18 @@ if (airlock()) {
   check("and the room has the keys", await holds(async () => (await active()) === "frame"), await active());
   const watched = await page.evaluate(() => window.__music);
   check("through the room, the Airlock, the world and home, the music was never found stopped", watched.looks >= 20 && watched.stopped === 0, watched);
+  // The room's own "Sign in, at …" under You, pressed in this page's sheet: the panel comes up over the room, with
+  // the sheet put away (on 0.92.0 live it brought up nothing: the room's ask was refused while the sheet was up).
+  await openSheet();
+  if (await goTab("You")) {
+    await press(hud.getByRole("button", { name: /^Sign in, at / }));
+    for (let i = 0; i < 40 && !(await page.locator(".shell-panel:not([data-waiting]):not([data-kept])").count()); i++) await wait(150);
+    await wait(500);
+    check("the room's own \"Sign in, at …\" under You opens the panel over the room, with the sheet down", (await page.locator(".shell-panel:not([data-kept])").count()) === 1 && !(await sheetOpen()));
+    await pressBeside(60, 300, ["shell-scrim"]);
+    await panelGone();
+    check("and as the panel goes, the sheet comes back up", await until(() => sheetOpen(), 5000));
+  } else check("the room's You tab", false);
 } else check("a door of the room's, pressed in the menu, leads to the Airlock", false);
 
 const refused = await page.evaluate(() => window.__refused);

@@ -87,7 +87,13 @@ describe("the panel is always above the menu", () => {
     expect(ask.indexOf("menu.setOpen(false);")).toBeGreaterThan(0);
     expect(ask.indexOf("menu.setOpen(false);")).toBeLessThan(ask.indexOf("o.openPanel(below.origin, mode);"));
     const shell = await read("src/shell/main.ts");
-    expect(shell).toContain("if (shellMenu?.open) return;");
+    // A place's own row, pressed in the sheet, asks with the sheet up (the room's "Sign in, at …", live on 0.92.0,
+    // brought up nothing): the sheet is put away first, then the panel comes, and never refused for the sheet.
+    expect(shell).not.toContain("if (shellMenu?.open) return;");
+    const said = shell.slice(shell.indexOf('} else if (said.nswp === "sign-in" && isPanelMode('));
+    expect(said.indexOf("shellMenu?.aside();")).toBeGreaterThan(0);
+    expect(said.indexOf("shellMenu?.aside();")).toBeLessThan(said.indexOf("panel?.show(asker, mode, menu);"));
+    expect(menu).toContain('asideFor = menu.open ? "you" : asideFor;');
     // The panel is shown for the place in the frame, at a press, and only where that place may be shown here.
     expect(shell).toContain("if (!panel || panel.open || !pressed()) return;\n  void (origin === location.origin ? Promise.resolve(true) : mayShow(origin)).then((may) => {");
     expect(shell).toContain("if (may && shellMenu?.below.origin === origin) panel?.show(origin, mode, null);");
