@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { finalizeEvent, getPublicKey, type EventTemplate } from "@nswp/core";
-import { checkedSigner, holdsReserved, knownSignedIn, namedAddress, permissionsFor, RESERVED_KINDS, SITE_MARK, signInAddress, signInHost } from "../src/shared/session.js";
+import { checkedSigner, clientMaker, familyOf, holdsReserved, knownSignedIn, namedAddress, permissionsFor, RESERVED_KINDS, SITE_MARK, signInAddress, signInHost, type BitLoginModule } from "../src/shared/session.js";
 import { INSTANCE } from "../src/shared/instance.js";
 
 const secret = new Uint8Array(32).fill(7);
@@ -128,5 +128,36 @@ describe("this browser's own note of who is signed in, for the Airlock", () => {
     expect(knownSignedIn()).toBeNull();
     kept.set("bitportal:signed-in", JSON.stringify({ pubkey, name: "  Ada\n", until: 0 }));
     expect(knownSignedIn()).toEqual({ pubkey, name: "Ada" });
+  });
+});
+
+describe("signing in asks for the whole family of sites at once (BitLogin's `family`; the owner, 2026-11-25)", () => {
+  it("works the family out from this page's own address, and gives none where it can't be one", () => {
+    expect(familyOf("https://portal.bitblocks.network")).toBe("https://*.bitblocks.network");
+    expect(familyOf("https://arcade.bitblocks.network")).toBe("https://*.bitblocks.network");
+    expect(familyOf("https://bitblocks.network")).toBe("https://*.bitblocks.network");
+    expect(familyOf("https://a.b.bitblocks.network")).toBe("https://*.bitblocks.network");
+    // The registrable domain by the Public Suffix List, not the last two labels: under a two-part suffix, the name
+    // under it, and never the suffix itself.
+    expect(familyOf("https://www.example.co.uk")).toBe("https://*.example.co.uk");
+    expect(familyOf("https://co.uk")).toBeNull();
+    // Not https, a port of its own, a number (a local copy), a bare name, or not an origin at all: none.
+    for (const not of ["http://portal.bitblocks.network", "https://192.168.68.84:4800", "https://192.168.68.84", "https://localhost", "https://portal.bitblocks.network:8443", "https://portal.bitblocks.network/walk/", "not an address", "https://[::1]"]) expect(familyOf(not), not).toBeNull();
+  });
+
+  it("is passed to BitLogin's client with what is asked for, at every making of it, and left out where there is none", () => {
+    const made: Record<string, unknown>[] = [];
+    const standIn: BitLoginModule = { createBitLoginClient: (o) => (made.push(o), {} as ReturnType<BitLoginModule["createBitLoginClient"]>) };
+    const make = clientMaker(standIn, "https://bitlogin.network", "https://portal.bitblocks.network");
+    make(true, []);
+    make(false, ["people"]);
+    expect(made).toEqual([
+      { at: "https://bitlogin.network", permissions: permissionsFor(true, []), family: "https://*.bitblocks.network" },
+      { at: "https://bitlogin.network", permissions: permissionsFor(false, ["people"]), family: "https://*.bitblocks.network" },
+    ]);
+    // A local copy has no family: nothing is said of one, and an older BitLogin is asked exactly as before.
+    made.length = 0;
+    clientMaker(standIn, "https://192.168.68.84:4811", "https://192.168.68.84:4800")(true, []);
+    expect(made).toEqual([{ at: "https://192.168.68.84:4811", permissions: permissionsFor(true, []) }]);
   });
 });
