@@ -13,7 +13,9 @@
 //   the row is pressed and the panel comes up; NO ESCAPE IS PRESSED;
 //   the world does not hold the pointer; a press at the panel's middle lands in the panel and not in the world;
 //   W held and the mouse moved leave the visitor where they were and facing as they did;
-//   then the panel is put away by a press beside it, and one more press gives the pointer back to the world.
+//   then the panel is put away by a press beside it, and the shell's sheet comes back up on You, where the panel was
+//   asked for (the owner, 2026-11-25), as a world's own menu does; closed, one press on the view gives the pointer
+//   back to the world.
 //
 // FIRST, A CONTRAST: the same row with looking by the mouse left off, so the checks are known to be able to pass.
 //
@@ -142,7 +144,7 @@ const visit = async () => {
   await wait(2500);
   // The shell has the menu, and the world draws none: what this trial is about.
   const shellHasIt = (await hud.getByRole("button", { name: /^Menu/ }).isVisible()) && (await world().locator("nswp-hud").count()) === 0;
-  return { ctx, page, faults, wait, until, world, panel, press, sheetOpen, goTab, hud, shellHasIt, worldHoldsPointer, panelIs, stands, heard, pressPanel, judgePress, panelStill };
+  return { ctx, page, faults, wait, until, world, panel, press, sheetOpen, goTab, chosen, hud, shellHasIt, worldHoldsPointer, panelIs, stands, heard, pressPanel, judgePress, panelStill };
 };
 
 // ---- the contrast: looking by the mouse left off (the casual way). Passes today.
@@ -170,6 +172,7 @@ const visit = async () => {
   check(`(${name}) W held and the mouse moved, the visitor is where they were and faces as they did`, JSON.stringify(now) === JSON.stringify(stood), { before: stood, after: now });
   if (middle) await v.page.mouse.click(Math.max(20, middle.left - 60), middle.y);
   check(`(${name}) a press beside the panel puts it away`, await v.until(async () => ["none", "kept"].includes(await v.panelIs()), 6000), await v.panelIs());
+  check(`(${name}) and the shell's sheet comes back up, on You, where the panel was asked for`, (await v.until(v.sheetOpen, 4000)) && (await v.chosen()) === "You", { sheetOpen: await v.sheetOpen(), tab: await v.chosen() });
   await v.ctx.close();
 }
 
@@ -213,11 +216,13 @@ for (const [name, row] of ROWS) {
   if (beside) await v.page.mouse.click(beside.x, beside.y);
   const away = await v.until(async () => ["none", "kept"].includes(await v.panelIs()), 6000);
   check(`(${name}) a press beside the panel puts it away`, away, await v.panelIs());
-  // One more press and the pointer is the world's: on Close if the menu came back, on the view if not.
+  check(`(${name}) and the shell's sheet comes back up, on You, where the panel was asked for`, (await v.until(v.sheetOpen, 4000)) && (await v.chosen()) === "You", { sheetOpen: await v.sheetOpen(), tab: await v.chosen() });
+  // The sheet closed, one press on the view and the pointer is the world's.
   await v.wait(800);
   if (await v.sheetOpen()) await v.press(w.getByRole("button", { name: "Close", exact: true })).catch(() => {});
-  else await v.page.mouse.click(720, 450);
-  check(`(${name}) the panel away, one press and the world holds the pointer again`, away && (await v.until(v.worldHoldsPointer, 5000)));
+  await v.wait(600);
+  await v.page.mouse.click(720, 450);
+  check(`(${name}) the panel away and the sheet closed, one press on the view and the world holds the pointer again`, away && (await v.until(v.worldHoldsPointer, 5000)));
   check(`(${name}) no page error`, v.faults.length === 0, v.faults);
   await v.ctx.close();
 }

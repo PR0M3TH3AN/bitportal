@@ -59,6 +59,12 @@ export interface ShellMenu {
    * place, and it would close under their hand (found by this page's trial on a busy machine, 2026-11-23).
    */
   arrived(): void;
+  /**
+   * The sign-in address's panel has gone. Where it was asked for from the sheet, the sheet comes back up on the tab
+   * it was on, as a world's own menu does (the owner, 2026-11-25: "Yes"). Says whether it did: the keys are then the
+   * menu's, and not given to the frame.
+   */
+  panelClosed(): boolean;
   readonly below: MenuBelow;
 }
 
@@ -102,9 +108,13 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
 
   // You: signing in to the world in the frame, and out of it, in the menu's own words from the facts the world says.
   // Signing in is the sign-in address's own panel, shown by this page for that world and nobody else.
-  const ask = (mode: PanelMode): void => {
+  /** The tab the sheet was on when a panel was asked for from it: it comes back up there when the panel goes. */
+  let asideFor: string | null = null;
+  const ask = (mode: PanelMode, tab = "you"): void => {
     if (!below.origin) return;
-    // The panel is drawn above the sheet, and nothing of the menu may sit under a press in it: the sheet goes first.
+    // The panel is drawn above the sheet, and nothing of the menu may sit under a press in it: the sheet goes first,
+    // and comes back up on its tab when the panel goes (`panelClosed`). Every row that asks for the panel is on You.
+    asideFor = menu.open ? tab : null;
     menu.setOpen(false);
     o.openPanel(below.origin, mode);
   };
@@ -207,7 +217,18 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     get shown() {
       return below.speaks;
     },
-    arrived: () => menu.setOpen(false),
+    arrived: () => {
+      // A new place: nothing comes back up for the last one.
+      asideFor = null;
+      menu.setOpen(false);
+    },
+    panelClosed: () => {
+      const at = asideFor;
+      asideFor = null;
+      if (at === null || !below.speaks) return false;
+      menu.setOpen(true, at);
+      return true;
+    },
     below,
   };
 }
