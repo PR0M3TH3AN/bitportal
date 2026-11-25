@@ -540,7 +540,10 @@ if (airlock()) {
   doorName = await toTheAirlock();
   if (airlock()) {
     await pressInView(continueOn());
-    const next = () => page.frames().find((f) => f.url().startsWith(OTHER));
+    // The world the door leads to: OTHER where it was given, else whatever world comes into the frame that isn't
+    // this site, the world left, or the sign-in address (live, worlds have no port to count OTHER from).
+    const notIt = [new URL(BASE).origin, new URL(WORLD).origin];
+    const next = () => page.frames().find((f) => (process.env.OTHER ? f.url().startsWith(OTHER) : /^https:/.test(f.url()) && !notIt.some((o) => f.url().startsWith(o)) && !/bitlogin|\/signer\/|\/connect\//.test(f.url())));
     for (let i = 0; i < 80 && !next(); i++) await wait(250);
     for (let i = 0; i < 100 && !(await hud.getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)); i++) await wait(200);
     await wait(2000);

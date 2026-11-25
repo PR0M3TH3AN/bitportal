@@ -150,7 +150,9 @@ const visit = async () => {
   await until(() => hud.getByRole("button", { name: /^Menu/ }).isVisible(), 30000);
   await wait(2500);
   // The shell has the menu, and the world draws none: what this trial is about.
-  const shellHasIt = (await hud.getByRole("button", { name: /^Menu/ }).isVisible()) && (await world().locator("nswp-hud").count()) === 0;
+  // A world on kit 0.93.0 keeps its own menu's element in its page, with nothing of it shown, where the client draws
+  // the menu: its Menu is not on screen. As the menu trial asks it.
+  const shellHasIt = (await hud.getByRole("button", { name: /^Menu/ }).isVisible()) && ((await world().locator("nswp-hud").count()) === 0 || !(await world().getByRole("button", { name: /^Menu/ }).isVisible().catch(() => false)));
   return { ctx, page, faults, wait, until, world, panel, press, sheetOpen, goTab, chosen, hud, shellHasIt, worldHoldsPointer, panelIs, stands, heard, pressPanel, judgePress, panelStill };
 };
 
@@ -163,7 +165,9 @@ const visit = async () => {
   await v.press(w.getByRole("button", { name: /^Menu/ }));
   check(`(${name}) the shell's switch says casual, and nobody holds the pointer`, (await v.goTab("Moving")) && (await w.getByRole("button", { name: /^Desk controls: casual/ }).isVisible()) && !(await v.worldHoldsPointer()));
   await v.goTab("You");
-  await v.press(w.getByRole("button", { name: ROWS[0][1] }));
+  // The shell's own account row: there whether or not the world has named this browser (a guest, at once, at a site
+  // of BitLogin's family on kit 0.92.0 and later), and it brings the same panel up over the world.
+  await v.press(w.getByRole("button", { name: ROWS[1][1] }));
   check(`(${name}) the row brings the sign-in address's panel up over the world`, await v.until(async () => (await v.panelIs()) === "up", 15000), await v.panelIs());
   await v.wait(1500);
   check(`(${name}) with the panel up, the world does not hold the pointer`, !(await v.worldHoldsPointer()));
@@ -201,6 +205,13 @@ for (const [name, row] of ROWS) {
   await v.page.keyboard.press("m");
   check(`(${name}) the menu's key brings the shell's menu, and the pointer is let go`, (await v.until(v.sheetOpen, 5000)) && !(await v.worldHoldsPointer()));
   await v.goTab("You");
+  // Where the world already names this browser (BitLogin's guest, at once, on kit 0.92.0 and later) there is no
+  // "Sign in to" row: not judged here, and the other rows bring the same panel.
+  if (name === "sign in" && !(await w.getByRole("button", { name: row }).first().isVisible().catch(() => false)) && (await w.getByRole("button", { name: /^Signed in to / }).first().isVisible().catch(() => false))) {
+    console.log(`NOT JUDGED (${name}): the world named this browser already (BitLogin's guest): there is no "Sign in to" row`);
+    await v.ctx.close();
+    continue;
+  }
   await v.press(w.getByRole("button", { name: row }));
   const up = await v.until(async () => (await v.panelIs()) === "up", 15000);
   check(`(${name}) the row brings the sign-in address's panel up over the world`, up, await v.panelIs());
