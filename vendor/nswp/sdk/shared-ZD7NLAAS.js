@@ -2,7 +2,7 @@ import {
   askOwn,
   askWell,
   sendWell
-} from "./shared-E65BGET2.js";
+} from "./shared-IW6AXJ33.js";
 import {
   resumeFullscreen
 } from "./shared-4HKQFA2T.js";
@@ -3703,6 +3703,7 @@ function createBag(opts) {
   };
   let known = null;
   let looking = null;
+  let progress = null;
   let offered = null;
   const look = async (who) => {
     const kept = readKept(who);
@@ -3713,7 +3714,12 @@ function createBag(opts) {
       known = { ...known, bag: newer, answered: true };
       changed();
     };
-    const got = await askOwn({ kinds: [BAG_KIND], authors: [who], limit: 4 }, who, { usual: usual(), mine: { kept }, query, publish, timeoutMs: 4e3, now, onNewer }).catch(() => null);
+    const onWave = (_wave, asked, of) => {
+      if (opts.me() !== who) return;
+      progress = { asked, of };
+      changed();
+    };
+    const got = await askOwn({ kinds: [BAG_KIND], authors: [who], limit: 4 }, who, { usual: usual(), mine: { kept }, query, publish, timeoutMs: 4e3, now, onNewer, onWave }).catch(() => null).finally(() => progress = null);
     const answered = !!got && got.state !== "unreached";
     const own2 = got?.own ?? [];
     const found = newestBag((got?.events ?? []).filter((e) => verifyEvent3(e)), who);
@@ -3825,6 +3831,7 @@ function createBag(opts) {
       tintTimers.set(item, setTimeout(() => void writeTints(item).catch(() => null), 2500));
     },
     items: () => known && known.who === opts.me() ? inBag(known) : null,
+    looking: () => progress,
     load,
     canChange: () => !!opts.hand,
     add: (item, title = "") => change(item, true, title),
@@ -3874,6 +3881,7 @@ function addBagControls(controls, opts) {
   let pages = 1;
   let wasMe = null;
   let looked = false;
+  let lookingNow = false;
   let asking = "";
   let taking = "";
   const say = (text) => controls.say(text);
@@ -3964,7 +3972,12 @@ function addBagControls(controls, opts) {
       note: () => {
         const here = rule === "play" ? "Items are part of play here: what people hold can reach you." : rule === "allowed" ? "Items work here." : "Nothing carried is drawn or works in this place.";
         if (!me) return "Sign in to keep a bag.";
-        if (has === null) return looked ? "Your bag couldn't be looked for just now." : "Looking for your bag.";
+        if (has === null) {
+          if (looked && !lookingNow) return "Your bag couldn't be looked for just now.";
+          const far = bag.looking();
+          if (far) return far.asked < far.of ? `Still looking: ${far.asked} of your ${far.of} relays asked.` : "Still looking: waiting for your slowest relays.";
+          return "Looking for your bag.";
+        }
         if (has.length === 0) return `Your bag is empty. ${bag.canChange() ? offers().length ? "Take one of the things offered here, or put an item in by its address." : "Put an item in by its address: copy it from the place that keeps the item." : "Things are put in it at your home."} ${here}`;
         return `${has.length === 1 ? "1 thing" : `${has.length} things`} in your bag. Anyone can see what is in it. ${here}`;
       },
@@ -4011,7 +4024,11 @@ function addBagControls(controls, opts) {
       housekeeping();
       if (!looked) {
         looked = true;
-        void bag.load().then(refresh);
+        lookingNow = true;
+        void bag.load().finally(() => {
+          lookingNow = false;
+          refresh();
+        });
       } else
         add({
           id: "bag-again",

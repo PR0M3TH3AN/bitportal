@@ -20,8 +20,10 @@ import {
   saveFile
 } from "./shared-LW5OWPBZ.js";
 import {
-  ICONS
-} from "./shared-CC6JLBIU.js";
+  ICONS,
+  MARK,
+  paintMark
+} from "./shared-7EUGQBOP.js";
 import {
   RUN,
   addDeskControls,
@@ -63,7 +65,7 @@ import {
   scriptAllowed,
   setFilesAnywhere,
   showsItems
-} from "./shared-NVQ7MDPF.js";
+} from "./shared-ZD7NLAAS.js";
 import {
   askOwn,
   askWell,
@@ -72,7 +74,7 @@ import {
   relayBackup,
   relaysOf,
   sendWell
-} from "./shared-E65BGET2.js";
+} from "./shared-IW6AXJ33.js";
 import {
   fullscreenAction,
   holdFullscreen
@@ -587,25 +589,8 @@ function createConsole(controls, opts) {
     const w = openerCanvas.width;
     const h = openerCanvas.height;
     c.clearRect(0, 0, w, h);
-    c.beginPath();
-    c.moveTo(28, h - 44);
-    c.lineTo(28, 128);
-    c.arc(w / 2, 128, w / 2 - 28, Math.PI, 0);
-    c.lineTo(w - 28, h - 44);
-    c.closePath();
-    c.fillStyle = hot ? `rgba(${rgb(t.accent)}, 0.34)` : `rgba(${rgb(t.glass)}, 0.82)`;
-    c.fill();
-    c.lineWidth = 6;
-    c.strokeStyle = t.accent;
-    c.stroke();
-    c.fillStyle = hot ? t.accent : t.ink;
-    c.fillRect(14, h - 34, w - 28, 8);
-    c.strokeStyle = hot ? t.accent : t.ink;
-    strokeIcon(c, "menu", w / 2 - 44, 60, 88);
-    c.fillStyle = t.ink;
-    c.font = `600 40px ${SANS}`;
-    c.textAlign = "center";
-    c.fillText("Menu", w / 2, 208);
+    const scale = Math.min((w - 8) / MARK.tile.w, (h - 8) / MARK.tile.h);
+    paintMark(c, { x: (w - MARK.tile.w * scale) / 2, y: (h - MARK.tile.h * scale) / 2, scale, accent: t.accent, ink: t.ink, glass: t.glass, lit: hot, glassAlpha: 0.86 });
     openerTexture.needsUpdate = true;
   };
   const grips = [0, 1].map((i) => {

@@ -6,10 +6,11 @@ import {
   mountHud,
   mountMenu,
   portHere
-} from "./shared-MIXKJMOZ.js";
+} from "./shared-H6Z5D4EI.js";
 import {
-  ICONS
-} from "./shared-CC6JLBIU.js";
+  ICONS,
+  markSvg
+} from "./shared-7EUGQBOP.js";
 import {
   CHAT_KEY,
   DEFAULT_THEME,
@@ -43,7 +44,7 @@ import {
   relayBackup,
   relaysWell,
   sendWell
-} from "./shared-E65BGET2.js";
+} from "./shared-IW6AXJ33.js";
 import "./shared-4HKQFA2T.js";
 import "./shared-3QMBUCPV.js";
 import "./shared-QLSLERQ3.js";
@@ -68,6 +69,7 @@ export {
   foundRelays,
   learnFrom,
   loadPicture,
+  markSvg,
   mountHud,
   mountMenu,
   onChatChange,
