@@ -2,7 +2,7 @@
 // to hit escape again to use. The game just playes behind them ... when i hit escape the game exits full screen.").
 //
 //   npm run build                            an ordinary build: the world draws its own menu
-//   node trials/shell-panel-pointer.mjs      (BASE, the shell's local address; WORLD, a local world)
+//   npm run trial -- trials/shell-panel-pointer.mjs (BASE, the shell's local address; WORLD, a local world)
 //
 // What must be so, and is tried here for each row of a world's menu that brings the panel up:
 //   with looking by the mouse on, the row is pressed and the panel comes up;

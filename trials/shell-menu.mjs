@@ -1,7 +1,7 @@
 // The shell's menu, tried with real presses and real keys (NSWP docs/plans/the-clients-menu.md, 17.1 and 17.2).
 //
 //   BITPORTAL_SHELL_MENU=1 npm run build     the menu is off in an ordinary build: this is a trial's, never deployed
-//   node trials/shell-menu.mjs               (BASE, the shell's local address; WORLD, a local world on kit 0.84 or later)
+//   npm run trial -- trials/shell-menu.mjs   (BASE, the shell's local address; WORLD, a local world on kit 0.84 or later)
 //   npm run build                            and back to an ordinary build afterwards
 //
 // Everything is on this machine: BitPortal as built here, a reference world and BitLogin as built from their own
