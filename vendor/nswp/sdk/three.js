@@ -92,7 +92,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-FSCLONX3.js";
+} from "./shared-DHNFO7M3.js";
 import {
   addDoorControls,
   vouchedWords
@@ -112,7 +112,7 @@ import {
   createSounds,
   saveFile
 } from "./shared-LW5OWPBZ.js";
-import "./shared-CC6JLBIU.js";
+import "./shared-7EUGQBOP.js";
 import {
   DOUBLE_TAP,
   DRAG_LOOK,
@@ -167,7 +167,7 @@ import {
   scriptAllowed,
   setShowsItems,
   showsItems
-} from "./shared-NVQ7MDPF.js";
+} from "./shared-ZD7NLAAS.js";
 import {
   askOwn,
   askWell,
@@ -178,7 +178,7 @@ import {
   relayBackup,
   relaysWell,
   sendWell
-} from "./shared-E65BGET2.js";
+} from "./shared-IW6AXJ33.js";
 import {
   fullscreenWaiting,
   prefersFullscreen,
