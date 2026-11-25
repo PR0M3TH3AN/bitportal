@@ -127,10 +127,16 @@ const visit = async ({ signedIn, named, has = true, refuseFrame = false, wrongMo
       const on = !!at && (at === el || el.contains(at) || at.contains(el) || el.getRootNode().host === at);
       return { x, y, placed, on, what: at ? say(at) : "nothing", meant: `${say(el)}, ${el.isConnected ? "in the page" : "no longer in the page"}, ${Math.round(r.width)} by ${Math.round(r.height)}` };
     });
+    // Looked at twice, a moment apart, and pressed only once it stands still with its middle on it: a tab bar still
+    // scrolling to the chosen tab puts its middle outside the sheet for a moment on a loaded machine (BitPortal PR 242).
     let seen = null;
+    let was = "";
     for (let n = 0; n < 30; n++) {
       seen = await look().catch(() => null);
-      if (seen?.placed) break;
+      const now = seen ? `${Math.round(seen.x)},${Math.round(seen.y)}` : "";
+      if (seen?.placed && seen.on && now === was) break;
+      was = now;
+      if (seen?.placed) { await wait(150); continue; }
       // Not there, or just taken out of the page as the menu drew itself again: looked for afresh.
       if (seen) console.log(`note ${locator} was ${seen.meant} when looked at; looked for again`);
       await wait(200);
