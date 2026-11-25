@@ -28,5 +28,14 @@ describe("a Sign in press where a page says to sign in", () => {
   it("the room's sheet about a computer of your own, signed out: its Sign in beside the line", async () => {
     const computers = await read("src/walk/computers.ts");
     expect(computers).toContain('...(who ? [] : [signInButton("Sign in", true)]),');
+    // One press: the sign-in the menu's own row under You starts, and not the menu brought up on You.
+    expect(computers).toContain('onclick: () => (dialog.close(), o.signIn())');
+    expect(computers).not.toContain('signal("show:you")');
+    // The directions are gone from the sheet's lines, which have the press right under them.
+    expect(computers).toContain(`"You aren't signed in on this browser. Sign in first: the computer needs to know whose it is."`);
+    expect(computers).toContain('el("p", { textContent: "Sign in, then open the link again." }),');
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("accent: ACCENT, signIn: () => void signInHere() });");
+    expect(room).toContain("    signIn: () => void signInHere(),");
   });
 });
