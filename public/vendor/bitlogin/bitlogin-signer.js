@@ -1,64 +1,63 @@
-import { v as ce } from "./bitlogin-shared-Cj9s0_W_.js";
-import { y as Z, H as u, I as M, J as D, K as G, A as ue, n as fe, U as $, M as B, N as pe, B as we, O as me, Q as ge, G as he, R as ke, V as ye, W as ve, X as be, Y as j, f as z, r as Se, Z as K, _ as Me, $ as De, a0 as Ae, h as Ge, a1 as Ee } from "./bitlogin-shared-BosVxhRE.js";
-import { c as Ie } from "./bitlogin-shared-DFaGPwU-.js";
-import { k as Le } from "./bitlogin-shared-ocmFRDk5.js";
-import { f as ee } from "./bitlogin-shared-BfA24Ad_.js";
+import { v as fe } from "./bitlogin-shared-Cj9s0_W_.js";
+import { y as j, H as u, I as D, J as A, K as G, A as pe, n as we, U as z, M as K, N as me, B as ge, O as ee, Q as ye, R as he, G as ke, V as ve, W as be, X as Se, Y as Me, Z as te, f as ne, r as De, _ as C, $ as Ae, a0 as Ge, a1 as Ee, h as Ie, a2 as Te } from "./bitlogin-shared-DVgIEj88.js";
+import { c as Le } from "./bitlogin-shared-DFaGPwU-.js";
+import { f as J } from "./bitlogin-shared-B4ZbP95F.js";
 const Oe = { burst: 10, perMs: 6e4, hourly: 60 };
-function qe(te = {}) {
+function Ne(ie = {}) {
   if (typeof window > "u" || window.parent === window) return { embedded: !1, stop() {
   } };
   const H = location.origin;
-  let s = Z(location.ancestorOrigins?.[0] ?? ""), l = null, a = null, v = null, w = null, m = 0, b = !1, I = u();
-  const q = { burst: M.passBurst, perMs: M.perMs, hourly: M.passHourly };
-  let _ = u(q), d = null, L = null, C = !1, g = [], x = [], E = { quiet: u(D.quiet), public: u(D.public), sensitive: u(D.sensitive), read: u(D.read) };
-  const J = (i = [], t = []) => ({
-    quiet: u(D.quiet),
-    public: u(D.public, i),
-    sensitive: u(D.sensitive, t),
-    read: u(D.read)
+  let s = j(location.ancestorOrigins?.[0] ?? ""), l = null, a = null, v = null, w = null, m = 0, b = !1, I = u();
+  const q = { burst: D.passBurst, perMs: D.perMs, hourly: D.passHourly };
+  let _ = u(q), d = null, T = null, V = !1, g = [], F = [], x = !1, E = { quiet: u(A.quiet), public: u(A.public), sensitive: u(A.sensitive), read: u(A.read) };
+  const Q = (i = [], t = []) => ({
+    quiet: u(A.quiet),
+    public: u(A.public, i),
+    sensitive: u(A.sensitive, t),
+    read: u(A.read)
   });
-  let h = null;
-  const ne = { sign: u(G), wallet: u(G), pay: u(G), tip: u(G), buy: u(G), guests: u(Oe), save: u(G), pick: u(G) }, O = () => {
-    if (!h) return;
-    clearTimeout(h.timer);
-    const { id: i } = h;
-    h = null, s && window.parent.postMessage(B({ t: "refused", id: i }), s);
+  let y = null;
+  const ae = { sign: u(G), wallet: u(G), pay: u(G), tip: u(G), buy: u(G), guests: u(Oe), save: u(G), pick: u(G) }, L = () => {
+    if (!y) return;
+    clearTimeout(y.timer);
+    const { id: i } = y;
+    y = null, s && window.parent.postMessage(K({ t: "refused", id: i }), s);
   };
-  let k = null, N = null;
-  const V = ue(H) ? fe(document.documentElement.dataset.unlockService) : null, R = V ? [...$, V] : $;
-  let y = [];
-  const F = () => {
-    b && a && s && l?.holdReceipts(s, y).catch(() => {
+  let h = null, N = null;
+  const X = pe(H) ? we(document.documentElement.dataset.unlockService) : null, O = X ? [...z, X] : z;
+  let k = [];
+  const P = () => {
+    b && a && s && l?.holdReceipts(s, k).catch(() => {
     });
-  }, ie = async () => {
-    y = [], !(!a || !s || !l) && (y = K(await l.heldReceipts(s).catch(() => []), a, R));
-  }, Q = () => {
-    y = [];
-  }, ae = (i) => a ? Ge(y.map((t) => z(t, R)).filter((t) => !!t), { buyer: a, listing: i, now: Date.now() / 1e3 }) : null, P = async () => l ??= await Ie(te), se = () => {
-    O();
+  }, se = async () => {
+    k = [], !(!a || !s || !l) && (k = C(await l.heldReceipts(s).catch(() => []), a, O));
+  }, Y = () => {
+    k = [];
+  }, re = (i) => a ? Ie(k.map((t) => ne(t, O)).filter((t) => !!t), { buyer: a, listing: i, now: Date.now() / 1e3 }) : null, U = async () => l ??= await Le(ie), oe = () => {
+    L();
     const i = l;
-    l = null, a = null, v = null, w = null, m = 0, b = !1, d = null, y = [], i?.destroy();
-  }, U = async () => {
+    l = null, a = null, v = null, w = null, m = 0, b = !1, d = null, k = [], i?.destroy();
+  }, W = async () => {
     const i = l;
-    !i || !a || !b || !s || await i.checkTakenBack(s).catch(() => "ok") === "ok" || l !== i || (se(), c(A()));
-  }, T = () => {
-    O();
+    !i || !a || !b || !s || await i.checkTakenBack(s).catch(() => "ok") === "ok" || l !== i || (oe(), c(S()));
+  }, R = () => {
+    L();
     const i = l, t = s;
-    l = null, a = null, v = null, w = null, m = 0, b = !1, d = null, g = [], Q(), i && (t ? i.forgetSignerGrant(t) : Promise.resolve()).catch(() => {
+    l = null, a = null, v = null, w = null, m = 0, b = !1, d = null, g = [], Y(), i && (t ? i.forgetSignerGrant(t) : Promise.resolve()).catch(() => {
     }).finally(() => i.destroy());
   };
-  let re = null;
-  const W = () => re ??= (async () => {
+  let le = null;
+  const B = () => le ??= (async () => {
     if (s)
       try {
-        const i = await (await P()).restoreSignerGrant(s, ee(s) || void 0);
+        const i = await (await U()).restoreSignerGrant(s, J(s) || void 0);
         if (!i) return;
-        a = i.pubkey, v = i.name ?? null, w = i.profile ?? null, m = i.until, b = !0, d = i.permissions ?? null, g = d ? [] : i.more ?? [], d ? E = J(i.signed, i.signedSensitive) : I = u(M, i.signed), i.check === "overdue" ? await U() : i.check === "due" && U(), _ = u(q, i.signedPass), await ie();
+        a = i.pubkey, v = i.name ?? null, w = i.profile ?? null, m = i.until, b = !0, d = i.permissions ?? null, g = d ? [] : i.more ?? [], d ? E = Q(i.signed, i.signedSensitive) : I = u(D, i.signed), i.check === "overdue" ? await W() : i.check === "due" && W(), _ = u(q, i.signedPass), await se();
       } catch {
       }
   })(), c = (i) => {
-    s && window.parent.postMessage(B(i), s);
-  }, A = (i) => (a && Date.now() / 1e3 >= m && T(), {
+    s && window.parent.postMessage(K(i), s);
+  }, S = (i) => (a && Date.now() / 1e3 >= m && R(), {
     t: "state",
     ...i ? { id: i } : {},
     unlocked: !!a,
@@ -72,33 +71,35 @@ function qe(te = {}) {
     // A world is told what more it was let do, so it asks for nothing that isn't there.
     ...a && !d && g.length ? { more: g } : {},
     // What can be asked for here at all, said locked or unlocked. Not to an application: it is held to its set.
-    ...d ? {} : { offers: [...Ae] }
-  }), oe = async (i) => {
-    const t = Z(i.origin);
+    ...d ? {} : { offers: [...Ee] }
+  }), de = async (i) => {
+    const t = j(i.origin);
     if (!t || (s ||= t, t !== s)) return;
-    const e = pe(i.data);
-    if (!e || e.t === "buy" && !we(H)) return;
-    if (await W(), e.t === "state") return c(A(e.id));
+    const e = me(i.data);
+    if (!e || e.t === "buy" && !ge(H)) return;
+    if (await B(), e.t === "state") return c(S(e.id));
     if (e.t === "lock")
-      return T(), c(A(e.id));
+      return R(), c(S(e.id));
+    if (e.t === "wantFamily")
+      return x = !!e.family && e.family === J(s) && ee(e.family), c({ ...S(e.id), familyTaken: x });
     if (e.t === "wantMore")
-      return x = e.more, c(A(e.id));
+      return F = e.more, c(S(e.id));
     if (e.t === "want") {
-      const r = me(s, e.permissions);
-      return L = r ? e.permissions : null, C = !r, c({ ...A(e.id), taken: r });
+      const r = ye(s, e.permissions);
+      return T = r ? e.permissions : null, V = !r, c({ ...S(e.id), taken: r });
     }
     const n = () => c({ t: "refused", id: e.id });
-    if (a && Date.now() / 1e3 >= m && T(), !l || !a) return n();
+    if (a && Date.now() / 1e3 >= m && R(), !l || !a) return n();
     if (e.t === "have") {
-      const r = ae(e.listing);
+      const r = re(e.listing);
       return c(r ? { t: "receipt", id: e.id, receipt: r.event } : { t: "none", id: e.id });
     }
     if (e.t === "propose" || e.t === "wallet" || e.t === "pay" || e.t === "tip" || e.t === "buy" || e.t === "guests" || e.t === "file-save" || e.t === "file-pick") {
-      const r = d && e.t === "wallet" ? null : e.t === "wallet" ? { what: "wallet" } : e.t === "pay" ? { what: "pay", invoice: e.invoice } : e.t === "tip" ? { what: "tip", sats: e.sats, ...e.to ? { to: e.to } : {} } : e.t === "buy" ? { what: "buy", listing: e.listing } : e.t === "guests" ? d ? null : { what: "guests", world: e.world, list: e.list ?? null, change: e.change, key: e.key, none: e.none } : e.t === "file-pick" ? { what: "pick" } : e.t === "file-save" ? { what: "save", name: e.name, type: e.type, bytes: e.bytes, private: e.private } : /* @__PURE__ */ ((Y) => Y ? { what: "sign", event: Y } : null)(ge(e.event, s, Date.now() / 1e3));
-      if (!r || !ne[r.what].take(Date.now())) return n();
-      O();
-      const S = e.id;
-      return h = { id: S, ask: r, timer: setTimeout(() => h?.id === S && O(), he) }, c({ t: "asking", id: S });
+      const r = d && e.t === "wallet" ? null : e.t === "wallet" ? { what: "wallet" } : e.t === "pay" ? { what: "pay", invoice: e.invoice } : e.t === "tip" ? { what: "tip", sats: e.sats, ...e.to ? { to: e.to } : {} } : e.t === "buy" ? { what: "buy", listing: e.listing } : e.t === "guests" ? d ? null : { what: "guests", world: e.world, list: e.list ?? null, change: e.change, key: e.key, none: e.none } : e.t === "file-pick" ? { what: "pick" } : e.t === "file-save" ? { what: "save", name: e.name, type: e.type, bytes: e.bytes, private: e.private } : /* @__PURE__ */ (($) => $ ? { what: "sign", event: $ } : null)(he(e.event, s, Date.now() / 1e3));
+      if (!r || !ae[r.what].take(Date.now())) return n();
+      L();
+      const M = e.id;
+      return y = { id: M, ask: r, timer: setTimeout(() => y?.id === M && L(), ke) }, c({ t: "asking", id: M });
     }
     if (e.t === "encrypt" || e.t === "decrypt" || e.t === "read") {
       if (!d || e.t !== "encrypt" && !E.read.take(Date.now())) return n();
@@ -143,11 +144,11 @@ function qe(te = {}) {
       try {
         if (e.t === "unwrap") return c({ t: "message", id: e.id, message: await l.worldUnwrap(e.event) });
         if (e.t === "reach") {
-          const S = await l.worldReach(e.relays);
-          return S.pubkey !== a ? n() : c({ t: "signed", id: e.id, event: S });
+          const M = await l.worldReach(e.relays);
+          return M.pubkey !== a ? n() : c({ t: "signed", id: e.id, event: M });
         }
         const r = await l.worldSeal(e.to, e.text);
-        return r.message.pubkey !== a || r.seals.some((S) => S.pubkey !== a) ? n() : c({ t: "sealed", id: e.id, message: r.message, seals: r.seals });
+        return r.message.pubkey !== a || r.seals.some((M) => M.pubkey !== a) ? n() : c({ t: "sealed", id: e.id, message: r.message, seals: r.seals });
       } catch {
         return n();
       }
@@ -164,9 +165,9 @@ function qe(te = {}) {
       }
       return;
     }
-    const o = Date.now(), f = d ? ke(d, e.event, s, o / 1e3) : ye(e.event, s, o / 1e3);
+    const o = Date.now(), f = d ? ve(d, e.event, s, o / 1e3) : be(e.event, s, o / 1e3);
     if (!f) return n();
-    const p = d ? ve(f.kind) : null;
+    const p = d ? Se(f.kind) : null;
     if (!(p ? E[p] : I).take(o)) return n();
     try {
       const r = await l.signEvent(f);
@@ -177,70 +178,70 @@ function qe(te = {}) {
     } catch {
       n();
     }
-  }, le = async (i) => {
-    const t = be(i.data);
+  }, ce = async (i) => {
+    const t = Me(i.data);
     if (!t || !i.source) return;
-    const e = (n) => i.source.postMessage(Ee(n), H);
+    const e = (n) => i.source.postMessage(Te(n), H);
     if (t.t === "hello") {
       if (!s) return;
-      await W();
+      await B();
       try {
-        const n = await (await P()).beginHandoff();
-        k = { nonce: t.nonce, from: i.source }, N = k, e({ t: "frame", nonce: t.nonce, world: s, recipient: n, ...L ? { wants: L } : {}, ...C ? { turnedDown: !0 } : {}, ...!L && x.length ? { more: x } : {}, ...!L && a && !d && g.length ? { has: g } : {}, ...a && h ? { ask: h.ask, pubkey: a } : {} });
+        const n = await (await U()).beginHandoff();
+        h = { nonce: t.nonce, from: i.source }, N = h, e({ t: "frame", nonce: t.nonce, world: s, recipient: n, ...T ? { wants: T } : {}, ...V ? { turnedDown: !0 } : {}, ...!T && F.length ? { more: F } : {}, ...!T && a && !d && g.length ? { has: g } : {}, ...x && !F.length ? { family: !0 } : {}, ...a && y ? { ask: y.ask, pubkey: a } : {} });
       } catch {
       }
       return;
     }
     if (t.t === "answer") {
-      if (!k || k.nonce !== t.nonce || k.from !== i.source || t.world !== s) return;
-      const n = h;
+      if (!h || h.nonce !== t.nonce || h.from !== i.source || t.world !== s) return;
+      const n = y;
       if (!n || !a) return e({ t: "done", nonce: t.nonce, ok: !1 });
-      clearTimeout(n.timer), h = null;
+      clearTimeout(n.timer), y = null;
       let o = { t: "refused", id: n.id };
-      if (n.ask.what === "wallet" && j(t.wallet) && (o = { t: "wallet", id: n.id, uri: j(t.wallet) }), n.ask.what === "pay" && t.paid?.invoice === n.ask.invoice && (o = { t: "paid", id: n.id, ...t.paid.preimage ? { preimage: t.paid.preimage } : {} }), n.ask.what === "tip" && t.tipped?.sats === n.ask.sats && (o = { t: "paid", id: n.id, ...t.tipped.preimage ? { preimage: t.tipped.preimage } : {} }), n.ask.what === "buy" && t.bought) {
-        const f = z(t.bought.receipt, R);
-        Se(f, { buyer: a, listing: n.ask.listing, now: Date.now() / 1e3 }) && (o = { t: "bought", id: n.id, receipt: f.event, ...t.bought.delivery ? { delivery: t.bought.delivery } : {} }, y = K([f.event, ...y.filter((p) => p.id !== f.event.id)], a, R), F());
+      if (n.ask.what === "wallet" && te(t.wallet) && (o = { t: "wallet", id: n.id, uri: te(t.wallet) }), n.ask.what === "pay" && t.paid?.invoice === n.ask.invoice && (o = { t: "paid", id: n.id, ...t.paid.preimage ? { preimage: t.paid.preimage } : {} }), n.ask.what === "tip" && t.tipped?.sats === n.ask.sats && (o = { t: "paid", id: n.id, ...t.tipped.preimage ? { preimage: t.tipped.preimage } : {} }), n.ask.what === "buy" && t.bought) {
+        const f = ne(t.bought.receipt, O);
+        De(f, { buyer: a, listing: n.ask.listing, now: Date.now() / 1e3 }) && (o = { t: "bought", id: n.id, receipt: f.event, ...t.bought.delivery ? { delivery: t.bought.delivery } : {} }, k = C([f.event, ...k.filter((p) => p.id !== f.event.id)], a, O), P());
       }
-      if (n.ask.what === "guests" && t.listed && Me(t.listed, { pubkey: a, world: n.ask.world, change: n.ask.change, key: n.ask.key, list: n.ask.list, now: Date.now() / 1e3 }) && (o = { t: "signed", id: n.id, event: t.listed }), n.ask.what === "save" && t.saved && (o = { t: "file-saved", id: n.id, ...t.saved }), n.ask.what === "pick" && t.file && (o = { t: "file", id: n.id, ...t.file }), n.ask.what === "sign" && t.event) {
+      if (n.ask.what === "guests" && t.listed && Ae(t.listed, { pubkey: a, world: n.ask.world, change: n.ask.change, key: n.ask.key, list: n.ask.list, now: Date.now() / 1e3 }) && (o = { t: "signed", id: n.id, event: t.listed }), n.ask.what === "save" && t.saved && (o = { t: "file-saved", id: n.id, ...t.saved }), n.ask.what === "pick" && t.file && (o = { t: "file", id: n.id, ...t.file }), n.ask.what === "sign" && t.event) {
         const f = t.event, p = n.ask.event;
-        ce(f) && f.pubkey === a && f.kind === p.kind && f.content === p.content && JSON.stringify(f.tags) === JSON.stringify(p.tags) && Math.abs(f.created_at - Date.now() / 1e3) < 600 && (o = { t: "signed", id: n.id, event: f });
+        fe(f) && f.pubkey === a && f.kind === p.kind && f.content === p.content && JSON.stringify(f.tags) === JSON.stringify(p.tags) && Math.abs(f.created_at - Date.now() / 1e3) < 600 && (o = { t: "signed", id: n.id, event: f });
       }
       return c(o), e({ t: "done", nonce: t.nonce, ok: o.t !== "refused" || !t.event && !t.wallet && !t.paid && !t.saved && !t.file && !t.tipped && !t.bought && !t.listed });
     }
     if (t.t === "held") {
       if (!N || N.nonce !== t.nonce || N.from !== i.source || t.world !== s || !a) return;
-      y = K(t.receipts, a, R), F();
+      k = C(t.receipts, a, O), P();
       return;
     }
-    if (t.t === "grant" && !(!k || k.nonce !== t.nonce || k.from !== i.source || t.world !== s)) {
-      k = null;
+    if (t.t === "grant" && !(!h || h.nonce !== t.nonce || h.from !== i.source || t.world !== s)) {
+      h = null;
       try {
-        const n = await P(), o = await n.acceptHandoff(t.sealed);
+        const n = await U(), o = await n.acceptHandoff(t.sealed);
         if (o.app && o.app.site !== s || o.site && o.site !== s) throw new Error("for another site");
-        if (o.family && o.family !== ee(s)) throw new Error("for another family");
-        w = o.profile ?? null, d = o.app?.permissions ?? null, g = d || o.family ? [] : o.more ?? [], E = J(), a = o.pubkey, v = t.name ?? null, I = u(), _ = u(q), O(), Q();
-        const p = (o.family ? Le(o.family) : De(s) !== null) && !g.includes("messages") ? M.grantSec : M.unknownGrantSec;
-        m = Math.floor(Date.now() / 1e3) + (o.remember ? p : M.visitSec), b = o.remember === !0 && await n.keepSignerGrant({ site: s, until: m, ...v ? { name: v } : {} }).catch(() => !1), b || (m = Math.min(m, Math.floor(Date.now() / 1e3) + M.visitSec)), F(), e({ t: "done", nonce: t.nonce, ok: !0 });
+        if (o.family && o.family !== J(s)) throw new Error("for another family");
+        w = o.profile ?? null, d = o.app?.permissions ?? null, g = d || o.family ? [] : o.more ?? [], E = Q(), a = o.pubkey, v = t.name ?? null, I = u(), _ = u(q), L(), Y();
+        const p = (o.family && !o.app ? ee(o.family) : Ge(s) !== null) && !g.includes("messages") ? D.grantSec : D.unknownGrantSec;
+        m = Math.floor(Date.now() / 1e3) + (o.remember ? p : D.visitSec), b = o.remember === !0 && await n.keepSignerGrant({ site: s, until: m, ...v ? { name: v } : {} }).catch(() => !1), b || (m = Math.min(m, Math.floor(Date.now() / 1e3) + D.visitSec)), P(), e({ t: "done", nonce: t.nonce, ok: !0 });
       } catch {
-        T(), e({ t: "done", nonce: t.nonce, ok: !1 });
+        R(), e({ t: "done", nonce: t.nonce, ok: !1 });
       }
-      c(A());
+      c(S());
     }
-  }, X = (i) => {
-    if (i.source === window.parent) return void oe(i);
-    i.origin === H && i.source !== window && le(i);
+  }, Z = (i) => {
+    if (i.source === window.parent) return void de(i);
+    i.origin === H && i.source !== window && ce(i);
   };
-  window.addEventListener("message", X);
-  const de = setInterval(() => void U(), 36e5);
-  return s && (window.parent.postMessage(B({ t: "ready" }), s), W().then(() => {
-    a && c(A());
+  window.addEventListener("message", Z);
+  const ue = setInterval(() => void W(), 36e5);
+  return s && (window.parent.postMessage(K({ t: "ready" }), s), B().then(() => {
+    a && c(S());
   })), {
     embedded: !0,
     stop() {
-      clearInterval(de), window.removeEventListener("message", X), T();
+      clearInterval(ue), window.removeEventListener("message", Z), R();
     }
   };
 }
 export {
-  qe as startEmbeddedSigner
+  Ne as startEmbeddedSigner
 };
