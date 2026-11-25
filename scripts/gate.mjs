@@ -11,7 +11,7 @@ const steps = [
   ["typecheck", "types"],
   ["test", "tests"],
   ["build", "every page"],
-  ["shell-menu:off", "the built site has the client's menu off"],
+  ["shell-menu:on", "the built site has the client's menu on"],
 ];
 const began = Date.now();
 const done = [];

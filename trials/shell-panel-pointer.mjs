@@ -1,7 +1,7 @@
 // BitLogin's panel over a world whose view holds the pointer (the owner, 2026-11-24: "the bitlogin panels force me
 // to hit escape again to use. The game just playes behind them ... when i hit escape the game exits full screen.").
 //
-//   npm run build                            an ordinary build: the world draws its own menu
+//   BITPORTAL_SHELL_MENU=0 npm run build     the shell without its menu, so the world draws its own (a trial's build)
 //   npm run trial -- trials/shell-panel-pointer.mjs (BASE, the shell's local address; WORLD, a local world)
 //
 // What must be so, and is tried here for each row of a world's menu that brings the panel up:

@@ -109,10 +109,10 @@ describe("how they move at a desk is one choice, in the room and over every worl
   });
 });
 
-describe("the menu is behind one switch, and the switch is off", () => {
-  it("is set when the site is built, off unless the build is told otherwise, and by nothing a page can read", async () => {
+describe("the menu is on, and the switch is kept the other way round for a trial's comparison", () => {
+  it("is set when the site is built, on unless the build is told otherwise, and by nothing a page can read", async () => {
     const build = await read("scripts/build.mjs");
-    expect(build).toContain('const shellMenu = process.env.BITPORTAL_SHELL_MENU === "1";');
+    expect(build).toContain('const shellMenu = process.env.BITPORTAL_SHELL_MENU !== "0";');
     expect(build).toContain("define: { SHELL_MENU: JSON.stringify(shellMenu) },");
     // The menu's own file is built only for a build that has it on.
     expect(build).toContain('...(shellMenu ? { "shell/menu": join(root, "src/shell/menu.ts") } : {}),');
@@ -132,14 +132,41 @@ describe("the menu is behind one switch, and the switch is off", () => {
 
   it("is checked in the built site by the gate, after the build, and by the deploy before anything is sent", async () => {
     const gate = await read("scripts/gate.mjs");
-    expect(gate.indexOf('["shell-menu:off", "the built site has the client\'s menu off"],')).toBeGreaterThan(gate.indexOf('["build", "every page"],'));
-    expect(JSON.parse(await read("package.json")).scripts["shell-menu:off"]).toBe("node scripts/check-shell-menu.mjs");
+    expect(gate.indexOf('["shell-menu:on", "the built site has the client\'s menu on"],')).toBeGreaterThan(gate.indexOf('["build", "every page"],'));
+    expect(gate).not.toContain("shell-menu:off");
+    const scripts = JSON.parse(await read("package.json")).scripts;
+    expect(scripts["shell-menu:on"]).toBe("node scripts/check-shell-menu.mjs");
+    expect(scripts["shell-menu:off"]).toBeUndefined();
     const deploy = await read("scripts/deploy.mjs");
-    expect(deploy.indexOf("const menuOn = shellMenuFaults(dist);")).toBeGreaterThan(0);
-    expect(deploy.indexOf("if (menuOn.length) throw new Error(")).toBeLessThan(deploy.indexOf('execFileSync("vercel"'));
+    expect(deploy.indexOf("const menuMissing = shellMenuMissing(dist);")).toBeGreaterThan(0);
+    expect(deploy.indexOf("if (menuMissing.length) throw new Error(")).toBeLessThan(deploy.indexOf('execFileSync("vercel"'));
   });
 
-  it("finds a build that has the menu on, by its file and by the shell naming it", async () => {
+  it("finds a build that hasn't all of the menu: its file, the shell naming it, the Bag's page and its rules", async () => {
+    const fs = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { mkdtempSync(prefix: string): string; mkdirSync(path: string, o?: { recursive: boolean }): void; writeFileSync(path: string, text: string): void; rmSync(path: string, how: { recursive: boolean; force: boolean }): void };
+    const os = (await import(/* @vite-ignore */ ["node", "os"].join(":"))) as { tmpdir(): string };
+    const path = (await import(/* @vite-ignore */ ["node", "path"].join(":"))) as { join(...parts: string[]): string };
+    const { shellMenuMissing } = (await import(/* @vite-ignore */ ["..", "scripts", "check-shell-menu.mjs"].join("/"))) as { shellMenuMissing(dir: string): string[] };
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shell-menu-on-"));
+    try {
+      expect(shellMenuMissing(dir)).toEqual(["dist/shell/main.js is missing: run npm run build"]);
+      fs.mkdirSync(path.join(dir, "shell", "pictures"), { recursive: true });
+      fs.writeFileSync(path.join(dir, "shell", "main.js"), "frame.src=first;");
+      // Nothing of the menu: four things missing (its file, the shell naming it, the Bag's page twice) and the rules.
+      expect(shellMenuMissing(dir).length).toBe(5);
+      fs.writeFileSync(path.join(dir, "shell", "main.js"), 'frame.src=first;import("/shell/menu.js")');
+      fs.writeFileSync(path.join(dir, "shell", "menu.js"), "export{}");
+      fs.writeFileSync(path.join(dir, "shell", "pictures", "index.html"), "<!doctype html>");
+      fs.writeFileSync(path.join(dir, "shell", "pictures", "main.js"), "export{}");
+      expect(shellMenuMissing(dir)).toEqual(["dist/vercel.json has no rules of its own for /shell/pictures"]);
+      fs.writeFileSync(path.join(dir, "vercel.json"), '{"headers":[{"source":"/shell/pictures(/.*)?"}]}');
+      expect(shellMenuMissing(dir)).toEqual([]);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("still finds a build that has the menu on, for a trial's comparison build that should not: by its file and by the shell naming it", async () => {
     const fs = (await import(/* @vite-ignore */ ["node", "fs"].join(":"))) as { mkdtempSync(prefix: string): string; mkdirSync(path: string): void; writeFileSync(path: string, text: string): void; rmSync(path: string, how: { recursive: boolean; force: boolean }): void };
     const os = (await import(/* @vite-ignore */ ["node", "os"].join(":"))) as { tmpdir(): string };
     const path = (await import(/* @vite-ignore */ ["node", "path"].join(":"))) as { join(...parts: string[]): string };
