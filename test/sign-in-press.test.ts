@@ -35,7 +35,7 @@ describe("a Sign in press where a page says to sign in", () => {
     expect(computers).toContain(`"You aren't signed in on this browser. Sign in first: the computer needs to know whose it is."`);
     expect(computers).toContain('el("p", { textContent: "Sign in, then open the link again." }),');
     const room = await read("src/walk/main.ts");
-    expect(room).toContain("accent: ACCENT, signIn: () => void signInHere() });");
+    expect(room).toContain("accent: ACCENT, signIn: () => void signInHere(), guest: () => isGuest() });");
     expect(room).toContain("    signIn: () => void signInHere(),");
   });
 });
