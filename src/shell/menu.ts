@@ -18,7 +18,7 @@
 import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSettings, chatSwitch, createSounds, deskMovingSwitch, helpWords, modelsSwitch, mountMenu, picturesSwitch, portBelow, signInRows, watchEscape, type MenuBelow, type Sounds, type TravelSettings } from "nswp-sdk/menu";
 import { createControls } from "nswp-sdk/ui";
 import { goesAsGuest } from "../shared/look.js";
-import { knownSignedIn } from "../shared/session.js";
+import { knownGuest, knownSignedIn } from "../shared/session.js";
 import { INTENSE_KEY } from "../shared/prefs.js";
 import { loadSettings } from "../shared/settings.js";
 import { addShellBag } from "./bag.js";
@@ -144,7 +144,12 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   // headset (bag-pictures.ts). `sheetOpen` is filled in below, once the menu is mounted.
   let sheetOpen = (): boolean => false;
   const pictures: FramedPictures = framedPictures({ open: () => sheetOpen(), presenting });
-  addShellBag({ controls, below, signedIn: () => (goesAsGuest() ? null : (knownSignedIn()?.pubkey ?? null)), relays: loadSettings().relays, previews: pictures });
+  // Whose bag: who is signed in to BitPortal, or, where nobody is, this browser's guest account (BitLogin's).
+  const bagKey = (): string | null => {
+    const known = knownSignedIn()?.pubkey ?? null;
+    return known ? (goesAsGuest() ? null : known) : knownGuest();
+  };
+  addShellBag({ controls, below, signedIn: bagKey, relays: loadSettings().relays, previews: pictures });
 
   // Sound: the volumes, the switch for a place's hum where the world says it has one, and the visitor's own music,
   // chosen and played by this page, so it doesn't stop at a door. Kept under the names the room keeps them by: one

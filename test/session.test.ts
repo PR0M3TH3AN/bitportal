@@ -152,10 +152,10 @@ describe("signing in asks for the whole family of sites at once (BitLogin's `fam
     make(true, []);
     make(false, ["people"]);
     expect(made).toEqual([
-      { at: "https://bitlogin.network", permissions: permissionsFor(true, []), family: "https://*.bitblocks.network" },
-      { at: "https://bitlogin.network", permissions: permissionsFor(false, ["people"]), family: "https://*.bitblocks.network" },
+      { at: "https://bitlogin.network", permissions: permissionsFor(true, []), family: "https://*.bitblocks.network", guest: true },
+      { at: "https://bitlogin.network", permissions: permissionsFor(false, ["people"]), family: "https://*.bitblocks.network", guest: true },
     ]);
-    // A local copy has no family: nothing is said of one, and an older BitLogin is asked exactly as before.
+    // A local copy has no family: nothing is said of one, nor of a guest, and an older BitLogin is asked exactly as before.
     made.length = 0;
     clientMaker(standIn, "https://192.168.68.84:4811", "https://192.168.68.84:4800")(true, []);
     expect(made).toEqual([{ at: "https://192.168.68.84:4811", permissions: permissionsFor(true, []) }]);
