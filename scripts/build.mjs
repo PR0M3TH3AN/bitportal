@@ -16,15 +16,15 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "go"), { recursive: true });
 mkdirSync(join(out, "walk"), { recursive: true });
 
-// The visitor's menu, drawn by the page that keeps the screen (src/shell/menu.ts), is behind one switch, and the
-// switch is off: a site built the ordinary way has a shell that says nothing of a menu to any world, exactly as
-// before, and carries none of the menu's code. The menu takes over tabs a world then stops drawing (the Bag among
-// them), so it can't go out in parts: main has to be something that can be deployed at any time. It is turned on
-// only for a trial's own build, here, by whoever runs the build; never by a visitor, a link or anything a page reads.
-// The last change of the client's menu's step 2 turns it on for everyone, on the owner's word.
+// The visitor's menu, drawn by the page that keeps the screen (src/shell/menu.ts), is on: the last change of the
+// client's menu's step 2, on the owner's word. It was behind one switch while it was built, off in every build that
+// went out. The switch stays, the other way round, for one thing only: a trial's comparison of the shell without
+// the menu. Such a build is never deployed (scripts/check-shell-menu.mjs, run by the gate and the deploy). It is set
+// here, by whoever runs the build; never by a visitor, a link or anything a page reads.
 //
-//   BITPORTAL_SHELL_MENU=1 npm run build      a trial's build: never deployed (scripts/check-shell-menu.mjs)
-const shellMenu = process.env.BITPORTAL_SHELL_MENU === "1";
+//   npm run build                             the site, with the menu
+//   BITPORTAL_SHELL_MENU=0 npm run build      a trial's comparison without it: never deployed
+const shellMenu = process.env.BITPORTAL_SHELL_MENU !== "0";
 
 const built = await build({
   define: { SHELL_MENU: JSON.stringify(shellMenu) },

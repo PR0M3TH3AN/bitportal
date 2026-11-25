@@ -17,7 +17,7 @@
     "shadow:bitgate": "node scripts/shadow-bitgate.mjs",
     "previews": "node scripts/mirror-previews.mjs",
     "previews:check": "node scripts/mirror-previews.mjs --check",
-    "shell-menu:off": "node scripts/check-shell-menu.mjs",
+    "shell-menu:on": "node scripts/check-shell-menu.mjs",
     "trial": "sh scripts/heavy.sh node",
     "deploy": "node scripts/deploy.mjs"
   },

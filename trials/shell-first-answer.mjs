@@ -1,9 +1,8 @@
 // The shell says it has the menu from its first file (NSWP docs/plans/the-clients-menu.md: "a client that has the
 // menu says so from its first script, before it loads anything else"), tried with the menu's own file held back.
 //
-//   BITPORTAL_SHELL_MENU=1 npm run build     the menu is off in an ordinary build: this is a trial's, never deployed
+//   npm run build                            the site, with the menu on
 //   npm run trial -- trials/shell-first-answer.mjs (BASE, the shell's local address)
-//   npm run build                            and back to an ordinary build afterwards
 //
 // The place is the room: a page of this site's own, which starts fast. The menu's file (`/shell/menu.js`) is held
 // back on purpose, by this script standing between the page and its server: until this script lets it go, for
