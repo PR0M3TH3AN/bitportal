@@ -35,6 +35,8 @@ export interface ComputersOptions {
   /** The visitor's own relays, tried as well as the usual ones. */
   relays: () => string[];
   accent: number;
+  /** Start signing in, as the menu's own "Sign in" row under You does: from a press, so a window may open. */
+  signIn(): void;
 }
 
 export interface Computers {
@@ -119,10 +121,11 @@ export function addComputers(o: ComputersOptions): Computers {
     if (!dialog.open) dialog.showModal();
   };
   const closeButton = (label: string) => el("button", { className: "button", type: "button", textContent: label, onclick: () => dialog.close() });
-  // Signing in is one row of the room's own menu, as it is everywhere (the owner): this opens the menu there, and
-  // nothing leaves the room.
+  // A Sign in right where it is said to sign in, that does what the menu's own "Sign in" row under You does: one
+  // press, and the sign-in begins (the owner, 2026-11-25: "a "sign in" button anywhere ... that we say ... sign in").
   const signInButton = (label: string, primary = false) =>
-    el("button", { className: primary ? "button primary" : "button", type: "button", textContent: label, onclick: () => (dialog.close(), o.controls.signal("show:you")) });
+    el("button", { className: primary ? "button primary" : "button", type: "button", textContent: label, onclick: () => (dialog.close(), o.signIn()) });
+  // Where it is said with no press beside it (a line said in the menu, at a press that couldn't be done), the way there.
   const SIGN_IN = "Sign in from this room's menu (You, then Sign in)";
 
   const explain = () => {
@@ -135,8 +138,8 @@ export function addComputers(o: ComputersOptions): Computers {
       el("p", { textContent: "It prints a link. Open the link in this browser to add the computer here." }),
       el("p", { className: "why", textContent: "A terminal can do anything you can do on that computer. The Bridge asks there, on its own screen, before each one opens." }),
       el("p", { className: "why", textContent: "Add --tmux for terminals that carry on when this page is closed or refreshed, and --voice to speak instead of typing: your computer turns what you say into text itself, and your voice goes nowhere else." }),
-      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: `You aren't signed in on this browser. ${SIGN_IN} first: the computer needs to know whose it is.` })]),
-      el("div", { className: "actions" }, el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
+      ...(who ? [] : [el("p", { className: "verify verify-warn", textContent: "You aren't signed in on this browser. Sign in first: the computer needs to know whose it is." })]),
+      el("div", { className: "actions" }, ...(who ? [] : [signInButton("Sign in", true)]), el("a", { className: "button", href: GUIDE, target: "_blank", rel: "noopener noreferrer", textContent: "What it trusts, and how it works" }), closeButton("Close")),
     );
   };
 
@@ -145,7 +148,7 @@ export function addComputers(o: ComputersOptions): Computers {
       return sheet(
         el("h2", { textContent: "Sign in first" }),
         el("p", { className: "lede", textContent: "This link adds a computer to your home. A computer answers one key, so this browser needs to know which is yours." }),
-        el("p", { textContent: `${SIGN_IN}, then open the link again.` }),
+        el("p", { textContent: "Sign in, then open the link again." }),
         el("div", { className: "actions" }, signInButton("Sign in", true), closeButton("Not now")),
       );
     }

@@ -1394,7 +1394,8 @@ async function start(): Promise<void> {
   addPanelControls(controls, panels, { presenting: () => renderer.xr.isPresenting, kept: true });
   hooks.panels = panels;
   // The visitor's own computers: a terminal on one, in a panel. Theirs alone, and never offered to a world.
-  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT });
+  // Its Sign in does what the menu's own row does (`signInHere`, made further down; pressed only once the room is up).
+  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT, signIn: () => void signInHere() });
   hooks.computers = computers;
 
   // ------------------------------------------------------- presence
