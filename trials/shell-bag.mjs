@@ -1,7 +1,7 @@
 // The Bag in the shell's menu, tried with real presses (NSWP docs/plans/the-clients-menu.md, section 18, C).
 //
 //   BITPORTAL_SHELL_MENU=1 npm run build     the menu is off in an ordinary build: this is a trial's, never deployed
-//   node trials/shell-bag.mjs                (BASE, the shell's local address; WORLD, a local world on kit 0.86 or later)
+//   npm run trial -- trials/shell-bag.mjs    (BASE, the shell's local address; WORLD, a local world on kit 0.86 or later)
 //   npm run build                            and back to an ordinary build afterwards
 //
 // Everything is on this machine, and nothing reaches the network. The visitor is someone made up here: a key made

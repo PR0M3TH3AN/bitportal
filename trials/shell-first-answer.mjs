@@ -2,7 +2,7 @@
 // menu says so from its first script, before it loads anything else"), tried with the menu's own file held back.
 //
 //   BITPORTAL_SHELL_MENU=1 npm run build     the menu is off in an ordinary build: this is a trial's, never deployed
-//   node trials/shell-first-answer.mjs       (BASE, the shell's local address)
+//   npm run trial -- trials/shell-first-answer.mjs (BASE, the shell's local address)
 //   npm run build                            and back to an ordinary build afterwards
 //
 // The place is the room: a page of this site's own, which starts fast. The menu's file (`/shell/menu.js`) is held
