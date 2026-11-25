@@ -7,12 +7,10 @@ import {
   mountMenu,
   portHere,
   sheetOf
-} from "./shared-6HLBQOSL.js";
+} from "./shared-MIXKJMOZ.js";
 import {
-  ICONS,
-  STANDARD_TABS,
-  standardTab
-} from "./shared-EUKRSY5E.js";
+  ICONS
+} from "./shared-CC6JLBIU.js";
 import {
   helpWords
 } from "./shared-EGXGKKYY.js";
@@ -24,8 +22,11 @@ import {
   deskMovingSwitch,
   modelsSwitch,
   picturesSwitch
-} from "./shared-B4ZPPIXA.js";
-import "./shared-RS6AKN35.js";
+} from "./shared-JM5U66XR.js";
+import {
+  STANDARD_TABS,
+  standardTab
+} from "./shared-BUBQWMZ2.js";
 import {
   fullscreenAction,
   watchEscape
@@ -157,6 +158,7 @@ function portBelow(frame, opts) {
   let origin = "";
   let speaks = false;
   let world = null;
+  let worldText = "";
   let saving = null;
   const now = opts.now ?? (() => performance.now());
   let slow = null;
@@ -244,7 +246,7 @@ function portBelow(frame, opts) {
   let usedSinceShow = false;
   const shown = (tab) => {
     if (!menu?.setOpen) return;
-    const at = tab && port.view().sections.some((s) => s.id === tab) ? tab : void 0;
+    const at = tab;
     if (open) {
       if (clock() - pressedAt > SHOW_AFTER_PRESS_MS) return;
       pressedAt = -Infinity;
@@ -279,6 +281,7 @@ function portBelow(frame, opts) {
     origin = "";
     speaks = false;
     world = null;
+    worldText = "";
     forget();
     saidPlaying = false;
     pictures.clear();
@@ -307,6 +310,7 @@ function portBelow(frame, opts) {
       if (awaiting) awaiting = false;
       else early = true;
       world = null;
+      worldText = "";
       forget();
       saidPlaying = false;
       pictures.clear();
@@ -328,6 +332,10 @@ function portBelow(frame, opts) {
     const word = readMenuWordUp(data, { own: origin === self, ...opts.also ? { also: opts.also } : {}, picture: opts.picture ?? isBitmap });
     if (!word) return;
     if (word.what === "world") {
+      const pictured = word.world.sections.some((s) => s.card?.picture !== void 0 || s.rows.some((r) => r.picture !== void 0));
+      const text = pictured ? "" : JSON.stringify(word.world);
+      if (world && text && text === worldText) return;
+      worldText = text;
       world = word.world;
       const still = new Set(world.sections.flatMap((s) => [...s.rows.map((r) => r.id), ...s.card ? [`${MENU_CARD_PICTURE}${s.id}`] : []]));
       for (const key of [...pictures.keys()]) if (!still.has(key)) pictures.delete(key);

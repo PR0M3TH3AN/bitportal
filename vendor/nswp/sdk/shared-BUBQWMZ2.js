@@ -1,68 +1,105 @@
 import {
-  createUiChat
-} from "./shared-RS6AKN35.js";
-import {
   arrivedSettings,
   reportSettings
 } from "./shared-3QMBUCPV.js";
 
-// packages/sdk/src/ui/icons.ts
-var ICONS = {
-  home: "M4 11.5 12 4l8 7.5M6 10v10h12V10M10 20v-5h4v5",
-  turn: "M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5",
-  room: "M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2.5 20a6 6 0 0 1 12 0M16.5 11.5a2.5 2.5 0 1 0 0-5M17.5 14.6A5 5 0 0 1 21.5 20",
-  leave: "M10 4H5v16h5M14 8l4 4-4 4M18 12H9",
-  mic: "M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3ZM6 11a6 6 0 0 0 12 0M12 17v4M9 21h6",
-  micOff: "M9 9v2a3 3 0 0 0 4.6 2.5M15 10.5V6a3 3 0 0 0-5.7-1.3M6 11a6 6 0 0 0 9.6 4.8M18 11a6 6 0 0 1-.4 2.2M12 17v4M9 21h6M4 4l16 16",
-  list: "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
-  vr: "M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3.5l-2-2.5h-3L8.5 17H5a2 2 0 0 1-2-2V9ZM8 12h.01M16 12h.01",
-  exit: "M18 6 6 18M6 6l12 12",
-  look: "M12 3s6 6.3 6 11a6 6 0 0 1-12 0c0-4.7 6-11 6-11ZM9 14a3 3 0 0 0 3 3",
-  help: "M9.2 9a3 3 0 1 1 4.6 2.5c-1 .7-1.8 1.4-1.8 2.7M12 18h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z",
-  menu: "M4 7h16M4 12h16M4 17h10",
-  /** An arched doorway: this project's mark for a way through. */
-  door: "M7 21V10a5 5 0 0 1 10 0v11M5 21h14M14.5 14h.01",
-  link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.700l1-1",
-  save: "M7 4h10v17l-5-3.5L7 21V4Z",
-  /** For the visitor's own music: play, pause, the song after and before, a little way on and back, and how it goes. */
-  play: "M7 4.5v15l12-7.5Z",
-  pause: "M8 5v14M16 5v14",
-  next: "M6 5.5v13l10-6.5ZM19 5v14",
-  previous: "M18 5.5v13L8 12ZM5 5v14",
-  rewind: "M11 7v10l-7-5ZM20 7v10l-7-5Z",
-  forward: "M13 7v10l7-5ZM4 7v10l7-5Z",
-  shuffle: "M3 7h4l8 10h5M3 17h4l2.5-3.1M12.5 10.100 15 7h5M17 4l3 3-3 3M17 14l3 3-3 3",
-  repeat: "M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4",
-  music: "M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
-  pin: "M9 4h6l-1 6 3 3H7l3-3-1-6ZM12 13v7",
-  step: "M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.800-6 10-6 10ZM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
-  size: "M4 18 9 6l5 12M5.700 14h6.600M15 18l3.500-8 3.500 8M16 15.700h5",
-  /** Filling the screen: four corners drawn out. */
-  full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
-  motion: "M3 12h4l3-7 4 14 3-7h4",
-  check: "M5 12.500 10 17.500 19 7",
-  camera: "M4 8h3l1.5-2h7L17 8h3v11H4ZM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z",
-  selfie: "M4 5h16v14H4ZM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.5 19a4.5 4.5 0 0 1 9 0",
-  record: "M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
-  /** A panel: a frame with a bar along its top. */
-  panel: "M4 5h16v14H4ZM4 9h16M15 7h.01M17.5 7h.01",
-  note: "M6 3h9l4 4v14H6ZM14 3v5h5M9 13h7M9 17h5",
-  /** A loudspeaker, sounding and crossed out. */
-  sound: "M4 9.500v5h3.500L13 19V5L7.500 9.500ZM16.500 9a4.500 4.500 0 0 1 0 6M19 6.500a8 8 0 0 1 0 11",
-  soundOff: "M4 9.500v5h3.500L13 19V5L7.500 9.500ZM16.500 9.500l4.500 5M21 9.500l-4.500 5",
-  you: "M12 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM5 20.5a7 7 0 0 1 14 0",
-  close: "M6 6l12 12M18 6 6 18",
-  key: "M14.5 9.5a3.5 3.5 0 1 0-3.4 3.5L4 20v-3h3v-3h3l1.6-1.6M16 8h.01",
-  chat: "M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM8 10h8M8 13h5",
-  people: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a6 6 0 0 1 12 0M16 11a2.5 2.5 0 1 0 0-5M21 20a5 5 0 0 0-4-4.9",
-  // What a door says its world offers (door-offers.ts), where no drawing above already says it.
-  bag: "M6 8h12l1.2 12H4.8L6 8ZM9 8V6.5a3 3 0 0 1 6 0V8",
-  trophy: "M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4",
-  tip: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z",
-  // An envelope: a world that is by invitation (the eighth thing a door shows).
-  invite: "M4 6h16v12H4ZM4 7l8 6 8-6",
-  coin: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM14.6 9.6c-.5-1-1.4-1.6-2.6-1.6-1.5 0-2.6.8-2.6 2s1 1.7 2.6 2 2.6.8 2.6 2-1.1 2-2.6 2c-1.2 0-2.1-.6-2.6-1.6M12 6.5V8M12 16v1.5"
+// packages/sdk/src/picture.ts
+import { cleanPicture } from "@nswp/core";
+var PICTURES_KEY = "nswp:pictures";
+var PICTURE_LIMITS = { bytes: 3e6, size: 128, waitMs: 9e3 };
+var shown = null;
+var watchers = /* @__PURE__ */ new Set();
+function showsPictures() {
+  if (shown !== null) return shown;
+  const came = arrivedSettings().pictures;
+  let kept = null;
+  try {
+    kept = localStorage.getItem(PICTURES_KEY);
+  } catch {
+  }
+  shown = came ?? kept !== "0";
+  if (came !== void 0) keep(shown);
+  reportSettings("pictures", () => ({ pictures: showsPictures() }), (now) => void (now.pictures !== void 0 && now.pictures !== shown && setShowsPictures(now.pictures)));
+  return shown;
+}
+var keep = (on) => {
+  try {
+    if (on) localStorage.removeItem(PICTURES_KEY);
+    else localStorage.setItem(PICTURES_KEY, "0");
+  } catch {
+  }
 };
+function setShowsPictures(on) {
+  showsPictures();
+  shown = on;
+  keep(on);
+  for (const w of watchers) w();
+}
+function onPicturesChange(cb) {
+  watchers.add(cb);
+  return () => void watchers.delete(cb);
+}
+function badge(image, width, height) {
+  const size = PICTURE_LIMITS.size;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const g = canvas.getContext("2d");
+  g.beginPath();
+  g.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+  g.closePath();
+  g.clip();
+  const side = Math.min(width, height);
+  g.drawImage(image, (width - side) / 2, (height - side) / 2, side, side, 0, 0, size, size);
+  return canvas;
+}
+async function byFetch(url) {
+  const res = await fetch(url, { mode: "cors", credentials: "omit", referrerPolicy: "no-referrer", redirect: "follow", signal: AbortSignal.timeout(PICTURE_LIMITS.waitMs) });
+  if (!res.ok) return null;
+  const type = res.headers.get("content-type") ?? "";
+  if (!/^image\/(png|jpeg|webp|gif|avif)\b/i.test(type)) return null;
+  if (Number(res.headers.get("content-length") ?? 0) > PICTURE_LIMITS.bytes) return null;
+  const blob = await res.blob();
+  if (blob.size > PICTURE_LIMITS.bytes) return null;
+  const bitmap = await createImageBitmap(blob);
+  try {
+    return badge(bitmap, bitmap.width, bitmap.height);
+  } finally {
+    bitmap.close();
+  }
+}
+function byImage(url) {
+  return new Promise((done) => {
+    const img = new Image();
+    const timer = setTimeout(() => done(null), PICTURE_LIMITS.waitMs);
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    img.decoding = "async";
+    img.onload = () => {
+      clearTimeout(timer);
+      try {
+        done(img.naturalWidth > 0 && img.naturalWidth <= 8192 && img.naturalHeight <= 8192 ? badge(img, img.naturalWidth, img.naturalHeight) : null);
+      } catch {
+        done(null);
+      }
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      done(null);
+    };
+    img.src = url;
+  });
+}
+var loaded = /* @__PURE__ */ new Map();
+function loadPicture(address) {
+  const url = cleanPicture(address);
+  if (!url || !showsPictures() || typeof document === "undefined") return Promise.resolve(null);
+  let asked = loaded.get(url);
+  if (!asked) {
+    asked = byFetch(url).catch(() => null).then((got) => got ?? byImage(url)).catch(() => null);
+    loaded.set(url, asked);
+  }
+  return asked;
+}
 
 // packages/sdk/src/ui/theme.ts
 var DEFAULT_THEME = { accent: "#ffb65c", ink: "#eef5fb", glass: "#0a1018", warn: "#ff7566", motion: true, scale: 1, wrist: "left" };
@@ -113,8 +150,133 @@ function rgb(hex) {
   return `${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}`;
 }
 
+// packages/sdk/src/ui/chat.ts
+import { CHAT_LIMITS, cleanChat } from "@nswp/core";
+var CHAT_KEY = "nswp:chat";
+var shown2 = null;
+var watchers2 = /* @__PURE__ */ new Set();
+function showsChat() {
+  if (shown2 !== null) return shown2;
+  const came = arrivedSettings().chat;
+  let kept = null;
+  try {
+    kept = localStorage.getItem(CHAT_KEY);
+  } catch {
+  }
+  shown2 = came ?? kept !== "0";
+  if (came !== void 0) keep2(shown2);
+  reportSettings("chat", () => ({ chat: showsChat() }), (now) => void (now.chat !== void 0 && now.chat !== shown2 && setShowsChat(now.chat)));
+  return shown2;
+}
+var keep2 = (on) => {
+  try {
+    if (on) localStorage.removeItem(CHAT_KEY);
+    else localStorage.setItem(CHAT_KEY, "0");
+  } catch {
+  }
+};
+function setShowsChat(on) {
+  showsChat();
+  shown2 = on;
+  keep2(on);
+  for (const w of watchers2) w();
+}
+function onChatChange(cb) {
+  watchers2.add(cb);
+  return () => void watchers2.delete(cb);
+}
+function createUiChat(changed) {
+  let send = null;
+  let title = "Room chat";
+  let lines = [];
+  let unread = 0;
+  let version = 0;
+  let count = 0;
+  const bump = () => {
+    version++;
+    changed();
+  };
+  onChatChange(() => {
+    if (!showsChat()) {
+      lines = [];
+      unread = 0;
+    }
+    bump();
+  });
+  return {
+    attach(fn, opts = {}) {
+      send = fn;
+      title = opts.title ?? "Room chat";
+      lines = [];
+      unread = 0;
+      bump();
+    },
+    detach() {
+      if (!send && !lines.length) return;
+      send = null;
+      lines = [];
+      unread = 0;
+      bump();
+    },
+    add(line) {
+      if (!send || !showsChat()) return;
+      const text = cleanChat(line.text);
+      if (!text) return;
+      lines.push({ key: `${line.id ?? "n"}-${++count}`, who: line.note ? "" : cleanChat(line.who ?? "").slice(0, 48), text, mine: !!line.mine, note: !!line.note, color: line.color ?? "", at: Date.now() });
+      if (lines.length > CHAT_LIMITS.kept) lines = lines.slice(-CHAT_LIMITS.kept);
+      if (!line.mine && !line.note) unread++;
+      bump();
+    },
+    send(text) {
+      if (!send || !showsChat()) return "There is nobody to write to: join the room first.";
+      if (!cleanChat(text)) return null;
+      return send(text) ?? null;
+    },
+    seen() {
+      if (!unread) return;
+      unread = 0;
+      bump();
+    },
+    view() {
+      return { ready: !!send && showsChat(), title, lines, unread, limit: CHAT_LIMITS.chars, version };
+    }
+  };
+}
+function wrapWords(text, measure, width, rows) {
+  const out = [];
+  let row = "";
+  const push = (word) => {
+    let rest = [...word];
+    while (rest.length) {
+      let n = rest.length;
+      while (n > 1 && measure(rest.slice(0, n).join("")) > width) n--;
+      const piece = rest.slice(0, n).join("");
+      rest = rest.slice(n);
+      if (rest.length) out.push(piece);
+      else row = piece;
+    }
+  };
+  for (const word of text.split(" ").filter(Boolean)) {
+    const tried = row ? `${row} ${word}` : word;
+    if (measure(tried) <= width) row = tried;
+    else {
+      if (row) out.push(row);
+      row = "";
+      if (measure(word) <= width) row = word;
+      else push(word);
+    }
+  }
+  if (row) out.push(row);
+  if (out.length <= rows) return out;
+  const kept = out.slice(0, rows);
+  let last = [...kept[rows - 1]];
+  while (last.length > 1 && measure(`${last.join("")}\u2026`) > width) last.pop();
+  kept[rows - 1] = `${last.join("").trimEnd()}\u2026`;
+  return kept;
+}
+
 // packages/sdk/src/ui/feed.ts
-import { CHAT_LIMITS, cleanChat, cleanLine } from "@nswp/core";
+import { CHAT_LIMITS as CHAT_LIMITS2, cleanChat as cleanChat2, cleanLine } from "@nswp/core";
 var FEED_LIMITS = { shown: 420, kept: 30 };
 function createUiFeed(changed, now = () => Date.now()) {
   let opts = null;
@@ -176,7 +338,7 @@ function createUiFeed(changed, now = () => Date.now()) {
     send(text) {
       const mine = opts;
       if (!mine) return "There is nothing to post with: sign in first.";
-      const words = cleanChat(text);
+      const words = cleanChat2(text);
       if (!words) return null;
       const post = { key: `new-${++count}`, text: words, at: Math.floor(now() / 1e3), state: "sending" };
       posts.unshift(post);
@@ -212,7 +374,7 @@ function createUiFeed(changed, now = () => Date.now()) {
       const who = typeof opts?.who === "function" ? opts.who() : opts?.who ?? "";
       const back = opts?.remove ? "and deleting it later only asks relays to drop it: copies may remain" : "and it can't be taken back";
       const lead = `Public, like a tweet: anyone can read what you send out here, as ${who}, ${back}.${opts?.marked ? ` Each post is marked as sent from ${opts.marked}.` : ""}`;
-      return { ready: !!opts, title: "My public feed", who, posts, loading, said, lead, limit: CHAT_LIMITS.chars, removable: !!opts?.remove, version };
+      return { ready: !!opts, title: "My public feed", who, posts, loading, said, lead, limit: CHAT_LIMITS2.chars, removable: !!opts?.remove, version };
     }
   };
 }
@@ -227,7 +389,7 @@ function ago(at, nowSec) {
 }
 
 // packages/sdk/src/ui/model.ts
-import { cleanSettings, PINS_MOST } from "@nswp/core";
+import { cleanMenuWorld, cleanSettings, PINS_MOST } from "@nswp/core";
 
 // packages/sdk/src/ui/letters.ts
 import { cleanMessage, MESSAGE_LIMITS } from "@nswp/core";
@@ -295,6 +457,7 @@ function createUiLetters(changed, now = () => Date.now()) {
 }
 
 // packages/sdk/src/ui/model.ts
+var KIT_QUESTION_TABS = ["how-you-move-desk", "how-you-move"];
 var PRESENCES = ["full", "quiet", "hidden"];
 var CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
 function cleanKeys(now, k) {
@@ -427,7 +590,15 @@ function createControls(opts) {
   const chat = createUiChat(changed);
   const feed = createUiFeed(changed);
   const letters = createUiLetters(changed);
+  const toldOfTabs = /* @__PURE__ */ new Set();
+  const tellOfTab = (id) => {
+    if (toldOfTabs.has(id) || KIT_QUESTION_TABS.includes(id)) return;
+    toldOfTabs.add(id);
+    if (cleanMenuWorld({ sections: [{ id, label: "a tab", rows: [] }] }, { own: true })?.sections.length) return;
+    console.warn(`NSWP: the tab "${id}" is in this world's own menu, but will not be in a client's (BitPortal's): a tab's id is a lowercase word of letters, digits and hyphens, beginning with a letter, twelve at most. Its rows go with it.`);
+  };
   function addSection(s) {
+    tellOfTab(s.id);
     const i = sections.findIndex((x) => x.id === s.id);
     if (i === -1) sections.push({ ...s });
     else sections[i] = { ...sections[i], ...s };
@@ -500,12 +671,12 @@ function createControls(opts) {
       }).finally(changed);
       return true;
     },
-    setTheme(patch, keep2 = false) {
-      if (keep2) {
+    setTheme(patch, keep4 = false) {
+      if (keep4) {
         visitor = { ...visitor, ...patch };
         saveVisitorTheme(visitor);
       }
-      theme = resolveTheme({ ...opts.theme, ...keep2 ? {} : patch }, visitor);
+      theme = resolveTheme({ ...opts.theme, ...keep4 ? {} : patch }, visitor);
       changed();
     },
     get pins() {
@@ -530,18 +701,18 @@ function createControls(opts) {
       };
       const known = new Set(sections.map((s) => s.id));
       const extra = [...new Set(showing.map((a) => a.section ?? "travel").filter((id) => !known.has(id)))].map((id) => ({ id, label: id }));
-      const shown = [...sections, ...extra].map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, note: read(s.note), card: s.card?.() ?? null, items: showing.filter((a) => (a.section ?? "travel") === s.id).map(item), pinned: (pins ?? []).includes(s.id) })).filter((s) => s.items.length > 0 || s.note || s.card);
+      const shown3 = [...sections, ...extra].map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, note: read(s.note), card: s.card?.() ?? null, items: showing.filter((a) => (a.section ?? "travel") === s.id).map(item), pinned: (pins ?? []).includes(s.id) })).filter((s) => s.items.length > 0 || s.note || s.card);
       return {
         title: opts.title,
         address: opts.address ?? "",
         target,
         detail,
         loading,
-        sections: shown,
+        sections: shown3,
         hotbar: bar.map(item),
         // Only tabs this place has: a tab pinned in another world that isn't here is kept, and not shown.
         pins: (pins ?? []).flatMap((id, i) => {
-          const tab = shown.find((x) => x.id === id);
+          const tab = shown3.find((x) => x.id === id);
           const n = bar.length + i + 1;
           return tab ? [{ id, label: tab.label, icon: tab.icon, key: n <= 9 ? String(n) : "" }] : [];
         }),
@@ -579,20 +750,20 @@ function createControls(opts) {
     feed,
     letters
   };
-  const keep = (patch) => controls.setTheme(patch, true);
+  const keep3 = (patch) => controls.setTheme(patch, true);
   controls.add(
     ...UI_PRESETS.map(
-      (p) => ({ id: `look-${p.id}`, section: "look", kind: "swatch", color: p.accent, label: p.label, on: () => theme.accent === p.accent, act: () => keep({ accent: p.accent }) })
+      (p) => ({ id: `look-${p.id}`, section: "look", kind: "swatch", color: p.accent, label: p.label, on: () => theme.accent === p.accent, act: () => keep3({ accent: p.accent }) })
     ),
-    { id: "look-size", section: "look", icon: "size", label: () => theme.scale > 1 ? "Text: larger" : "Text: normal", on: () => theme.scale > 1, act: () => keep({ scale: theme.scale > 1 ? 1 : 1.25 }) },
-    { id: "look-motion", section: "look", icon: "motion", label: () => theme.motion ? "Motion: on" : "Motion: off", on: () => theme.motion, act: () => keep({ motion: !theme.motion }) },
+    { id: "look-size", section: "look", icon: "size", label: () => theme.scale > 1 ? "Text: larger" : "Text: normal", on: () => theme.scale > 1, act: () => keep3({ scale: theme.scale > 1 ? 1 : 1.25 }) },
+    { id: "look-motion", section: "look", icon: "motion", label: () => theme.motion ? "Motion: on" : "Motion: off", on: () => theme.motion, act: () => keep3({ motion: !theme.motion }) },
     {
       id: "look-wrist",
       section: "look",
       icon: "menu",
       label: () => theme.wrist === "off" ? "Wrist console: off" : `Wrist console: ${theme.wrist} hand`,
       on: () => theme.wrist !== "off",
-      act: () => keep({ wrist: theme.wrist === "left" ? "right" : theme.wrist === "right" ? "off" : "left" })
+      act: () => keep3({ wrist: theme.wrist === "left" ? "right" : theme.wrist === "right" ? "off" : "left" })
     },
     { id: "look-reset", section: "look", icon: "turn", label: "Back to this world's look", hidden: () => Object.keys(visitor).length === 0, act: () => {
       visitor = {};
@@ -603,17 +774,79 @@ function createControls(opts) {
   return controls;
 }
 
+// packages/sdk/src/ui/summon.ts
+var SUMMON_KEY = "Backquote";
+var SUMMON_HOLD = 600;
+var SUMMON_SLOP = 18;
+function createHoldWatch(o) {
+  const hold = o.hold ?? SUMMON_HOLD;
+  const slop = o.slop ?? SUMMON_SLOP;
+  let from = null;
+  let timer = null;
+  const cancel = () => {
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+    from = null;
+  };
+  return {
+    touches(points) {
+      if (points.length !== 2) return cancel();
+      if (!from) {
+        from = points.map((p) => ({ x: p.x, y: p.y }));
+        timer = setTimeout(() => {
+          cancel();
+          o.onHeld();
+        }, hold);
+        return;
+      }
+      if (points.some((p, i) => Math.hypot(p.x - from[i].x, p.y - from[i].y) > slop)) cancel();
+    },
+    cancel
+  };
+}
+function createHeldButton(hold = SUMMON_HOLD) {
+  let held = 0;
+  let fired = false;
+  return (down, dt) => {
+    if (!down) {
+      held = 0;
+      fired = false;
+      return false;
+    }
+    held += Math.max(0, dt) * 1e3;
+    if (fired || held < hold) return false;
+    fired = true;
+    return true;
+  };
+}
+
 export {
-  ICONS,
+  PICTURES_KEY,
+  PICTURE_LIMITS,
+  showsPictures,
+  setShowsPictures,
+  onPicturesChange,
+  loadPicture,
   DEFAULT_THEME,
   UI_PRESETS,
   cleanTheme,
   resolveTheme,
   rgb,
+  CHAT_KEY,
+  showsChat,
+  setShowsChat,
+  onChatChange,
+  wrapWords,
   FEED_LIMITS,
   ago,
+  KIT_QUESTION_TABS,
   STANDARD_TABS,
   standardTab,
   sayStays,
-  createControls
+  createControls,
+  SUMMON_KEY,
+  SUMMON_HOLD,
+  SUMMON_SLOP,
+  createHoldWatch,
+  createHeldButton
 };
