@@ -18,6 +18,7 @@
 import { LOOK_COLORS, LOOK_PARTS, type LookColor, type LookPart } from "@nswp/core";
 import type { Controls, UiCard } from "nswp-sdk/ui";
 import { colourName, forgetLook, LOOK_TITLES, lookOf, lookWord, newSeed, stepLook, storeLook, surprise, type KeptLook } from "../shared/look.js";
+import { guestName, guestNote } from "../shared/guest.js";
 import { holdsReserved, signInHost } from "../shared/session.js";
 import type { WhoDoor } from "../shared/who.js";
 
@@ -58,6 +59,11 @@ export interface YouOptions {
   onLook(kept: KeptLook | null): void;
   signedInAs(): string;
   /**
+   * This browser's guest account (BitLogin's), where nobody is signed in and they aren't going about unnamed: they
+   * are that guest here, and in every world. Null otherwise.
+   */
+  guest?(): string | null;
+  /**
    * Who they are signed in as, as the card every world shows at the head of You: their picture, name and key
    * (the kit's `UiCard`). Null for a guest, or someone going about as one.
    */
@@ -79,7 +85,13 @@ export function addYou(o: YouOptions): You {
     icon: "you",
     // The same card as in every world, so who they are looks the same wherever they stand.
     card: () => o.card?.() ?? null,
-    note: () => `How you look is kept here, by ${location.host}, and is the same in every world you go to.${signingIn()}${o.door ? ` When you are done, Back takes you to ${o.door.host || "the world you came from"}.` : ""}`,
+    note: () => {
+      const guest = o.guest?.() ?? null;
+      // A guest is told who they are first, in BitLogin's words (its docs/guest-accounts.md G8), and that signing in
+      // to an account of their own is still there.
+      const who = guest ? ` ${guestNote()} You are ${guestName(guest)} here. Signing in to an account of your own, at ${signInHost()}, is still under You.` : signingIn();
+      return `How you look is kept here, by ${location.host}, and is the same in every world you go to.${who}${o.door ? ` When you are done, Back takes you to ${o.door.host || "the world you came from"}.` : ""}`;
+    },
   });
   controls.add(
     { id: "figure", section: "you", icon: "look", label: "Change how you look", short: "Look", act: () => openLook() },

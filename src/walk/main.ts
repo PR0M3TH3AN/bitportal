@@ -20,6 +20,7 @@ import { menuDoor } from "../shared/menu-door.js";
 import type { Offer } from "@nswp/core";
 import { prototypeNotice } from "../shared/notice.js";
 import { shortNpub, encodeNpub, buildAirlockUrl, buildWayUrl, checkDestination, CURATION_SET_KIND, encodeNaddr, parseAirlockFragment, WORLD_KIND, type NostrEvent, type Tally, ENTRY_PLACES_ROOMS, entryPlaces } from "@nswp/core";
+import { guestName, SECURE_FIRST, SECURE_WHERE } from "../shared/guest.js";
 // Relays are asked and sent to with a backup behind them (NIP-66): the kit tries relays that monitors found working when none of these answers.
 import { queryBacked as queryRelays } from "nswp-sdk/ui";
 import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/travel.js";
@@ -488,7 +489,17 @@ async function start(): Promise<void> {
   // share the room with see who they are. Not for someone who has said to go about as a guest.
   let roomIdentity: Awaited<ReturnType<typeof issuePass>> | undefined;
   // And they can send out a post from their own room, signed with this same sign-in (notes.ts).
-  const homeNotes = createHomeNotes({ signerFor: quietSigner, asGuest: goesAsGuest, nameOf: (pubkey) => profileOf(pubkey)?.name || (pubkey === signedInKey ? signedInAs : "") || null, marked: () => location.host, propose: proposeToPerson, host: signInHost });
+  // A guest (BitLogin's guest account, where nobody is signed in) posts as themselves, signed by its own signer, under
+  // the kit's name for it. Deleting a post is put to the person on BitLogin's own page, which a guest can't reach yet.
+  const isGuest = (pubkey?: string | null): boolean => !signedInKey && !!guestKey && (pubkey === undefined || pubkey === guestKey);
+  const homeNotes = createHomeNotes({
+    signerFor: (pubkey) => (isGuest(pubkey) ? quietGuestSigner(pubkey) : quietSigner(pubkey)),
+    asGuest: goesAsGuest,
+    nameOf: (pubkey) => (isGuest(pubkey) ? guestName(pubkey) : profileOf(pubkey)?.name || (pubkey === signedInKey ? signedInAs : "") || null),
+    marked: () => location.host,
+    propose: (note) => (isGuest() ? Promise.resolve(null) : proposeToPerson(note)),
+    host: signInHost,
+  });
   hooks.notes = homeNotes;
   const nameMe = async (pubkey: string): Promise<void> => {
     if (goesAsGuest()) return void (roomIdentity = undefined);
@@ -517,7 +528,10 @@ async function start(): Promise<void> {
     if (!who) {
       // Nobody signed in: this browser's guest account, where BitLogin made one, has its bag here.
       guestKey = await readGuest();
-      if (guestKey) refreshFollowing();
+      if (!guestKey) return;
+      homeNotes.setWho(guestKey);
+      refreshFollowing();
+      controls.setTarget("");
       return;
     }
     await fetchProfiles([who.pubkey], settings.relays);
@@ -555,6 +569,7 @@ async function start(): Promise<void> {
     label: "Rate",
     icon: "check",
     note: () => {
+      if (!signedInKey && guestKey) return `${SECURE_FIRST} (${SECURE_WHERE}) to say what you thought of a place. A rating is yours, signed with your own key, and a guest's key lives in this browser only.`;
       if (!signedInKey) return "Sign in to say what you thought of a place. A rating is yours: it is signed with your own key.";
       if (!atDoor) return "Stand at a door to say what you thought of the place behind it.";
       const tally = tallies.get(atDoor.entry.id);
@@ -977,6 +992,7 @@ async function start(): Promise<void> {
   };
   rateDoor = async (door, stars) => {
     const title = door.entry.world.title;
+    if (!signedInKey && guestKey) return say(`${SECURE_FIRST} to rate a place:\n${SECURE_WHERE}.`);
     if (!signedInKey) return say("Sign in to rate a place.");
     const quiet = await quietSigner(signedInKey);
     if (!quiet) return say("Your sign-in didn't answer.\nNothing was sent.");
@@ -1402,7 +1418,7 @@ async function start(): Promise<void> {
   hooks.panels = panels;
   // The visitor's own computers: a terminal on one, in a panel. Theirs alone, and never offered to a world.
   // Its Sign in does what the menu's own row does (`signInHere`, made further down; pressed only once the room is up).
-  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT, signIn: () => void signInHere() });
+  const computers = addComputers({ controls, panels: () => panels ?? undefined, presenting: () => renderer.xr.isPresenting, relays: () => settings.relays, accent: ACCENT, signIn: () => void signInHere(), guest: () => isGuest() });
   hooks.computers = computers;
 
   // ------------------------------------------------------- presence
@@ -1580,8 +1596,11 @@ async function start(): Promise<void> {
       showMirror();
     },
     signedInAs: () => signedInAs,
+    guest: () => (isGuest() && !goesAsGuest() ? guestKey : null),
     // Their own profile, as this browser read it from their signed kind 0: the card a world shows them, here too.
+    // A guest's is the kit's name for it, the same in every world.
     card: () => {
+      if (isGuest() && guestKey && !goesAsGuest()) return { title: guestName(guestKey), tag: "Guest", proven: false, sub: shortNpub(guestKey), copy: encodeNpub(guestKey), text: "", picture: "", color: "", now: [] };
       if (!signedInKey || goesAsGuest()) return null;
       const mine = profileOf(signedInKey);
       return { title: signedInAs || shortNpub(signedInKey), tag: "Signed in", proven: true, sub: shortNpub(signedInKey), copy: encodeNpub(signedInKey), text: mine?.about ?? "", picture: mine?.picture ?? "", color: "", now: [] };

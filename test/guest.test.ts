@@ -86,3 +86,38 @@ describe("a guest's bag at home", () => {
     expect(room).toContain("const follows = homeFollows({ me: () => (goesAsGuest() ? null : signedInKey),");
   });
 });
+
+describe("a guest is themselves in the room (the owner: \"the same guest in every world\")", () => {
+  it("is named by the kit's own words for its key, the same in the room and every world", async () => {
+    const { guestName: kits } = await import("@nswp/core");
+    const { guestName: ours } = await import("../src/shared/guest.js");
+    expect(ours).toBe(kits);
+    expect(ours(guest)).toBe(ours(guest));
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain('return { title: guestName(guestKey), tag: "Guest", proven: false,');
+  });
+  it("posts as itself, signed by the guest's own signer, and is put no deletion it can't reach", async () => {
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("signerFor: (pubkey) => (isGuest(pubkey) ? quietGuestSigner(pubkey) : quietSigner(pubkey)),");
+    expect(room).toContain("propose: (note) => (isGuest() ? Promise.resolve(null) : proposeToPerson(note)),");
+    expect(room).toContain("homeNotes.setWho(guestKey);");
+  });
+  it("is told to secure the account first where a lasting account is needed, with where to do it", async () => {
+    const { SECURE_FIRST, SECURE_WHERE } = await import("../src/shared/guest.js");
+    expect(SECURE_FIRST).toBe("Secure this account first");
+    expect(SECURE_WHERE).toBe("under You, then Your account");
+    const room = await read("src/walk/main.ts");
+    expect(room).toContain("if (!signedInKey && guestKey) return `${SECURE_FIRST} (${SECURE_WHERE}) to say what you thought of a place.");
+    expect(room).toContain("if (!signedInKey && guestKey) return say(`${SECURE_FIRST} to rate a place:");
+    const computers = await read("src/walk/computers.ts");
+    expect(computers).toContain("o.guest?.() ? `You're a guest on this browser. ${SECURE_FIRST} (${SECURE_WHERE}), or sign in:");
+  });
+  it("is told who it is under You in BitLogin's words, and in Brave that the browser forgets guests", async () => {
+    const { guestNote, isBrave } = await import("../src/shared/guest.js");
+    expect(guestNote(false)).toBe("You're a guest. Every world in BitPortal knows it's the same guest. This account lives in this browser only. Clearing this site's data loses it.");
+    expect(guestNote(true)).toBe("You're a guest. Every world in BitPortal knows it's the same guest. This browser forgets guests when it closes. Secure this account to keep it.");
+    expect(isBrave({ brave: {} })).toBe(true);
+    expect(isBrave({})).toBe(false);
+    expect(isBrave(undefined)).toBe(false);
+  });
+});
