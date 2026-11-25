@@ -3,7 +3,7 @@ import {
   setShowsPictures,
   showsChat,
   showsPictures
-} from "./shared-RS6AKN35.js";
+} from "./shared-BUBQWMZ2.js";
 import {
   arrivedSettings,
   clientPanelOpen,
@@ -419,6 +419,7 @@ function createFps(o) {
   let closedAt = -1;
   let shown = false;
   const looking = () => document.pointerLockElement === o.dom;
+  let lockedBefore = typeof document !== "undefined" && looking();
   const active = () => enabled && !o.presenting();
   const dot = document.createElement("div");
   dot.setAttribute("aria-hidden", "true");
@@ -453,7 +454,10 @@ function createFps(o) {
     else look();
   };
   const onLock = () => {
-    if (looking()) {
+    const now = looking();
+    if (now === lockedBefore) return;
+    lockedBefore = now;
+    if (now) {
       if (panelUp() || o.hud?.open) letGo();
       return;
     }
@@ -728,9 +732,17 @@ var chatSwitch = (tell) => ({
   }
 });
 var desk = null;
-var deskChoice = () => {
-  if (desk) return desk;
-  const now = desk = { intense: startsIntense(false), chosen: typeof arrivedSettings().intense === "boolean" || keptIntense() };
+var deskChoice = (keep2) => {
+  if (desk) {
+    if (keep2 !== void 0 && keep2 !== desk.key) {
+      desk.key = keep2;
+      desk.intense = startsIntense(false, keep2);
+      desk.chosen = typeof arrivedSettings().intense === "boolean" || keptIntense(keep2);
+    }
+    return desk;
+  }
+  const key = keep2 ?? DESK_KEY;
+  const now = desk = { intense: startsIntense(false, key), chosen: typeof arrivedSettings().intense === "boolean" || keptIntense(key), key };
   reportSettings(
     "moving",
     () => now.chosen ? { intense: now.intense } : {},
@@ -738,13 +750,13 @@ var deskChoice = () => {
       if (typeof said.intense !== "boolean") return;
       now.intense = said.intense;
       now.chosen = true;
-      keepIntense(now.intense);
+      keepIntense(now.intense, now.key);
     }
   );
   return now;
 };
 function deskMovingSwitch(controls, o = {}) {
-  const choice = deskChoice();
+  const choice = deskChoice(o.keep);
   return {
     id: "fps",
     section: "moving",
@@ -755,19 +767,19 @@ function deskMovingSwitch(controls, o = {}) {
     act: () => {
       choice.intense = !choice.intense;
       choice.chosen = true;
-      keepIntense(choice.intense);
+      keepIntense(choice.intense, choice.key);
       controls.say(choice.intense ? DESK_WORDS.nowIntense : DESK_WORDS.nowCasual);
     }
   };
 }
 function askDeskMoving(controls, o = {}) {
-  const choice = deskChoice();
+  const choice = deskChoice(o.keep);
   let asking = false;
   const answer = (intense) => {
     asking = false;
     choice.intense = intense;
     choice.chosen = true;
-    keepIntense(intense);
+    keepIntense(intense, choice.key);
     controls.say(intense ? DESK_WORDS.nowIntense : DESK_WORDS.nowCasual);
     controls.setTheme({});
   };

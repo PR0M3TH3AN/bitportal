@@ -1,0 +1,61 @@
+// packages/sdk/src/ui/icons.ts
+var ICONS = {
+  home: "M4 11.5 12 4l8 7.5M6 10v10h12V10M10 20v-5h4v5",
+  turn: "M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5",
+  room: "M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2.5 20a6 6 0 0 1 12 0M16.5 11.5a2.5 2.5 0 1 0 0-5M17.5 14.6A5 5 0 0 1 21.5 20",
+  leave: "M10 4H5v16h5M14 8l4 4-4 4M18 12H9",
+  mic: "M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3ZM6 11a6 6 0 0 0 12 0M12 17v4M9 21h6",
+  micOff: "M9 9v2a3 3 0 0 0 4.6 2.5M15 10.5V6a3 3 0 0 0-5.7-1.3M6 11a6 6 0 0 0 9.6 4.8M18 11a6 6 0 0 1-.4 2.2M12 17v4M9 21h6M4 4l16 16",
+  list: "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
+  vr: "M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3.5l-2-2.5h-3L8.5 17H5a2 2 0 0 1-2-2V9ZM8 12h.01M16 12h.01",
+  exit: "M18 6 6 18M6 6l12 12",
+  look: "M12 3s6 6.3 6 11a6 6 0 0 1-12 0c0-4.7 6-11 6-11ZM9 14a3 3 0 0 0 3 3",
+  help: "M9.2 9a3 3 0 1 1 4.6 2.5c-1 .7-1.8 1.4-1.8 2.7M12 18h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z",
+  menu: "M4 7h16M4 12h16M4 17h10",
+  /** An arched doorway: this project's mark for a way through. */
+  door: "M7 21V10a5 5 0 0 1 10 0v11M5 21h14M14.5 14h.01",
+  link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.700l1-1",
+  save: "M7 4h10v17l-5-3.5L7 21V4Z",
+  /** For the visitor's own music: play, pause, the song after and before, a little way on and back, and how it goes. */
+  play: "M7 4.5v15l12-7.5Z",
+  pause: "M8 5v14M16 5v14",
+  next: "M6 5.5v13l10-6.5ZM19 5v14",
+  previous: "M18 5.5v13L8 12ZM5 5v14",
+  rewind: "M11 7v10l-7-5ZM20 7v10l-7-5Z",
+  forward: "M13 7v10l7-5ZM4 7v10l7-5Z",
+  shuffle: "M3 7h4l8 10h5M3 17h4l2.5-3.1M12.5 10.100 15 7h5M17 4l3 3-3 3M17 14l3 3-3 3",
+  repeat: "M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4",
+  music: "M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
+  pin: "M9 4h6l-1 6 3 3H7l3-3-1-6ZM12 13v7",
+  step: "M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.800-6 10-6 10ZM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
+  size: "M4 18 9 6l5 12M5.700 14h6.600M15 18l3.500-8 3.500 8M16 15.700h5",
+  /** Filling the screen: four corners drawn out. */
+  full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
+  motion: "M3 12h4l3-7 4 14 3-7h4",
+  check: "M5 12.500 10 17.500 19 7",
+  camera: "M4 8h3l1.5-2h7L17 8h3v11H4ZM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z",
+  selfie: "M4 5h16v14H4ZM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.5 19a4.5 4.5 0 0 1 9 0",
+  record: "M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  /** A panel: a frame with a bar along its top. */
+  panel: "M4 5h16v14H4ZM4 9h16M15 7h.01M17.5 7h.01",
+  note: "M6 3h9l4 4v14H6ZM14 3v5h5M9 13h7M9 17h5",
+  /** A loudspeaker, sounding and crossed out. */
+  sound: "M4 9.500v5h3.500L13 19V5L7.500 9.500ZM16.500 9a4.500 4.500 0 0 1 0 6M19 6.500a8 8 0 0 1 0 11",
+  soundOff: "M4 9.500v5h3.500L13 19V5L7.500 9.500ZM16.500 9.500l4.500 5M21 9.500l-4.500 5",
+  you: "M12 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM5 20.5a7 7 0 0 1 14 0",
+  close: "M6 6l12 12M18 6 6 18",
+  key: "M14.5 9.5a3.5 3.5 0 1 0-3.4 3.5L4 20v-3h3v-3h3l1.6-1.6M16 8h.01",
+  chat: "M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM8 10h8M8 13h5",
+  people: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 20a6 6 0 0 1 12 0M16 11a2.5 2.5 0 1 0 0-5M21 20a5 5 0 0 0-4-4.9",
+  // What a door says its world offers (door-offers.ts), where no drawing above already says it.
+  bag: "M6 8h12l1.2 12H4.8L6 8ZM9 8V6.5a3 3 0 0 1 6 0V8",
+  trophy: "M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4",
+  tip: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z",
+  // An envelope: a world that is by invitation (the eighth thing a door shows).
+  invite: "M4 6h16v12H4ZM4 7l8 6 8-6",
+  coin: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM14.6 9.6c-.5-1-1.4-1.6-2.6-1.6-1.5 0-2.6.8-2.6 2s1 1.7 2.6 2 2.6.8 2.6 2-1.1 2-2.6 2c-1.2 0-2.1-.6-2.6-1.6M12 6.5V8M12 16v1.5"
+};
+
+export {
+  ICONS
+};

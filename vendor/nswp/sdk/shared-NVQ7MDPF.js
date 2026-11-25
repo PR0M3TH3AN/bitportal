@@ -1,7 +1,8 @@
 import {
+  askOwn,
   askWell,
   sendWell
-} from "./shared-L77KEPJY.js";
+} from "./shared-E65BGET2.js";
 import {
   resumeFullscreen
 } from "./shared-4HKQFA2T.js";
@@ -3651,7 +3652,7 @@ function mayHold(described, o) {
 }
 
 // packages/sdk/src/bag.ts
-import { BAG_KIND, bagIn, bagTints, changeBag, tintBag, DEFAULT_RELAYS as DEFAULT_RELAYS4, itemCoordinate as itemCoordinate3, newestBag, publishEvent, queryRelays as queryRelays3, readRelayList, RELAY_LIST_KIND, SITE_MARKS, verifyEvent as verifyEvent3 } from "@nswp/core";
+import { BAG_KIND, bagIn, bagTints, changeBag, tintBag, DEFAULT_RELAYS as DEFAULT_RELAYS4, itemCoordinate as itemCoordinate3, newestBag, publishEvent, queryRelays as queryRelays3, RELAY_PICK, SITE_MARKS, verifyEvent as verifyEvent3 } from "@nswp/core";
 var FRESH_MS = 6e4;
 function createBag(opts) {
   const now = opts.now ?? (() => Date.now());
@@ -3685,29 +3686,46 @@ function createBag(opts) {
     } catch {
     }
   };
-  let relaysKept = null;
-  const ownRelays = (key) => {
-    if (relaysKept && relaysKept.key === key && now() - relaysKept.at < 6e5) return relaysKept.found;
-    const found = askWell({ kinds: [RELAY_LIST_KIND], authors: [key], limit: 4 }, { own: [], usual: usual(), query, timeoutMs: 2500, now }).then((got) => readRelayList(got.events, key)?.write ?? []).catch(() => []);
-    relaysKept = { key, at: now(), found };
-    return found;
+  const unsentKey = (who) => `nswp:bag:${who}:unsent`;
+  const unsent = (who) => {
+    try {
+      return store?.getItem(unsentKey(who)) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const markSent = (bag, took) => {
+    try {
+      if (took >= RELAY_PICK.took) store?.removeItem(unsentKey(bag.pubkey));
+      else store?.setItem(unsentKey(bag.pubkey), bag.id);
+    } catch {
+    }
   };
   let known = null;
   let looking = null;
   let offered = null;
   const look = async (who) => {
     const kept = readKept(who);
-    const own2 = await ownRelays(who);
-    const got = await askWell({ kinds: [BAG_KIND], authors: [who], limit: 4 }, { own: own2, usual: usual(), query, timeoutMs: 4e3, now }).catch(() => null);
-    const answered = !!got && Object.values(got.relays).some((said) => said === "eose");
+    const onNewer = (later) => {
+      const newer = newestBag(later.events.filter((e) => verifyEvent3(e)), who);
+      if (!newer || !known || known.who !== who || known.bag && newer.created_at <= known.bag.created_at) return;
+      keep3(newer);
+      known = { ...known, bag: newer, answered: true };
+      changed();
+    };
+    const got = await askOwn({ kinds: [BAG_KIND], authors: [who], limit: 4 }, who, { usual: usual(), mine: { kept }, query, publish, timeoutMs: 4e3, now, onNewer }).catch(() => null);
+    const answered = !!got && got.state !== "unreached";
+    const own2 = got?.own ?? [];
     const found = newestBag((got?.events ?? []).filter((e) => verifyEvent3(e)), who);
     const bag = found && kept ? kept.created_at > found.created_at ? kept : found : found ?? kept;
-    if (kept && bag === kept && answered && (!found || found.id !== kept.id)) void sendWell(kept, { own: own2, usual: usual(), publish, query, now }).catch(() => null);
+    if (kept && bag === kept && (unsent(who) === kept.id || answered && (!found || found.id !== kept.id)))
+      void sendWell(kept, { own: own2, usual: usual(), publish, query, now }).then((sent) => markSent(kept, sent.took)).catch(() => null);
     if (bag && bag !== kept) keep3(bag);
     if (opts.me() !== who) return;
-    known = { who, bag, answered, at: now() };
+    known = { who, bag, answered, own: own2, at: now() };
     changed();
   };
+  const inBag = (at) => at.bag || at.answered ? bagIn(at.bag) : null;
   const load = async (fresh = false) => {
     const who = opts.me();
     if (!who) {
@@ -3718,12 +3736,12 @@ function createBag(opts) {
       return null;
     }
     if (known && known.who !== who) known = null;
-    if (!fresh && known && now() - known.at < FRESH_MS) return bagIn(known.bag);
+    if (!fresh && known && now() - known.at < FRESH_MS) return inBag(known);
     looking ??= look(who).finally(() => {
       looking = null;
     });
     await looking;
-    return known && known.who === who ? bagIn(known.bag) : null;
+    return known && known.who === who ? inBag(known) : null;
   };
   const change = async (itemIn2, adding, title) => {
     const who = opts.me();
@@ -3752,11 +3770,14 @@ function createBag(opts) {
     const same = signed && verifyEvent3(signed) && signed.pubkey === who && signed.kind === BAG_KIND && JSON.stringify(signed.tags.filter((t) => !SITE_MARKS.includes(t[0] ?? ""))) === JSON.stringify(made.tags);
     if (!signed || !same) return { ok: false, why: "refused", said: "It couldn't be signed. Your bag is as it was." };
     keep3(signed);
-    known = { who, bag: signed, answered: true, at: now() };
+    known = { who, bag: signed, answered: true, own: at.own, at: now() };
     changed();
-    const sent = await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
+    const sent = await sendWell(signed, { own: at.own, usual: usual(), publish, query, now }).catch(() => null);
+    markSent(signed, sent?.took ?? 0);
     if (!sent || sent.took === 0) return { ok: false, why: "not-sent", said: "Signed, but no relay took it. It is kept on this device and will be sent again." };
-    return { ok: true, said: adding ? `${it} is in your bag. Anyone can see what is in it.` : `${it} is out of your bag.` };
+    const done = adding ? `${it} is in your bag. Anyone can see what is in it.` : `${it} is out of your bag.`;
+    if (sent.took < RELAY_PICK.took) return { ok: true, said: `${done} Only ${sent.took === 1 ? "1 relay has" : `${sent.took} relays have`} it so far; it is sent again the next time your bag is looked at.` };
+    return { ok: true, said: done };
   };
   const TINTS_KEY = "nswp:tints";
   const keptTints = () => {
@@ -3778,9 +3799,10 @@ function createBag(opts) {
     const same = signed && verifyEvent3(signed) && signed.pubkey === who && signed.kind === BAG_KIND && JSON.stringify(signed.tags.filter((t) => !SITE_MARKS.includes(t[0] ?? ""))) === JSON.stringify(made.tags);
     if (!signed || !same) return;
     keep3(signed);
-    known = { who, bag: signed, answered: true, at: now() };
+    known = { who, bag: signed, answered: true, own: at?.own ?? [], at: now() };
     changed();
-    await sendWell(signed, { own: await ownRelays(who), usual: usual(), publish, query, now }).catch(() => null);
+    const sent = await sendWell(signed, { own: at?.own ?? [], usual: usual(), publish, query, now }).catch(() => null);
+    markSent(signed, sent?.took ?? 0);
   };
   return {
     tints(itemIn2) {
@@ -3802,7 +3824,7 @@ function createBag(opts) {
       clearTimeout(tintTimers.get(item));
       tintTimers.set(item, setTimeout(() => void writeTints(item).catch(() => null), 2500));
     },
-    items: () => known && known.who === opts.me() ? bagIn(known.bag) : null,
+    items: () => known && known.who === opts.me() ? inBag(known) : null,
     load,
     canChange: () => !!opts.hand,
     add: (item, title = "") => change(item, true, title),

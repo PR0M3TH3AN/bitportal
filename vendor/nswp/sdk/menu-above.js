@@ -3,11 +3,12 @@ import {
 } from "./shared-EGXGKKYY.js";
 import {
   visitorsOwnRow
-} from "./shared-B4ZPPIXA.js";
+} from "./shared-JM5U66XR.js";
 import {
+  KIT_QUESTION_TABS,
   SUMMON_KEY,
   loadPicture
-} from "./shared-RS6AKN35.js";
+} from "./shared-BUBQWMZ2.js";
 import {
   changeSettings,
   currentSettings,
@@ -137,10 +138,9 @@ async function bitmapOf(from) {
 }
 var CLIENTS = [
   ...MENU_VISITOR_TABS.filter((t) => t !== "following" && t !== "messages"),
-  // The kit's one-time questions on how a visitor moves (fps.ts, input.ts). At a desk it is asked by whoever draws
-  // the console, which above a world is the client; in a headset the world draws the console, and asks there.
-  "how-you-move-desk",
-  "how-you-move"
+  // The kit's one-time questions on how a visitor moves. At a desk each is asked by whoever draws the console,
+  // which above a world is the client; in a headset the world draws the console, and asks there.
+  ...KIT_QUESTION_TABS
 ];
 var VISITORS_ROWS = ["back", "home", "go-home", "doors", "list"];
 var COLOR = /^#[0-9a-f]{6}$/;

@@ -92,7 +92,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-ZFQ5QCP5.js";
+} from "./shared-FSCLONX3.js";
 import {
   addDoorControls,
   vouchedWords
@@ -112,9 +112,7 @@ import {
   createSounds,
   saveFile
 } from "./shared-LW5OWPBZ.js";
-import {
-  createControls
-} from "./shared-EUKRSY5E.js";
+import "./shared-CC6JLBIU.js";
 import {
   DOUBLE_TAP,
   DRAG_LOOK,
@@ -150,14 +148,15 @@ import {
   strideOf,
   visitorFov,
   watchFov
-} from "./shared-B4ZPPIXA.js";
+} from "./shared-JM5U66XR.js";
 import {
   PICTURE_LIMITS,
+  createControls,
   loadPicture,
   onPicturesChange,
   setShowsPictures,
   showsPictures
-} from "./shared-RS6AKN35.js";
+} from "./shared-BUBQWMZ2.js";
 import {
   ITEM_BUDGET,
   allowScript,
@@ -168,8 +167,9 @@ import {
   scriptAllowed,
   setShowsItems,
   showsItems
-} from "./shared-2M33Y2D4.js";
+} from "./shared-NVQ7MDPF.js";
 import {
+  askOwn,
   askWell,
   foundRelays,
   learnFrom,
@@ -178,7 +178,7 @@ import {
   relayBackup,
   relaysWell,
   sendWell
-} from "./shared-L77KEPJY.js";
+} from "./shared-E65BGET2.js";
 import {
   fullscreenWaiting,
   prefersFullscreen,
@@ -253,6 +253,7 @@ export {
   arriveWith,
   arrivedSettings,
   askClientForSignIn,
+  askOwn,
   askWell,
   browserVoice,
   byName,
