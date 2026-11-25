@@ -19,6 +19,7 @@ import { addDeskControls, addSoundControls, arriveWith, askDeskMoving, changeSet
 import { createControls } from "nswp-sdk/ui";
 import { goesAsGuest } from "../shared/look.js";
 import { knownSignedIn } from "../shared/session.js";
+import { INTENSE_KEY } from "../shared/prefs.js";
 import { loadSettings } from "../shared/settings.js";
 import { addShellBag } from "./bag.js";
 import { framedPictures, type FramedPictures } from "./bag-pictures.js";
@@ -121,7 +122,9 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
   // look speed (Moving), how wide they see (View), how they move at a desk, and the switches for people's pictures,
   // people's own models (People) and what people write (Room), shown where the world fills that tab.
   addDeskControls(controls, { presenting });
-  controls.add(deskMovingSwitch(controls, { presenting }));
+  // How they move at a desk: kept under the name the room keeps it by, so one choice is theirs in the room and over
+  // every world, and the one reader of the settings this page says (settings.ts) reads it there.
+  controls.add(deskMovingSwitch(controls, { presenting, keep: INTENSE_KEY }));
   controls.add({ ...picturesSwitch(controls), hidden: () => !worldFills("people") }, { ...modelsSwitch(controls), hidden: () => !worldFills("people") }, { ...chatSwitch((text) => controls.say(text)), hidden: () => !worldFills("room") });
 
   // Bag: theirs, over a world where they are named (bag.ts).
@@ -162,7 +165,7 @@ export function startMenu(o: ShellMenuOptions): ShellMenu {
     // "How you move at a desk" is asked once, by whoever draws the menu: here, the first time a world is under it.
     if (below.speaks && !asked) {
       asked = true;
-      askDeskMoving(controls, { presenting });
+      askDeskMoving(controls, { presenting, keep: INTENSE_KEY });
     }
   };
   below.onChange(show);
