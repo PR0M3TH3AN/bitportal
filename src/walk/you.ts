@@ -65,6 +65,16 @@ export interface YouOptions {
   guest?(): string | null;
   /** Open BitLogin's "Secure this account" for the guest, from a press. */
   secure?(): void;
+  /** Whether they are in a headset now, where nothing can be typed. */
+  presenting?(): boolean;
+  /**
+   * Sign in from their phone, from a press ("Sign In using Phone", the owner's words): BitLogin's own page for it,
+   * out of VR for a moment. Left out, or `canPhone` false, where the sign-in address can't.
+   */
+  phoneSignIn?(): void;
+  canPhone?(): boolean;
+  /** Make an account from their phone, the same way. Not at BitLogin yet: left out, and the row is hidden. */
+  phoneCreate?(): void;
   /**
    * Who they are signed in as, as the card every world shows at the head of You: their picture, name and key
    * (the kit's `UiCard`). Null for a guest, or someone going about as one.
@@ -108,6 +118,10 @@ export function addYou(o: YouOptions): You {
       on: () => !!o.signedInAs(),
       act: () => (o.signedInAs() ? o.signOut() : o.signIn()),
     },
+    // In a headset, where nothing can be typed: signing in from their phone, for nobody signed in or a guest.
+    { id: "identity-phone", section: "you", icon: "you", tone: "primary", label: "Sign In using Phone", short: "Phone", hidden: () => !(o.phoneSignIn && o.canPhone?.() && o.presenting?.() && !o.signedInAs()), act: () => o.phoneSignIn?.() },
+    // And making an account from it, once BitLogin has that: hidden until then.
+    { id: "identity-phone-create", section: "you", icon: "you", label: "Create an account using Phone", short: "New", hidden: () => !(o.phoneCreate && o.canPhone?.() && o.presenting?.() && !o.signedInAs()), act: () => o.phoneCreate?.() },
     // The guest's own press (BitLogin docs/guest-accounts.md G6): the account kept, made to last, by the same key.
     { id: "identity-secure", section: "you", icon: "key", tone: "primary", label: "Secure this account", short: "Secure", hidden: () => !(o.secure && o.guest?.()), act: () => o.secure?.() },
     { id: "identity-another", section: "you", icon: "you", label: "Be someone else", short: "Other", hidden: () => !o.signedInAs(), act: () => o.another() },

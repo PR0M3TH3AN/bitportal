@@ -220,6 +220,12 @@ interface SignInClient {
    * so (`["nswp:guest", "1"]`). Throws where refused. Left out by a client too old to have it.
    */
   roomPass?(session: string): Promise<NostrEvent>;
+  /**
+   * Sign in from the person's phone, for a headset (BitLogin docs/pair-a-headset.md, Way 1): BitLogin's own /headset/
+   * page in a window, from the visitor's press, out of immersive VR. True once that window has closed and someone is
+   * signed in here. Left out by a client too old to have it.
+   */
+  signInFromPhone?(): Promise<boolean>;
   /** Remove its frame and stop listening. */
   destroy(): void;
 }
@@ -601,6 +607,29 @@ export async function switchAccount(): Promise<boolean> {
   if (!c) return false;
   try {
     return await ask(c, "switch");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether this page's sign-in address can sign this device in from the person's phone (a client that has it).
+ */
+export function canSignInFromPhone(): boolean {
+  return typeof made?.signInFromPhone === "function";
+}
+
+/**
+ * Sign this device in from the person's phone ("Sign In using Phone", the owner's words), for a headset where nothing
+ * can be typed: BitLogin's own /headset/ page in a window, where its code, QR and the number to match are shown, never
+ * on this site. Call it from their press, out of immersive VR. Only where nobody is signed in here, or it is a guest.
+ * Resolves true once someone is signed in.
+ */
+export async function signInFromPhone(): Promise<boolean> {
+  const c = made ?? (await signInClient());
+  if (!c?.signInFromPhone) return false;
+  try {
+    return await c.signInFromPhone();
   } catch {
     return false;
   }

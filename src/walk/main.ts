@@ -50,7 +50,7 @@ import { homeMessages } from "../shared/messages.js";
 import { homeFollows } from "../shared/people.js";
 import { homePersonLines } from "../shared/person-lines.js";
 import { countedFor, fetchRatings, followsOf, giveRating, keepFollows, ratingMark, ratingWords, talliesFor } from "../shared/ratings.js";
-import { holdsReserved, proposeToPerson, quietGuestPass, secureAccount, quietGuestSigner, quietSigner, quietVault, readGuest, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
+import { canSignInFromPhone, holdsReserved, proposeToPerson, quietGuestPass, secureAccount, signInFromPhone, quietGuestSigner, quietSigner, quietVault, readGuest, readSignedIn, signIn, signInAddress, signInHost, signOut, switchAccount, tipPerson, usePanel } from "../shared/session.js";
 import { createHomeNotes } from "./notes.js";
 import { issueGuestPass, issuePass } from "../shared/pass.js";
 import { fetchProfiles, label, profileOf } from "../shared/profiles.js";
@@ -1590,6 +1590,12 @@ async function start(): Promise<void> {
     if (here && !panelHere()) return;
     controls.say(here ? `You weren't signed in: ${signInHost()} was closed before you allowed BitPortal. Press Sign in to try again.` : `You weren't signed in: the window at ${signInHost()} was closed before you allowed BitPortal, or your browser didn't let it open. Press Sign in to try again.`);
   };
+  // "Sign In using Phone", in a headset, for nobody signed in or a guest: BitLogin's own /headset/ page, where its
+  // code, QR and the number to match are shown, never on this site. Once someone is signed in, the room is read again.
+  const phoneSignInHere = async (): Promise<void> => {
+    if (await signInFromPhone()) return readAgain();
+    controls.say(`Nobody was signed in from a phone: the page at ${signInHost()} was closed first. Press Sign In using Phone to try again.`);
+  };
   // "Secure this account", for the guest: BitLogin's panel, over the room. Drawn by the page that keeps the screen
   // where one does, else by the room itself at BitPortal's own address (own-panel.ts); never a window, which can't
   // see the guest. Once secured, the room is read again: they are an account now, by the same key.
@@ -1636,6 +1642,9 @@ async function start(): Promise<void> {
     signedInAs: () => signedInAs,
     guest: () => (isGuest() && !goesAsGuest() ? guestKey : null),
     secure: () => void secureHere(),
+    presenting: () => renderer.xr.isPresenting,
+    phoneSignIn: () => void phoneSignInHere(),
+    canPhone: canSignInFromPhone,
     // Their own profile, as this browser read it from their signed kind 0: the card a world shows them, here too.
     // A guest's is the kit's name for it, the same in every world.
     card: () => {
