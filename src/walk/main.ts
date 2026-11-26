@@ -28,7 +28,7 @@ import { ARRIVED_JOINED, ARRIVED_MOVING, ARRIVED_SETTINGS } from "../shared/trav
 import { enterShell, goFrom, linksLeaveWhole } from "../shared/shell.js";
 import { loadBlockedEverywhere, loadPendingBlocks } from "../shared/blocked.js";
 import { createDoorOffers, createHome, type Alloy, type DoorOffers } from "nswp-sdk/home";
-import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, createDragLook, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput, type ClientPanelMode } from "nswp-sdk/three";
+import { askClientForSignIn, clientSignsInAt, onClientSignIn, addBagControls, addCameraControls, addPanelControls, addRoomControls, createItems, addItemControls, type ItemControls, createDragLook, lookScale, onDeskChange, visitorFov, viewScale, createFps, type Fps, addSoundControls, createSounds, addJump, arriveWith, resumeFullscreen, currentSettings, currentForm, createFloorMarks, DOOR_REACH, createStepPace, createStroll, RUN, KEY_TURN, WALK_SPEED, TAP_REACH, addViewControls, createConsole, createPanels, type Panels, createCrossing, createFigure, createPortalWindow, createPresence, createStay, createXrInput, panoramaTexture, textSprite, type Figure, type XrConsole, type XrInput, type ClientPanelMode, outOfVr } from "nswp-sdk/three";
 import { goesAsGuest, inlineLook, loadLook, lookOf, type KeptLook } from "../shared/look.js";
 import { readWhoDoor, tabStore } from "../shared/who.js";
 import { addYou, type You } from "./you.js";
@@ -1592,9 +1592,20 @@ async function start(): Promise<void> {
   };
   // "Sign In using Phone", in a headset, for nobody signed in or a guest: BitLogin's own /headset/ page, where its
   // code, QR and the number to match are shown, never on this site. Once someone is signed in, the room is read again.
-  const phoneSignInHere = async (): Promise<void> => {
-    if (await signInFromPhone()) return readAgain();
-    controls.say(`Nobody was signed in from a phone: the page at ${signInHost()} was closed first. Press Sign In using Phone to try again.`);
+  // In a headset, out of VR for a moment in the same press (the kit's `outOfVr`), then "Back into VR".
+  const phoneSignInHere = (): void => {
+    let started: ReturnType<typeof signInFromPhone> = null;
+    outOfVr(
+      controls,
+      () => {
+        started = signInFromPhone();
+        return { shown: !!started?.opened, gone: started ? started.done.then(() => {}) : Promise.resolve() };
+      },
+      "sign-in",
+    );
+    const said = started as ReturnType<typeof signInFromPhone>;
+    if (!said) return void controls.say(`${signInHost()} can't sign you in from a phone just now.`);
+    void said.done.then((signedIn) => (signedIn ? readAgain() : controls.say(`Nobody was signed in from a phone: the page at ${signInHost()} was closed first. Press Sign In using Phone to try again.`)));
   };
   // "Secure this account", for the guest: BitLogin's panel, over the room. Drawn by the page that keeps the screen
   // where one does, else by the room itself at BitPortal's own address (own-panel.ts); never a window, which can't

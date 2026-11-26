@@ -13,8 +13,8 @@ const read = async (path: string): Promise<string> => {
 describe("signing in from a phone, in a headset", () => {
   it("is BitLogin's own, through its client, and nothing of it is shown on this site", async () => {
     const session = await read("src/shared/session.ts");
-    expect(session).toContain("if (!c?.signInFromPhone) return false;");
-    expect(session).toContain("return await c.signInFromPhone();");
+    expect(session).toContain("if (!made?.signInFromPhone) return null;");
+    expect(session).toContain("return { opened: p.opened, done: p.done.catch(() => false) };");
     expect(session).toContain('return typeof made?.signInFromPhone === "function";');
   });
   it("is offered under You only in a headset, to nobody signed in or a guest, where the sign-in address can", async () => {
@@ -29,7 +29,10 @@ describe("signing in from a phone, in a headset", () => {
   });
   it("reads the room again once someone is signed in, and says so where nobody was", async () => {
     const room = await read("src/walk/main.ts");
-    expect(room).toContain("if (await signInFromPhone()) return readAgain();");
+    // Out of VR in the same press, by the kit's own way, with whether the window really opened and when it has gone.
+    expect(room).toContain('return { shown: !!started?.opened, gone: started ? started.done.then(() => {}) : Promise.resolve() };');
+    expect(room).toContain('"sign-in",');
+    expect(room).toContain("void said.done.then((signedIn) => (signedIn ? readAgain() :");
     expect(room).toContain("phoneSignIn: () => void phoneSignInHere(),");
   });
 });
