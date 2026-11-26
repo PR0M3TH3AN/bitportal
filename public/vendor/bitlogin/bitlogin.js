@@ -1,7 +1,7 @@
 import { e as M, E as U, p as B, R as K, a as c, i as S } from "./bitlogin-shared-CDSZpiZ4.js";
 import { r as I, v as O } from "./bitlogin-shared-Cj9s0_W_.js";
-import { W as F } from "./bitlogin-shared-CYbPHXTd.js";
-import { c as Ne } from "./bitlogin-shared-CYbPHXTd.js";
+import { W as F } from "./bitlogin-shared-C99Ztz6J.js";
+import { c as Ne } from "./bitlogin-shared-C99Ztz6J.js";
 import { r as D } from "./bitlogin-shared-CjWz8W3w.js";
 import { b as $, c as q, e as Q, d as W, a as H, f as _, p as V } from "./bitlogin-shared-D6Hzbnis.js";
 import { readCachedSession as z } from "./bitlogin-session.js";
@@ -649,7 +649,7 @@ class ce extends Error {
     ), this.name = "SignerTimeoutError";
   }
 }
-function C(n = window) {
+function L(n = window) {
   const e = n.nostr;
   return !e || typeof e != "object" || e._bitlogin === !0 || typeof e.getPublicKey != "function" || typeof e.signEvent != "function" ? null : e;
 }
@@ -761,7 +761,7 @@ function pe(n, e) {
 function g(n) {
   f?.owner === n && (f = null);
 }
-function L() {
+function E() {
   return f ? { ...f.info } : null;
 }
 const T = {
@@ -797,6 +797,15 @@ class x extends HTMLElement {
   screen = "welcome";
   busy = !1;
   errorMessage;
+  /**
+   * The relays that may hold the account didn't all answer (RelaysSlowError, 2026-11-26): the words, the same press
+   * again, and where a path has one, its other way as a second, plainly worded press. Never the automatic next screen.
+   */
+  relaysSlow = null;
+  /** Show the relays-slow screen for this error, where it is one. True where it was. */
+  slowRelays(e, t, s) {
+    return !(e instanceof Error) || e.name !== "RelaysSlowError" ? !1 : (this.relaysSlow = { message: e.message, retry: t, ...s ? { anyway: s } : {} }, this.busy = !1, this.goto("relays-slow"), !0);
+  }
   /** Welcome-screen disclosure for non-primary sign-in paths; survives
    *  re-renders so an open menu doesn't snap shut on an error render. */
   moreOptionsOpen = !1;
@@ -1442,6 +1451,10 @@ class x extends HTMLElement {
         return;
       case "rebuild-confirm":
         return this.handleRebuildConfirm();
+      case "relays-retry":
+        return this.busy || !this.relaysSlow ? void 0 : this.relaysSlow.retry();
+      case "relays-anyway":
+        return this.busy || !this.relaysSlow?.anyway ? void 0 : this.relaysSlow.anyway.run();
       case "goto-welcome":
         this.pendingRollback = null, this.pendingExtensionSigner = null, this.pendingPasskey = null, !this.altSigner && (this.bunkerConnectUri || this.pendingBunker) && this.worker.nip46Disconnect(), this.pendingBunker = null, this.bunkerConnectUri = "", this.bunkerAuthUrl = "", this.goto("welcome");
         return;
@@ -1717,26 +1730,37 @@ class x extends HTMLElement {
     if (this.busy) return;
     this.setBusy(!0);
     const e = await this.runPasskeyCeremony("get");
-    if (e)
-      try {
-        const t = await this.worker.login({ loginName: e.loginName, password: e.password });
-        this.loginName = e.loginName, this.session = {
-          publicKey: t.everydayPublicKey,
-          npub: c(t.everydayPublicKey),
-          accountId: t.accountId,
-          method: "bitlogin"
-        }, this.sessionWarnings = [t.rollbackWarning, t.relayDisagreementWarning].filter((s) => !!s), this.phraseRebuildsIdentity = t.everydayKeyDerived, this.busy = !1, this.passkeySession = !0, this.noteSignerClaim(this.claimSigner()), this.dispatchLogin(), this.flashSuccess("dashboard", "Signed in");
-      } catch (t) {
-        if (t instanceof Error && t.name === "AccountNotFoundError") {
-          this.pendingPasskey = e, this.busy = !1, this.goto("passkey-create");
-          return;
-        }
-        if (t instanceof Error && t.name === "RollbackDetectedError") {
-          this.pendingRollback = { kind: "login", loginName: e.loginName, password: e.password }, this.rollbackMessage = t.message, this.busy = !1, this.goto("rollback-confirm");
-          return;
-        }
-        this.fail(t);
+    e && await this.passkeyLogin(e);
+  }
+  /** Sign in with what a passkey derived: again on Try again, with no new ceremony. */
+  async passkeyLogin(e) {
+    this.setBusy(!0);
+    try {
+      const t = await this.worker.login({ loginName: e.loginName, password: e.password });
+      this.loginName = e.loginName, this.session = {
+        publicKey: t.everydayPublicKey,
+        npub: c(t.everydayPublicKey),
+        accountId: t.accountId,
+        method: "bitlogin"
+      }, this.sessionWarnings = [t.rollbackWarning, t.relayDisagreementWarning].filter((s) => !!s), this.phraseRebuildsIdentity = t.everydayKeyDerived, this.busy = !1, this.passkeySession = !0, this.noteSignerClaim(this.claimSigner()), this.dispatchLogin(), this.flashSuccess("dashboard", "Signed in");
+    } catch (t) {
+      if (t instanceof Error && t.name === "AccountNotFoundError") {
+        this.pendingPasskey = e, this.busy = !1, this.goto("passkey-create");
+        return;
       }
+      if (t instanceof Error && t.name === "RollbackDetectedError") {
+        this.pendingRollback = { kind: "login", loginName: e.loginName, password: e.password }, this.rollbackMessage = t.message, this.busy = !1, this.goto("rollback-confirm");
+        return;
+      }
+      if (this.slowRelays(t, () => this.passkeyLogin(e), {
+        label: "Make a new account anyway",
+        run: async () => {
+          this.pendingPasskey = e, this.goto("passkey-create");
+        }
+      }))
+        return;
+      this.fail(t);
+    }
   }
   /** "Create a new passkey": mint it, then set up (or rejoin) its account. */
   async handlePasskeyRegisterCeremony() {
@@ -1759,7 +1783,7 @@ class x extends HTMLElement {
           importKey: this.importKey || void 0
         });
         this.importKey = "", this.importPreviewNpub = "", this.importAck = !1, this.pendingPasskey = null, this.loginName = e.loginName, this.registeredByImport = t.imported, this.phraseRebuildsIdentity = t.everydayKeyDerived, this.recoveryPhrase = t.recoveryPhrase;
-        const s = this.recoveryPhrase.split(" "), i = E(s.length, 3);
+        const s = this.recoveryPhrase.split(" "), i = C(s.length, 3);
         this.confirmSlots = i.map((o) => ({ index: o, value: "" })), this.session = {
           publicKey: t.everydayPublicKey,
           npub: c(t.everydayPublicKey),
@@ -1805,7 +1829,7 @@ class x extends HTMLElement {
       ...this.guestFamily && !this.importKey ? { fromGuest: this.guestFamily } : {}
     });
     this.guestFamily = "", this.importKey = "", this.importPreviewNpub = "", this.importAck = !1, this.registeredByImport = t.imported, this.phraseRebuildsIdentity = t.everydayKeyDerived, this.recoveryPhrase = t.recoveryPhrase;
-    const s = this.recoveryPhrase.split(" "), i = E(s.length, 3);
+    const s = this.recoveryPhrase.split(" "), i = C(s.length, 3);
     this.confirmSlots = i.map((o) => ({ index: o, value: "" })), this.session = { publicKey: t.everydayPublicKey, npub: c(t.everydayPublicKey), accountId: t.accountId, method: "bitlogin" }, this.busy = !1, this.goto("confirm-phrase"), this.worker.publishProfileAndRelayLists({
       name: this.loginName,
       generalRelays: this.vaultRelayUrls,
@@ -1849,7 +1873,7 @@ class x extends HTMLElement {
    */
   async handleExtensionSignIn() {
     if (this.busy) return;
-    const e = C();
+    const e = L();
     if (!e) {
       this.errorMessage = "No Nostr signer extension was found in this browser.", this.render();
       return;
@@ -2047,6 +2071,7 @@ class x extends HTMLElement {
         this.pendingRollback = { kind: "login", loginName: e, password: t }, this.rollbackMessage = i.message, this.busy = !1, this.goto("rollback-confirm");
         return;
       }
+      if (this.slowRelays(i, () => this.attemptLogin(e, t, s))) return;
       this.fail(i);
     }
   }
@@ -2059,23 +2084,35 @@ class x extends HTMLElement {
     e.kind === "login" ? await this.attemptLogin(e.loginName, e.password, !0) : await this.attemptChangePassword(e.oldPassword, e.newPassword, !0);
   }
   async handleRecoverPhraseSubmit() {
-    const e = this.field("phrase").trim();
+    await this.recoverFromPhrase(this.field("phrase").trim());
+  }
+  /** Recover with a phrase: again on Try again. */
+  async recoverFromPhrase(e) {
     this.setBusy(!0);
     let t;
     try {
       t = await this.worker.recover({ phrase: e, offlineExportFile: this.offlineExportFile ?? void 0 });
     } catch (s) {
+      if (this.slowRelays(s, () => this.recoverFromPhrase(e), { label: "Rebuild from your phrase anyway", run: () => this.offerRebuild(e, s) })) return;
       if (!(s instanceof Error) || s.name !== "AccountNotFoundError") throw s;
-      let i;
-      try {
-        i = await this.worker.previewPhraseRebuild({ phrase: e });
-      } catch {
-        throw s;
-      }
-      this.recoverPhraseInput = e, this.rebuildPreview = { npub: i.npub, profileFound: i.profileFound, relayListFound: i.relayListFound }, this.busy = !1, this.goto("recover-rebuild");
-      return;
+      return this.offerRebuild(e, s);
     }
     this.recoveredByRebuild = !1, this.adoptRecoverResult(t);
+  }
+  /** The rebuild from the phrase, previewed first (spec §17.6). */
+  async offerRebuild(e, t) {
+    this.setBusy(!0);
+    try {
+      let s;
+      try {
+        s = await this.worker.previewPhraseRebuild({ phrase: e });
+      } catch {
+        throw t;
+      }
+      this.recoverPhraseInput = e, this.rebuildPreview = { npub: s.npub, profileFound: s.profileFound, relayListFound: s.relayListFound }, this.busy = !1, this.goto("recover-rebuild");
+    } catch (s) {
+      this.fail(s);
+    }
   }
   /** The user confirmed the identity shown is theirs (spec §17.6 step 3). */
   async handleRebuildConfirm() {
@@ -2355,7 +2392,7 @@ class x extends HTMLElement {
           <button class="option-row" type="button" data-action="${o}" ${k ? "disabled" : ""}>
             <span class="option-icon">${a}</span>
             <span class="option-text"><span>${l}</span><span class="option-sub">${b}</span></span>
-          </button>`, t = C() ? e(
+          </button>`, t = L() ? e(
           "extension-signin",
           y.extension,
           this.busy ? "Asking your extension…" : "Nostr extension",
@@ -2627,6 +2664,18 @@ class x extends HTMLElement {
             </button>
           </form>
         `;
+      case "relays-slow": {
+        const e = this.relaysSlow;
+        return e ? `
+          ${this.renderScreenHead("Your relays didn't all answer", "goto-welcome")}
+          <div class="notice warn">${r(e.message)}</div>
+          ${this.renderError()}
+          <button class="primary" type="button" data-action="relays-retry" ${this.busy ? "disabled" : ""}>
+            ${this.busy ? '<span class="spinner"></span>Trying again…' : "Try again"}
+          </button>
+          ${e.anyway ? `<p class="small">Only if you're sure there is no account to find:</p><button class="secondary" type="button" data-action="relays-anyway" ${this.busy ? "disabled" : ""}>${r(e.anyway.label)}</button>` : ""}
+        ` : '<div class="notice error">Nothing is waiting here.</div>';
+      }
       case "recover-rebuild": {
         const e = this.rebuildPreview;
         if (!e) return '<div class="notice error">No recovery is in progress.</div>';
@@ -2877,7 +2926,7 @@ class x extends HTMLElement {
     }
   }
 }
-function E(n, e) {
+function C(n, e) {
   const t = Array.from({ length: n }, (i, o) => o), s = [];
   for (let i = 0; i < e && t.length > 0; i++)
     s.push(t.splice(I(t.length), 1)[0]);
@@ -2897,10 +2946,10 @@ window.bitlogin = {
     return n.nostr?._bitlogin === !0 ? (delete n.nostr, window.dispatchEvent(new CustomEvent("bitlogin-signer-released")), !0) : !1;
   },
   activeMethod() {
-    return L()?.method ?? null;
+    return E()?.method ?? null;
   },
   activeSession() {
-    return L();
+    return E();
   },
   readCachedSession: z
 };

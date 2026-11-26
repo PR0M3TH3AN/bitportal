@@ -1,4 +1,4 @@
-const p = /* @__PURE__ */ new Set(["ecashLoad", "driveLoad", "receiptsLoad", "paySettingsLoad", "blossomServers", "ecashMints"]), d = /* @__PURE__ */ new Set(["ecashPeek", "drivePeek", "receiptsPeek", "lockStatus"]);
+const d = /* @__PURE__ */ new Set(["ecashLoad", "driveLoad", "receiptsLoad", "paySettingsLoad", "blossomServers", "ecashMints"]), p = /* @__PURE__ */ new Set(["ecashPeek", "drivePeek", "receiptsPeek", "lockStatus"]);
 class y {
   worker;
   pending = /* @__PURE__ */ new Map();
@@ -11,8 +11,8 @@ class y {
   /** Set by the element to receive unsolicited worker frames (auth_url). */
   onNotification = null;
   constructor() {
-    const e = ["cryptoWorker", ".js"].join(""), a = new URL(e, import.meta.url);
-    this.worker = new Worker(a, { type: "module" }), this.worker.addEventListener("message", (t) => {
+    const e = ["cryptoWorker", ".js"].join(""), n = new URL(e, import.meta.url);
+    this.worker = new Worker(n, { type: "module" }), this.worker.addEventListener("message", (t) => {
       const r = t.data;
       if (!r || typeof r != "object") return;
       const s = r;
@@ -26,43 +26,43 @@ class y {
         return;
       }
       if (typeof r.id != "string") return;
-      const n = this.pending.get(r.id);
-      if (n)
-        if (this.pending.delete(r.id), clearTimeout(n.timer), r.ok)
-          n.resolve(r.result);
+      const i = this.pending.get(r.id);
+      if (i)
+        if (this.pending.delete(r.id), clearTimeout(i.timer), r.ok)
+          i.resolve(r.result);
         else {
           const l = new Error(r.error);
-          l.name = r.errorName ?? "Error", n.reject(l);
+          l.name = r.errorName ?? "Error", typeof r.errorCode == "string" && (l.code = r.errorCode), i.reject(l);
         }
     });
-    const i = (t) => () => this.failAll(t);
-    this.worker.addEventListener("error", i("The BitLogin crypto worker stopped unexpectedly.")), this.worker.addEventListener(
+    const a = (t) => () => this.failAll(t);
+    this.worker.addEventListener("error", a("The BitLogin crypto worker stopped unexpectedly.")), this.worker.addEventListener(
       "messageerror",
-      i("The BitLogin crypto worker sent an unreadable message.")
+      a("The BitLogin crypto worker sent an unreadable message.")
     );
   }
   /** Settles every outstanding call with an error. Idempotent. */
   failAll(e) {
-    const a = [...this.pending.values()];
+    const n = [...this.pending.values()];
     this.pending.clear();
-    for (const i of a)
-      clearTimeout(i.timer), i.reject(new Error(e));
+    for (const a of n)
+      clearTimeout(a.timer), a.reject(new Error(e));
   }
   /** Loads asked again while the same one is still on its way: the panel shown twice shares one answer, not two in line. */
   inFlight = /* @__PURE__ */ new Map();
   /** Calls to be told when their ecash is sealed in this browser, by call id. */
   sealed = /* @__PURE__ */ new Map();
-  call(e, a, i = 6e4) {
-    if (!p.has(e))
-      return d.has(e) ? this.send(e, a, i) : (this.inFlight.clear(), this.send(e, a, i));
-    const t = `${e}:${JSON.stringify(a ?? null)}`, r = this.inFlight.get(t);
+  call(e, n, a = 6e4) {
+    if (!d.has(e))
+      return p.has(e) ? this.send(e, n, a) : (this.inFlight.clear(), this.send(e, n, a));
+    const t = `${e}:${JSON.stringify(n ?? null)}`, r = this.inFlight.get(t);
     if (r) return r;
-    const s = this.send(e, a, i);
+    const s = this.send(e, n, a);
     this.inFlight.set(t, s);
-    const n = () => this.inFlight.delete(t);
-    return s.then(n, n), s;
+    const i = () => this.inFlight.delete(t);
+    return s.then(i, i), s;
   }
-  send(e, a, i, t) {
+  send(e, n, a, t) {
     if (this.dead)
       return Promise.reject(new Error(this.deadReason));
     const r = `${Date.now().toString(36)}-${(this.counter++).toString(36)}`;
@@ -70,14 +70,14 @@ class y {
     const s = new Promise((l, c) => {
       const u = setTimeout(() => {
         this.pending.delete(r), c(new Error(`BitLogin's ${e} call timed out.`));
-      }, i);
+      }, a);
       this.pending.set(r, { resolve: l, reject: c, timer: u });
-      const h = { id: r, action: e, payload: a };
+      const h = { id: r, action: e, payload: n };
       this.worker.postMessage(h);
     });
     if (!t) return s;
-    const n = () => this.sealed.delete(r);
-    return s.then(n, n), s;
+    const i = () => this.sealed.delete(r);
+    return s.then(i, i), s;
   }
   configure(e) {
     return this.call("configure", e);
@@ -235,6 +235,36 @@ class y {
   guestStatus(e) {
     return this.call("guestStatus", { family: e });
   }
+  pairBegin(e, n) {
+    return this.call("pairBegin", { site: e, device: n });
+  }
+  pairPoll() {
+    return this.call("pairPoll", {});
+  }
+  pairCancel() {
+    return this.call("pairCancel", {});
+  }
+  headsetBegin(e, n, a) {
+    return this.call("headsetBegin", { site: e, device: n, to: a });
+  }
+  headsetPoll() {
+    return this.call("headsetPoll", {});
+  }
+  headsetCancel() {
+    return this.call("headsetCancel", {});
+  }
+  pairFind(e) {
+    return this.call("pairFind", { code: e });
+  }
+  pairFound(e) {
+    return this.call("pairFound", { offer: e });
+  }
+  pairEnd(e) {
+    return this.call("pairEnd", { offer: e });
+  }
+  pairAnswer(e, n, a) {
+    return this.call("pairAnswer", { offer: e, number: n, ...a ? { family: a } : {} });
+  }
   signerTouch(e) {
     return this.call("signerTouch", e);
   }
@@ -325,12 +355,39 @@ class y {
   ecashLoad() {
     return this.call("ecashLoad", {});
   }
+  ecashKeepTrial(e) {
+    return this.call("ecashKeepTrial", { trial: e });
+  }
+  ecashLaneGet(e) {
+    return this.call("ecashLaneGet", { keysetId: e });
+  }
+  ecashDraw(e, n) {
+    return this.call("ecashDraw", { keysetId: e, lane: n });
+  }
+  ecashReserve(e, n, a) {
+    return this.call("ecashReserve", { keysetId: e, amounts: n, keyset: a });
+  }
+  ecashForward(e, n) {
+    return this.call("ecashForward", { keysetId: e, next: n });
+  }
+  ecashBlinded(e, n, a) {
+    return this.call("ecashBlinded", { keysetId: e, from: n, count: a });
+  }
+  ecashUnblind(e, n, a) {
+    return this.call("ecashUnblind", { keysetId: e, keyset: n, found: a });
+  }
+  ecashTrialOutput(e, n) {
+    return this.call("ecashTrialOutput", { keysetId: e, keyset: n });
+  }
+  ecashRepin(e, n) {
+    return this.call("ecashRepin", { keysetId: e, keyset: n });
+  }
   ecashSetMints(e) {
     return this.call("ecashSetMints", { mints: e });
   }
   /** `sealed` is called when the new proofs are sealed in this browser, before relays are asked. */
-  ecashRoll(e, a) {
-    return this.inFlight.clear(), this.send("ecashRoll", e, 6e4, a);
+  ecashRoll(e, n) {
+    return this.inFlight.clear(), this.send("ecashRoll", e, 6e4, n);
   }
   vaultFindForOrigin(e = {}) {
     return this.call("vaultFindForOrigin", e);
@@ -389,143 +446,172 @@ async function g(o = {}) {
     vaultRelayUrls: o.vaultRelays ?? [],
     discoveryRelayUrls: o.discoveryRelays ?? []
   });
-  let a = null;
-  const i = async () => {
-    if (a) return a;
+  let n = null;
+  const a = async () => {
+    if (n) return n;
     const t = await e.getSessionStatus();
     if (!t.unlocked || !t.everydayPublicKey) throw new Error(w);
-    return a = t.everydayPublicKey, a;
+    return n = t.everydayPublicKey, n;
   };
   return {
     async restore() {
       const t = await e.restoreSession();
-      return a = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, a ? { pubkey: a } : null;
+      return n = t.restored && t.everydayPublicKey ? t.everydayPublicKey : null, n ? { pubkey: n } : null;
     },
     async accounts() {
       return (await e.accountsList()).accounts;
     },
     async switchAccount(t) {
       const r = await e.accountsSwitch(t);
-      return r.locked ? { locked: !0 } : (a = r.restored && r.everydayPublicKey ? r.everydayPublicKey : null, a ? { pubkey: a } : null);
+      return r.locked ? { locked: !0 } : (n = r.restored && r.everydayPublicKey ? r.everydayPublicKey : null, n ? { pubkey: n } : null);
     },
     async addAccount() {
-      await e.accountsAdd(), a = null;
+      await e.accountsAdd(), n = null;
     },
     async isUnlocked() {
-      if (a) return !0;
+      if (n) return !0;
       const t = await e.getSessionStatus();
-      return t.unlocked && t.everydayPublicKey && (a = t.everydayPublicKey), !!t.unlocked;
+      return t.unlocked && t.everydayPublicKey && (n = t.everydayPublicKey), !!t.unlocked;
     },
     getPublicKey() {
-      return i();
+      return a();
     },
     async signEvent(t) {
-      return await i(), e.signEvent(t);
+      return await a(), e.signEvent(t);
     },
     async nip44Encrypt(t, r) {
-      return await i(), (await e.nip44Encrypt({ peerPublicKey: t, plaintext: r })).ciphertext;
+      return await a(), (await e.nip44Encrypt({ peerPublicKey: t, plaintext: r })).ciphertext;
     },
     async nip44Decrypt(t, r) {
-      return await i(), (await e.nip44Decrypt({ peerPublicKey: t, payload: r })).plaintext;
+      return await a(), (await e.nip44Decrypt({ peerPublicKey: t, payload: r })).plaintext;
     },
     async beginHandoff() {
       return (await e.handoffBegin()).recipientPublicKey;
     },
-    async exportHandoff(t, r, s, n, l, c) {
-      return await i(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...s ? { site: s } : {}, ...n ? { remember: !0 } : {}, ...l ? { family: l } : {}, ...c?.length ? { more: [...c] } : {} });
+    async exportHandoff(t, r, s, i, l, c) {
+      return await a(), e.handoffExport({ recipientPublicKey: t, ...r ? { app: r } : {}, ...s ? { site: s } : {}, ...i ? { remember: !0 } : {}, ...l ? { family: l } : {}, ...c?.length ? { more: [...c] } : {} });
     },
     async lockStatus() {
       return e.lockStatus();
     },
     async lockOpen(t) {
       const r = await e.lockOpen(t);
-      return a = r.ok && r.everydayPublicKey ? r.everydayPublicKey : null, { ok: r.ok, left: r.left, removed: r.removed };
+      return n = r.ok && r.everydayPublicKey ? r.everydayPublicKey : null, { ok: r.ok, left: r.left, removed: r.removed };
     },
     async loadProfile(t = {}) {
-      return await i(), (await e.loadProfile(t)).profile ?? null;
+      return await a(), (await e.loadProfile(t)).profile ?? null;
     },
     async profileContent() {
-      return await i(), e.profileContent();
+      return await a(), e.profileContent();
     },
     guests: {
       async find(t, r) {
-        return await i(), e.guestListFind({ subject: t, scope: r });
+        return await a(), e.guestListFind({ subject: t, scope: r });
       },
-      async sign(t, r, s, n) {
-        return await i(), (await e.guestListSign({ subject: t, scope: r, people: s, ...n !== void 0 ? { replaces: n } : {} })).event;
+      async sign(t, r, s, i) {
+        return await a(), (await e.guestListSign({ subject: t, scope: r, people: s, ...i !== void 0 ? { replaces: i } : {} })).event;
       }
     },
     pay: {
       async profile(t) {
-        return await i(), e.payProfile(t);
+        return await a(), e.payProfile(t);
       },
       async listing(t, r) {
-        return await i(), e.payListing({ coordinate: t, relays: r });
+        return await a(), e.payListing({ coordinate: t, relays: r });
       },
       async auth(t) {
-        return await i(), (await e.unlockAuth(t)).token;
+        return await a(), (await e.unlockAuth(t)).token;
       },
       async receipts() {
-        return await i(), e.receiptsLoad();
+        return await a(), e.receiptsLoad();
       },
       async receiptsPeek() {
-        return await i(), e.receiptsPeek();
+        return await a(), e.receiptsPeek();
       },
       async keep(t) {
-        return await i(), e.receiptsKeep(t);
+        return await a(), e.receiptsKeep(t);
       },
       async settings() {
-        return await i(), e.paySettingsLoad();
+        return await a(), e.paySettingsLoad();
       },
       async setLimit(t) {
-        return await i(), e.paySettingsSave({ limitSats: t });
+        return await a(), e.paySettingsSave({ limitSats: t });
       },
       async keepOrder(t) {
-        return await i(), e.paySettingsSave({ addOrder: t });
+        return await a(), e.paySettingsSave({ addOrder: t });
       },
       async dropOrder(t) {
-        return await i(), e.paySettingsSave({ removeOrder: t });
+        return await a(), e.paySettingsSave({ removeOrder: t });
       }
     },
     drive: {
       async load() {
-        return await i(), e.driveLoad();
+        return await a(), e.driveLoad();
       },
       async save(t) {
-        return await i(), e.driveSave(t);
+        return await a(), e.driveSave(t);
       },
       async auth(t, r, s) {
-        return await i(), (await e.blossomAuth({ verb: t, server: r, sha256: s })).token;
+        return await a(), (await e.blossomAuth({ verb: t, server: r, sha256: s })).token;
       },
       async servers(t) {
-        return await i(), e.blossomServers(t === !0);
+        return await a(), e.blossomServers(t === !0);
       },
       async peek() {
-        return await i(), e.drivePeek();
+        return await a(), e.drivePeek();
       },
       async setServers(t) {
-        return await i(), (await e.blossomSetServers(t)).mine;
+        return await a(), (await e.blossomSetServers(t)).mine;
       }
     },
     ecash: {
       async load() {
-        return await i(), e.ecashLoad();
+        return await a(), e.ecashLoad();
       },
       async setMints(t) {
-        return await i(), e.ecashSetMints(t);
+        return await a(), e.ecashSetMints(t);
       },
       async roll(t, r) {
-        return await i(), e.ecashRoll(t, r);
+        return await a(), e.ecashRoll(t, r);
       },
       async recommended() {
-        return await i(), (await e.ecashMints()).mints;
+        return await a(), (await e.ecashMints()).mints;
       },
       async peek() {
-        return await i(), e.ecashPeek();
+        return await a(), e.ecashPeek();
+      },
+      seed: {
+        async lane(t) {
+          return await a(), (await e.ecashLaneGet(t)).state;
+        },
+        async draw(t, r) {
+          return await a(), (await e.ecashDraw(t, r)).state;
+        },
+        async reserve(t, r, s) {
+          return await a(), e.ecashReserve(t, r, s);
+        },
+        async forward(t, r) {
+          return await a(), (await e.ecashForward(t, r)).state;
+        },
+        async blinded(t, r, s) {
+          return await a(), (await e.ecashBlinded(t, r, s)).blinded;
+        },
+        async unblind(t, r, s) {
+          return await a(), (await e.ecashUnblind(t, r, s)).proofs;
+        },
+        async trialOutput(t, r) {
+          return await a(), (await e.ecashTrialOutput(t, r)).output;
+        },
+        async repin(t, r) {
+          await a(), await e.ecashRepin(t, r);
+        }
+      },
+      async keepTrial(t) {
+        return await a(), e.ecashKeepTrial(t);
       }
     },
     async takeBack(t) {
-      return await i(), e.takeBack(t);
+      return await a(), e.takeBack(t);
     },
     async checkTakenBack(t) {
       return (await e.signerCheck({ site: t })).state;
@@ -554,15 +640,15 @@ async function g(o = {}) {
     async worldReach(t) {
       return e.worldReach({ relays: t });
     },
-    async worldScore(t, r, s, n = {}) {
-      return e.worldScore({ world: t, board: r, score: s, ...n.title ? { title: n.title } : {}, ...n.format === "time" ? { format: "time" } : {} });
+    async worldScore(t, r, s, i = {}) {
+      return e.worldScore({ world: t, board: r, score: s, ...i.title ? { title: i.title } : {}, ...i.format === "time" ? { format: "time" } : {} });
     },
     async worldAchieve(t, r, s) {
       return e.worldAchieve({ world: t, achievement: r, title: s });
     },
     async acceptHandoff(t) {
       const r = await e.handoffAccept(t);
-      return a = r.everydayPublicKey, { pubkey: a, ...r.app ? { app: r.app } : {}, ...r.site ? { site: r.site } : {}, ...r.profile ? { profile: r.profile } : {}, ...r.remember ? { remember: !0 } : {}, ...r.family ? { family: r.family } : {}, ...r.more?.length ? { more: r.more } : {} };
+      return n = r.everydayPublicKey, { pubkey: n, ...r.app ? { app: r.app } : {}, ...r.site ? { site: r.site } : {}, ...r.profile ? { profile: r.profile } : {}, ...r.remember ? { remember: !0 } : {}, ...r.family ? { family: r.family } : {}, ...r.more?.length ? { more: r.more } : {} };
     },
     async appEncrypt(t, r, s = "nip44") {
       return (await e.appEncrypt({ peerPublicKey: t, text: r, scheme: s })).text;
@@ -580,23 +666,23 @@ async function g(o = {}) {
       return (await e.signerKeep(t)).kept;
     },
     async restoreSignerGrant(t, r, s) {
-      const n = await e.signerRestore({ site: t, ...r ? { family: r } : {}, ...s ? { guest: !0 } : {} });
-      return !n.restored || !n.everydayPublicKey || typeof n.until != "number" ? null : (a = n.everydayPublicKey, {
-        pubkey: a,
-        until: n.until,
-        ...n.name ? { name: n.name } : {},
-        ...n.profile ? { profile: n.profile } : {},
-        signed: n.signed ?? [],
-        ...n.signedPass ? { signedPass: n.signedPass } : {},
-        ...n.check ? { check: n.check } : {},
-        ...n.family ? { family: n.family } : {},
-        ...n.more?.length ? { more: n.more } : {},
-        ...n.permissions ? { permissions: n.permissions, signedSensitive: n.signedSensitive ?? [] } : {},
-        ...n.guest ? { guest: !0 } : {}
+      const i = await e.signerRestore({ site: t, ...r ? { family: r } : {}, ...s ? { guest: !0 } : {} });
+      return !i.restored || !i.everydayPublicKey || typeof i.until != "number" ? null : (n = i.everydayPublicKey, {
+        pubkey: n,
+        until: i.until,
+        ...i.name ? { name: i.name } : {},
+        ...i.profile ? { profile: i.profile } : {},
+        signed: i.signed ?? [],
+        ...i.signedPass ? { signedPass: i.signedPass } : {},
+        ...i.check ? { check: i.check } : {},
+        ...i.family ? { family: i.family } : {},
+        ...i.more?.length ? { more: i.more } : {},
+        ...i.permissions ? { permissions: i.permissions, signedSensitive: i.signedSensitive ?? [] } : {},
+        ...i.guest ? { guest: !0 } : {}
       });
     },
-    async touchSignerGrant(t, r, s, n) {
-      await e.signerTouch({ site: t, signed: r, ...s ? { signedSensitive: s } : {}, ...n ? { signedPass: n } : {} });
+    async touchSignerGrant(t, r, s, i) {
+      await e.signerTouch({ site: t, signed: r, ...s ? { signedSensitive: s } : {}, ...i ? { signedPass: i } : {} });
     },
     async holdReceipts(t, r) {
       await e.signerHold({ site: t, receipts: r });
@@ -610,11 +696,42 @@ async function g(o = {}) {
     async guestStatus(t) {
       return (await e.guestStatus(t)).pubkey ?? null;
     },
+    async pairBegin(t, r) {
+      return e.pairBegin(t, r);
+    },
+    async pairPoll() {
+      const t = await e.pairPoll();
+      return t.status !== "paired" || !t.everydayPublicKey ? { status: t.status, ...t.number !== void 0 ? { number: t.number } : {} } : (n = t.everydayPublicKey, { status: "paired", got: { pubkey: n, ...t.site ? { site: t.site } : {}, ...t.profile ? { profile: t.profile } : {}, ...t.remember ? { remember: !0 } : {}, ...t.family ? { family: t.family } : {} } });
+    },
+    async pairCancel() {
+      await e.pairCancel();
+    },
+    async headsetBegin(t, r, s) {
+      return e.headsetBegin(t, r, s);
+    },
+    async headsetPoll() {
+      return e.headsetPoll();
+    },
+    async headsetCancel() {
+      await e.headsetCancel();
+    },
+    async pairFind(t) {
+      return await a(), (await e.pairFind(t)).offers;
+    },
+    async pairFound(t) {
+      return await a(), (await e.pairFound(t)).number;
+    },
+    async pairEnd(t) {
+      await a(), await e.pairEnd(t);
+    },
+    async pairAnswer(t, r, s) {
+      return await a(), e.pairAnswer(t, r, s);
+    },
     async logout() {
-      await e.logout(), a = null;
+      await e.logout(), n = null;
     },
     destroy() {
-      e.terminate("BitLogin headless signer was destroyed."), a = null;
+      e.terminate("BitLogin headless signer was destroyed."), n = null;
     }
   };
 }
