@@ -92,7 +92,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-RIUEVXQU.js";
+} from "./shared-3T3SAV53.js";
 import {
   addDoorControls,
   vouchedWords
@@ -112,7 +112,7 @@ import {
   createSounds,
   saveFile
 } from "./shared-LW5OWPBZ.js";
-import "./shared-7EUGQBOP.js";
+import "./shared-5GG3CYRU.js";
 import {
   DOUBLE_TAP,
   DRAG_LOOK,

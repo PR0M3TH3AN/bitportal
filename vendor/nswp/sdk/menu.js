@@ -7,10 +7,10 @@ import {
   mountMenu,
   portHere,
   sheetOf
-} from "./shared-QBL2TXRS.js";
+} from "./shared-ESHN3MYC.js";
 import {
   ICONS
-} from "./shared-7EUGQBOP.js";
+} from "./shared-5GG3CYRU.js";
 import {
   helpWords
 } from "./shared-EGXGKKYY.js";

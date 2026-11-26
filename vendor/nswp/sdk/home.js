@@ -8,7 +8,7 @@ import {
   createAlloy,
   createPortalWindow,
   textSprite
-} from "./shared-RIUEVXQU.js";
+} from "./shared-3T3SAV53.js";
 import {
   OFFER_ICONS
 } from "./shared-JVRYLDWO.js";
@@ -16,7 +16,7 @@ import "./shared-UBZ34GUM.js";
 import "./shared-LW5OWPBZ.js";
 import {
   ICONS
-} from "./shared-7EUGQBOP.js";
+} from "./shared-5GG3CYRU.js";
 import "./shared-JM5U66XR.js";
 import "./shared-BUBQWMZ2.js";
 import "./shared-IRRU7GKP.js";
