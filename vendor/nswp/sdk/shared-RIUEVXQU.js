@@ -71,7 +71,7 @@ import {
   scriptAllowed,
   setFilesAnywhere,
   showsItems
-} from "./shared-TJ6RX5NH.js";
+} from "./shared-IRRU7GKP.js";
 import {
   askOwn,
   askWell,
