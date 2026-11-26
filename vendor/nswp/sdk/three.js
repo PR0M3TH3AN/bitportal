@@ -92,11 +92,11 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-JFFGIOPR.js";
+} from "./shared-X5BQOBCP.js";
 import {
   addDoorControls,
   vouchedWords
-} from "./shared-QXYHZ3NI.js";
+} from "./shared-JVRYLDWO.js";
 import {
   browserVoice,
   computerVoice,

@@ -2,7 +2,7 @@ import {
   addDoorControls,
   signInHere,
   vouchedWords
-} from "./shared-QXYHZ3NI.js";
+} from "./shared-JVRYLDWO.js";
 import {
   mountHud,
   mountMenu,
