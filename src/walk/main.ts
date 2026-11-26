@@ -632,9 +632,10 @@ async function start(): Promise<void> {
       showMaker(maker);
     },
   });
-  // Every door this copy shows is listed under Travel, after these rows, and not on a tab of its own: a place says at
-  // most twelve tabs to the menu above it (the kit's MENU_LIMITS.sections), and a guest's room or an account's has
-  // fourteen with Doors and Your computers apart. Over 0.92.0 live, the last two were dropped, unsaid.
+  // Every door this copy shows, on a tab of its own. A place says at most the kit's MENU_LIMITS.sections tabs to the
+  // menu above it (sixteen from kit 0.94.0; twelve before, when Doors was under Travel): a guest's room or an
+  // account's has thirteen with it. The visitor's computers stay under Panels, where a terminal opens.
+  controls.addSection({ id: "doors", label: "Doors", icon: "list", note: () => "Every door this copy shows, yours first. Choose one to see what its world offers; Travel here leaves from where you stand, and your Airlock shows its real address next." });
   controls.add(
     // The jump list is a page dialog, which can't be seen in a headset. There, the wall is the list.
     { id: "doors", section: "travel", icon: "save", label: "Your doors, as a list", short: "Doors", hidden: () => renderer.xr.isPresenting, act: () => jumpList.open() },
@@ -958,7 +959,7 @@ async function start(): Promise<void> {
    * so the menu lists none there.
    */
   const doorMenu = addDoorControls(controls, {
-    section: "travel",
+    section: "doors",
     doors: () => (renderer.xr.isPresenting ? [] : listed.map(({ entry }) => menuDoor(entry, cachedVerification(entry.id, entry.world.createdAt)))),
     travel: (door) => {
       const entry = listed.find((x) => x.entry.id === door.id)?.entry;
@@ -968,7 +969,7 @@ async function start(): Promise<void> {
     },
   });
   const fillDoorMenu = () => doorMenu.refresh();
-  openList = () => (renderer.xr.isPresenting ? everyDoor?.open() : hud.setOpen(true, "travel"));
+  openList = () => (renderer.xr.isPresenting ? everyDoor?.open() : hud.setOpen(true, "doors"));
 
   const toggle = async (door: Door) => {
     const title = door.entry.world.title;
