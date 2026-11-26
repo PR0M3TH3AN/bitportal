@@ -68,6 +68,7 @@ import {
   keyIn,
   onHereAs,
   ordinal,
+  outOfVr,
   paintHealth,
   panoramaTexture,
   readPad,
@@ -85,6 +86,7 @@ import {
   turnVisitor,
   viewScale,
   watchFresh,
+  whenWindowGone,
   withinBudget,
   worldGate,
   worldPeople,
@@ -92,7 +94,7 @@ import {
   worldSaves,
   worldSigner,
   youCard
-} from "./shared-3T3SAV53.js";
+} from "./shared-J7FS7QGO.js";
 import {
   addDoorControls,
   vouchedWords
@@ -331,6 +333,7 @@ export {
   onItemsChange,
   onPicturesChange,
   ordinal,
+  outOfVr,
   paintHealth,
   panoramaTexture,
   prefersFullscreen,
@@ -374,6 +377,7 @@ export {
   wasRefreshed,
   watchFov,
   watchFresh,
+  whenWindowGone,
   withinBudget,
   worldGate,
   worldPeople,
